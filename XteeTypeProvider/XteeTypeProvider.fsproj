@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Wsdl.fs" />
+    <Compile Include="Xtee.fs" />
     <Compile Include="DefaultVersionAttribute.fs" />
     <Compile Include="Cache.fsi" />
     <Compile Include="Cache.fs" />

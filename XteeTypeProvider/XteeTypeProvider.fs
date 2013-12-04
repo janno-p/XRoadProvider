@@ -5,6 +5,7 @@ open Samples.FSharp.ProvidedTypes
 open System.Reflection
 open System.Xml
 open XteeTypeProvider.Wsdl
+open XteeTypeProvider.Xtee
 
 [<TypeProvider>]
 type public XteeTypeProvider() as this =
@@ -35,6 +36,17 @@ type public XteeTypeProvider() as this =
 
                     target |> thisType.AddMember
                 )
+
+                for binding in description.Bindings do
+                    for operation in binding.Operations do
+                        let version = GetOperationVersion operation
+                        let m = ProvidedMethod(methodName = operation.Name,
+                                               parameters = [],
+                                               returnType = typeof<unit>,
+                                               IsStaticMethod = true,
+                                               InvokeCode = (fun args -> <@@ () @@>))
+                        m.AddXmlDoc(version)
+                        m |> thisType.AddMember
 
                 thisType
             | _ -> failwith "unexpected parameter values"))
