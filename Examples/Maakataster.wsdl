@@ -1,0 +1,350 @@
+﻿<?xml version="1.0"?>
+<!--
+  WSDL definition example extracted from X-tee documentation
+  "Nõuded infosüsteemidele ja adapterserveritele (rpc/encoded)"
+  http://x-road.ee/docs/est/nouded_infosusteemidele_ja_adapterserveritele_legacy.pdf
+-->
+<definitions name="mydef"
+             targetNamespace="http://producers.maakataster.xtee.riik.ee/producer/maakataster"
+             xmlns:tns="http://producers.maakataster.xtee.riik.ee/producer/maakataster"
+             xmlns:xtee="http://x-tee.riik.ee/xsd/xtee.xsd"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+             xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+             xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+  <types>
+    <schema targetNamespace="http://producers.maakataster.xtee.riik.ee/producer/maakataster" xmlns="http://www.w3.org/2001/XMLSchema">
+      <import namespace="http://x-tee.riik.ee/xsd/xtee.xsd" schemaLocation="http://www.riik.ee/schemas/xtee/xtee.xsd"/>
+      <complexType name="ky_paring">
+        <all>
+          <element name="katastritunnus" type="string">
+            <annotation>
+              <appinfo>
+                <xtee:wildcard>*?</xtee:wildcard>
+                <xtee:title>
+                  Katastriüksuse
+                  tunnus
+                </xtee:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="ky_max" minOccurs="0" type="tns:t_ky_max">
+            <annotation>
+              <appinfo>
+                <xtee:title>
+                  Vastuste maksimaalne arv.
+                  Vaikimisi 10
+                </xtee:title>
+              </appinfo>
+            </annotation>
+          </element>
+        </all>
+      </complexType>
+      <complexType name="ky_vastus">
+        <complexContent>
+          <restriction base="SOAP-ENC:Array">
+            <sequence>
+              <element name="item" minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                  <appinfo>
+                    <xtee:title>
+                      Katastriüksuse
+                      andmed
+                    </xtee:title>
+                  </appinfo>
+                </annotation>
+                <complexType>
+                  <all>
+                    <element name="katastritunnus" type="string">
+                      <annotation>
+                        <appinfo>
+                          <xtee:title>Katastritunnus</xtee:title>
+                        </appinfo>
+                      </annotation>
+                    </element>
+                    <element name="ky_ametlik_nimetus" minOccurs="0" type="string">
+                      <annotation>
+                        <appinfo>
+                          <xtee:title>Katastriüksuse ametlik nimetus</xtee:title>
+                        </appinfo>
+                      </annotation>
+                    </element>
+                    <element name="registreeritud" type="dateTime">
+                      <annotation>
+                        <appinfo>
+                          <xtee:title>Registreerimise kuupäev</xtee:title>
+                        </appinfo>
+                      </annotation>
+                    </element>
+                    <element name="sihtotstarve1" minOccurs="0" type="tns:t_sihtotstarve">
+                      <annotation>
+                        <appinfo>
+                          <xtee:title>
+                            Esimese
+                            sihtotstarbe tehniline kood
+                          </xtee:title>
+                        </appinfo>
+                      </annotation>
+                    </element>
+                  </all>
+                </complexType>
+              </element>
+            </sequence>
+          </restriction>
+        </complexContent>
+      </complexType>
+      <simpleType name="t_sihtotstarve">
+        <annotation>
+          <appinfo>
+            <xtee:title>Sihtotstarbe tüüp</xtee:title>
+          </appinfo>
+        </annotation>
+        <restriction base="string">
+          <enumeration value="001">
+            <annotation>
+              <appinfo>
+                <xtee:title>(1)Elamumaa (E)</xtee:title>
+              </appinfo>
+            </annotation>
+          </enumeration>
+          <enumeration value="0010">
+            <annotation>
+              <appinfo>
+                <xtee:title>
+                  (010) Kaitsealune maa
+                  (H)
+                </xtee:title>
+              </appinfo>
+            </annotation>
+          </enumeration>
+        </restriction>
+      </simpleType>
+      <simpleType name="t_ky_max">
+        <annotation>
+          <appinfo>
+            <xtee:title>Vastuste maksimaalne arv</xtee:title>
+          </appinfo>
+        </annotation>
+        <restriction base="string">
+          <enumeration value="10">
+            <annotation>
+              <appinfo>
+                <xtee:title>10</xtee:title>
+              </appinfo>
+            </annotation>
+          </enumeration>
+          <enumeration value="100">
+            <annotation>
+              <appinfo>
+                <xtee:title>100</xtee:title>
+              </appinfo>
+            </annotation>
+          </enumeration>
+        </restriction>
+      </simpleType>
+      <simpleType name="mime_paring">
+        <annotation>
+          <appinfo>
+            <xtee:title>Andmed</xtee:title>
+          </appinfo>
+        </annotation>
+        <restriction base="hexBinary" />
+      </simpleType>
+      <complexType name="mime_vastus">
+        <annotation>
+          <appinfo>
+            <xtee:title>Vastus</xtee:title>
+          </appinfo>
+        </annotation>
+        <all>
+          <element name="vastus" type="string">
+            <annotation>
+              <appinfo>
+                <xtee:title>Selgitus</xtee:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="muuinfo" type="base64Binary">
+            <annotation>
+              <appinfo>
+                <xtee:title>
+                  Soovitud
+                  informatsioon
+                </xtee:title>
+              </appinfo>
+            </annotation>
+          </element>
+        </all>
+      </complexType>
+    </schema>
+  </types>
+  <portType name="myporttype">
+    <operation name="ky">
+      <documentation>
+        <xtee:title xml:lang="et">
+          Katastriüksuse päring tunnuse
+          järgi
+        </xtee:title>
+        <xtee:title xml:lang="pt">Inquira por código</xtee:title>
+        <xtee:notes>
+          Päring väljastab selle osa andmetest, mis on
+          registrisse kantud
+        </xtee:notes>
+      </documentation>
+      <input message="tns:ky" />
+      <output message="tns:kyResponse" />
+    </operation>
+    <operation name="legacy1">
+      <documentation>
+        <xtee:title>
+          Sisenemine ühte hoopis teise
+          infosüsteemi
+        </xtee:title>
+      </documentation>
+      <input message="tns:legacy" />
+      <output message="tns:legacyResponse" />
+    </operation>
+    <operation name="uploadMime">
+      <documentation>
+        <xtee:title>MIME manustega teenus</xtee:title>
+      </documentation>
+      <input message="tns:mimeRequest" />
+      <output message="tns:mimeResponse" />
+    </operation>
+  </portType>
+  <binding name="mybinding" type="tns:myporttype">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http" />
+    <operation name="ky">
+      <xtee:version>v1</xtee:version>
+      <soap:operation soapAction="" />
+      <input>
+        <soap:body use="encoded" namespace="http://producers.assert.xtee.riik.ee/producer/assert" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="asutus" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="andmekogu" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="isikukood" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="id" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="nimi" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="toimik" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="autentija" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </input>
+      <output>
+        <soap:body use="encoded" namespace="http://producers.assert.xtee.riik.ee/producer/assert" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="asutus" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="andmekogu" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="isikukood" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="id" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="nimi" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="toimik" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:lisagapais" part="autentija" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </output>
+    </operation>
+    <operation name="legacy1">
+      <xtee:version>v1</xtee:version>
+      <soap:operation soapAction="" />
+      <input>
+        <soap:body use="encoded" namespace="http://producers.assert.xtee.riik.ee/producer/assert" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="asutus" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="andmekogu" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="isikukood" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="id" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="nimi" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="toimik" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </input>
+      <output>
+        <soap:body use="encoded" namespace="http://producers.assert.xtee.riik.ee/producer/assert" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="asutus" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="andmekogu" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="isikukood" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="id" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="nimi" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+        <soap:header message="tns:standardpais" part="toimik" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+      </output>
+    </operation>
+    <operation name="uploadMime">
+      <xtee:version>v1</xtee:version>
+      <soap:operation soapAction="" style="rpc" />
+      <input>
+        <mime:multipartRelated>
+          <mime:part>
+            <soap:body use="encoded" namespace="http://producers.assert.xtee.riik.ee/producer/assert" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="asutus" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="andmekogu" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="isikukood" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="id" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="nimi" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="toimik" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+          </mime:part>
+          <mime:part>
+            <mime:content part="p1" type="application/binary" />
+          </mime:part>
+        </mime:multipartRelated>
+      </input>
+      <output>
+        <mime:multipartRelated>
+          <mime:part>
+            <soap:body use="encoded" namespace="http://producers.assert.xtee.riik.ee/producer/assert" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="asutus" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="andmekogu" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="isikukood" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="id" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="nimi" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+            <soap:header message="tns:standardpais" part="toimik" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+          </mime:part>
+          <mime:part>
+            <mime:content part="p1" type="application/binary" />
+          </mime:part>
+        </mime:multipartRelated>
+      </output>
+    </operation>
+  </binding>
+  <message name="ky">
+    <part name="keha" type="tns:ky_paring" />
+  </message>
+  <message name="kyResponse">
+    <part name="paring" type="tns:ky_paring" />
+    <part name="keha" type="tns:ky_vastus" />
+  </message>
+  <message name="legacy">
+    <part name="keha" type="xtee:ArrayOfString" />
+  </message>
+  <message name="legacyResponse">
+    <part name="paring" type="xtee:ArrayOfString" />
+    <part name="keha" type="xtee:legacy_response" />
+  </message>
+  <message name="mimeRequest">
+    <part name="keha" type="tns:mime_paring" />
+    <part name="p1" type="base64Binary" />
+  </message>
+  <message name="mimeResponse">
+    <part name="paring" type="tns:mime_paring" />
+    <part name="keha" type="tns:mime_vastus" />
+    <part name="p2" type="base64Binary" />
+  </message>
+  <message name="standardpais">
+    <part element="xtee:asutus" name="asutus" />
+    <part element="xtee:andmekogu" name="andmekogu" />
+    <part element="xtee:isikukood" name="isikukood" />
+    <part element="xtee:id" name="id" />
+    <part element="xtee:nimi" name="nimi" />
+    <part element="xtee:toimik" name="toimik" />
+  </message>
+  <message name="lisagapais">
+    <part element="xtee:asutus" name="asutus" />
+    <part element="xtee:andmekogu" name="andmekogu" />
+    <part element="xtee:isikukood" name="isikukood" />
+    <part element="xtee:id" name="id" />
+    <part element="xtee:nimi" name="nimi" />
+    <part element="xtee:toimik" name="toimik" />
+    <part element="xtee:autentija" name="autentija" />
+  </message>
+  <service name="myservice">
+    <port name="myport" binding="tns:mybinding">
+      <soap:address location="http://TURVASERVER/cgi-bin/consumer_proxy" />
+      <xtee:title>Maakataster</xtee:title>
+      <xtee:title xml:lang="en">Land Cadastre</xtee:title>
+      <xtee:address producer="maakataster" />
+    </port>
+  </service>
+</definitions>
