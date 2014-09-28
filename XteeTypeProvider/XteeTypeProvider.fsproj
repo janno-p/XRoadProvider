@@ -4,8 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>4e04c5a5-00b9-4d7c-8501-31b4b7389671</ProjectGuid>
+    <ProjectGuid>{4E04C5A5-00B9-4D7C-8501-31B4B7389671}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>XteeTypeProvider</RootNamespace>
     <AssemblyName>XteeTypeProvider</AssemblyName>
@@ -33,15 +32,15 @@
     <DocumentationFile>bin\Release\TypeProvider1.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Web.Services" />
     <Reference Include="System.Xml" />
+    <Reference Include="FSharp.Core">
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Wsdl.fs" />

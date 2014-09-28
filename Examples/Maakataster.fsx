@@ -1,8 +1,11 @@
-﻿#r @"..\XteeTypeProvider\bin\Debug\XteeTypeProvider.dll"
+﻿#r @"../XteeTypeProvider/bin/Debug/XteeTypeProvider.dll"
 
 open XteeTypeProvider
 
-type Provider = XteeTypeProvider< @"E:\Work\XteeTypeProvider\Examples\Maakataster.wsdl" >
+[<Literal>]
+let wsdlPath = __SOURCE_DIRECTORY__ + "/Maakataster.wsdl"
+
+type Provider = XteeTypeProvider<wsdlPath>
 type Maakataster = Provider.``http://producers.maakataster.xtee.riik.ee/producer/maakataster``
 
 Provider.ky()
