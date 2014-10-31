@@ -5,9 +5,8 @@ open XteeTypeProvider
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/AktorstestService.wsdl.xml"
 
-type Provider = XteeTypeProvider<wsdlPath>
-type AktorstestService = Provider.``http://aktorstest.x-road.ee/producer``
+type Aktorstest = XteeTypeProvider<wsdlPath>
+type testPort = Aktorstest.aktorstestService.Test
 
-Provider.fileUpload()
-Provider.listMethods()
-Provider.fileDownloadMTOM()
+printfn "%s" testPort.address
+printfn "%s" testPort.producer
