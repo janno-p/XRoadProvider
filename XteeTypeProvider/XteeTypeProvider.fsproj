@@ -43,15 +43,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Wsdl.fs" />
     <Compile Include="Xtee.fs" />
     <Compile Include="DefaultVersionAttribute.fs" />
     <Compile Include="Cache.fsi" />
     <Compile Include="Cache.fs" />
-    <Compile Include="JsonParser.fs" />
     <Compile Include="ProvidedTypes-head.fsi" />
     <Compile Include="ProvidedTypes-head.fs" />
-    <Compile Include="TypeProvider1.fs" />
     <Compile Include="XteeTypeProvider.fs" />
   </ItemGroup>
   <PropertyGroup>

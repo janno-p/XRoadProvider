@@ -26,7 +26,7 @@ type public XteeTypeProvider() as this =
                 let description = uri |> Resolve |> ReadDescription
 
                 let thisType = ProvidedTypeDefinition(thisAssembly, rootNamespace, typeName, Some baseType)
-                
+
                 description.Types.Schemas |> Seq.iter (fun schema ->
                     let target = ProvidedTypeDefinition(schema.TargetNamespace, Some baseType, HideObjectMethods = true)
 
@@ -39,7 +39,7 @@ type public XteeTypeProvider() as this =
 
                 for binding in description.Bindings do
                     for operation in binding.Operations do
-                        let version = GetOperationVersion operation
+                        let version = "0" //GetOperationVersion operation
                         let m = ProvidedMethod(methodName = operation.Name,
                                                parameters = [],
                                                returnType = typeof<unit>,

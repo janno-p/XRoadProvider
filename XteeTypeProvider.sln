@@ -5,11 +5,7 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "XteeTypeProvider", "XteeTypeProvider\XteeTypeProvider.fsproj", "{4E04C5A5-00B9-4D7C-8501-31B4B7389671}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{E50ACC3C-1543-45BF-ACCB-DDCEF2D5B677}"
-	ProjectSection(SolutionItems) = preProject
-		Examples\Maakataster.fsx = Examples\Maakataster.fsx
-		Examples\Maakataster.wsdl = Examples\Maakataster.wsdl
-	EndProjectSection
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "XteeTypeProvider.Test", "XteeTypeProvider.Test\XteeTypeProvider.Test.fsproj", "{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,11 +17,47 @@ Global
 		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = XteeTypeProvider\XteeTypeProvider.fsproj
+		Policies = $0
+		$0.TextStylePolicy = $1
+		$1.FileWidth = 120
+		$1.TabWidth = 2
+		$1.IndentWidth = 2
+		$1.inheritsSet = VisualStudio
+		$1.inheritsScope = text/plain
+		$1.scope = text/plain
+		$0.TextStylePolicy = $2
+		$2.inheritsSet = null
+		$2.scope = application/xml
+		$0.XmlFormattingPolicy = $3
+		$3.inheritsSet = Mono
+		$3.inheritsScope = application/xml
+		$3.scope = application/xml
+		$0.DotNetNamingPolicy = $4
+		$4.DirectoryNamespaceAssociation = None
+		$4.ResourceNamePolicy = FileFormatDefault
+		$0.TextStylePolicy = $5
+		$5.FileWidth = 120
+		$5.inheritsSet = VisualStudio
+		$5.inheritsScope = text/plain
+		$5.scope = text/x-fsharp
+		$0.FSharpFormattingPolicy = $6
+		$6.DefaultFormat = $7
+		$7.IndentOnTryWith = False
+		$7.ReorderOpenDeclaration = False
+		$7.SpaceAfterComma = True
+		$7.SpaceAfterSemicolon = True
+		$7.SpaceAroundDelimiter = True
+		$7.SpaceBeforeArgument = True
+		$7.SpaceBeforeColon = True
+		$7.SemicolonAtEndOfLine = False
+		$6.scope = text/x-fsharp
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

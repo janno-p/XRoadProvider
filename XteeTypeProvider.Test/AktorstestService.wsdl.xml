@@ -1,0 +1,906 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WSDL definition example extracted from X-tee documentation
+  "Nõuded infosüsteemidele ja adapterserveritele (doc/literal)"
+  http://x-road.ee/docs/est/nouded_infosusteemidele_ja_adapterserveritele.pdf
+-->
+<definitions xmlns:xrd="http://x-road.ee/xsd/x-road.xsd"
+             xmlns:tns="http://aktorstest.x-road.ee/producer"
+             xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+             xmlns:xmime="http://www.w3.org/2005/05/xmlmime"
+             xmlns:ns1="http://www.w3.org/1999/xlink"
+             xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:ns="http://schemas.xmlsoap.org/soap/encoding/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:wsdl="http://www.w3.org/ns/wsdl"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             targetNamespace="http://aktorstest.x-road.ee/producer">
+  <types>
+    <schema targetNamespace="http://aktorstest.x-road.ee/producer" xmlns="http://www.w3.org/2001/XMLSchema">
+      <import namespace="http://x-road.ee/xsd/x-road.xsd" schemaLocation="http://x-road.ee/xsd/x-road.xsd"/>
+      <import namespace="http://www.w3.org/2005/05/xmlmime" schemaLocation="http://www.w3.org/2005/05/xmlmime"/>
+      <element name="isikuteList">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="eesnimi" type="string">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">Given name</xrd:title>
+                        <xrd:title xml:lang="et">Eesnimi</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                  <element name="perenimi" type="string">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">Surname</xrd:title>
+                        <xrd:title xml:lang="et">Perenimi</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="isikuteListResponse">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="eesnimi" nillable="true" type="string"/>
+                  <element name="perenimi" nillable="true" type="string"/>
+                </sequence>
+              </complexType>
+            </element>
+            <element name="response">
+              <complexType>
+                <sequence>
+                  <element name="faultCode" nillable="true" type="xrd:faultCode"/>
+                  <element name="faultString" nillable="true" type="xrd:faultString"/>
+                  <element maxOccurs="unbounded" minOccurs="0" name="isik" nillable="true" type="tns:isik_short">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">Person's data</xrd:title>
+                        <xrd:title xml:lang="et">Isiku andmed</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="isikOtsing">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="isikukood" type="string">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">Perconal ID code</xrd:title>
+                        <xrd:title xml:lang="et">Isikukood</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="isikOtsingResponse">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="isikukood" nillable="true" type="string"/>
+                </sequence>
+              </complexType>
+            </element>
+            <element name="response">
+              <complexType>
+                <sequence>
+                  <element name="faultCode" nillable="true" type="xrd:faultCode"/>
+                  <element name="faultString" nillable="true" type="xrd:faultString"/>
+                  <element name="isiku_andmed" nillable="true" type="tns:isik"/>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="changeAddress">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="isikukood" type="string">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="et">Isikukood</xrd:title>
+                        <xrd:title xml:lang="en">Personal ID code</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                  <element name="aadress" type="tns:aadress"/>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="changeAddressResponse">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="isikukood" nillable="true" type="string"/>
+                </sequence>
+              </complexType>
+            </element>
+            <element name="response">
+              <complexType>
+                <sequence>
+                  <element name="faultCode" nillable="true" type="xrd:faultCode"/>
+                  <element name="faultString" nillable="true" type="xrd:faultString"/>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="fileDownload">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="fileName" nillable="true" type="string">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">FileName</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="fileDownloadResponse">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="fileName" nillable="true" type="string"/>
+                </sequence>
+              </complexType>
+            </element>
+            <element name="response">
+              <complexType>
+                <sequence>
+                  <element name="faultCode" nillable="true" type="xrd:faultCode"/>
+                  <element name="faultString" nillable="true" type="xrd:faultString"/>
+                  <element name="file" nillable="true">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">File</xrd:title>
+                      </appinfo>
+                    </annotation>
+                    <complexType>
+                      <attribute name="href" type="string"/>
+                    </complexType>
+                  </element>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="fileUpload">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="fileName" nillable="true" type="string">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">FileName</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="fileUploadResponse">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="fileName" nillable="true" type="string"/>
+                </sequence>
+              </complexType>
+            </element>
+            <element name="response">
+              <complexType>
+                <sequence>
+                  <element name="faultCode" nillable="true" type="xrd:faultCode"/>
+                  <element name="faultString" nillable="true" type="xrd:faultString"/>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="fileDownloadMTOM">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="fileName" nillable="true" type="string">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">FileName</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="fileDownloadMTOMResponse">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="fileName" nillable="true" type="string"/>
+                </sequence>
+              </complexType>
+            </element>
+            <element name="response">
+              <complexType>
+                <sequence>
+                  <element name="faultCode" nillable="true" type="xrd:faultCode"/>
+                  <element name="faultString" nillable="true" type="xrd:faultString"/>
+                  <element name="file" type="base64Binary" xmime:expectedContentTypes="image/jpeg"/>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="fileUploadMTOM">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="filemtom" type="base64Binary" xmime:expectedContentTypes="image/jpeg"/>
+                  <element name="fileName" nillable="true" type="string">
+                    <annotation>
+                      <appinfo>
+                        <xrd:title xml:lang="en">FileName</xrd:title>
+                      </appinfo>
+                    </annotation>
+                  </element>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="fileUploadMTOMResponse">
+        <complexType>
+          <sequence>
+            <element name="request">
+              <complexType>
+                <sequence>
+                  <element name="fileName" nillable="true" type="string"/>
+                </sequence>
+              </complexType>
+            </element>
+            <element name="response">
+              <complexType>
+                <sequence>
+                  <element name="faultCode" nillable="true" type="xrd:faultCode"/>
+                  <element name="faultString" nillable="true" type="xrd:faultString"/>
+                </sequence>
+              </complexType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <complexType name="isik">
+        <all>
+          <element name="eesnimi" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Given name</xrd:title>
+                <xrd:title xml:lang="et">Eesnimi</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="perenimi" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Surname</xrd:title>
+                <xrd:title xml:lang="et">Perenimi</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="isikukood" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Personal ID code</xrd:title>
+                <xrd:title xml:lang="et">Isikukood</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="tookoht" type="tns:tookoht"/>
+          <element name="aadress" type="tns:aadress">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Address</xrd:title>
+                <xrd:title xml:lang="et">Aadress</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="telefon" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Phone number</xrd:title>
+                <xrd:title xml:lang="et">Kontakttelefon</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="epost" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">E-mail</xrd:title>
+                <xrd:title xml:lang="en">E-post</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="foto" nillable="true" type="xrd:jpg"/>
+        </all>
+      </complexType>
+      <complexType name="isik_short">
+        <all>
+          <element name="eesnimi" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Given name</xrd:title>
+                <xrd:title xml:lang="et">Eesnimi</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="perenimi" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Surname</xrd:title>
+                <xrd:title xml:lang="et">Perenimi</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="isikukood" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Personal ID code</xrd:title>
+                <xrd:title xml:lang="et">Isikukood</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+        </all>
+      </complexType>
+      <complexType name="aadress">
+        <all>
+          <element name="maakond" type="xrd:maakond">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">State</xrd:title>
+                <xrd:title xml:lang="et">Maakond</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="linnvald" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">City</xrd:title>
+                <xrd:title xml:lang="et">Linn/Vald</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="tanav" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Street</xrd:title>
+                <xrd:title xml:lang="et">Tänav</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="majaNr" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">House nr.</xrd:title>
+                <xrd:title xml:lang="et">Maja nr.</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="korteriNr" type="integer">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Flat nr.</xrd:title>
+                <xrd:title xml:lang="et">Korteri nr.</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+        </all>
+      </complexType>
+      <complexType name="tookoht">
+        <all>
+          <element name="asutusekood" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Employer's kood</xrd:title>
+                <xrd:title xml:lang="et">Asutuse kood</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="nimi" type="string">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Employer's name</xrd:title>
+                <xrd:title xml:lang="et">Asutuse nimi</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+          <element name="aadress" type="tns:aadress">
+            <annotation>
+              <appinfo>
+                <xrd:title xml:lang="en">Address</xrd:title>
+                <xrd:title xml:lang="et">Aadress</xrd:title>
+              </appinfo>
+            </annotation>
+          </element>
+        </all>
+      </complexType>
+    </schema>
+  </types>
+  <message name="fileUploadResponse">
+    <part name="body" element="tns:fileUploadResponse"/>
+  </message>
+  <message name="fileUploadMTOMResponse">
+    <part name="body" element="tns:fileUploadMTOMResponse"/>
+  </message>
+  <message name="unitValid">
+    <part name="body" element="xrd:unitValid"/>
+  </message>
+  <message name="unitRepresentResponse">
+    <part name="body" element="xrd:unitRepresentResponse"/>
+  </message>
+  <message name="isikuteListResponse">
+    <part name="body" element="tns:isikuteListResponse"/>
+  </message>
+  <message name="isikOtsing">
+    <part name="body" element="tns:isikOtsing"/>
+  </message>
+  <message name="listMethodsResponse">
+    <part name="body" element="xrd:listMethodsResponse"/>
+  </message>
+  <message name="loadClassificationResponse">
+    <part name="body" element="xrd:loadClassificationResponse"/>
+  </message>
+  <message name="standardheader">
+    <part name="consumer" element="xrd:consumer"/>
+    <part name="producer" element="xrd:producer"/>
+    <part name="userId" element="xrd:userId"/>
+    <part name="service" element="xrd:service"/>
+    <part name="id" element="xrd:id"/>
+  </message>
+  <message name="isikuteList">
+    <part name="body" element="tns:isikuteList"/>
+  </message>
+  <message name="listMethods">
+    <part name="body" element="xrd:listMethods"/>
+  </message>
+  <message name="loadClassification">
+    <part name="body" element="xrd:loadClassification"/>
+  </message>
+  <message name="unitRepresent">
+    <part name="body" element="xrd:unitRepresent"/>
+  </message>
+  <message name="fileDownload">
+    <part name="body" element="tns:fileDownload"/>
+  </message>
+  <message name="fileDownloadMTOM">
+    <part name="body" element="tns:fileDownloadMTOM"/>
+  </message>
+  <message name="testSystem">
+    <part name="body" element="xrd:testSystem"/>
+  </message>
+  <message name="fileUpload">
+    <part name="body" element="tns:fileUpload"/>
+    <part name="file" type="xsd:base64Binary"/>
+  </message>
+  <message name="fileUploadMTOM">
+    <part name="body" element="tns:fileUploadMTOM"/>
+  </message>
+  <message name="unitValidResponse">
+    <part name="body" element="xrd:unitValidResponse"/>
+  </message>
+  <message name="fileDownloadResponse">
+    <part name="body" element="tns:fileDownloadResponse"/>
+    <part name="file" type="xsd:base64Binary"/>
+  </message>
+  <message name="fileDownloadMTOMResponse">
+    <part name="body" element="tns:fileDownloadMTOMResponse"/>
+  </message>
+  <message name="isikOtsingResponse">
+    <part name="body" element="tns:isikOtsingResponse"/>
+  </message>
+  <message name="testSystemResponse">
+    <part name="body" element="xrd:testSystemResponse"/>
+  </message>
+  <message name="changeAddress">
+    <part name="body" element="tns:changeAddress"/>
+  </message>
+  <message name="changeAddressResponse">
+    <part name="body" element="tns:changeAddressResponse"/>
+  </message>
+  <portType name="TestPortType">
+    <operation name="isikuteList">
+      <documentation>
+        <xrd:title xml:lang="et">Isikute nimekirja teenus</xrd:title>
+        <xrd:title xml:lang="en">List of persons</xrd:title>
+      </documentation>
+      <input message="tns:isikuteList"/>
+      <output message="tns:isikuteListResponse"/>
+    </operation>
+    <operation name="isikOtsing">
+      <documentation>
+        <xrd:title xml:lang="et">Isiku andmete otsimine isikukoodi järgi</xrd:title>
+        <xrd:title xml:lang="en">Search person by Id-code</xrd:title>
+      </documentation>
+      <input message="tns:isikOtsing"/>
+      <output message="tns:isikOtsingResponse"/>
+    </operation>
+    <operation name="listMethods">
+      <documentation>
+        <xrd:title xml:lang="en">listMethods</xrd:title>
+      </documentation>
+      <input message="tns:listMethods"/>
+      <output message="tns:listMethodsResponse"/>
+    </operation>
+    <operation name="testSystem">
+      <documentation>
+        <xrd:title xml:lang="en">testSystem</xrd:title>
+      </documentation>
+      <input message="tns:testSystem"/>
+      <output message="tns:testSystemResponse"/>
+    </operation>
+    <operation name="unitValid">
+      <documentation>
+        <xrd:title xml:lang="en">unitValid</xrd:title>
+      </documentation>
+      <input message="tns:unitValid"/>
+      <output message="tns:unitValidResponse"/>
+    </operation>
+    <operation name="unitRepresent">
+      <documentation>
+        <xrd:title xml:lang="en">unitRepresent</xrd:title>
+      </documentation>
+      <input message="tns:unitRepresent"/>
+      <output message="tns:unitRepresentResponse"/>
+    </operation>
+    <operation name="loadClassification">
+      <documentation>
+        <xrd:title xml:lang="en">loadClassification</xrd:title>
+      </documentation>
+      <input message="tns:loadClassification"/>
+      <output message="tns:loadClassificationResponse"/>
+    </operation>
+    <operation name="fileDownload">
+      <documentation>
+        <xrd:title xml:lang="et">Faili allalaadimine</xrd:title>
+        <xrd:title xml:lang="en">File download</xrd:title>
+      </documentation>
+      <input message="tns:fileDownload"/>
+      <output message="tns:fileDownloadResponse"/>
+    </operation>
+    <operation name="fileDownloadMTOM">
+      <documentation>
+        <xrd:title xml:lang="et">Faili allalaadimine (MTOM)</xrd:title>
+        <xrd:title xml:lang="en">File Download (MTOM)</xrd:title>
+      </documentation>
+      <input message="tns:fileDownloadMTOM"/>
+      <output message="tns:fileDownloadMTOMResponse"/>
+    </operation>
+    <operation name="fileUpload">
+      <documentation>
+        <xrd:title xml:lang="et">Faili üleslaadimine</xrd:title>
+        <xrd:title xml:lang="en">File Upload</xrd:title>
+      </documentation>
+      <input message="tns:fileUpload"/>
+      <output message="tns:fileUploadResponse"/>
+    </operation>
+    <operation name="fileUploadMTOM">
+      <documentation>
+        <xrd:title xml:lang="et">Faili üleslaadimine (MTOM)</xrd:title>
+        <xrd:title xml:lang="en">File Upload (MTOM)</xrd:title>
+      </documentation>
+      <input message="tns:fileUploadMTOM"/>
+      <output message="tns:fileUploadMTOMResponse"/>
+    </operation>
+    <operation name="changeAddress">
+      <documentation>
+        <xrd:title xml:lang="et">Aadressi muutmine</xrd:title>
+        <xrd:title xml:lang="en">Change Address</xrd:title>
+      </documentation>
+      <input message="tns:changeAddress"/>
+      <output message="tns:changeAddressResponse"/>
+    </operation>
+  </portType>
+  <binding name="TestSoapBinding" type="tns:TestPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="isikuteList">
+      <soap:operation soapAction="" style="document"/>
+      <xrd:version>v1</xrd:version>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+    <operation name="isikOtsing">
+      <soap:operation soapAction="" style="document"/>
+      <xrd:version>v1</xrd:version>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+    <operation name="listMethods">
+      <soap:operation soapAction="" style="document"/>
+      <input>
+        <soap:body parts="body" use="literal" namespace="http://x-tee.riik.ee/xsd/xtee.xsd"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal" namespace="http://x-tee.riik.ee/xsd/xtee.xsd"/>
+      </output>
+    </operation>
+    <operation name="testSystem">
+      <soap:operation soapAction="" style="document"/>
+      <input>
+        <soap:body parts="body" use="literal"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+      </output>
+    </operation>
+    <operation name="unitValid">
+      <soap:operation soapAction="" style="document"/>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+    <operation name="unitRepresent">
+      <soap:operation soapAction="" style="document"/>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+    <operation name="loadClassification">
+      <soap:operation soapAction="" style="document"/>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+    <operation name="fileDownload">
+      <soap:operation soapAction="" style="document"/>
+      <xrd:version>v1</xrd:version>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+        <mime:multipartRelated>
+          <mime:part>
+            <soap:body parts="body" use="literal"/>
+            <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+            <soap:header message="tns:standardheader" part="producer" use="literal"/>
+            <soap:header message="tns:standardheader" part="userId" use="literal"/>
+            <soap:header message="tns:standardheader" part="id" use="literal"/>
+            <soap:header message="tns:standardheader" part="service" use="literal"/>
+          </mime:part>
+          <mime:part>
+            <mime:content part="file" type="application/octetstream"/>
+          </mime:part>
+        </mime:multipartRelated>
+      </output>
+    </operation>
+    <operation name="fileDownloadMTOM">
+      <soap:operation soapAction="" style="document"/>
+      <xrd:version>v1</xrd:version>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+    <operation name="fileUpload">
+      <soap:operation soapAction="" style="document"/>
+      <xrd:version>v1</xrd:version>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+        <mime:multipartRelated>
+          <mime:part>
+            <mime:content part="file" type="application/octetstream"/>
+          </mime:part>
+        </mime:multipartRelated>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+    <operation name="fileUploadMTOM">
+      <soap:operation soapAction="" style="document"/>
+      <xrd:version>v1</xrd:version>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+    <operation name="changeAddress">
+      <soap:operation soapAction="" style="document"/>
+      <xrd:version>v1</xrd:version>
+      <input>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </input>
+      <output>
+        <soap:body parts="body" use="literal"/>
+        <soap:header message="tns:standardheader" part="consumer" use="literal"/>
+        <soap:header message="tns:standardheader" part="producer" use="literal"/>
+        <soap:header message="tns:standardheader" part="userId" use="literal"/>
+        <soap:header message="tns:standardheader" part="id" use="literal"/>
+        <soap:header message="tns:standardheader" part="service" use="literal"/>
+      </output>
+    </operation>
+  </binding>
+  <service name="aktorstestService">
+    <port name="Test" binding="tns:TestSoapBinding">
+      <soap:address location="http://localhost:8080/axis2/services/aktorstestService"/>
+      <xrd:title xml:lang="et">Test andmekogu xtee ver5 doc/literal stiili jaoks</xrd:title>
+      <xrd:title xml:lang="en">Test database for xroad ver.5 doc/literal style</xrd:title>
+      <xrd:address producer="aktorstest"/>
+    </port>
+  </service>
+</definitions>
