@@ -11,10 +11,6 @@ type myport = Maakataster.myservice.myport
 printfn "%s" myport.address
 printfn "%s" myport.producer
 
-(*
-type Maakataster = Provider.``http://producers.maakataster.xtee.riik.ee/producer/maakataster``
-
-Provider.ky()
-Provider.legacy1()
-Provider.uploadMime()
-*)
+myport.Services.ky()
+myport.Services.legacy1()
+myport.Services.uploadMime()

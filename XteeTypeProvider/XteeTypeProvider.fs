@@ -31,6 +31,11 @@ type public XteeTypeProvider() as this =
                         match e with
                         | :? System.Web.Services.Description.SoapAddressBinding as addr -> Some addr.Location
                         | _ -> None
+
+                    let (|SoapBinding|_|) (e: obj) =
+                        match e with
+                        | :? System.Web.Services.Description.SoapBinding as b -> Some b
+                        | _ -> None
                     
                     let (|Producer|_|) (e: obj) =
                         match e with
@@ -69,37 +74,42 @@ type public XteeTypeProvider() as this =
                                 | XrdTitle ("et", value) ->
                                     portType.AddXmlDoc(value)
                                 | _ -> ()
+                            let binding =
+                                match port.Binding with
+                                | qn when qn.Namespace = description.TargetNamespace -> description.Bindings.[qn.Name]
+                                | qn -> failwithf "Bindings defined outside the target namespace are not yet supported (%O)!" qn
+                            let bindingType = ProvidedTypeDefinition("Services", baseType, HideObjectMethods=true)
+                            let bindingStyle =
+                                [for ext in binding.Extensions -> ext]
+                                |> Seq.choose (fun ext ->
+                                    match ext with
+                                    | SoapBinding bind ->
+                                        let bindStyle =
+                                            match bind.Style with
+                                            | System.Web.Services.Description.SoapBindingStyle.Rpc -> Some bind.Style
+                                            | _ -> Some System.Web.Services.Description.SoapBindingStyle.Document
+                                        if not (bind.Transport = "http://schemas.xmlsoap.org/soap/http") then
+                                            failwithf "Only HTTP transport for SOAP is accepted (%O)." bind.Transport
+                                        Some bindStyle
+                                    | _ -> None)
+                                |> Seq.exactlyOne
+                            let iface =
+                                match binding.Type with
+                                | qn when qn.Namespace = description.TargetNamespace -> description.PortTypes.[qn.Name]
+                                | qn -> failwithf "Port types defined outside the target namespace are not yet supported (%O)!" qn
+                            for op in binding.Operations do
+                                let meth = ProvidedMethod(op.Name, [], typeof<unit>, IsStaticMethod=true)
+                                meth.InvokeCode <- (fun _ -> <@@ () @@>)
+                                bindingType.AddMember meth
+                            portType.AddMember bindingType
                             serviceType.AddMember portType
                         thisType.AddMember serviceType
-
-                    (*
-                    description.Types.Schemas |> Seq.iter (fun schema ->
-                        let target = ProvidedTypeDefinition(schema.TargetNamespace, baseType, HideObjectMethods = true)
-
-                        [ for name in schema.SchemaTypes.Names -> name :?> XmlQualifiedName ] |> List.iter (fun name ->
-                            ProvidedTypeDefinition(name.Name, baseType, HideObjectMethods = true) |> target.AddMember
-                        )
-
-                        target |> thisType.AddMember
-                    )
-
-                    for binding in description.Bindings do
-                        for operation in binding.Operations do
-                            let version = "0" //GetOperationVersion operation
-                            let m = ProvidedMethod(methodName = operation.Name,
-                                                   parameters = [],
-                                                   returnType = typeof<unit>,
-                                                   IsStaticMethod = true,
-                                                   InvokeCode = (fun args -> <@@ () @@>))
-                            m.AddXmlDoc(version)
-                            m |> thisType.AddMember
-                    *)
                 | _ -> failwith "unexpected parameter values"
             with
             | e ->
                 let msg = e.ToString()
                 let noteProperty = ProvidedProperty("<Note>", typeof<string>, IsStatic=true)
-                noteProperty.GetterCode <- (fun args -> <@@ msg @@>)
+                noteProperty.GetterCode <- (fun _ -> <@@ msg @@>)
                 noteProperty.AddXmlDoc(msg)
                 thisType.AddMember noteProperty
             thisType))

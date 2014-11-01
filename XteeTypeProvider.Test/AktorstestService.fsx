@@ -10,3 +10,7 @@ type testPort = Aktorstest.aktorstestService.Test
 
 printfn "%s" testPort.address
 printfn "%s" testPort.producer
+
+testPort.Services.isikOtsing()
+testPort.Services.changeAddress()
+testPort.Services.fileDownload()
