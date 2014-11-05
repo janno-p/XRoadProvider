@@ -6,10 +6,10 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4E04C5A5-00B9-4D7C-8501-31B4B7389671}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>XteeTypeProvider</RootNamespace>
-    <AssemblyName>XteeTypeProvider</AssemblyName>
+    <RootNamespace>XRoadTypeProvider</RootNamespace>
+    <AssemblyName>XRoadTypeProvider</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <Name>XteeTypeProvider</Name>
+    <Name>XRoadTypeProvider</Name>
     <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -45,13 +45,13 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Wsdl.fs" />
-    <Compile Include="Xtee.fs" />
+    <Compile Include="XRoad.fs" />
     <Compile Include="DefaultVersionAttribute.fs" />
     <Compile Include="Cache.fsi" />
     <Compile Include="Cache.fs" />
     <Compile Include="ProvidedTypes-head.fsi" />
     <Compile Include="ProvidedTypes-head.fs" />
-    <Compile Include="XteeTypeProvider.fs" />
+    <Compile Include="XRoadTypeProvider.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

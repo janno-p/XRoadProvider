@@ -1,10 +1,10 @@
-﻿namespace XteeTypeProvider.Test
+﻿namespace XRoadTypeProvider.Test
 
 open System.Reflection
 open System.Runtime.CompilerServices
 
 module AssemblyInfo =
-    [<AssemblyTitle("XteeTypeProvider.Test")>]
+    [<AssemblyTitle("XRoadTypeProvider.Test")>]
     [<AssemblyDescription("")>]
     [<AssemblyConfiguration("")>]
     [<AssemblyCompany("")>]

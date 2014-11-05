@@ -1,9 +1,9 @@
-﻿module XteeTypeProvider.AssemblyInfo
+﻿module XRoadTypeProvider.AssemblyInfo
 
 open System.Reflection
 open System.Runtime.CompilerServices
 
-[<AssemblyTitle("XteeTypeProvider")>]
+[<AssemblyTitle("XRoadTypeProvider")>]
 [<AssemblyDescription("")>]
 [<AssemblyConfiguration("")>]
 [<AssemblyCompany("")>]

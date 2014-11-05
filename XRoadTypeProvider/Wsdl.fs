@@ -1,4 +1,4 @@
-﻿module XteeTypeProvider.Wsdl
+﻿module XRoadTypeProvider.Wsdl
 
 open System
 open System.IO

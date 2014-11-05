@@ -5,8 +5,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>XteeTypeProvider.Test</RootNamespace>
-    <AssemblyName>XteeTypeProvider.Test</AssemblyName>
+    <RootNamespace>XRoadTypeProvider.Test</RootNamespace>
+    <AssemblyName>XRoadTypeProvider.Test</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -50,9 +50,9 @@
     <None Include="Maakataster.wsdl.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XteeTypeProvider\XteeTypeProvider.fsproj">
+    <ProjectReference Include="..\XRoadTypeProvider\XRoadTypeProvider.fsproj">
       <Project>{4E04C5A5-00B9-4D7C-8501-31B4B7389671}</Project>
-      <Name>XteeTypeProvider</Name>
+      <Name>XRoadTypeProvider</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

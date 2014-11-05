@@ -1,22 +1,22 @@
-﻿namespace XteeTypeProvider
+﻿namespace XRoadTypeProvider
 
 open Microsoft.FSharp.Core.CompilerServices
 open Samples.FSharp.ProvidedTypes
 open System.Reflection
 open System.Xml
-open XteeTypeProvider.Wsdl
-open XteeTypeProvider.Xtee
+open XRoadTypeProvider.Wsdl
+open XRoadTypeProvider.XRoad
 
 [<TypeProvider>]
-type public XteeTypeProvider() as this =
+type public XRoadTypeProvider() as this =
     inherit TypeProviderForNamespaces()
 
     let thisAssembly = Assembly.GetExecutingAssembly()
-    let rootNamespace = "XteeTypeProvider"
+    let rootNamespace = "XRoadTypeProvider"
     let baseType = Some typeof<obj>
     let staticParams = [ProvidedStaticParameter("uri", typeof<string>)]
 
-    let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XteeTypeProvider", baseType)
+    let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
     do newType.DefineStaticParameters(
         parameters = staticParams,
@@ -41,8 +41,8 @@ type public XteeTypeProvider() as this =
                         match e with
                         | :? System.Xml.XmlElement as el ->
                             match el.LocalName, el.NamespaceURI with
-                            | "address", "http://x-tee.riik.ee/xsd/xtee.xsd"
-                            | "address", "http://x-road.ee/xsd/x-road.xsd" ->
+                            | "address", XRoad.XRoadOldNamespace
+                            | "address", XRoad.XRoadNewNamespace ->
                                 match [for a in el.Attributes -> a] |> Seq.tryFind (fun a -> a.LocalName = "producer") with
                                 | Some a -> Some a.Value
                                 | _ -> None
@@ -53,8 +53,8 @@ type public XteeTypeProvider() as this =
                         match e with
                         | :? System.Xml.XmlElement as el ->
                             match el.LocalName, el.NamespaceURI with
-                            | "title", "http://x-tee.riik.ee/xsd/xtee.xsd"
-                            | "title", "http://x-road.ee/xsd/x-road.xsd" ->
+                            | "title", XRoad.XRoadOldNamespace
+                            | "title", XRoad.XRoadNewNamespace ->
                                 match [for a in el.Attributes -> a] |> Seq.tryFind (fun a -> a.LocalName = "lang" && a.NamespaceURI = "http://www.w3.org/XML/1998/namespace") with
                                 | Some a -> Some (a.Value, el.InnerText)
                                 | _ -> Some ("et", el.InnerText)

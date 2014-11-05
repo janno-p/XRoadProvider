@@ -1,10 +1,13 @@
-﻿module XteeTypeProvider.Xtee
+﻿module XRoadTypeProvider.XRoad
 
 open System.Web.Services.Description
 open System.Xml
 
 [<Literal>]
-let XteeNamespace = "http://x-tee.riik.ee/xsd/xtee.xsd"
+let XRoadOldNamespace = "http://x-tee.riik.ee/xsd/xtee.xsd"
+
+[<Literal>]
+let XRoadNewNamespace = "http://x-road.ee/xsd/x-road.xsd"
 
 let GetOperationVersion (operation : OperationBinding) =
     [ for ext in operation.Extensions -> ext ]
@@ -12,7 +15,8 @@ let GetOperationVersion (operation : OperationBinding) =
         match extension with
         | :? XmlElement as element ->
             match (element.NamespaceURI, element.LocalName) with
-            | (XteeNamespace, "version") -> Some element.InnerText
+            | (XRoadOldNamespace, "version")
+            | (XRoadNewNamespace, "version") -> Some element.InnerText
             | _ -> None
         | _ -> None)
     |> Seq.exactlyOne

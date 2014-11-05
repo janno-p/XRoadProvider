@@ -1,11 +1,11 @@
-﻿#r @"../XteeTypeProvider/bin/Debug/XteeTypeProvider.dll"
+﻿#r @"../XRoadTypeProvider/bin/Debug/XRoadTypeProvider.dll"
 
-open XteeTypeProvider
+open XRoadTypeProvider
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/AktorstestService.wsdl.xml"
 
-type Aktorstest = XteeTypeProvider<wsdlPath>
+type Aktorstest = XRoadTypeProvider<wsdlPath>
 type testPort = Aktorstest.aktorstestService.Test
 
 printfn "%s" testPort.address
