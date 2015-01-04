@@ -124,6 +124,11 @@ type public XRoadTypeProvider() as this =
                                 let meth = ProvidedMethod(op.Name, [], typeof<unit>, IsStaticMethod=true)
                                 meth.InvokeCode <- (fun _ -> <@@ () @@>)
                                 bindingType.AddMember meth
+                            bindingType.AddMember(ProvidedLiteralField("Style",
+                                                                       typeof<System.Web.Services.Description.SoapBindingStyle>,
+                                                                       match bindingStyle with
+                                                                       | Some x -> x
+                                                                       | _ -> System.Web.Services.Description.SoapBindingStyle.Document))
                             portType.AddMember bindingType
                             serviceType.AddMember portType
                         thisType.AddMember serviceType

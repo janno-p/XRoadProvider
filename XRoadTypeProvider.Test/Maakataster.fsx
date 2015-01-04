@@ -20,6 +20,7 @@ xp.toimik <- "toimik"
 
 printfn "%s" myport.address
 printfn "%s" myport.producer
+printfn "%O" myport.Services.Style
 
 myport.Services.ky()
 myport.Services.legacy1()

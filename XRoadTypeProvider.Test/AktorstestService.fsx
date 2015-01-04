@@ -33,6 +33,7 @@ printfn "%O" fu.body
 printfn "%s" hdr.consumer
 printfn "%s" testPort.address
 printfn "%s" testPort.producer
+printfn "%O" testPort.Services.Style
 
 testPort.Services.isikOtsing()
 testPort.Services.changeAddress()
