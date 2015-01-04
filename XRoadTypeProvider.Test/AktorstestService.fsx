@@ -1,5 +1,6 @@
 ﻿#r @"../XRoadTypeProvider/bin/Debug/XRoadTypeProvider.dll"
 
+open System.IO
 open XRoadTypeProvider
 
 [<Literal>]
@@ -21,6 +22,15 @@ let hdr = XteeHeader(// DNS-name of the institution
                      // ID code of the person invoking the service, preceded by a two letter country code (EE37702026518)
                      userId="EE:PIN:abc4567")
 
+type Test = { T: string }
+
+let fu = Aktorstest.ServiceTypes.fileUpload()
+fu.body <- { T = "pizza" }
+fu.file <- new MemoryStream()
+
+printfn "%O" fu.body
+
+printfn "%s" hdr.consumer
 printfn "%s" testPort.address
 printfn "%s" testPort.producer
 

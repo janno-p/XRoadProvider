@@ -1,11 +1,14 @@
 ﻿namespace XRoadTypeProvider
 
 open Microsoft.FSharp.Core.CompilerServices
+open Microsoft.FSharp.Quotations
 open Samples.FSharp.ProvidedTypes
 open System.Reflection
 open System.Xml
 open XRoadTypeProvider.Wsdl
 open XRoadTypeProvider.XRoad
+open XRoadTypeProvider.TypeBuilder
+open XRoadTypeProvider.Runtime
 
 [<TypeProvider>]
 type public XRoadTypeProvider() as this =
@@ -63,12 +66,20 @@ type public XRoadTypeProvider() as this =
 
                     let typesType = ProvidedTypeDefinition("ServiceTypes", baseType, HideObjectMethods=true)
                     for message in description.Messages do
-                        let messageType = ProvidedTypeDefinition(message.Name, baseType, HideObjectMethods=true)
-                        messageType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>)))
+                        let messageType = ProvidedTypeDefinition(message.Name, Some typeof<XteeEntity>, HideObjectMethods=true)
+                        messageType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XteeEntity() @@>)))
                         for part in message.Parts do
-                            let pp = ProvidedProperty(part.Name, typeof<obj>)
-                            pp.GetterCode <- fun _ -> <@@ null @@>
-                            pp.SetterCode <- fun _ -> <@@ () @@>
+                            let tp = match part.Element with
+                                     | null -> typeof<obj>
+                                     | qn when qn.Name = "" -> typeof<obj>
+                                     | qn -> resolveElementType qn description.TargetNamespace
+                            let pp = ProvidedProperty(part.Name, tp)
+                            pp.GetterCode <- (fun args ->
+                                let meth = typeof<XteeEntity>.GetMethod("GetProperty").MakeGenericMethod(tp)
+                                Expr.Call(args.[0], meth, [Expr.Value part.Name]))
+                            pp.SetterCode <- (fun args ->
+                                let meth = typeof<XteeEntity>.GetMethod("SetProperty").MakeGenericMethod(tp)
+                                Expr.Call(args.[0], meth, [Expr.Value part.Name; args.[1]]))
                             messageType.AddMember(pp)
                         typesType.AddMember(messageType)
                     thisType.AddMember(typesType)
