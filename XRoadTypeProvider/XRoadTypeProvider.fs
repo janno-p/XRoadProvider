@@ -15,7 +15,7 @@ type public XRoadTypeProvider() as this =
     let rootNamespace = "XRoadTypeProvider"
     let baseType = Some typeof<obj>
     let staticParams = [ProvidedStaticParameter("uri", typeof<string>)]
-
+    
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
     do newType.DefineStaticParameters(
@@ -60,6 +60,18 @@ type public XRoadTypeProvider() as this =
                                 | _ -> Some ("et", el.InnerText)
                             | _ -> None
                         | _ -> None
+
+                    let typesType = ProvidedTypeDefinition("ServiceTypes", baseType, HideObjectMethods=true)
+                    for message in description.Messages do
+                        let messageType = ProvidedTypeDefinition(message.Name, baseType, HideObjectMethods=true)
+                        messageType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>)))
+                        for part in message.Parts do
+                            let pp = ProvidedProperty(part.Name, typeof<obj>)
+                            pp.GetterCode <- fun _ -> <@@ null @@>
+                            pp.SetterCode <- fun _ -> <@@ () @@>
+                            messageType.AddMember(pp)
+                        typesType.AddMember(messageType)
+                    thisType.AddMember(typesType)
 
                     for service in description.Services do
                         let serviceType = ProvidedTypeDefinition(service.Name, baseType, HideObjectMethods=true)
