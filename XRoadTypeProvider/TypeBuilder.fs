@@ -5,6 +5,9 @@ open System.Xml
 [<Literal>]
 let XrdNamespace = "http://x-road.ee/xsd/x-road.xsd"
 
+[<Literal>]
+let XteeNamespace = "http://x-tee.riik.ee/xsd/xtee.xsd"
+
 let private mapXrdType = function
     | "faultCode"
     | "faultString" -> typeof<string>
@@ -47,6 +50,31 @@ let private mapXrdElementType = function
     | "unitValidResponse" -> typeof<obj>
     | n -> failwithf "Unmapped XRD element type %s" n
 
+let mapXteeElementType = function
+    | "asynkroonne" -> typeof<bool>
+    | "allasutus"
+    | "amet"
+    | "ametnik"
+    | "ametniknimi"
+    | "andmekogu"
+    | "asutus"
+    | "autentija"
+    | "id"
+    | "isikukood"
+    | "nimi"
+    | "nocontent"
+    | "notes"
+    | "ref"
+    | "requirecontent"
+    | "title"
+    | "technotes"
+    | "toimik"
+    | "version"
+    | "wildcard" -> typeof<string>
+    | "address"
+    | "complex" -> typeof<obj>
+    | x -> failwithf "Unmapped XRD element type %s" x
+
 let resolveType (qn: XmlQualifiedName) =
     match qn.Namespace with
     | XrdNamespace -> mapXrdType qn.Name
@@ -55,5 +83,6 @@ let resolveType (qn: XmlQualifiedName) =
 let resolveElementType (qn: XmlQualifiedName) tns =
     match qn.Namespace with
     | XrdNamespace -> mapXrdElementType qn.Name
+    | XteeNamespace -> mapXteeElementType qn.Name
     | ns when ns = tns -> typeof<obj>
     | _ -> failwithf "Unmapped element name %O" qn
