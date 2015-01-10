@@ -24,7 +24,7 @@ let GetOperationVersion (operation : OperationBinding) =
 type Base64 = string
 
 /// Elements of the SOAP:Header component
-type XteeHeader = {
+type XRoadHeader = {
     /// DNS-name of the institution
     Consumer: string
 

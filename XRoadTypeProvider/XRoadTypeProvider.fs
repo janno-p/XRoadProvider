@@ -4,6 +4,7 @@ open Microsoft.FSharp.Core.CompilerServices
 open Microsoft.FSharp.Quotations
 open Samples.FSharp.ProvidedTypes
 open System.Reflection
+open System.Web.Services.Description
 open System.Xml
 open XRoadTypeProvider.Wsdl
 open XRoadTypeProvider.XRoad
@@ -20,6 +21,43 @@ type public XRoadTypeProvider() as this =
     let staticParams = [ProvidedStaticParameter("uri", typeof<string>)]
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
+
+    let createXRoadOperation (wsdl: ServiceDescription) (pt: PortType) (op: OperationBinding) =
+        let abstractOp =
+            match [ for pto in pt.Operations -> pto ] |> List.tryFind (fun x -> x.Name = op.Name) with
+            | None -> failwithf "Abstract part of operation %O not defined." op.Name
+            | Some x -> x
+
+        let input =
+            let msg = abstractOp.Messages.Input.Message
+            match [for m in wsdl.Messages -> m] |> List.tryFind (fun m -> m.Name = msg.Name) with
+            | Some m -> m
+            | _ -> failwithf "Message %O is not defined." msg
+        
+        let output =
+            let msg = abstractOp.Messages.Output.Message
+            match [for m in wsdl.Messages -> m] |> List.tryFind (fun m -> m.Name = msg.Name) with
+            | Some m -> m
+            | _ -> failwithf "Message %O is not defined." msg
+
+        // Multipart messages have AttachmentCollection as optional member
+
+        let parameters =
+            if [for x in op.Input.Extensions -> x] |> List.exists (fun x -> x :? System.Web.Services.Description.MimeMultipartRelatedBinding) then
+                [ ProvidedParameter("body", typeof<obj>)
+                  ProvidedParameter("file", typeof<Runtime.AttachmentCollection>) ]
+            else [ ProvidedParameter("body", typeof<obj>) ]
+
+        let returnType =
+            if [for x in op.Output.Extensions -> x] |> List.exists (fun x -> x :? System.Web.Services.Description.MimeMultipartRelatedBinding) then
+                typeof<obj * Runtime.AttachmentCollection>
+            else
+                typeof<obj>
+
+        let operation = ProvidedMethod(op.Name, parameters, returnType)
+        operation.IsStaticMethod <- true
+        operation.InvokeCode <- (fun _ -> <@@ () @@>)
+        operation
 
     do newType.DefineStaticParameters(
         parameters = staticParams,
@@ -66,8 +104,8 @@ type public XRoadTypeProvider() as this =
 
                     let typesType = ProvidedTypeDefinition("ServiceTypes", baseType, HideObjectMethods=true)
                     for message in description.Messages do
-                        let messageType = ProvidedTypeDefinition(message.Name, Some typeof<XteeEntity>, HideObjectMethods=true)
-                        messageType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XteeEntity() @@>)))
+                        let messageType = ProvidedTypeDefinition(message.Name, Some typeof<XRoadEntity>, HideObjectMethods=true)
+                        messageType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
                         for part in message.Parts do
                             let tp = match part.Element with
                                      | null -> typeof<obj>
@@ -75,10 +113,10 @@ type public XRoadTypeProvider() as this =
                                      | qn -> resolveElementType qn description.TargetNamespace
                             let pp = ProvidedProperty(part.Name, tp)
                             pp.GetterCode <- (fun args ->
-                                let meth = typeof<XteeEntity>.GetMethod("GetProperty").MakeGenericMethod(tp)
+                                let meth = typeof<XRoadEntity>.GetMethod("GetProperty").MakeGenericMethod(tp)
                                 Expr.Call(args.[0], meth, [Expr.Value part.Name]))
                             pp.SetterCode <- (fun args ->
-                                let meth = typeof<XteeEntity>.GetMethod("SetProperty").MakeGenericMethod(tp)
+                                let meth = typeof<XRoadEntity>.GetMethod("SetProperty").MakeGenericMethod(tp)
                                 Expr.Call(args.[0], meth, [Expr.Value part.Name; args.[1]]))
                             messageType.AddMember(pp)
                         typesType.AddMember(messageType)
@@ -120,10 +158,15 @@ type public XRoadTypeProvider() as this =
                                 match binding.Type with
                                 | qn when qn.Namespace = description.TargetNamespace -> description.PortTypes.[qn.Name]
                                 | qn -> failwithf "Port types defined outside the target namespace are not yet supported (%O)!" qn
-                            for op in binding.Operations do
-                                let meth = ProvidedMethod(op.Name, [], typeof<unit>, IsStaticMethod=true)
-                                meth.InvokeCode <- (fun _ -> <@@ () @@>)
-                                bindingType.AddMember meth
+
+                            let pt =
+                                match [ for pt in description.PortTypes -> pt ] |> List.tryFind (fun x -> x.Name = binding.Type.Name) with
+                                | Some pt -> pt
+                                | _ -> failwithf "Abstract port type %O not defined." binding.Type
+
+                            [ for op in binding.Operations -> op ]
+                            |> List.iter (createXRoadOperation description pt >> bindingType.AddMember)
+
                             portType.AddMember(ProvidedLiteralField("BindingStyle",
                                                                        typeof<System.Web.Services.Description.SoapBindingStyle>,
                                                                        match bindingStyle with
@@ -131,6 +174,7 @@ type public XRoadTypeProvider() as this =
                                                                        | _ -> System.Web.Services.Description.SoapBindingStyle.Document))
                             portType.AddMember bindingType
                             serviceType.AddMember portType
+                            serviceType.AddMember(ProvidedProperty("XRoadContext", typeof<IXRoadContext>, GetterCode=(fun _ -> <@@ null @@>)))
                         thisType.AddMember serviceType
                 | _ -> failwith "unexpected parameter values"
             with

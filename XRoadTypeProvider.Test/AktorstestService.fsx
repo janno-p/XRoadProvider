@@ -35,6 +35,13 @@ printfn "%s" testPort.Address
 printfn "%s" testPort.Producer
 printfn "%A" testPort.BindingStyle
 
-testPort.Operations.isikOtsing()
-testPort.Operations.changeAddress()
-testPort.Operations.fileDownload()
+let o1 = testPort.Operations.isikOtsing()
+let o2 = testPort.Operations.changeAddress()
+let o3, f3 = testPort.Operations.fileDownload()
+
+type fileUploadRequest = { fileName: string }
+
+let file = Runtime.AttachmentCollection()
+file.Add(File.OpenRead("test.txt"))
+
+let result = testPort.Operations.fileUpload({ fileName = "test.txt" }, file)
