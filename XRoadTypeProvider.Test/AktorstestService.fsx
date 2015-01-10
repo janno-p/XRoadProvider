@@ -36,6 +36,7 @@ printfn "%s" testPort.Producer
 printfn "%A" testPort.BindingStyle
 
 let settings = XRoad.XRoadHeader()
+settings.Producer <- Some "http://www.w3schools.com/webservices/tempconvert.asmx/CelsiusToFahrenheit"
 
 let o1 = testPort.Operations.isikOtsing(obj(), Some settings)
 let o2 = testPort.Operations.changeAddress(obj())
@@ -46,4 +47,4 @@ type fileUploadRequest = { fileName: string }
 let file = Runtime.AttachmentCollection()
 file.Add(File.OpenRead("test.txt"))
 
-let result = testPort.Operations.fileUpload({ fileName = "test.txt" }, file)
+//let result = testPort.Operations.fileUpload({ fileName = "test.txt" }, file)

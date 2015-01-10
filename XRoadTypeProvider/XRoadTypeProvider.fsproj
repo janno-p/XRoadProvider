@@ -54,6 +54,7 @@
     <Compile Include="Cache.fs" />
     <Compile Include="ProvidedTypes-head.fsi" />
     <Compile Include="ProvidedTypes-head.fs" />
+    <Compile Include="XRoadServiceRequest.fs" />
     <Compile Include="XRoadTypeProvider.fs" />
   </ItemGroup>
   <PropertyGroup>

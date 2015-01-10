@@ -58,24 +58,10 @@ type public XRoadTypeProvider() as this =
 
         let operation = ProvidedMethod(op.Name, parameters, returnType)
         operation.IsStaticMethod <- true
-        operation.InvokeCode <- (fun _ ->
+        operation.InvokeCode <- (fun args ->
             <@@
-                let req = System.Net.WebRequest.Create("http://localhost/")
-                req.Method <- "POST"
-
-                let writeReq () =
-                    use stream = req.GetRequestStream()
-                    use writer = XmlWriter.Create(stream)
-                    writer.WriteStartDocument()
-                    writer.WriteEndDocument()
-
-                writeReq()
-
-                use resp = req.GetResponse()
-                use reader = new System.IO.StreamReader(resp.GetResponseStream())
-                printfn "%A" (reader.ReadToEnd())
-
-                ()
+                use req = new XRoadServiceRequest()
+                req.Execute((%%args.[0]: obj), None, (%%args.[1]: XRoad.XRoadHeader option))
             @@>)
         operation
 
