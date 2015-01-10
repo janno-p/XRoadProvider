@@ -91,9 +91,9 @@ type public XRoadTypeProvider() as this =
                             for ext in port.Extensions do
                                 match ext with
                                 | SoapAddress addr ->
-                                    portType.AddMember(ProvidedLiteralField("address", typeof<string>, addr))
+                                    portType.AddMember(ProvidedLiteralField("Address", typeof<string>, addr))
                                 | Producer producer ->
-                                    portType.AddMember(ProvidedLiteralField("producer", typeof<string>, producer))
+                                    portType.AddMember(ProvidedLiteralField("Producer", typeof<string>, producer))
                                 | XrdTitle ("et", value) ->
                                     portType.AddXmlDoc(value)
                                 | _ -> ()
@@ -101,7 +101,7 @@ type public XRoadTypeProvider() as this =
                                 match port.Binding with
                                 | qn when qn.Namespace = description.TargetNamespace -> description.Bindings.[qn.Name]
                                 | qn -> failwithf "Bindings defined outside the target namespace are not yet supported (%O)!" qn
-                            let bindingType = ProvidedTypeDefinition("Services", baseType, HideObjectMethods=true)
+                            let bindingType = ProvidedTypeDefinition("Operations", baseType, HideObjectMethods=true)
                             let bindingStyle =
                                 [for ext in binding.Extensions -> ext]
                                 |> Seq.choose (fun ext ->
@@ -124,7 +124,7 @@ type public XRoadTypeProvider() as this =
                                 let meth = ProvidedMethod(op.Name, [], typeof<unit>, IsStaticMethod=true)
                                 meth.InvokeCode <- (fun _ -> <@@ () @@>)
                                 bindingType.AddMember meth
-                            bindingType.AddMember(ProvidedLiteralField("Style",
+                            portType.AddMember(ProvidedLiteralField("BindingStyle",
                                                                        typeof<System.Web.Services.Description.SoapBindingStyle>,
                                                                        match bindingStyle with
                                                                        | Some x -> x

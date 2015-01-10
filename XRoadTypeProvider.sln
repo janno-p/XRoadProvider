@@ -10,6 +10,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{B5BC653F-B0DB-4C0D-AB47-A15B4469215A}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
+		LICENSE = LICENSE
+		.gitignore = .gitignore
 	EndProjectSection
 EndProject
 Global
@@ -30,7 +32,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = XRoadTypeProvider\XRoadTypeProvider.fsproj
 		Policies = $0
 		$0.TextStylePolicy = $1
 		$1.FileWidth = 120
@@ -63,7 +64,6 @@ Global
 		$7.SpaceAroundDelimiter = True
 		$7.SpaceBeforeArgument = True
 		$7.SpaceBeforeColon = True
-		$7.SemicolonAtEndOfLine = False
 		$6.scope = text/x-fsharp
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution

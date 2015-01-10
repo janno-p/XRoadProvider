@@ -16,7 +16,7 @@ let hdr = XteeHeader(// DNS-name of the institution
                      // Service invocation nonce (unique identifier)
                      id="411d6755661409fed365ad8135f8210be07613da",
                      // DNS-name of the database
-                     producer=testPort.producer,
+                     producer=testPort.Producer,
                      // Name of the service to be invoked
                      service="land-cadastre.allowedMethods",
                      // ID code of the person invoking the service, preceded by a two letter country code (EE37702026518)
@@ -31,10 +31,10 @@ fu.file <- new MemoryStream()
 printfn "%O" fu.body
 
 printfn "%s" hdr.consumer
-printfn "%s" testPort.address
-printfn "%s" testPort.producer
-printfn "%O" testPort.Services.Style
+printfn "%s" testPort.Address
+printfn "%s" testPort.Producer
+printfn "%A" testPort.BindingStyle
 
-testPort.Services.isikOtsing()
-testPort.Services.changeAddress()
-testPort.Services.fileDownload()
+testPort.Operations.isikOtsing()
+testPort.Operations.changeAddress()
+testPort.Operations.fileDownload()
