@@ -24,39 +24,39 @@ let GetOperationVersion (operation : OperationBinding) =
 type Base64 = string
 
 /// Elements of the SOAP:Header component
-type XRoadHeader = {
+type XRoadHeader () =
     /// DNS-name of the institution
-    Consumer: string
+    member val Consumer: string option = None with get, set
 
     /// DNS-name of the database
-    Producer: string
+    member val Producer: string option = None with get, set
 
     /// ID code of the person invoking the service, preceded by a two-letter country code.
     /// For example: EE37702026518
-    UserId: string
+    member val UserId: string option = None with get, set
 
     /// Service invocation nonce (unique identifier)
-    Id: string
+    member val Id: string option = None with get, set
 
     /// Name of the service to be invoked
-    Service: string
+    member val Service: string option = None with get, set
 
     /// Name of file or document related to the service invocation
-    Issue: string
+    member val Issue: string option = None with get, set
 
     /// Registration code of the institution or its unit on whose behalf the service is used
     /// (applied in the legal entity portal)
-    Unit: string option
+    member val Unit: string option = None with get, set
 
     /// Organizational position or role of the person invoking the service
-    Position: string option
+    member val Position: string option = None with get, set
 
     /// Name of the person invoking the service
-    UserName: string option
+    member val UserName: string option = None with get, set
 
     /// Specifies asynchronous service. If the value is "true", then the security server performs
     /// the service call asynchronously.
-    Async: bool option
+    member val Async: bool option = None with get, set
 
     /// Authentication method, one of the following:
     /// * ID-CARD - with a certificate of identity
@@ -65,27 +65,26 @@ type XRoadHeader = {
     /// * PASSWORD - with user ID and a password
     /// Details of the authentication (e.g. the identification of a bank for external authentication)
     /// can be given in brackets after the authentication method.
-    Authenticator: string option
+    member val Authenticator: string option = None with get, set
 
     /// The amount of money paid for invoking the service
-    Paid: string option
+    member val Paid: string option = None with get, set
 
     /// If an organization has got the right from the X-Road Center to hide queries, with the database
     /// agreeing to hide the query, the occurrence of this tag in the query header makes the database
     /// security server to encrypt the query log, using the encryption key of the X-Road Center
-    Encrypt: string option
+    member val Encrypt: string option = None with get, set
 
     /// Authentication certificate of the query invokers ID Card, in the base64-encoded DER format.
     /// Occurrence of this tag in the query header represents the wish to encrypt the query log in the
     /// organizations security server, using authentication key of the query invokers ID Card.
     /// This field is used in the Citizen Query Portal only.
-    EncryptCert: Base64 option
+    member val EncryptCert: Base64 option = None with get, set
 
     /// If the query header contains the encrypt tag and the query log as been successfully encrypted,
     /// an empty encrypted tag will be inserted in the reply header.
-    Encrypted: string option
+    member val Encrypted: string option = None with get, set
 
     /// If the query header contains the encryptedCert tag and the query log has been successfully encrypted,
     /// an empty encryptedCert tag will accordingly be inserted in the reply header.
-    EncryptedCert: string option
-}
+    member val EncryptedCert: string option = None with get, set

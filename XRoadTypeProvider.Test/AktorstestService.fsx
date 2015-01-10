@@ -35,9 +35,11 @@ printfn "%s" testPort.Address
 printfn "%s" testPort.Producer
 printfn "%A" testPort.BindingStyle
 
-let o1 = testPort.Operations.isikOtsing()
-let o2 = testPort.Operations.changeAddress()
-let o3, f3 = testPort.Operations.fileDownload()
+let settings = XRoad.XRoadHeader()
+
+let o1 = testPort.Operations.isikOtsing(obj(), Some settings)
+let o2 = testPort.Operations.changeAddress(obj())
+let o3, f3 = testPort.Operations.fileDownload(obj())
 
 type fileUploadRequest = { fileName: string }
 

@@ -45,8 +45,10 @@ type public XRoadTypeProvider() as this =
         let parameters =
             if [for x in op.Input.Extensions -> x] |> List.exists (fun x -> x :? System.Web.Services.Description.MimeMultipartRelatedBinding) then
                 [ ProvidedParameter("body", typeof<obj>)
-                  ProvidedParameter("file", typeof<Runtime.AttachmentCollection>) ]
-            else [ ProvidedParameter("body", typeof<obj>) ]
+                  ProvidedParameter("file", typeof<Runtime.AttachmentCollection>)
+                  ProvidedParameter("settings", typeof<XRoad.XRoadHeader option>, optionalValue=None) ]
+            else [ ProvidedParameter("body", typeof<obj>)
+                   ProvidedParameter("settings", typeof<XRoad.XRoadHeader option>, optionalValue=None) ]
 
         let returnType =
             if [for x in op.Output.Extensions -> x] |> List.exists (fun x -> x :? System.Web.Services.Description.MimeMultipartRelatedBinding) then
@@ -56,7 +58,25 @@ type public XRoadTypeProvider() as this =
 
         let operation = ProvidedMethod(op.Name, parameters, returnType)
         operation.IsStaticMethod <- true
-        operation.InvokeCode <- (fun _ -> <@@ () @@>)
+        operation.InvokeCode <- (fun _ ->
+            <@@
+                let req = System.Net.WebRequest.Create("http://localhost/")
+                req.Method <- "POST"
+
+                let writeReq () =
+                    use stream = req.GetRequestStream()
+                    use writer = XmlWriter.Create(stream)
+                    writer.WriteStartDocument()
+                    writer.WriteEndDocument()
+
+                writeReq()
+
+                use resp = req.GetResponse()
+                use reader = new System.IO.StreamReader(resp.GetResponseStream())
+                printfn "%A" (reader.ReadToEnd())
+
+                ()
+            @@>)
         operation
 
     do newType.DefineStaticParameters(
