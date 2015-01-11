@@ -2,26 +2,14 @@
 
 open System
 open System.Xml
-
-module XmlNamespace =
-    let [<Literal>] SoapEnvelope = "http://schemas.xmlsoap.org/soap/envelope/"
-    let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
+open XRoadTypeProvider.Runtime
+open XRoadTypeProvider.Wsdl
 
 type XRoadServiceRequest () =
-    member __.Execute(body: obj, attachments: Runtime.AttachmentCollection option, settings: XRoad.XRoadHeader option) =
+    member __.Execute(context: IXRoadContext, body: obj, attachments: Runtime.AttachmentCollection option, settings: XRoad.XRoadHeader option) =
         let settings = defaultArg settings (XRoad.XRoadHeader())
 
-        let hostName =
-            match settings.Producer with
-            | Some producer -> producer
-            | _ -> "http://localhost/"
-
-        let consumer =
-            match settings.Consumer with
-            | Some consumer -> consumer
-            | _ -> "10239452"
-
-        let req = System.Net.WebRequest.Create(hostName)
+        let req = System.Net.WebRequest.Create(context.Address)
         req.Method <- "POST"
 
         let writeReq () =

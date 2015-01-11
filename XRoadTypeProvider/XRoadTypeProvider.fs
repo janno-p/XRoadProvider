@@ -57,11 +57,10 @@ type public XRoadTypeProvider() as this =
                 typeof<obj>
 
         let operation = ProvidedMethod(op.Name, parameters, returnType)
-        operation.IsStaticMethod <- true
         operation.InvokeCode <- (fun args ->
             <@@
                 use req = new XRoadServiceRequest()
-                req.Execute((%%args.[0]: obj), None, (%%args.[1]: XRoad.XRoadHeader option))
+                req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, (%%args.[1]: obj), None, (%%args.[2]: XRoad.XRoadHeader option))
             @@>)
         operation
 
@@ -74,40 +73,11 @@ type public XRoadTypeProvider() as this =
                 | [| :? string as uri |] ->
                     let description = uri |> Resolve |> ReadDescription
 
-                    let (|SoapAddress|_|) (e: obj) =
-                        match e with
-                        | :? System.Web.Services.Description.SoapAddressBinding as addr -> Some addr.Location
-                        | _ -> None
-
                     let (|SoapBinding|_|) (e: obj) =
                         match e with
                         | :? System.Web.Services.Description.SoapBinding as b -> Some b
                         | _ -> None
                     
-                    let (|Producer|_|) (e: obj) =
-                        match e with
-                        | :? System.Xml.XmlElement as el ->
-                            match el.LocalName, el.NamespaceURI with
-                            | "address", XRoad.XRoadOldNamespace
-                            | "address", XRoad.XRoadNewNamespace ->
-                                match [for a in el.Attributes -> a] |> Seq.tryFind (fun a -> a.LocalName = "producer") with
-                                | Some a -> Some a.Value
-                                | _ -> None
-                            | _ -> None
-                        | _ -> None
-
-                    let (|XrdTitle|_|) (e: obj) =
-                        match e with
-                        | :? System.Xml.XmlElement as el ->
-                            match el.LocalName, el.NamespaceURI with
-                            | "title", XRoad.XRoadOldNamespace
-                            | "title", XRoad.XRoadNewNamespace ->
-                                match [for a in el.Attributes -> a] |> Seq.tryFind (fun a -> a.LocalName = "lang" && a.NamespaceURI = "http://www.w3.org/XML/1998/namespace") with
-                                | Some a -> Some (a.Value, el.InnerText)
-                                | _ -> Some ("et", el.InnerText)
-                            | _ -> None
-                        | _ -> None
-
                     let typesType = ProvidedTypeDefinition("ServiceTypes", baseType, HideObjectMethods=true)
                     for message in description.Messages do
                         let messageType = ProvidedTypeDefinition(message.Name, Some typeof<XRoadEntity>, HideObjectMethods=true)
@@ -131,21 +101,44 @@ type public XRoadTypeProvider() as this =
                     for service in description.Services do
                         let serviceType = ProvidedTypeDefinition(service.Name, baseType, HideObjectMethods=true)
                         for port in service.Ports do
-                            let portType = ProvidedTypeDefinition(port.Name, baseType, HideObjectMethods=true)
-                            for ext in port.Extensions do
-                                match ext with
-                                | SoapAddress addr ->
-                                    portType.AddMember(ProvidedLiteralField("Address", typeof<string>, addr))
-                                | Producer producer ->
-                                    portType.AddMember(ProvidedLiteralField("Producer", typeof<string>, producer))
-                                | XrdTitle ("et", value) ->
-                                    portType.AddXmlDoc(value)
-                                | _ -> ()
+                            let portType = ProvidedTypeDefinition(port.Name, Some typeof<XRoadContext>, HideObjectMethods=true)
+
+                            let pAddr = ProvidedProperty("Address", typeof<string>)
+                            pAddr.GetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Address @@>)
+                            pAddr.SetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Address <- %%args.[1] @@>)
+                            portType.AddMember(pAddr)
+
+                            let pProducer = ProvidedProperty("Producer", typeof<string>)
+                            pProducer.GetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Producer @@>)
+                            pProducer.SetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Producer <- %%args.[1] @@>)
+                            portType.AddMember(pProducer)
+
+                            let servicePort = Wsdl.parseServicePort port "et"
+                            match servicePort.Documentation with | "" -> () | doc -> portType.AddXmlDoc(doc)
+
+                            let fAddr = ProvidedLiteralField("DefaultAddress", typeof<string>, servicePort.Address)
+                            fAddr.AddXmlDoc("Default service address defined in WSDL. Overrideable through XRoadSettings.")
+                            portType.AddMember(fAddr)
+
+                            let fProducer = ProvidedLiteralField("DefaultProducer", typeof<string>, servicePort.Producer)
+                            fProducer.AddXmlDoc("Default producer name defined in WSDL. Overrideable through XRoadSettings.")
+                            portType.AddMember(fProducer)
+
+                            let ctor = ProvidedConstructor([])
+                            ctor.InvokeCode <- (fun args ->
+                                <@@
+                                    let this = XRoadContext()
+                                    (this :> IXRoadContext).Address <- %%Expr.Value(servicePort.Address)
+                                    (this :> IXRoadContext).Producer <- %%Expr.Value(servicePort.Producer)
+                                    this
+                                @@>)
+                            portType.AddMember(ctor)
+
                             let binding =
                                 match port.Binding with
                                 | qn when qn.Namespace = description.TargetNamespace -> description.Bindings.[qn.Name]
                                 | qn -> failwithf "Bindings defined outside the target namespace are not yet supported (%O)!" qn
-                            let bindingType = ProvidedTypeDefinition("Operations", baseType, HideObjectMethods=true)
+
                             let bindingStyle =
                                 [for ext in binding.Extensions -> ext]
                                 |> Seq.choose (fun ext ->
@@ -171,14 +164,14 @@ type public XRoadTypeProvider() as this =
                                 | _ -> failwithf "Abstract port type %O not defined." binding.Type
 
                             [ for op in binding.Operations -> op ]
-                            |> List.iter (createXRoadOperation description pt >> bindingType.AddMember)
+                            |> List.iter (createXRoadOperation description pt >> portType.AddMember)
 
                             portType.AddMember(ProvidedLiteralField("BindingStyle",
                                                                        typeof<System.Web.Services.Description.SoapBindingStyle>,
                                                                        match bindingStyle with
                                                                        | Some x -> x
                                                                        | _ -> System.Web.Services.Description.SoapBindingStyle.Document))
-                            portType.AddMember bindingType
+
                             serviceType.AddMember portType
                             serviceType.AddMember(ProvidedProperty("XRoadContext", typeof<IXRoadContext>, GetterCode=(fun _ -> <@@ null @@>)))
                         thisType.AddMember serviceType
