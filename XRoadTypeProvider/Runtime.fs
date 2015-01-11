@@ -24,8 +24,15 @@ type XRoadOperation (bindingStyle: XRoadBindingStyle, version: string) =
 
 [<Interface>]
 type IXRoadContext =
+    abstract member Address: string with get, set
+    abstract member Producer: string with get, set
     abstract member XRoadSettings: XRoad.XRoadHeader with get
-    abstract member Execute: XRoadOperation -> obj
+
+type XRoadContext () =
+    interface IXRoadContext with
+        member val Address = "" with get, set
+        member val Producer = "" with get, set
+        member val XRoadSettings = XRoad.XRoadHeader() with get
 
 type AttachmentCollection () =
     member __.Add (stream: Stream) =

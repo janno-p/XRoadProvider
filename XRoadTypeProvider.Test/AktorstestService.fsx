@@ -36,7 +36,7 @@ printfn "%s" testPort.Producer
 printfn "%A" testPort.BindingStyle
 
 let settings = XRoad.XRoadHeader()
-settings.Producer <- Some "http://www.w3schools.com/webservices/tempconvert.asmx/CelsiusToFahrenheit"
+settings.Producer <- Some "http://localhost:8001/"
 
 let o1 = testPort.Operations.isikOtsing(obj(), Some settings)
 let o2 = testPort.Operations.changeAddress(obj())

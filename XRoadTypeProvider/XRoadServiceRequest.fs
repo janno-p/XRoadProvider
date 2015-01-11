@@ -27,14 +27,26 @@ type XRoadServiceRequest () =
         let writeReq () =
             use stream = req.GetRequestStream()
             use writer = XmlWriter.Create(stream)
+
+            let writeHeader name value =
+                writer.WriteStartElement(name, XmlNamespace.XRoad)
+                match value with
+                | Some value -> writer.WriteString(value)
+                | _ -> ()
+                writer.WriteEndElement()
+
             writer.WriteStartDocument()
-            writer.WriteStartElement("Envelope", XmlNamespace.SoapEnvelope)
-            writer.WriteAttributeString("xmlns", "SOAP-ENV", null, XmlNamespace.SoapEnvelope)
+            writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnvelope)
             writer.WriteStartElement("Header", XmlNamespace.SoapEnvelope)
             writer.WriteAttributeString("xmlns", "xrd", null, XmlNamespace.XRoad)
-            writer.WriteStartElement("consumer", XmlNamespace.XRoad)
-            writer.WriteString(consumer)
+            writeHeader "consumer" (Some (defaultArg settings.Consumer "10239452"))
+            writeHeader "producer" (Some (defaultArg settings.Producer "land-cadastre"))
+            writeHeader "userId" (Some (defaultArg settings.UserId "EE30101010007"))
+            writeHeader "id" (Some (defaultArg settings.Id "3aed1ae3813eb7fbed9396fda70ca1215d3f3fe1"))
+            writeHeader "service" (Some (defaultArg settings.Service "land-cadastre.cuAddres.v1"))
+            writeHeader "issue" None
             writer.WriteEndElement()
+            writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
             writer.WriteEndElement()
             writer.WriteEndElement()
             writer.WriteEndDocument()
