@@ -58,9 +58,12 @@ type public XRoadTypeProvider() as this =
 
         let operation = ProvidedMethod(op.Name, parameters, returnType)
         operation.InvokeCode <- (fun args ->
+            let op1 = { BindingStyle = XRoadBindingStyle.DocumentLiteral
+                        QualifiedName = XmlQualifiedName(op.Name, XmlNamespace.XRoad)
+                        Version = "v1" }
             <@@
                 use req = new XRoadServiceRequest()
-                req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, (%%args.[1]: obj), None, (%%args.[2]: XRoad.XRoadHeader option))
+                req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, %%Expr.Value(op1), (%%args.[1]: obj), None, (%%args.[2]: XRoad.XRoadHeader option))
             @@>)
         operation
 
@@ -173,7 +176,6 @@ type public XRoadTypeProvider() as this =
                                                                        | _ -> System.Web.Services.Description.SoapBindingStyle.Document))
 
                             serviceType.AddMember portType
-                            serviceType.AddMember(ProvidedProperty("XRoadContext", typeof<IXRoadContext>, GetterCode=(fun _ -> <@@ null @@>)))
                         thisType.AddMember serviceType
                 | _ -> failwith "unexpected parameter values"
             with

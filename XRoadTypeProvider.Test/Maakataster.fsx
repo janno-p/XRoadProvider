@@ -18,10 +18,12 @@ xp.isikukood <- "EE:PIN:abc4567"
 xp.nimi <- "maakataster.uploadMime.v1"
 xp.toimik <- "toimik"
 
-printfn "%s" myport.address
-printfn "%s" myport.producer
-printfn "%O" myport.Services.Style
+printfn "%s" myport.DefaultAddress
+printfn "%s" myport.DefaultProducer
+printfn "%O" myport.BindingStyle
 
-myport.Services.ky()
-myport.Services.legacy1()
-myport.Services.uploadMime()
+let service = myport()
+let a = service.ky(obj())
+let b = service.legacy1(obj())
+
+//let c = service.uploadMime(obj(), Runtime.AttachmentCollection())

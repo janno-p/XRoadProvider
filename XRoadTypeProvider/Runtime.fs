@@ -2,6 +2,7 @@
 
 open System.Collections.Generic
 open System.IO
+open System.Xml
 
 type XRoadEntity () =
     let data = Dictionary<string, obj>()
@@ -18,9 +19,11 @@ type XRoadBindingStyle =
     | RpcEncoded = 0y
     | DocumentLiteral = 1y
 
-type XRoadOperation (bindingStyle: XRoadBindingStyle, version: string) =
-    member __.BindingStyle with get() = bindingStyle
-    member __.Version with get() = version
+type XRoadOperation = {
+    BindingStyle: XRoadBindingStyle
+    Version: string
+    QualifiedName: XmlQualifiedName
+}
 
 [<Interface>]
 type IXRoadContext =
