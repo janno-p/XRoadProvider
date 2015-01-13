@@ -6,14 +6,17 @@ open XRoadTypeProvider.Runtime
 open XRoadTypeProvider.Wsdl
 
 type XRoadServiceRequest () =
-    member __.Execute(context: IXRoadContext, operation: XRoadOperation, body: obj, attachments: Runtime.AttachmentCollection option, settings: XRoad.XRoadHeader option) =
+    member __.Execute(context: IXRoadContext, operation, body: obj, attachments: Runtime.AttachmentCollection option, settings: XRoad.XRoadHeader option) =
         let settings = defaultArg settings (XRoad.XRoadHeader())
 
         let req = System.Net.WebRequest.Create(context.Address)
         req.Method <- "POST"
 
+        let fst (x,_,_) = x
+        let trd (_,_,x) = x
+
         let producer = defaultArg settings.Producer context.Producer
-        let serviceName = sprintf "%s.%s.%s" producer operation.QualifiedName.Name operation.Version
+        let serviceName = sprintf "%s.%s.%s" producer (fst operation) (trd operation)
 
         let writeReq () =
             use stream = req.GetRequestStream()

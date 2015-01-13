@@ -2,7 +2,7 @@
 
 open Microsoft.FSharp.Core.CompilerServices
 open Microsoft.FSharp.Quotations
-open Samples.FSharp.ProvidedTypes
+open ProviderImplementation.ProvidedTypes
 open System.Reflection
 open System.Web.Services.Description
 open System.Xml
@@ -42,30 +42,38 @@ type public XRoadTypeProvider() as this =
 
         // Multipart messages have AttachmentCollection as optional member
 
-        let parameters =
-            if [for x in op.Input.Extensions -> x] |> List.exists (fun x -> x :? System.Web.Services.Description.MimeMultipartRelatedBinding) then
-                [ ProvidedParameter("body", typeof<obj>)
-                  ProvidedParameter("file", typeof<Runtime.AttachmentCollection>)
-                  ProvidedParameter("settings", typeof<XRoad.XRoadHeader option>, optionalValue=None) ]
-            else [ ProvidedParameter("body", typeof<obj>)
-                   ProvidedParameter("settings", typeof<XRoad.XRoadHeader option>, optionalValue=None) ]
-
-        let returnType =
-            if [for x in op.Output.Extensions -> x] |> List.exists (fun x -> x :? System.Web.Services.Description.MimeMultipartRelatedBinding) then
-                typeof<obj * Runtime.AttachmentCollection>
-            else
-                typeof<obj>
-
-        let operation = ProvidedMethod(op.Name, parameters, returnType)
-        operation.InvokeCode <- (fun args ->
-            let op1 = { BindingStyle = XRoadBindingStyle.DocumentLiteral
-                        QualifiedName = XmlQualifiedName(op.Name, XmlNamespace.XRoad)
-                        Version = "v1" }
-            <@@
-                use req = new XRoadServiceRequest()
-                req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, %%Expr.Value(op1), (%%args.[1]: obj), None, (%%args.[2]: XRoad.XRoadHeader option))
-            @@>)
-        operation
+        let extensions = [for x in op.Input.Extensions -> x]
+        if extensions |> List.exists (fun x -> x :? MimeMultipartRelatedBinding) then
+            let parameters = [ ProvidedParameter("body", typeof<obj>)
+                               ProvidedParameter("file", typeof<Runtime.AttachmentCollection>)
+                               ProvidedParameter("settings", typeof<XRoad.XRoadHeader option>, optionalValue=None) ]
+            let returnType = typeof<obj * Runtime.AttachmentCollection>
+            let operation = ProvidedMethod(op.Name, parameters, returnType)
+            operation.InvokeCode <- (fun args ->
+//                let op1 () = { BindingStyle = XRoadBindingStyle.DocumentLiteral
+//                               QualifiedName = XmlQualifiedName(op.Name, XmlNamespace.XRoad)
+//                               Version = "v1" }
+                let name = op.Name
+                <@@
+                    use req = new XRoadServiceRequest()
+                    req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, (name, XmlNamespace.XRoad, "v1"), (%%args.[1]: obj), Some (%%args.[2]: Runtime.AttachmentCollection), (%%args.[3]: XRoad.XRoadHeader option))
+                @@>)
+            operation
+        else
+            let parameters = [ ProvidedParameter("body", typeof<obj>)
+                               ProvidedParameter("settings", typeof<XRoad.XRoadHeader option>, optionalValue=None) ]
+            let returnType = typeof<obj>
+            let operation = ProvidedMethod(op.Name, parameters, returnType)
+            operation.InvokeCode <- (fun args ->
+//                let op1 () = { BindingStyle = XRoadBindingStyle.DocumentLiteral
+//                               QualifiedName = XmlQualifiedName(op.Name, XmlNamespace.XRoad)
+//                               Version = "v1" }
+                let name = op.Name
+                <@@
+                    use req = new XRoadServiceRequest()
+                    req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, (name, XmlNamespace.XRoad, "v1"), (%%args.[1]: obj), None, (%%args.[2]: XRoad.XRoadHeader option))
+                @@>)
+            operation
 
     do newType.DefineStaticParameters(
         parameters = staticParams,
