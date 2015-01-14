@@ -2,6 +2,7 @@
 
 open Microsoft.FSharp.Core.CompilerServices
 open Microsoft.FSharp.Quotations
+open Microsoft.FSharp.Reflection
 open ProviderImplementation.ProvidedTypes
 open System.Reflection
 open System.Web.Services.Description
@@ -22,58 +23,57 @@ type public XRoadTypeProvider() as this =
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let createXRoadOperation (wsdl: ServiceDescription) (pt: PortType) (op: OperationBinding) =
-        let abstractOp =
-            match [ for pto in pt.Operations -> pto ] |> List.tryFind (fun x -> x.Name = op.Name) with
-            | None -> failwithf "Abstract part of operation %O not defined." op.Name
-            | Some x -> x
+    let createXRoadOperation (operation: DesignTime.XRoadOperation) =
+        let getParameters (rp: DesignTime.RequestParts) = [
+            let rec getParameters (xs: (string * DesignTime.MessagePart) list) = seq {
+                match xs with
+                | [] -> ()
+                | (k,v)::xs ->
+                    yield ProvidedParameter(k, typeof<obj>)
+                    yield! getParameters xs
+            }
+            yield! getParameters rp.Body
+            yield! getParameters rp.Header
+            yield! getParameters rp.MultipartContent
+        ]
+        let parameters = getParameters operation.Request
 
-        let input =
-            let msg = abstractOp.Messages.Input.Message
-            match [for m in wsdl.Messages -> m] |> List.tryFind (fun m -> m.Name = msg.Name) with
-            | Some m -> m
-            | _ -> failwithf "Message %O is not defined." msg
-        
-        let output =
-            let msg = abstractOp.Messages.Output.Message
-            match [for m in wsdl.Messages -> m] |> List.tryFind (fun m -> m.Name = msg.Name) with
-            | Some m -> m
-            | _ -> failwithf "Message %O is not defined." msg
+        let getReturnType () = [|
+            let rec getTypes (xs: (string * DesignTime.MessagePart) list) = seq {
+                match xs with
+                | [] -> ()
+                | (k,v)::xs ->
+                    yield typeof<obj>
+                    yield! getTypes xs
+            }
+            yield! getTypes operation.Response.Body
+        |]
 
-        // Multipart messages have AttachmentCollection as optional member
+        let returnType =
+            let innerType =
+                match getReturnType() with
+                | [||] -> typeof<unit>
+                | [| tp |] -> tp
+                | many -> FSharpType.MakeTupleType many
+            if operation.Response.MultipartContent |> List.isEmpty then
+                innerType
+            else
+                let tp = typedefof<Runtime.IXRoadResponseWithAttachments<_>>
+                tp.MakeGenericType(innerType)
 
-        let extensions = [for x in op.Input.Extensions -> x]
-        if extensions |> List.exists (fun x -> x :? MimeMultipartRelatedBinding) then
-            let parameters = [ ProvidedParameter("body", typeof<obj>)
-                               ProvidedParameter("file", typeof<Runtime.AttachmentCollection>)
-                               ProvidedParameter("settings", typeof<XRoad.XRoadHeader option>, optionalValue=None) ]
-            let returnType = typeof<obj * Runtime.AttachmentCollection>
-            let operation = ProvidedMethod(op.Name, parameters, returnType)
-            operation.InvokeCode <- (fun args ->
-//                let op1 () = { BindingStyle = XRoadBindingStyle.DocumentLiteral
-//                               QualifiedName = XmlQualifiedName(op.Name, XmlNamespace.XRoad)
-//                               Version = "v1" }
-                let name = op.Name
-                <@@
-                    use req = new XRoadServiceRequest()
-                    req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, (name, XmlNamespace.XRoad, "v1"), (%%args.[1]: obj), Some (%%args.[2]: Runtime.AttachmentCollection), (%%args.[3]: XRoad.XRoadHeader option))
-                @@>)
-            operation
-        else
-            let parameters = [ ProvidedParameter("body", typeof<obj>)
-                               ProvidedParameter("settings", typeof<XRoad.XRoadHeader option>, optionalValue=None) ]
-            let returnType = typeof<obj>
-            let operation = ProvidedMethod(op.Name, parameters, returnType)
-            operation.InvokeCode <- (fun args ->
-//                let op1 () = { BindingStyle = XRoadBindingStyle.DocumentLiteral
-//                               QualifiedName = XmlQualifiedName(op.Name, XmlNamespace.XRoad)
-//                               Version = "v1" }
-                let name = op.Name
-                <@@
-                    use req = new XRoadServiceRequest()
-                    req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, (name, XmlNamespace.XRoad, "v1"), (%%args.[1]: obj), None, (%%args.[2]: XRoad.XRoadHeader option))
-                @@>)
-            operation
+        let meth = ProvidedMethod(operation.Name, parameters, returnType)
+        meth.InvokeCode <- (fun args ->
+            let name = operation.Name
+            let version = operation.Version
+            let ps = args |> Seq.ofList |> Seq.skip 1 |> Seq.map (fun exp -> Expr.Cast<obj> exp :> Expr)
+            let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
+            <@@
+                use req = new XRoadServiceRequest()
+                req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext
+                           ,(name, XmlNamespace.XRoad, "v1")
+                           ,%%pl)
+            @@>)
+        meth
 
     do newType.DefineStaticParameters(
         parameters = staticParams,
@@ -176,8 +176,7 @@ type public XRoadTypeProvider() as this =
 
                             [ for op in binding.Operations -> op ]
                             |> List.iter (fun op ->
-                                DesignTime.parseOperationDetails description pt op |> ignore
-                                op |> (createXRoadOperation description pt >> portType.AddMember))
+                                DesignTime.parseOperationDetails description pt op |> createXRoadOperation |> portType.AddMember)
 
                             portType.AddMember(ProvidedLiteralField("BindingStyle",
                                                                        typeof<System.Web.Services.Description.SoapBindingStyle>,

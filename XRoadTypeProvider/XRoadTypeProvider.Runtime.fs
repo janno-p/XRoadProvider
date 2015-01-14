@@ -1,13 +1,57 @@
-﻿namespace XRoadTypeProvider
+﻿module XRoadTypeProvider.Runtime
 
 open System
+open System.Collections.Generic
+open System.IO
 open System.Xml
-open XRoadTypeProvider.Runtime
-open XRoadTypeProvider.Wsdl
+open Wsdl
+
+type XRoadEntity () =
+    let data = Dictionary<string, obj>()
+
+    member __.SetProperty (name, value) =
+        data.[name] <- value
+
+    member __.GetProperty<'T> (name) =
+        if data.ContainsKey name then
+            unbox data.[name]
+        else Unchecked.defaultof<'T>
+
+type XRoadBindingStyle =
+    | RpcEncoded = 0y
+    | DocumentLiteral = 1y
+
+type XRoadOperation = {
+    BindingStyle: XRoadBindingStyle
+    Version: string
+    QualifiedName: XmlQualifiedName
+}
+
+[<Interface>]
+type IXRoadContext =
+    abstract member Address: string with get, set
+    abstract member Producer: string with get, set
+    abstract member XRoadSettings: XRoad.XRoadHeader with get
+
+type XRoadContext () =
+    interface IXRoadContext with
+        member val Address = "" with get, set
+        member val Producer = "" with get, set
+        member val XRoadSettings = XRoad.XRoadHeader() with get
+
+type AttachmentCollection () =
+    member __.Add (stream: Stream) =
+        true
+
+[<Interface>]
+type IXRoadResponseWithAttachments<'T> =
+    abstract member Result: 'T with get
+    abstract member Attachments: Stream [] with get
 
 type XRoadServiceRequest () =
-    member __.Execute(context: IXRoadContext, operation, body: obj, attachments: Runtime.AttachmentCollection option, settings: XRoad.XRoadHeader option) =
-        let settings = defaultArg settings (XRoad.XRoadHeader())
+    member __.Execute(context: IXRoadContext, operation, args: obj []) =
+        //let settings = defaultArg settings (XRoad.XRoadHeader())
+        let settings = XRoad.XRoadHeader()
 
         let req = System.Net.WebRequest.Create(context.Address)
         req.Method <- "POST"

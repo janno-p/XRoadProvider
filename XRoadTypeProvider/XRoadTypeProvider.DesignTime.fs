@@ -57,10 +57,17 @@ let getMessageParts (messageDesc: Message) =
     |> List.fold (fun (d: Dictionary<string, MessagePart>) (k, v) -> d.Add(k, v); d) (Dictionary<string, MessagePart>())
 
 type RequestParts =
-  { Body: obj list
-    Header: obj list
-    MultipartContent: obj list }
+  { Body: (string * MessagePart) list
+    Header: (string * MessagePart) list
+    MultipartContent: (string * MessagePart) list }
     static member Empty = { Body = []; Header = []; MultipartContent = [] }
+
+type XRoadOperation =
+  { Documentation: IDictionary<string,string>
+    Name: string
+    Version: string option
+    Request: RequestParts
+    Response: RequestParts }
 
 let parseRequest (input: MessageBinding) (message: Message) (schema: ServiceDescription) =
     let rec parseRequestParts rq (exts: obj list) (parts: System.Collections.Generic.IDictionary<string,MessagePart>) =
@@ -78,7 +85,7 @@ let parseRequest (input: MessageBinding) (message: Message) (schema: ServiceDesc
                                 | false, _ -> failwithf "Message %s does not contain part %s" message.Name p
                                 | _, v ->
                                     parts.Remove p |> ignore
-                                    { rq with Body = box (p, v) :: rq.Body }) rq
+                                    { rq with Body = (p, v) :: rq.Body }) rq
                     parseRequestParts rq exts parts
             | :? XmlElement as e when e.NamespaceURI = XmlNamespace.Soap && e.LocalName = "header" ->
                 let msgNameNode = [for a in e.Attributes -> a] |> List.find (fun a -> a.Name = "message")
@@ -91,13 +98,13 @@ let parseRequest (input: MessageBinding) (message: Message) (schema: ServiceDesc
                 let partNameNode = [for a in e.Attributes -> a] |> List.find (fun a -> a.Name = "part")
                 match ps.TryGetValue partNameNode.Value with
                 | false, _ -> failwithf "Message %s does not contain part %s" msg.Name partNameNode.Value
-                | _, v -> parseRequestParts { rq with Header = box (partNameNode.Value, v) :: rq.Header } exts parts
+                | _, v -> parseRequestParts { rq with Header = (partNameNode.Value, v) :: rq.Header } exts parts
             | :? SoapHeaderBinding as shb ->
                 let msg = schema |> findMessageDesc shb.Message
                 let ps = msg |> getMessageParts
                 match ps.TryGetValue shb.Part with
                 | false, _ -> failwithf "Message %s does not contain part %s" msg.Name shb.Part
-                | _, v -> parseRequestParts { rq with Header = box (shb.Part, v) :: rq.Header } exts parts
+                | _, v -> parseRequestParts { rq with Header = (shb.Part, v) :: rq.Header } exts parts
             | :? MimeMultipartRelatedBinding as mp ->
                 let rq = parseRequestParts rq [for p in mp.Parts -> box p] parts
                 parseRequestParts rq exts parts
@@ -109,28 +116,25 @@ let parseRequest (input: MessageBinding) (message: Message) (schema: ServiceDesc
                 | false, _ -> failwithf "Message %s does not contain part %s" message.Name mc.Part
                 | _, v ->
                     parts.Remove mc.Part |> ignore
-                    parseRequestParts { rq with MultipartContent = box (mc.Part, v) :: rq.MultipartContent } exts parts
+                    parseRequestParts { rq with MultipartContent = (mc.Part, v) :: rq.MultipartContent } exts parts
             | _ -> parseRequestParts rq exts parts
     let parts = getMessageParts message
     let rq = parseRequestParts RequestParts.Empty [for ext in input.Extensions -> ext] parts
-    parts |> Seq.fold (fun rq p -> { rq with Body = box (p.Key, p.Value) :: rq.Body }) rq
+    parts |> Seq.fold (fun rq p -> { rq with Body = (p.Key, p.Value) :: rq.Body }) rq
 
 let parseOperationDetails schema port binding =
-    // Abstract
     let operationDesc = findOperationDesc port binding
     let inputDesc = schema |> findMessageDesc operationDesc.Messages.Input.Message
     let outputDesc = schema |> findMessageDesc operationDesc.Messages.Output.Message
     let doc = readDocumentation operationDesc
-    let inputParts = getMessageParts inputDesc
-    let outputParts = getMessageParts outputDesc
-
-    // Implementation
     let (XRoadVersion operationVersion) = binding
-    
     let request = schema |> parseRequest binding.Input inputDesc
     let response = schema |> parseRequest binding.Output outputDesc
-
-    binding.Input
+    { Documentation = doc
+      Name = binding.Name
+      Version = operationVersion
+      Request = request
+      Response = response }
 
 
 

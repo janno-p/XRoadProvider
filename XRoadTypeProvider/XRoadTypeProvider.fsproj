@@ -52,14 +52,13 @@
     <Compile Include="Wsdl.fs" />
     <Compile Include="XRoad.fs" />
     <Compile Include="TypeBuilder.fs" />
-    <Compile Include="Runtime.fs" />
     <Compile Include="DefaultVersionAttribute.fs" />
     <Compile Include="Cache.fsi" />
     <Compile Include="Cache.fs" />
-    <Compile Include="XRoadServiceRequest.fs" />
     <Compile Include="ProvidedTypes.fsi" />
     <Compile Include="ProvidedTypes.fs" />
     <Compile Include="DebugProvidedTypes.fs" />
+    <Compile Include="XRoadTypeProvider.Runtime.fs" />
     <Compile Include="XRoadTypeProvider.DesignTime.fs" />
     <Compile Include="XRoadTypeProvider.fs" />
     <Content Include="packages.config" />

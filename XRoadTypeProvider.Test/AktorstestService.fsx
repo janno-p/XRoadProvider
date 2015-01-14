@@ -1,5 +1,7 @@
 ﻿#r @"../XRoadTypeProvider/bin/Debug/XRoadTypeProvider.dll"
 
+#r "System.Web.Services"
+
 open System.IO
 open XRoadTypeProvider
 
@@ -18,8 +20,8 @@ let service = testPort(Address="http://localhost:8001/")
 printfn "Using port address: %s" service.Address
 printfn "Using producer name: %s" service.Producer
 
-let o1 = service.isikOtsing(obj())
-let o2 = service.changeAddress(obj())
+let o1 = service.isikOtsing(box 1, box 2, box 3, box 4, box 5, box 6)
+let o2 = service.changeAddress(box "body", box "service", box "id", box "userId", box "producer", box "consumer")
 
 (*
 let o3, f3 = service.fileDownload(obj())
