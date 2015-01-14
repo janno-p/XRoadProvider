@@ -175,7 +175,9 @@ type public XRoadTypeProvider() as this =
                                 | _ -> failwithf "Abstract port type %O not defined." binding.Type
 
                             [ for op in binding.Operations -> op ]
-                            |> List.iter (createXRoadOperation description pt >> portType.AddMember)
+                            |> List.iter (fun op ->
+                                DesignTime.parseOperationDetails description pt op |> ignore
+                                op |> (createXRoadOperation description pt >> portType.AddMember))
 
                             portType.AddMember(ProvidedLiteralField("BindingStyle",
                                                                        typeof<System.Web.Services.Description.SoapBindingStyle>,

@@ -12,11 +12,10 @@ type XRoadServiceRequest () =
         let req = System.Net.WebRequest.Create(context.Address)
         req.Method <- "POST"
 
-        let fst (x,_,_) = x
-        let trd (_,_,x) = x
+        let operationName, operationNamespace, operationVersion = operation
 
         let producer = defaultArg settings.Producer context.Producer
-        let serviceName = sprintf "%s.%s.%s" producer (fst operation) (trd operation)
+        let serviceName = sprintf "%s.%s.%s" producer operationName operationVersion
 
         let writeReq () =
             use stream = req.GetRequestStream()
@@ -44,6 +43,10 @@ type XRoadServiceRequest () =
             writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnvelope)
             writeSoapHeader()
             writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
+
+            writer.WriteStartElement(operationName, operationNamespace)
+            writer.WriteEndElement()
+
             writer.WriteEndElement()
             writer.WriteEndElement()
             writer.WriteEndDocument()

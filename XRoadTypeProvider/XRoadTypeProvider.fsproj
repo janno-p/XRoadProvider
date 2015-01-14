@@ -60,6 +60,7 @@
     <Compile Include="ProvidedTypes.fsi" />
     <Compile Include="ProvidedTypes.fs" />
     <Compile Include="DebugProvidedTypes.fs" />
+    <Compile Include="XRoadTypeProvider.DesignTime.fs" />
     <Compile Include="XRoadTypeProvider.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
