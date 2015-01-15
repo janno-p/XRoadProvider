@@ -1,4 +1,4 @@
-﻿#r @"../XRoadTypeProvider/bin/Debug/XRoadTypeProvider.dll"
+﻿#r @"../../XRoadTypeProvider/bin/Debug/XRoadTypeProvider.dll"
 
 #r "System.Web.Services"
 
@@ -6,7 +6,7 @@ open System.IO
 open XRoadTypeProvider
 
 [<Literal>]
-let wsdlPath = __SOURCE_DIRECTORY__ + "/AktorstestService.wsdl.xml"
+let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"
 
 type Aktorstest = XRoadTypeProvider<wsdlPath>
 type testPort = Aktorstest.aktorstestService.Test

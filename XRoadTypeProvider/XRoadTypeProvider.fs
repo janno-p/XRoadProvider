@@ -63,14 +63,15 @@ type public XRoadTypeProvider() as this =
 
         let meth = ProvidedMethod(operation.Name, parameters, returnType)
         meth.InvokeCode <- (fun args ->
-            let name = operation.Name
-            let version = operation.Version
+            let operationName = match operation.Version with
+                                | Some v -> sprintf "%s.%s" operation.Name v
+                                | _ -> operation.Name
             let ps = args |> Seq.ofList |> Seq.skip 1 |> Seq.map (fun exp -> Expr.Cast<obj> exp :> Expr)
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
             <@@
                 use req = new XRoadServiceRequest()
                 req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext
-                           ,(name, XmlNamespace.XRoad, "v1")
+                           ,operationName
                            ,%%pl)
             @@>)
         meth

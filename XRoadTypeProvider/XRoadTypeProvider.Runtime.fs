@@ -49,7 +49,7 @@ type IXRoadResponseWithAttachments<'T> =
     abstract member Attachments: Stream [] with get
 
 type XRoadServiceRequest () =
-    member __.Execute(context: IXRoadContext, operationName, operationVersion, args: obj []) =
+    member __.Execute(context: IXRoadContext, operationName, args: obj []) =
         //let settings = defaultArg settings (XRoad.XRoadHeader())
         let settings = XRoad.XRoadHeader()
 
@@ -57,7 +57,7 @@ type XRoadServiceRequest () =
         req.Method <- "POST"
 
         let producer = defaultArg settings.Producer context.Producer
-        let serviceName = sprintf "%s.%s.%s" producer operationName operationVersion
+        let serviceName = sprintf "%s.%s" producer operationName
 
         let writeReq () =
             use stream = req.GetRequestStream()

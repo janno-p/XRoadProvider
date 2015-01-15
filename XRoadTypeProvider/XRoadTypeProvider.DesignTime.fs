@@ -1,4 +1,4 @@
-﻿module internal XRoadTypeProvider.DesignTime
+﻿module XRoadTypeProvider.DesignTime
 
 open System.Collections.Generic
 open System.Web.Services.Description

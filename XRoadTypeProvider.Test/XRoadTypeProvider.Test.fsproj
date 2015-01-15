@@ -38,21 +38,35 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Web.Services" />
+    <Reference Include="nunit.framework">
+      <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="Unquote">
+      <HintPath>..\packages\Unquote.2.2.2\lib\net40\Unquote.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="AktorstestService.fsx" />
-    <Compile Include="Maakataster.fsx" />
+    <Compile Include="DesignTimeTest.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
-    <None Include="AktorstestService.wsdl.xml" />
-    <None Include="Maakataster.wsdl.xml" />
+    <None Include="Wsdl\AktorstestService.wsdl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Wsdl\Maakataster.wsdl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XRoadTypeProvider\XRoadTypeProvider.fsproj">
       <Project>{4E04C5A5-00B9-4D7C-8501-31B4B7389671}</Project>
       <Name>XRoadTypeProvider</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Wsdl\" />
   </ItemGroup>
 </Project>

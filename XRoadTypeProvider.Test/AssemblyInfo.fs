@@ -9,7 +9,7 @@ module AssemblyInfo =
     [<AssemblyConfiguration("")>]
     [<AssemblyCompany("")>]
     [<AssemblyProduct("")>]
-    [<AssemblyCopyright("janno")>]
+    [<AssemblyCopyright("Janno Põldma")>]
     [<AssemblyTrademark("")>]
     [<AssemblyVersion("1.0.0.0")>]
     ()
