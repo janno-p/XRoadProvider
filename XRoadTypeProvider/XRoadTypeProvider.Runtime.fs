@@ -49,14 +49,12 @@ type IXRoadResponseWithAttachments<'T> =
     abstract member Attachments: Stream [] with get
 
 type XRoadServiceRequest () =
-    member __.Execute(context: IXRoadContext, operation, args: obj []) =
+    member __.Execute(context: IXRoadContext, operationName, operationVersion, args: obj []) =
         //let settings = defaultArg settings (XRoad.XRoadHeader())
         let settings = XRoad.XRoadHeader()
 
         let req = System.Net.WebRequest.Create(context.Address)
         req.Method <- "POST"
-
-        let operationName, operationNamespace, operationVersion = operation
 
         let producer = defaultArg settings.Producer context.Producer
         let serviceName = sprintf "%s.%s.%s" producer operationName operationVersion
@@ -88,7 +86,7 @@ type XRoadServiceRequest () =
             writeSoapHeader()
             writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
 
-            writer.WriteStartElement(operationName, operationNamespace)
+            writer.WriteStartElement("listMethods")
             writer.WriteEndElement()
 
             writer.WriteEndElement()

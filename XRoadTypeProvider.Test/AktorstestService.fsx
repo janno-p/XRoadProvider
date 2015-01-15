@@ -23,6 +23,9 @@ printfn "Using producer name: %s" service.Producer
 let o1 = service.isikOtsing(box 1, box 2, box 3, box 4, box 5, box 6)
 let o2 = service.changeAddress(box "body", box "service", box "id", box "userId", box "producer", box "consumer")
 
+let resp = service.fileDownload(box "body", box "service", box "id", box "userId", box "producer", box "consumer")
+let stream = resp.Attachments.[0]
+
 (*
 let o3, f3 = service.fileDownload(obj())
 
