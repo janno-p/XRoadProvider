@@ -70,9 +70,7 @@ type public XRoadTypeProvider() as this =
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
             <@@
                 use req = new XRoadServiceRequest()
-                req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext
-                           ,operationName
-                           ,%%pl)
+                req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, operationName, %%pl)
             @@>)
         meth
 
