@@ -3,12 +3,7 @@
 open System.Collections.Generic
 open System.Web.Services.Description
 open System.Xml
-
-module XmlNamespace =
-    let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
-    let [<Literal>] SoapEnvelope = "http://schemas.xmlsoap.org/soap/envelope/"
-    let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
-    let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
+open XRoadTypeProvider.Wsdl
 
 let (|XRoadVersion|) (binding: OperationBinding) =
     let versions =

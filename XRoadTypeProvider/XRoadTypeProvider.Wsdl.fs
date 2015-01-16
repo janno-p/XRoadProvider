@@ -6,9 +6,90 @@ open System.Web.Services.Description
 open System.Xml
 
 module XmlNamespace =
+    let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
     let [<Literal>] SoapEnvelope = "http://schemas.xmlsoap.org/soap/envelope/"
     let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
+
+
+let private mapXrdType = function
+    | "faultCode"
+    | "faultString" -> typeof<string>
+    | n             -> failwithf "Unmapped XRD type %s" n
+
+let private mapXrdElementType = function
+    | "async" -> typeof<bool>
+    | "address"
+    | "authenticator"
+    | "consumer"
+    | "encode"
+    | "id"
+    | "issue"
+    | "nocontent"
+    | "notes"
+    | "position"
+    | "producer"
+    | "ref"
+    | "requirecontent"
+    | "service"
+    | "technotes"
+    | "title"
+    | "unit"
+    | "userId"
+    | "userName"
+    | "version"
+    | "wildcard" -> typeof<string>
+    | "listMethods"
+    | "listMethodsResponse"
+    | "testSystem"
+    | "testSystemResponse"
+    | "loadClassification"
+    | "loadClassificationResponse"
+    | "userAllowedMethods"
+    | "userAllowedMethodsResponse" -> typeof<obj>
+    // HACK: these are really complexTypes
+    | "unitRepresent"
+    | "unitRepresentResponse"
+    | "unitValid"
+    | "unitValidResponse" -> typeof<obj>
+    | n -> failwithf "Unmapped XRD element type %s" n
+
+let mapXteeElementType = function
+    | "asynkroonne" -> typeof<bool>
+    | "allasutus"
+    | "amet"
+    | "ametnik"
+    | "ametniknimi"
+    | "andmekogu"
+    | "asutus"
+    | "autentija"
+    | "id"
+    | "isikukood"
+    | "nimi"
+    | "nocontent"
+    | "notes"
+    | "ref"
+    | "requirecontent"
+    | "title"
+    | "technotes"
+    | "toimik"
+    | "version"
+    | "wildcard" -> typeof<string>
+    | "address"
+    | "complex" -> typeof<obj>
+    | x -> failwithf "Unmapped XRD element type %s" x
+
+let resolveType (qn: XmlQualifiedName) =
+    match qn.Namespace with
+    | XmlNamespace.XRoad -> mapXrdType qn.Name
+    | _ -> failwithf "Unmapped type name %O" qn
+
+let resolveElementType (qn: XmlQualifiedName) tns =
+    match qn.Namespace with
+    | XmlNamespace.XRoad -> mapXrdElementType qn.Name
+    | XmlNamespace.Xtee -> mapXteeElementType qn.Name
+    | ns when ns = tns -> typeof<obj>
+    | _ -> failwithf "Unmapped element name %O" qn
 
 let Resolve uri =
     match Uri.IsWellFormedUriString(uri, UriKind.Absolute) with
@@ -18,10 +99,6 @@ let Resolve uri =
         match File.Exists(fullPath) with
         | true -> fullPath
         | _ -> failwith (sprintf "Cannot resolve url location `%s`" uri)
-
-let ReadDescription (uri : string) =
-    use reader = XmlReader.Create(uri)
-    ServiceDescription.Read(reader, true)
 
 type ServicePort = {
     Address: string
@@ -54,3 +131,7 @@ let parseServicePort (port: Port) lang =
             | _ -> parseExtensions exts sp
     let defaultServicePort = { Address = ""; Producer = ""; Documentation = "" }
     parseExtensions [for e in port.Extensions -> e] defaultServicePort
+
+let ReadDescription (uri : string) =
+    use reader = XmlReader.Create(uri)
+    ServiceDescription.Read(reader, true)

@@ -8,8 +8,6 @@ open System.Reflection
 open System.Web.Services.Description
 open System.Xml
 open XRoadTypeProvider.Wsdl
-open XRoadTypeProvider.XRoad
-open XRoadTypeProvider.TypeBuilder
 open XRoadTypeProvider.Runtime
 
 [<TypeProvider>]
