@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Web.Services.Description
 open System.Xml
+open System.Xml.Schema
 
 module XmlNamespace =
     let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
@@ -133,5 +134,8 @@ let parseServicePort (port: Port) lang =
     parseExtensions [for e in port.Extensions -> e] defaultServicePort
 
 let ReadDescription (uri : string) =
-    use reader = XmlReader.Create(uri)
+    let settings = XmlReaderSettings()
+    let wsdlSchema = XmlSchema.Read(File.OpenRead("Schemas/wsdl-schema.xsd"), fun o e -> ())
+    settings.Schemas.Add(wsdlSchema) |> ignore
+    use reader = XmlReader.Create(uri, settings)
     ServiceDescription.Read(reader, true)
