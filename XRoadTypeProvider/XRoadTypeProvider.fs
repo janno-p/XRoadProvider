@@ -79,14 +79,16 @@ type public XRoadTypeProvider() as this =
             try
                 match parameterValues with
                 | [| :? string as uri |] ->
-                    let description = uri |> Resolve |> ReadDescription
+                    resolveUri uri
+                    |> readServices
+                    |> List.map (fun service ->
+                        let serviceType = ProvidedTypeDefinition(service.Name, baseType, HideObjectMethods=true)
+                        serviceType)
+                    |> thisType.AddMembers
 
-                    let (|SoapBinding|_|) (e: obj) =
-                        match e with
-                        | :? System.Web.Services.Description.SoapBinding as b -> Some b
-                        | _ -> None
-                    
+
                     let typesType = ProvidedTypeDefinition("ServiceTypes", baseType, HideObjectMethods=true)
+                    (*
                     for message in description.Messages do
                         let messageType = ProvidedTypeDefinition(message.Name, Some typeof<XRoadEntity>, HideObjectMethods=true)
                         messageType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
@@ -104,8 +106,10 @@ type public XRoadTypeProvider() as this =
                                 Expr.Call(args.[0], meth, [Expr.Value part.Name; args.[1]]))
                             messageType.AddMember(pp)
                         typesType.AddMember(messageType)
+                    *)
                     thisType.AddMember(typesType)
 
+                    (*
                     for service in description.Services do
                         let serviceType = ProvidedTypeDefinition(service.Name, baseType, HideObjectMethods=true)
                         for port in service.Ports do
@@ -183,6 +187,7 @@ type public XRoadTypeProvider() as this =
 
                             serviceType.AddMember portType
                         thisType.AddMember serviceType
+                    *)
                 | _ -> failwith "unexpected parameter values"
             with
             | e ->

@@ -1,15 +1,17 @@
 ﻿module XRoadTypeProvider.Wsdl
 
 open System
+open System.Collections.Generic
 open System.IO
-open System.Web.Services.Description
 open System.Xml
-open System.Xml.Schema
+open System.Xml.Linq
 
 module XmlNamespace =
     let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
     let [<Literal>] SoapEnvelope = "http://schemas.xmlsoap.org/soap/envelope/"
+    let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
     let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
+    let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
 
@@ -92,7 +94,7 @@ let resolveElementType (qn: XmlQualifiedName) tns =
     | ns when ns = tns -> typeof<obj>
     | _ -> failwithf "Unmapped element name %O" qn
 
-let Resolve uri =
+let resolveUri uri =
     match Uri.IsWellFormedUriString(uri, UriKind.Absolute) with
     | true -> uri
     | _ ->
@@ -104,38 +106,51 @@ let Resolve uri =
 type ServicePort = {
     Address: string
     Producer: string
-    Documentation: string
+    Documentation: IDictionary<string,string>
 }
 
-let parseServicePort (port: Port) lang =
-    let rec parseExtensions (exts: obj list) sp =
-        match exts with
-        | [] -> sp
-        | ext::exts ->
-            match ext with
-            | :? SoapAddressBinding as addr -> parseExtensions exts { sp with Address = addr.Location }
-            | :? XmlElement as el ->
-                match el.LocalName, el.NamespaceURI with
-                | "address", XmlNamespace.Xtee
-                | "address", XmlNamespace.XRoad ->
-                    match [for a in el.Attributes -> a] |> Seq.tryFind (fun a -> a.LocalName = "producer") with
-                    | Some a -> parseExtensions exts { sp with Producer = a.Value }
-                    | _ -> parseExtensions exts sp
-                | "title", XmlNamespace.Xtee
-                | "title", XmlNamespace.XRoad ->
-                    match [for a in el.Attributes -> a] |> Seq.tryFind (fun a -> a.LocalName = "lang" && a.NamespaceURI = "http://www.w3.org/XML/1998/namespace") with
-                    | Some a when a.Value = lang -> parseExtensions exts { sp with Documentation = el.InnerText }
-                    | _ -> match sp.Documentation with
-                           | "" -> parseExtensions exts { sp with Documentation = el.InnerText }
-                           | _ -> parseExtensions exts sp
-                | _ -> parseExtensions exts sp
-            | _ -> parseExtensions exts sp
-    let defaultServicePort = { Address = ""; Producer = ""; Documentation = "" }
-    parseExtensions [for e in port.Extensions -> e] defaultServicePort
+type Service =
+  { Name: string
+    Ports: ServicePort list }
 
-let ReadDescription (uri : string) =
-    let settings = XmlReaderSettings()
-    let wsdlSchema = XmlSchema.Read(File.OpenRead("Schemas/wsdl-schema.xsd"), fun o e -> ())
-    settings.Schemas.Add(wsdlSchema) |> ignore
-    use reader = XmlReader.Create(uri, settings)
-    ServiceDescription.Read(reader, true)
+let attr (name: XName) (element: XElement) =
+    match element.Attribute(name) with
+    | null -> None
+    | attr -> Some attr.Value
+
+let reqAttr (name: XName) (element: XElement) =
+    match element.Attribute name with
+    | null -> failwithf "Element %A attribute %A is required!" element.Name name
+    | attr -> attr.Value
+
+let parseServices (definitions: XElement) =
+    definitions.Elements(XName.Get("service", XmlNamespace.Wsdl))
+    |> Seq.map (fun service ->
+        let name =  service |> reqAttr (XName.Get("name"))
+        let ports =
+            service.Elements(XName.Get("port", XmlNamespace.Wsdl))
+            |> Seq.map (fun servicePort ->
+                let name = servicePort |> reqAttr (XName.Get("name"))
+                let binding = servicePort |> reqAttr (XName.Get("binding"))
+                let address = match servicePort.Element(XName.Get("address", XmlNamespace.Soap)) with
+                              | null -> ""
+                              | elem -> elem |> reqAttr (XName.Get("location"))
+                let producer = match servicePort.Element (XName.Get("address", XmlNamespace.XRoad)) with
+                               | null -> ""
+                               | elem -> match elem |> attr (XName.Get("producer")) with | None -> "" | Some v -> v
+                let doc = servicePort.Elements(XName.Get("title", XmlNamespace.XRoad))
+                          |> Seq.fold (fun (doc: Dictionary<string,string>) el ->
+                              let lang = match el |> attr (XName.Get("lang", XmlNamespace.Xml)) with
+                                         | Some lang -> lang
+                                         | _ -> "en"
+                              doc.[lang] <- el.Value
+                              doc) (Dictionary<_,_>())
+                { Address = address; Producer = producer; Documentation = doc })
+        { Name = name; Ports = ports |> List.ofSeq })
+    |> List.ofSeq
+
+let readServices (uri: string) =
+    use reader = XmlReader.Create(uri)
+    let document = XDocument.Load(reader)
+    let definitionsNode = document.Element(XName.Get("definitions", XmlNamespace.Wsdl))
+    parseServices definitionsNode
