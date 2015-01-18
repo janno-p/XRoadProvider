@@ -13,6 +13,7 @@ module XmlNamespace =
     let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
     let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
+    let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
 module Option =
@@ -146,6 +147,17 @@ type PortBinding =
 type Service =
   { Name: string
     Ports: PortBinding list }
+
+type SchemaType =
+  { Name: string }
+
+type TypeCollection =
+  { Namespace: XNamespace
+    Types: IDictionary<MessagePartReference,SchemaType> }
+
+type Schema =
+  { Types: TypeCollection list
+    Services: Service list }
 
 let attr (name: XName) (element: XElement) =
     match element.Attribute(name) with
@@ -334,7 +346,31 @@ let parseServices (definitions: XElement) =
         { Name = name; Ports = ports |> List.ofSeq })
     |> List.ofSeq
 
-let readServices (uri: string) =
+let parseTypes (definitions: XElement) =
+    match definitions.Element(XName.Get("types", XmlNamespace.Wsdl)) with
+    | null -> []
+    | types ->
+        types.Elements(XName.Get("schema", XmlNamespace.Xsd))
+        |> Seq.map (fun schema ->
+            let ns = schema |> reqAttr (XName.Get("targetNamespace"))
+            let types =
+                schema.Elements(XName.Get("element", XmlNamespace.Xsd))
+                |> Seq.fold (fun (d: Dictionary<MessagePartReference,SchemaType>) elem ->
+                    let name = elem |> reqAttr (XName.Get("name"))
+                    d.[Element (XName.Get(name, ns))] <- { Name = name }
+                    d) (Dictionary<_,_>())
+            let types =
+                schema.Elements(XName.Get("complexType", XmlNamespace.Xsd))
+                |> Seq.fold (fun (d: Dictionary<MessagePartReference,SchemaType>) elem ->
+                    let name = elem |> reqAttr (XName.Get("name"))
+                    d.[Type (XName.Get(name, ns))] <- { Name = name }
+                    d) types
+            // TODO : Other referrable elements
+            { Namespace = XNamespace.Get(ns); Types = types })
+        |> List.ofSeq
+
+let readSchema (uri: string) =
     let document = XDocument.Load(uri)
     let definitionsNode = document.Element(XName.Get("definitions", XmlNamespace.Wsdl))
-    parseServices definitionsNode
+    { Services = definitionsNode |> parseServices
+      Types = definitionsNode |> parseTypes }

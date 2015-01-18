@@ -4,6 +4,7 @@ open Microsoft.FSharp.Core.CompilerServices
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Reflection
 open ProviderImplementation.ProvidedTypes
+open System.Collections.Generic
 open System.Reflection
 open System.Xml
 open XRoadTypeProvider.Wsdl
@@ -20,16 +21,18 @@ type public XRoadTypeProvider() as this =
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let createXRoadOperation (operation: Operation) =
+    let createXRoadOperation (typeCache: Dictionary<MessagePartReference,ProvidedTypeDefinition>) (operation: Operation) =
         let getParameters (msg: OperationMessage) = [
-            let rec getParameters (xs: MessagePart list) = seq {
+            let rec getParameters (xs: MessagePart list) fromCache = seq {
                 match xs with
                 | [] -> ()
-                | part::xs -> yield ProvidedParameter(part.Name, typeof<obj>)
-                              yield! getParameters xs }
-            yield! getParameters msg.Body
-            yield! getParameters msg.Header
-            yield! getParameters msg.MultipartContent
+                | part::xs ->
+                    if fromCache then yield ProvidedParameter(part.Name, match typeCache.TryGetValue(part.Reference) with | true, tp -> tp :> System.Type | _ -> typeof<obj>)
+                    else yield ProvidedParameter(part.Name, typeof<obj>)
+                    yield! getParameters xs fromCache }
+            yield! getParameters msg.Body true
+            yield! getParameters msg.Header false
+            yield! getParameters msg.MultipartContent false
         ]
         let parameters = getParameters operation.Request
 
@@ -37,7 +40,7 @@ type public XRoadTypeProvider() as this =
             let rec getTypes (xs: MessagePart list) = seq {
                 match xs with
                 | [] -> ()
-                | part::xs -> yield typeof<obj>
+                | part::xs -> yield match typeCache.TryGetValue(part.Reference) with | true, tp -> tp :> System.Type | _ -> typeof<obj>
                               yield! getTypes xs }
             yield! getTypes operation.Response.Body
         |]
@@ -59,7 +62,9 @@ type public XRoadTypeProvider() as this =
             let operationName = match operation.Version with
                                 | Some v -> sprintf "%s.%s" operation.Name v
                                 | _ -> operation.Name
-            let ps = args |> Seq.ofList |> Seq.skip 1 |> Seq.map (fun exp -> Expr.Cast<obj> exp :> Expr)
+            let ps = args |> Seq.ofList |> Seq.skip 1 |> Seq.mapi (fun i exp -> match parameters.[i] with
+                                                                                | p when p.ParameterType = typeof<obj> -> Expr.Cast<obj> exp :> Expr
+                                                                                | _ -> Expr.Coerce(Expr.Cast<XRoadEntity> exp, typeof<obj>))
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
             <@@
                 use req = new XRoadServiceRequest()
@@ -74,8 +79,25 @@ type public XRoadTypeProvider() as this =
             try
                 match parameterValues with
                 | [| :? string as uri |] ->
-                    resolveUri uri
-                    |> readServices
+                    let schema = resolveUri uri |> readSchema
+
+                    let typeCache = Dictionary<MessagePartReference,ProvidedTypeDefinition>()
+                    schema.Types
+                    |> List.map (fun tc ->
+                        let typeNamespace = ProvidedTypeDefinition(tc.Namespace.NamespaceName, baseType, HideObjectMethods=true)
+                        tc.Types
+                        |> Seq.map (fun kvp ->
+                            let tp = ProvidedTypeDefinition(kvp.Value.Name, Some typeof<XRoadEntity>, HideObjectMethods=true)
+                            tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
+                            typeCache.[kvp.Key] <- tp
+                            tp
+                            )
+                        |> List.ofSeq
+                        |> typeNamespace.AddMembers
+                        typeNamespace)
+                    |> thisType.AddMembers
+
+                    schema.Services
                     |> List.map (fun service ->
                         let serviceType = ProvidedTypeDefinition(service.Name, baseType, HideObjectMethods=true)
                         service.Ports
@@ -117,7 +139,7 @@ type public XRoadTypeProvider() as this =
                             portType.AddMember(ProvidedLiteralField("BindingStyle", typeof<XRoad.XRoadBindingStyle>, port.Style))
 
                             port.Operations
-                            |> List.map createXRoadOperation
+                            |> List.map (fun op -> op |> createXRoadOperation typeCache)
                             |> portType.AddMembers
 
                             portType)
@@ -125,11 +147,7 @@ type public XRoadTypeProvider() as this =
                         serviceType)
                     |> thisType.AddMembers
 
-                    let typesType = ProvidedTypeDefinition("ServiceTypes", baseType, HideObjectMethods=true)
                     (*
-                    for message in description.Messages do
-                        let messageType = ProvidedTypeDefinition(message.Name, Some typeof<XRoadEntity>, HideObjectMethods=true)
-                        messageType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
                         for part in message.Parts do
                             let tp = match part.Element with
                                      | null -> typeof<obj>
@@ -145,7 +163,6 @@ type public XRoadTypeProvider() as this =
                             messageType.AddMember(pp)
                         typesType.AddMember(messageType)
                     *)
-                    thisType.AddMember(typesType)
                 | _ -> failwith "unexpected parameter values"
             with
             | e ->

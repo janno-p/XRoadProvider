@@ -4,7 +4,7 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Xml
-open Wsdl
+open XRoadTypeProvider.Wsdl
 
 type XRoadEntity () =
     let data = Dictionary<string, obj>()
@@ -16,11 +16,6 @@ type XRoadEntity () =
         if data.ContainsKey name then
             unbox data.[name]
         else Unchecked.defaultof<'T>
-
-type XRoadOperation =
-  { BindingStyle: XRoad.XRoadBindingStyle
-    Version: string
-    QualifiedName: XmlQualifiedName }
 
 type Base64 = string
 

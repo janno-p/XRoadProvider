@@ -10,7 +10,8 @@ open XRoadTypeProvider.Wsdl
 module DesignTime =
     [<Test>]
     let ``Read aktorstest service`` () =
-        let services = readServices(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let services = schema.Services
         test <@ services.Length = 1 @>
         let service = services |> List.head
         test <@ service.Name = "aktorstestService" @>
@@ -26,7 +27,8 @@ module DesignTime =
 
     [<Test>]
     let ``Parse multipart input operation`` () =
-        let services = readServices(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let services = schema.Services
         let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name = "fileUpload")
         test <@ operation.Documentation.Count = 2 @>
         test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "File Upload" @>
@@ -43,7 +45,8 @@ module DesignTime =
 
     [<Test>]
     let ``Parse multipart output operation`` () =
-        let services = readServices(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let services = schema.Services
         let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name = "fileDownload")
         test <@ operation.Documentation.Count = 2 @>
         test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "File download" @>
@@ -60,7 +63,8 @@ module DesignTime =
 
     [<Test>]
     let ``Parse operation without version number`` () =
-        let services = readServices(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let services = schema.Services
         let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name = "listMethods")
         test <@ operation.Documentation.Count = 1 @>
         test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "listMethods" @>
@@ -76,7 +80,8 @@ module DesignTime =
 
     [<Test>]
     let ``Parse non-multipart operation`` () =
-        let services = readServices(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let services = schema.Services
         let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name = "isikOtsing")
         test <@ operation.Name = "isikOtsing" @>
         test <@ operation.Documentation.Count = 2 @>
