@@ -17,15 +17,10 @@ type XRoadEntity () =
             unbox data.[name]
         else Unchecked.defaultof<'T>
 
-type XRoadBindingStyle =
-    | RpcEncoded = 0y
-    | DocumentLiteral = 1y
-
-type XRoadOperation = {
-    BindingStyle: XRoadBindingStyle
+type XRoadOperation =
+  { BindingStyle: XRoad.XRoadBindingStyle
     Version: string
-    QualifiedName: XmlQualifiedName
-}
+    QualifiedName: XmlQualifiedName }
 
 type Base64 = string
 

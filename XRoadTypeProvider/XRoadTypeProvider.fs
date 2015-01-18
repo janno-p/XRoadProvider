@@ -5,7 +5,6 @@ open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Reflection
 open ProviderImplementation.ProvidedTypes
 open System.Reflection
-open System.Web.Services.Description
 open System.Xml
 open XRoadTypeProvider.Wsdl
 open XRoadTypeProvider.Runtime
@@ -21,29 +20,25 @@ type public XRoadTypeProvider() as this =
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let createXRoadOperation (operation: DesignTime.XRoadOperation) =
-        let getParameters (rp: DesignTime.RequestParts) = [
-            let rec getParameters (xs: (string * DesignTime.MessagePart) list) = seq {
+    let createXRoadOperation (operation: Operation) =
+        let getParameters (msg: OperationMessage) = [
+            let rec getParameters (xs: MessagePart list) = seq {
                 match xs with
                 | [] -> ()
-                | (k,v)::xs ->
-                    yield ProvidedParameter(k, typeof<obj>)
-                    yield! getParameters xs
-            }
-            yield! getParameters rp.Body
-            yield! getParameters rp.Header
-            yield! getParameters rp.MultipartContent
+                | part::xs -> yield ProvidedParameter(part.Name, typeof<obj>)
+                              yield! getParameters xs }
+            yield! getParameters msg.Body
+            yield! getParameters msg.Header
+            yield! getParameters msg.MultipartContent
         ]
         let parameters = getParameters operation.Request
 
         let getReturnType () = [|
-            let rec getTypes (xs: (string * DesignTime.MessagePart) list) = seq {
+            let rec getTypes (xs: MessagePart list) = seq {
                 match xs with
                 | [] -> ()
-                | (k,v)::xs ->
-                    yield typeof<obj>
-                    yield! getTypes xs
-            }
+                | part::xs -> yield typeof<obj>
+                              yield! getTypes xs }
             yield! getTypes operation.Response.Body
         |]
 
@@ -79,14 +74,59 @@ type public XRoadTypeProvider() as this =
             try
                 match parameterValues with
                 | [| :? string as uri |] ->
-                    let description = uri |> Resolve |> ReadDescription
+                    resolveUri uri
+                    |> readServices
+                    |> List.map (fun service ->
+                        let serviceType = ProvidedTypeDefinition(service.Name, baseType, HideObjectMethods=true)
+                        service.Ports
+                        |> List.map (fun port ->
+                            let portType = ProvidedTypeDefinition(port.Name, Some typeof<XRoadContext>, HideObjectMethods=true)
 
-                    let (|SoapBinding|_|) (e: obj) =
-                        match e with
-                        | :? System.Web.Services.Description.SoapBinding as b -> Some b
-                        | _ -> None
-                    
+                            let addressProperty = ProvidedProperty("Address", typeof<string>)
+                            addressProperty.GetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Address @@>)
+                            addressProperty.SetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Address <- %%args.[1] @@>)
+                            portType.AddMember(addressProperty)
+
+                            let producerProperty = ProvidedProperty("Producer", typeof<string>)
+                            producerProperty.GetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Producer @@>)
+                            producerProperty.SetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Producer <- %%args.[1] @@>)
+                            portType.AddMember(producerProperty)
+
+                            match port.Documentation.TryGetValue "et" with
+                            | true, doc -> portType.AddXmlDoc(doc)
+                            | _ -> ()
+
+                            let portTypeConstructor = ProvidedConstructor([])
+                            portTypeConstructor.InvokeCode <- (fun args ->
+                                <@@
+                                    let this = XRoadContext()
+                                    (this :> IXRoadContext).Address <- %%Expr.Value(port.Address)
+                                    (this :> IXRoadContext).Producer <- %%Expr.Value(port.Producer)
+                                    this
+                                @@>)
+                            portType.AddMember(portTypeConstructor)
+
+                            let defaultAddressField = ProvidedLiteralField("DefaultAddress", typeof<string>, port.Address)
+                            defaultAddressField.AddXmlDoc("Default service address defined in WSDL. Overrideable through XRoadSettings.")
+                            portType.AddMember(defaultAddressField)
+
+                            let defaultProducerField = ProvidedLiteralField("DefaultProducer", typeof<string>, port.Producer)
+                            defaultProducerField.AddXmlDoc("Default producer name defined in WSDL. Overrideable through XRoadSettings.")
+                            portType.AddMember(defaultProducerField)
+
+                            portType.AddMember(ProvidedLiteralField("BindingStyle", typeof<XRoad.XRoadBindingStyle>, port.Style))
+
+                            port.Operations
+                            |> List.map createXRoadOperation
+                            |> portType.AddMembers
+
+                            portType)
+                        |> serviceType.AddMembers
+                        serviceType)
+                    |> thisType.AddMembers
+
                     let typesType = ProvidedTypeDefinition("ServiceTypes", baseType, HideObjectMethods=true)
+                    (*
                     for message in description.Messages do
                         let messageType = ProvidedTypeDefinition(message.Name, Some typeof<XRoadEntity>, HideObjectMethods=true)
                         messageType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
@@ -104,85 +144,8 @@ type public XRoadTypeProvider() as this =
                                 Expr.Call(args.[0], meth, [Expr.Value part.Name; args.[1]]))
                             messageType.AddMember(pp)
                         typesType.AddMember(messageType)
+                    *)
                     thisType.AddMember(typesType)
-
-                    for service in description.Services do
-                        let serviceType = ProvidedTypeDefinition(service.Name, baseType, HideObjectMethods=true)
-                        for port in service.Ports do
-                            let portType = ProvidedTypeDefinition(port.Name, Some typeof<XRoadContext>, HideObjectMethods=true)
-
-                            let pAddr = ProvidedProperty("Address", typeof<string>)
-                            pAddr.GetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Address @@>)
-                            pAddr.SetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Address <- %%args.[1] @@>)
-                            portType.AddMember(pAddr)
-
-                            let pProducer = ProvidedProperty("Producer", typeof<string>)
-                            pProducer.GetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Producer @@>)
-                            pProducer.SetterCode <- (fun args -> <@@ ((%%args.[0]: XRoadContext) :> IXRoadContext).Producer <- %%args.[1] @@>)
-                            portType.AddMember(pProducer)
-
-                            let servicePort = Wsdl.parseServicePort port "et"
-                            match servicePort.Documentation with | "" -> () | doc -> portType.AddXmlDoc(doc)
-
-                            let fAddr = ProvidedLiteralField("DefaultAddress", typeof<string>, servicePort.Address)
-                            fAddr.AddXmlDoc("Default service address defined in WSDL. Overrideable through XRoadSettings.")
-                            portType.AddMember(fAddr)
-
-                            let fProducer = ProvidedLiteralField("DefaultProducer", typeof<string>, servicePort.Producer)
-                            fProducer.AddXmlDoc("Default producer name defined in WSDL. Overrideable through XRoadSettings.")
-                            portType.AddMember(fProducer)
-
-                            let ctor = ProvidedConstructor([])
-                            ctor.InvokeCode <- (fun args ->
-                                <@@
-                                    let this = XRoadContext()
-                                    (this :> IXRoadContext).Address <- %%Expr.Value(servicePort.Address)
-                                    (this :> IXRoadContext).Producer <- %%Expr.Value(servicePort.Producer)
-                                    this
-                                @@>)
-                            portType.AddMember(ctor)
-
-                            let binding =
-                                match port.Binding with
-                                | qn when qn.Namespace = description.TargetNamespace -> description.Bindings.[qn.Name]
-                                | qn -> failwithf "Bindings defined outside the target namespace are not yet supported (%O)!" qn
-
-                            let bindingStyle =
-                                [for ext in binding.Extensions -> ext]
-                                |> Seq.choose (fun ext ->
-                                    match ext with
-                                    | SoapBinding bind ->
-                                        let bindStyle =
-                                            match bind.Style with
-                                            | System.Web.Services.Description.SoapBindingStyle.Rpc -> Some bind.Style
-                                            | _ -> Some System.Web.Services.Description.SoapBindingStyle.Document
-                                        if not (bind.Transport = "http://schemas.xmlsoap.org/soap/http") then
-                                            failwithf "Only HTTP transport for SOAP is accepted (%O)." bind.Transport
-                                        Some bindStyle
-                                    | _ -> None)
-                                |> Seq.exactlyOne
-                            let iface =
-                                match binding.Type with
-                                | qn when qn.Namespace = description.TargetNamespace -> description.PortTypes.[qn.Name]
-                                | qn -> failwithf "Port types defined outside the target namespace are not yet supported (%O)!" qn
-
-                            let pt =
-                                match [ for pt in description.PortTypes -> pt ] |> List.tryFind (fun x -> x.Name = binding.Type.Name) with
-                                | Some pt -> pt
-                                | _ -> failwithf "Abstract port type %O not defined." binding.Type
-
-                            [ for op in binding.Operations -> op ]
-                            |> List.iter (fun op ->
-                                DesignTime.parseOperationDetails description pt op |> createXRoadOperation |> portType.AddMember)
-
-                            portType.AddMember(ProvidedLiteralField("BindingStyle",
-                                                                       typeof<System.Web.Services.Description.SoapBindingStyle>,
-                                                                       match bindingStyle with
-                                                                       | Some x -> x
-                                                                       | _ -> System.Web.Services.Description.SoapBindingStyle.Document))
-
-                            serviceType.AddMember portType
-                        thisType.AddMember serviceType
                 | _ -> failwith "unexpected parameter values"
             with
             | e ->
