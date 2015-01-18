@@ -21,29 +21,24 @@ type public XRoadTypeProvider() as this =
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
     let createXRoadOperation (operation: Operation) =
-        (*
-        let getParameters (rp: DesignTime.RequestParts) = [
-            let rec getParameters (xs: (string * DesignTime.MessagePart) list) = seq {
+        let getParameters (msg: OperationMessage) = [
+            let rec getParameters (xs: MessagePart list) = seq {
                 match xs with
                 | [] -> ()
-                | (k,v)::xs ->
-                    yield ProvidedParameter(k, typeof<obj>)
-                    yield! getParameters xs
-            }
-            yield! getParameters rp.Body
-            yield! getParameters rp.Header
-            yield! getParameters rp.MultipartContent
+                | part::xs -> yield ProvidedParameter(part.Name, typeof<obj>)
+                              yield! getParameters xs }
+            yield! getParameters msg.Body
+            yield! getParameters msg.Header
+            yield! getParameters msg.MultipartContent
         ]
         let parameters = getParameters operation.Request
 
         let getReturnType () = [|
-            let rec getTypes (xs: (string * DesignTime.MessagePart) list) = seq {
+            let rec getTypes (xs: MessagePart list) = seq {
                 match xs with
                 | [] -> ()
-                | (k,v)::xs ->
-                    yield typeof<obj>
-                    yield! getTypes xs
-            }
+                | part::xs -> yield typeof<obj>
+                              yield! getTypes xs }
             yield! getTypes operation.Response.Body
         |]
 
@@ -58,10 +53,6 @@ type public XRoadTypeProvider() as this =
             else
                 let tp = typedefof<Runtime.IXRoadResponseWithAttachments<_>>
                 tp.MakeGenericType(innerType)
-        *)
-
-        let parameters = [ProvidedParameter("test", typeof<obj>)]
-        let returnType = typeof<obj>
 
         let meth = ProvidedMethod(operation.Name, parameters, returnType)
         meth.InvokeCode <- (fun args ->
