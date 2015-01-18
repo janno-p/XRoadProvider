@@ -1,9 +1,26 @@
 ﻿module XRoadTypeProvider.DesignTime
 
 open System.Collections.Generic
-open System.Web.Services.Description
 open System.Xml
 open XRoadTypeProvider.Wsdl
+
+(*
+type MessagePart =
+    | ElementPart of XmlQualifiedName
+    | TypePart of XmlQualifiedName
+
+type RequestParts =
+  { Body: (string * MessagePart) list
+    Header: (string * MessagePart) list
+    MultipartContent: (string * MessagePart) list }
+    static member Empty = { Body = []; Header = []; MultipartContent = [] }
+
+type XRoadOperation =
+  { Documentation: IDictionary<string,string>
+    Name: string
+    Version: string option
+    Request: RequestParts
+    Response: RequestParts }
 
 let (|XRoadVersion|) (binding: OperationBinding) =
     let versions =
@@ -39,10 +56,6 @@ let readDocumentation (operationDesc: Operation) =
         | _ -> ("", n.InnerText))
     |> dict
 
-type MessagePart =
-    | ElementPart of XmlQualifiedName
-    | TypePart of XmlQualifiedName
-
 let getMessageParts (messageDesc: Message) =
     [for p in messageDesc.Parts -> p]
     |> List.map (fun p -> match p.Element, p.Type with
@@ -50,19 +63,6 @@ let getMessageParts (messageDesc: Message) =
                           | x, _ when not x.IsEmpty -> p.Name, ElementPart x
                           | _, x -> p.Name, TypePart x)
     |> List.fold (fun (d: Dictionary<string, MessagePart>) (k, v) -> d.Add(k, v); d) (Dictionary<string, MessagePart>())
-
-type RequestParts =
-  { Body: (string * MessagePart) list
-    Header: (string * MessagePart) list
-    MultipartContent: (string * MessagePart) list }
-    static member Empty = { Body = []; Header = []; MultipartContent = [] }
-
-type XRoadOperation =
-  { Documentation: IDictionary<string,string>
-    Name: string
-    Version: string option
-    Request: RequestParts
-    Response: RequestParts }
 
 let parseRequest (input: MessageBinding) (message: Message) (schema: ServiceDescription) =
     let rec parseRequestParts rq (exts: obj list) (parts: System.Collections.Generic.IDictionary<string,MessagePart>) =
@@ -130,3 +130,4 @@ let parseOperationDetails schema port binding =
       Version = operationVersion
       Request = request
       Response = response }
+*)

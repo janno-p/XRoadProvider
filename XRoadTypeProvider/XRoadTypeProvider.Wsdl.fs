@@ -7,6 +7,7 @@ open System.Xml
 open System.Xml.Linq
 
 module XmlNamespace =
+    let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
     let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
     let [<Literal>] SoapEnvelope = "http://schemas.xmlsoap.org/soap/envelope/"
     let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
@@ -14,6 +15,9 @@ module XmlNamespace =
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
+module Option =
+    let orDefault value opt =
+        opt |> Option.fold (fun s t -> t) value
 
 let private mapXrdType = function
     | "faultCode"
@@ -103,25 +107,84 @@ let resolveUri uri =
         | true -> fullPath
         | _ -> failwith (sprintf "Cannot resolve url location `%s`" uri)
 
-type ServicePort = {
+type Operation =
+  { Name: string
+    Version: string option
+    Style: XRoad.XRoadBindingStyle }
+
+type PortBinding =
+  { Name: string
     Address: string
     Producer: string
     Documentation: IDictionary<string,string>
-}
+    Operations: Operation list
+    Style: XRoad.XRoadBindingStyle }
+    static member Empty with get() = { Name = ""
+                                       Address = ""
+                                       Producer = ""
+                                       Documentation = Dictionary<_,_>()
+                                       Operations = []
+                                       Style = XRoad.XRoadBindingStyle.DocumentLiteral }
 
 type Service =
   { Name: string
-    Ports: ServicePort list }
+    Ports: PortBinding list }
 
 let attr (name: XName) (element: XElement) =
     match element.Attribute(name) with
     | null -> None
     | attr -> Some attr.Value
 
+let attrOrDefault name value element =
+    element |> attr name |> Option.orDefault value
+
 let reqAttr (name: XName) (element: XElement) =
     match element.Attribute name with
     | null -> failwithf "Element %A attribute %A is required!" element.Name name
     | attr -> attr.Value
+
+let parseXName (element: XElement) (qualifiedName: string) =
+    match qualifiedName.Split(':') with
+    | [|name|] -> XName.Get(name)
+    | [|prefix; name|] -> XName.Get(name, element.GetNamespaceOfPrefix(prefix).NamespaceName)
+    | _ -> failwithf "Invalid qualified name string %s" qualifiedName
+
+let parseOperation (operation: XElement) =
+    let name = operation |> reqAttr (XName.Get("name"))
+    let version = match operation.Element(XName.Get("version", XmlNamespace.XRoad)) with
+                  | null -> None
+                  | el -> Some el.Value
+    let soapOperation = operation.Element(XName.Get("operation", XmlNamespace.Soap))
+    let bindingStyle = match soapOperation |> attrOrDefault (XName.Get("style")) "document" with
+                       | "document" -> XRoad.XRoadBindingStyle.DocumentLiteral
+                       | "rpc" -> XRoad.XRoadBindingStyle.RpcEncoded
+                       | x -> failwithf "Unknown SOAP binding style %s" x
+    { Name = name; Version = version; Style = bindingStyle }
+
+let parseBinding (definitions: XElement) (bindingName: XName) (portBinding: PortBinding) =
+    let targetNamespace = definitions |> attrOrDefault (XName.Get("targetNamespace")) ""
+    if bindingName.NamespaceName <> targetNamespace then
+        failwithf "External namespaces are not yet supported! Given %s." bindingName.NamespaceName
+    let binding = definitions.Elements(XName.Get("binding", XmlNamespace.Wsdl))
+                  |> Seq.find (fun el -> (el |> reqAttr (XName.Get("name"))) = bindingName.LocalName)
+    let portTypeName = binding |> reqAttr (XName.Get("type")) |> parseXName binding
+    if portTypeName.NamespaceName <> targetNamespace then
+        failwithf "External namespaces are not yet supported! Given %s." portTypeName.NamespaceName
+    let portType = definitions.Elements(XName.Get("portType", XmlNamespace.Wsdl))
+                   |> Seq.find (fun el -> (el |> reqAttr (XName.Get("name"))) = portTypeName.LocalName)
+    let soapBinding = binding.Element(XName.Get("binding", XmlNamespace.Soap))
+    let bindingStyle = match soapBinding |> attrOrDefault (XName.Get("style")) "document" with
+                       | "document" -> XRoad.XRoadBindingStyle.DocumentLiteral
+                       | "rpc" -> XRoad.XRoadBindingStyle.RpcEncoded
+                       | x -> failwithf "Unknown SOAP binding style %s" x
+    let transport = soapBinding |> attrOrDefault (XName.Get("transport")) ""
+    if transport <> XmlNamespace.Http then
+        failwithf "Only HTTP transport is allowed. Specified %s" transport
+    let operations =
+        binding.Elements(XName.Get("operation", XmlNamespace.Wsdl))
+        |> Seq.map (fun op -> parseOperation op)
+        |> List.ofSeq
+    { portBinding with Operations = operations; Style = bindingStyle }
 
 let parseServices (definitions: XElement) =
     definitions.Elements(XName.Get("service", XmlNamespace.Wsdl))
@@ -131,21 +194,25 @@ let parseServices (definitions: XElement) =
             service.Elements(XName.Get("port", XmlNamespace.Wsdl))
             |> Seq.map (fun servicePort ->
                 let name = servicePort |> reqAttr (XName.Get("name"))
-                let binding = servicePort |> reqAttr (XName.Get("binding"))
+                let binding = servicePort |> reqAttr (XName.Get("binding")) |> parseXName servicePort
                 let address = match servicePort.Element(XName.Get("address", XmlNamespace.Soap)) with
                               | null -> ""
                               | elem -> elem |> reqAttr (XName.Get("location"))
                 let producer = match servicePort.Element (XName.Get("address", XmlNamespace.XRoad)) with
                                | null -> ""
                                | elem -> match elem |> attr (XName.Get("producer")) with | None -> "" | Some v -> v
+                let portBinding = PortBinding.Empty
                 let doc = servicePort.Elements(XName.Get("title", XmlNamespace.XRoad))
-                          |> Seq.fold (fun (doc: Dictionary<string,string>) el ->
+                          |> Seq.fold (fun (doc: IDictionary<string,string>) el ->
                               let lang = match el |> attr (XName.Get("lang", XmlNamespace.Xml)) with
                                          | Some lang -> lang
                                          | _ -> "en"
                               doc.[lang] <- el.Value
-                              doc) (Dictionary<_,_>())
-                { Address = address; Producer = producer; Documentation = doc })
+                              doc) portBinding.Documentation
+                { portBinding with Name = name
+                                   Address = address
+                                   Producer = producer }
+                |> parseBinding definitions binding)
         { Name = name; Ports = ports |> List.ofSeq })
     |> List.ofSeq
 
