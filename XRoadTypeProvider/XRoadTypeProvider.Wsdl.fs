@@ -279,12 +279,14 @@ let parseOperation (operation: XElement) (portType: XElement) (definitions: XEle
     let version = match operation.Element(XName.Get("version", XmlNamespace.XRoad)) with
                   | null -> None
                   | el -> Some el.Value
-    let soapOperation = operation.Element(XName.Get("operation", XmlNamespace.Soap))
-    let bindingStyle = match soapOperation |> attr (XName.Get("style")) with
-                       | Some "document" -> XRoad.XRoadBindingStyle.DocumentLiteral
-                       | Some "rpc" -> XRoad.XRoadBindingStyle.RpcEncoded
-                       | Some x -> failwithf "Unknown SOAP binding style %s" x
-                       | _ -> style
+    let bindingStyle =
+        match operation.Element(XName.Get("operation", XmlNamespace.Soap)) with
+        | null -> style
+        | soapOperation -> match soapOperation |> attr (XName.Get("style")) with
+                           | Some "document" -> XRoad.XRoadBindingStyle.DocumentLiteral
+                           | Some "rpc" -> XRoad.XRoadBindingStyle.RpcEncoded
+                           | Some x -> failwithf "Unknown SOAP binding style %s" x
+                           | _ -> style
     let abstractDesc = portType.Elements(XName.Get("operation", XmlNamespace.Wsdl))
                        |> Seq.find (fun op -> (op |> reqAttr (XName.Get("name"))) = name)
     let paramInput = abstractDesc |> parseParamName "input" |> parseParam definitions
