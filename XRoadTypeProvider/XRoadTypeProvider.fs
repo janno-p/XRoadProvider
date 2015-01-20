@@ -21,7 +21,7 @@ type public XRoadTypeProvider() as this =
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let createXRoadOperation (typeCache: Dictionary<MessagePartReference,ProvidedTypeDefinition>) (operation: Operation) =
+    let createXRoadOperation (typeCache: Dictionary<XmlReference,ProvidedTypeDefinition>) (operation: Operation) =
         let getParameters (msg: OperationMessage) = [
             let rec getParameters (xs: MessagePart list) fromCache = seq {
                 match xs with
@@ -81,17 +81,16 @@ type public XRoadTypeProvider() as this =
                 | [| :? string as uri |] ->
                     let schema = resolveUri uri |> readSchema
 
-                    let typeCache = Dictionary<MessagePartReference,ProvidedTypeDefinition>()
-                    schema.Types
+                    let typeCache = Dictionary<XmlReference,ProvidedTypeDefinition>()
+                    schema.TypeCollections
                     |> List.map (fun tc ->
                         let typeNamespace = ProvidedTypeDefinition(tc.Namespace.NamespaceName, baseType, HideObjectMethods=true)
-                        tc.Types
+                        tc.SchemaTypes
                         |> Seq.map (fun kvp ->
                             let tp = ProvidedTypeDefinition(kvp.Value.Name, Some typeof<XRoadEntity>, HideObjectMethods=true)
                             tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
                             typeCache.[kvp.Key] <- tp
-                            tp
-                            )
+                            tp)
                         |> List.ofSeq
                         |> typeNamespace.AddMembers
                         typeNamespace)

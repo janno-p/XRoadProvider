@@ -108,13 +108,13 @@ let resolveUri uri =
         | true -> fullPath
         | _ -> failwith (sprintf "Cannot resolve url location `%s`" uri)
 
-type MessagePartReference =
-    | Element of XName
-    | Type of XName
+type XmlReference =
+    | SchemaElement of XName
+    | SchemaType of XName
 
 type MessagePart =
   { Name: string
-    Reference: MessagePartReference }
+    Reference: XmlReference }
 
 type OperationMessage =
   { Body: MessagePart list
@@ -147,17 +147,6 @@ type PortBinding =
 type Service =
   { Name: string
     Ports: PortBinding list }
-
-type SchemaType =
-  { Name: string }
-
-type TypeCollection =
-  { Namespace: XNamespace
-    Types: IDictionary<MessagePartReference,SchemaType> }
-
-type Schema =
-  { Types: TypeCollection list
-    Services: Service list }
 
 let attr (name: XName) (element: XElement) =
     match element.Attribute(name) with
@@ -210,12 +199,12 @@ let parseAbstractParts msgName (abstractDef: XElement) =
     |> Seq.map (fun elem ->
         let name = elem |> attrOrDefault (XName.Get("name")) ""
         match (elem |> attr (XName.Get("element"))), (elem |> attr (XName.Get("type"))) with
-        | Some el, _ -> name, Element (parseXName elem el)
-        | _, Some tp -> name, Type (parseXName elem tp)
+        | Some el, _ -> name, SchemaElement(parseXName elem el)
+        | _, Some tp -> name, SchemaType(parseXName elem tp)
         | _ -> failwithf "Unknown element or type for message %s part %s" msgName name)
-    |> Seq.fold (fun (d: Dictionary<string,MessagePartReference>) (k, v) -> d.[k] <- v; d) (Dictionary<_,_>())
+    |> Seq.fold (fun (d: Dictionary<string,XmlReference>) (k, v) -> d.[k] <- v; d) (Dictionary<_,_>())
 
-let parseSoapBody msgName (abstractParts: IDictionary<string,MessagePartReference>) (elem: XElement) (opmsg: OperationMessage) =
+let parseSoapBody msgName (abstractParts: IDictionary<string,XmlReference>) (elem: XElement) (opmsg: OperationMessage) =
     match elem |> attr (XName.Get("parts")) with
     | Some value ->
         value.Split(' ')
@@ -346,31 +335,71 @@ let parseServices (definitions: XElement) =
         { Name = name; Ports = ports |> List.ofSeq })
     |> List.ofSeq
 
-let parseTypes (definitions: XElement) =
+type FieldType = Attribute | Property
+
+type Field =
+  { Name: string
+    TypeName: XName
+    FieldType: FieldType }
+
+type ContainmentType = All | Sequence
+
+type SchemaType =
+  { Name: string
+    Fields: FieldType list
+    ContainmentType: ContainmentType }
+
+type SchemaTypeCollection =
+  { Namespace: XNamespace
+    SchemaTypes: IDictionary<XmlReference,SchemaType> }
+
+type Schema =
+  { TypeCollections: SchemaTypeCollection list
+    Services: Service list }
+
+let (|Xsd|_|) (element: XElement) =
+    match element.Name.NamespaceName with
+    | XmlNamespace.Xsd -> Some element.Name.LocalName
+    | _ -> None
+
+let parseTypeSchema (schema: XElement) =
+    let targetNamespace = XNamespace.Get(schema |> attrOrDefault (XName.Get("targetNamespace")) "")
+    let rec parseSchemaDef (element: XElement) =
+        let parseAnnotation f (elements: XElement list) =
+            match elements with
+            | (Xsd "annotation")::other
+            | other -> f other
+        match element with
+        | Xsd "annotation" -> failwith "Annotation schema element was not expected here."
+        | Xsd "element" ->
+            match element |> attr (XName.Get("type")) with
+            | Some typeName -> 
+            // annotation?,(simpleType|complexType)?,(unique|key|keyref)*
+            let annotation, 
+            element.Elements()
+            |> List.ofSeq
+            |> parseAnnotation (List.choose parseSchemaDef >> Seq.exactlyOne >> Some)
+        | Xsd "complexType" ->
+            // annotation?,(simpleContent|complexContent|((group|all|choice|sequence)?,((attribute|attributeGroup)*,anyAttribute?)))
+            Some ()
+        | Xsd "simpleType" ->
+            // annotation?,(restriction|list|union)
+            Some ()
+        | _ -> failwithf "Unrecognized schema element %A." element.Name
+    targetNamespace, Dictionary<XmlReference,SchemaType>()
+
+let parseTypeSchemas (definitions: XElement) =
     match definitions.Element(XName.Get("types", XmlNamespace.Wsdl)) with
     | null -> []
-    | types ->
-        types.Elements(XName.Get("schema", XmlNamespace.Xsd))
-        |> Seq.map (fun schema ->
-            let ns = schema |> reqAttr (XName.Get("targetNamespace"))
-            let types =
-                schema.Elements(XName.Get("element", XmlNamespace.Xsd))
-                |> Seq.fold (fun (d: Dictionary<MessagePartReference,SchemaType>) elem ->
-                    let name = elem |> reqAttr (XName.Get("name"))
-                    d.[Element (XName.Get(name, ns))] <- { Name = name }
-                    d) (Dictionary<_,_>())
-            let types =
-                schema.Elements(XName.Get("complexType", XmlNamespace.Xsd))
-                |> Seq.fold (fun (d: Dictionary<MessagePartReference,SchemaType>) elem ->
-                    let name = elem |> reqAttr (XName.Get("name"))
-                    d.[Type (XName.Get(name, ns))] <- { Name = name }
-                    d) types
-            // TODO : Other referrable elements
-            { Namespace = XNamespace.Get(ns); Types = types })
+    | element ->
+        element.Elements(XName.Get("schema", XmlNamespace.Xsd))
+        |> Seq.map (fun e ->
+            let tns, tc = parseTypeSchema e
+            { Namespace = tns; SchemaTypes = tc })
         |> List.ofSeq
 
 let readSchema (uri: string) =
     let document = XDocument.Load(uri)
     let definitionsNode = document.Element(XName.Get("definitions", XmlNamespace.Wsdl))
     { Services = definitionsNode |> parseServices
-      Types = definitionsNode |> parseTypes }
+      TypeCollections = definitionsNode |> parseTypeSchemas }
