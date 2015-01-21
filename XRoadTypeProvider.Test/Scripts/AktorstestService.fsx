@@ -12,7 +12,7 @@ type testPort = Aktorstest.aktorstestService.Test
 type tns = Aktorstest.``http://aktorstest.x-road.ee/producer``
 
 let adr = tns.aadress()
-let fup = tns.fileUpload()
+let fup = tns.fileUpload'()
 
 let hdr = Runtime.XRoadHeader()
 
@@ -26,10 +26,10 @@ printfn "Using producer name: %s" service.Producer
 
 let ml = service.listMethods(box 0)
 
-let o1 = service.isikOtsing(tns.isikOtsing(), box 2, box 3, box 4, box 5, box 6)
-let o2 = service.changeAddress(tns.changeAddress(), box "service", box "id", box "userId", box "producer", box "consumer")
+let o1 = service.isikOtsing(tns.isikOtsing'(), box 2, box 3, box 4, box 5, box 6)
+let o2 = service.changeAddress(tns.changeAddress'(), box "service", box "id", box "userId", box "producer", box "consumer")
 
-let resp = service.fileDownload(tns.fileDownload(), box "service", box "id", box "userId", box "producer", box "consumer")
+let resp = service.fileDownload(tns.fileDownload'(), box "service", box "id", box "userId", box "producer", box "consumer")
 let stream = resp.Attachments.[0]
 let result = resp.Result
 
