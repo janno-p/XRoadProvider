@@ -467,7 +467,8 @@ module XsdSchema =
         TargetNamespace: XNamespace
         Includes: Uri list
         Imports: (XNamespace * Uri option) list
-        Elements: IDictionary<XName,SchemaType> }
+        Elements: IDictionary<XName,SchemaType>
+        Types: IDictionary<XName,TypeDefinition> }
 
     let isQualified attrName node =
         match node |> attrOrDefault attrName "unqualified" with
@@ -475,56 +476,36 @@ module XsdSchema =
         | "unqualified" -> false
         | x -> failwithf "Unknown %s value '%s'" attrName.LocalName x
 
-    type SchemaExpr =
-        | Empty
-        | Item of string
-        | Maybe of SchemaExpr
-        | More of SchemaExpr
-        | Or of SchemaExpr list
-        | Sequence of SchemaExpr list
+    type ComplexTypePart = Begin | Annotation | Content | Particle | Attribute | AnyAttribute
 
-    let eval (exp: SchemaExpr) nodeName =
-        let rec evalInner (exp: SchemaExpr) =
-            match exp with
-            | Empty -> (false, Empty)
-            | Item x -> if x = nodeName then (true, Empty) else (false, Empty)
-            | Maybe x -> let (_, rem) = evalInner x
-                         (true, rem)
-            | More x -> match evalInner x with
-                        | false, rem -> (true, rem)
-                        (res)
+    type TypeNode =
+      { X: string }
 
+    let rec parseElement (node: XElement) =
+        ()
 
-    let walkExpr (expr: SchemaExpr) nodeName =
-        match expr with
-        | Empty -> failwithf "Unexpected element %s when none was allowed." nodeName
-        | Item x -> if x = nodeName then Empty
-                    else failwithf "Unexpected element %s when only %s was allowed." x nodeName
-        | Maybe expr
-
-    let complexTypeExpr =
-        Sequence [(Maybe (Item "annotation"))
-                  (Or [(Item "simpleContent")
-                       (Item "complexContent")
-                       (Sequence [(Maybe (Or [(Item "group"); (Item "all"); (Item "choice"); (Item "sequence")]))
-                                  (More (Or [(Item "attribute"); (Item "attributeGroup")]))
-                                  (Maybe (Item "anyAttribute"))])])]
-
-    let parseComplexType (node: XElement) =
+    and parseComplexType (node: XElement) =
         let isAbstract = match node |> attrOrDefault (XName.Get("abstract")) "false" with
                          | "true" -> true
                          | "false" -> false
                          | x -> failwithf "Invalid value %s for complexType::abstract attribute" x
-        let rec parseInnerNodes (exp: SchemaExpr) (nodes: XElement list) =
-            match nodes with
-            | [] -> typeSpec
-            | ((Xsd "annotation") as node)::nodes ->
-                let exp = walkExpr exp
-                ()
-            | ((Xsd "simpleContent" | Xsd "complexContent") as node)::nodes -> ()
-            | ((Xsd "group" | Xsd "all" | Xsd "choice" | Xsd "sequence") as node)::nodes -> ()
-            | ((Xsd "attribute" | Xsd "attributeGroup") as node)::nodes -> ()
-            | ((Xsd "anyAttribute") as node)::nodes -> ()
+        let rec parseInnerNodes (part: ComplexTypePart) (typeDef: TypeDefinition) (nodes: XElement list) =
+            match part, nodes with
+            | _, [] ->
+                typeDef
+            | Begin, ((Xsd "annotation") as node)::nodes -> // Ignored
+                parseInnerNodes Annotation typeDef nodes
+            | (Begin | Annotation), ((Xsd "simpleContent" | Xsd "complexContent") as node)::nodes ->
+                failwith "Content element for ComplexType is not implemented yet!"
+            | (Begin | Annotation), ((Xsd "group" | Xsd "all" | Xsd "choice" | Xsd "sequence") as node)::nodes ->
+                parseInnerNodes Particle typeDef nodes
+                //failwith "Particle element for ComplexType is not implemented yet!"
+            | (Begin | Annotation | Particle | Attribute), ((Xsd "attribute" | Xsd "attributeGroup") as node)::nodes ->
+                failwith "Attribute element for ComplexType is not implemented yet!"
+            | (Begin | Annotation | Particle | Attribute), ((Xsd "anyAttribute") as node)::nodes ->
+                failwith "AnyAttribute for ComplexType is not implemented yet!"
+            | _, node::_ ->
+                failwithf "Element %s was not expected at the current position." node.Name.LocalName
         (*<complexType  id=ID
                         name=NCName
                         abstract=true|false
@@ -542,7 +523,7 @@ module XsdSchema =
                 )
             )
           </complexType>*)
-        node.Elements() |> List.ofSeq |> parseInnerNodes complexTypeExpr
+        node.Elements() |> List.ofSeq |> parseInnerNodes Begin { Attributes = []; Properties = [] }
 
     let parseSchemaNode (node: XElement) =
         let qattr = node |> isQualified (XName.Get("attributeFormDefault"))
@@ -553,7 +534,8 @@ module XsdSchema =
                       TargetNamespace = tns
                       Includes = []
                       Imports = []
-                      Elements = Dictionary<XName,SchemaType>() }
+                      Elements = Dictionary<XName,SchemaType>()
+                      Types = Dictionary<XName,TypeDefinition>() }
         let rec parseInnerNodes (snode: SchemaNode) cursor (nodes: XElement list) =
             // (include|import|redefine|annotation)*,((simpleType|complexType|group|attributeGroup|element|attribute|notation),annotation*)*
             match nodes with
@@ -577,7 +559,7 @@ module XsdSchema =
                 let name = node |> reqAttr (XName.Get("name"))
                 match node.Name.LocalName with
                 | "complexType" ->
-                    // annotation?,(simpleContent|complexContent|((group|all|choice|sequence)?,((attribute|attributeGroup)*,anyAttribute?)))
+                    snode.Types.Add(XName.Get(name, tns.NamespaceName), parseComplexType node)
                     parseInnerNodes snode true nodes
                 | "element" ->
                     match node |> attr (XName.Get("type")) with
