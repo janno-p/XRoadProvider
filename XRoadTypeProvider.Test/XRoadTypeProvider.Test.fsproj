@@ -38,7 +38,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="DesignTimeTest.fs" />
+    <Compile Include="XRoadRpcEncodedV4Test.fs" />
+    <Compile Include="XRoadDocLiteralWrappedV5Test.fs" />
     <None Include="Wsdl\AktorstestService.wsdl.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

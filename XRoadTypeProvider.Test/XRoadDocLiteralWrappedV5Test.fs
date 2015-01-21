@@ -7,7 +7,7 @@ open XRoadTypeProvider.DesignTime
 open XRoadTypeProvider.Wsdl
 
 [<TestFixture>]
-module DesignTime =
+module XRoadDocLiteralWrappedV5Test =
     [<Test>]
     let ``Read aktorstest service`` () =
         let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
@@ -116,20 +116,3 @@ module DesignTime =
         test <@ mainSchema.Includes.Length = 0 @>
         test <@ mainSchema.Elements.Count = 14 @>
         test <@ mainSchema.Types.Count = 4 @>
-
-    [<Test>]
-    let ``Parse Maakataster xml schema definition`` () =
-        let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml")
-        let typeSchemas = schema.TypeSchemas
-        test <@ typeSchemas.Length = 1 @>
-        let mainSchema = typeSchemas.[0]
-        test <@ mainSchema.TargetNamespace.NamespaceName = "http://producers.maakataster.xtee.riik.ee/producer/maakataster" @>
-        (*
-        let document = System.Xml.Linq.XDocument.Load(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml")
-        let definitionsNode = document.Element(System.Xml.Linq.XName.Get("definitions", XmlNamespace.Wsdl))
-        let typesNode = definitionsNode.Element(System.Xml.Linq.XName.Get("types", XmlNamespace.Wsdl))
-        let schemaNode = typesNode.Element(System.Xml.Linq.XName.Get("schema", XmlNamespace.Xsd))
-        let result = XRoadTypeProvider.Wsdl.XsdSchema.parseSchemaNode(schemaNode)
-        printfn "%A" result
-        *)
-        ()
