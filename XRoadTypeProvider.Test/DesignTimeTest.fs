@@ -96,3 +96,22 @@ module DesignTime =
         test <@ operation.Response.Header.Length = 5 @>
         test <@ operation.Response.MultipartContent.Length = 0 @>
         ()
+
+    [<Test>]
+    let ``Parse Aktorstest XSD schema`` () =
+        let document = System.Xml.Linq.XDocument.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let definitionsNode = document.Element(System.Xml.Linq.XName.Get("definitions", XmlNamespace.Wsdl))
+        let typesNode = definitionsNode.Element(System.Xml.Linq.XName.Get("types", XmlNamespace.Wsdl))
+        let schemaNode = typesNode.Element(System.Xml.Linq.XName.Get("schema", XmlNamespace.Xsd))
+        let result = XRoadTypeProvider.Wsdl.XsdSchema.parseSchemaNode(schemaNode)
+        printfn "%A" result
+
+    [<Test>]
+    let ``Parse Maakataster XSD schema`` () =
+        let document = System.Xml.Linq.XDocument.Load(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml")
+        let definitionsNode = document.Element(System.Xml.Linq.XName.Get("definitions", XmlNamespace.Wsdl))
+        let typesNode = definitionsNode.Element(System.Xml.Linq.XName.Get("types", XmlNamespace.Wsdl))
+        let schemaNode = typesNode.Element(System.Xml.Linq.XName.Get("schema", XmlNamespace.Xsd))
+        let result = XRoadTypeProvider.Wsdl.XsdSchema.parseSchemaNode(schemaNode)
+        printfn "%A" result
+

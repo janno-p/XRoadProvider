@@ -87,7 +87,10 @@ type public XRoadTypeProvider() as this =
                         let typeNamespace = ProvidedTypeDefinition(tc.Namespace.NamespaceName, baseType, HideObjectMethods=true)
                         tc.SchemaTypes
                         |> Seq.map (fun kvp ->
-                            let tp = ProvidedTypeDefinition(kvp.Value.Name, Some typeof<XRoadEntity>, HideObjectMethods=true)
+                            let refName = match kvp.Key with
+                                          | SchemaElement x -> sprintf "%s'" x.LocalName
+                                          | SchemaType x -> x.LocalName
+                            let tp = ProvidedTypeDefinition(refName, Some typeof<XRoadEntity>, HideObjectMethods=true)
                             tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
                             typeCache.[kvp.Key] <- tp
                             tp)

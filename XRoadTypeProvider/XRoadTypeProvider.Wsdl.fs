@@ -344,10 +344,14 @@ type Field =
 
 type ContainmentType = All | Sequence
 
-type SchemaType =
+type SchemaTypeSpec =
   { Name: string
     Fields: FieldType list
     ContainmentType: ContainmentType }
+
+type SchemaType =
+    | Reference of XmlReference
+    | Spec of SchemaTypeSpec
 
 type SchemaTypeCollection =
   { Namespace: XNamespace
@@ -362,31 +366,69 @@ let (|Xsd|_|) (element: XElement) =
     | XmlNamespace.Xsd -> Some element.Name.LocalName
     | _ -> None
 
+let parseXsdElement (node: XElement) =
+    // annotation?,(simpleType|complexType)?,(unique|key|keyref)*
+    let rec parseInternal (data: XElement option * XElement option * bool) (nodes: XElement list) =
+        match nodes with
+        | [] -> data
+        | (Xsd "annotation" as n)::nodes ->
+            match data with
+            | None, None, false -> parseInternal (Some n, None, false) nodes
+            | _ -> failwithf "Annotation element was not expected in %A." node.Name
+        | ((Xsd "simpleType" | Xsd "complexType") as n)::nodes ->
+            match data with
+            | x, None, false -> parseInternal (x, Some n, false) nodes
+            | _ -> failwithf "Type element was not expected in %A." node.Name
+        | ((Xsd "unique" | Xsd "key" | Xsd "keyref") as n)::nodes ->
+            match data with
+            | x, y, _ -> parseInternal (x, y, true) nodes
+        | n::nodes -> failwithf "Element %A was not expected in %A." n.Name node.Name
+    let result = node.Elements() |> List.ofSeq |> parseInternal (None, None, false)
+    match result with (x, y, _) -> (x, y)
+
 let parseTypeSchema (schema: XElement) =
+    // (include|import|redefine|annotation)*,((simpleType|complexType|group|attributeGroup|element|attribute|notation),annotation*)*
     let targetNamespace = XNamespace.Get(schema |> attrOrDefault (XName.Get("targetNamespace")) "")
-    let rec parseSchemaDef (element: XElement) =
-        let parseAnnotation f (elements: XElement list) =
-            match elements with
-            | (Xsd "annotation")::other
-            | other -> f other
+    let typeCache = Dictionary<XmlReference,SchemaType>()
+    let rec parseSchemaDef (element: XElement): XmlReference * SchemaType =
         match element with
-        | Xsd "annotation" -> failwith "Annotation schema element was not expected here."
-        | Xsd "element" ->
+        | Xsd "element" -> // Only top-level elements should match this pattern
+            let annotation, elementType = parseXsdElement (element)
+            let name = element |> reqAttr (XName.Get("name"))
+            let key = SchemaElement(XName.Get(name, targetNamespace.NamespaceName))
             match element |> attr (XName.Get("type")) with
-            | Some typeName -> 
-            // annotation?,(simpleType|complexType)?,(unique|key|keyref)*
-            let annotation, 
-            element.Elements()
-            |> List.ofSeq
-            |> parseAnnotation (List.choose parseSchemaDef >> Seq.exactlyOne >> Some)
+            | Some value ->
+                let typeName = parseXName element value
+                if typeName.NamespaceName <> targetNamespace.NamespaceName then
+                    failwithf "Cannot parse type %A, because external namespaces are not supported yet!" typeName
+                (key, Reference(SchemaType(typeName)))
+            | _ ->
+                match elementType with
+                | Some node -> (key, snd (parseSchemaDef node))
+                | _ -> failwithf "Top-level element %A has no type info." element.Name
         | Xsd "complexType" ->
             // annotation?,(simpleContent|complexContent|((group|all|choice|sequence)?,((attribute|attributeGroup)*,anyAttribute?)))
-            Some ()
+            //(_,_)
+            failwith "TODO: Implement complexType!!"
         | Xsd "simpleType" ->
             // annotation?,(restriction|list|union)
-            Some ()
-        | _ -> failwithf "Unrecognized schema element %A." element.Name
-    targetNamespace, Dictionary<XmlReference,SchemaType>()
+            //(_,_)
+            failwith "TODO: Implement simpleType!!"
+        | Xsd "group" ->
+            // annotation?,(restriction|list|union)
+            //(_,_)
+            failwith "TODO: Implement group!!"
+        | Xsd "attribute" ->
+            // annotation?,(restriction|list|union)
+            //(_,_)
+            failwith "TODO: Implement attribute!!"
+        | Xsd "attributeGroup" ->
+            // annotation?,(restriction|list|union)
+            //(_,_)
+            failwith "TODO: Implement attributeGroup!!"
+        | _ -> failwith "never"
+    schema.Elements() |> Seq.map parseSchemaDef |> Seq.iter typeCache.Add
+    targetNamespace, typeCache
 
 let parseTypeSchemas (definitions: XElement) =
     match definitions.Element(XName.Get("types", XmlNamespace.Wsdl)) with
@@ -403,3 +445,150 @@ let readSchema (uri: string) =
     let definitionsNode = document.Element(XName.Get("definitions", XmlNamespace.Wsdl))
     { Services = definitionsNode |> parseServices
       TypeCollections = definitionsNode |> parseTypeSchemas }
+
+
+
+
+
+
+
+module XsdSchema =
+    type TypeDefinition =
+      { Attributes: (string * SchemaType) list
+        Properties: (string * SchemaType) list }
+
+    and SchemaType =
+        | TypeReference of XName
+        | TypeDefinition of TypeDefinition
+
+    type SchemaNode =
+      { QualifiedAttributes: bool
+        QualifiedElements: bool
+        TargetNamespace: XNamespace
+        Includes: Uri list
+        Imports: (XNamespace * Uri option) list
+        Elements: IDictionary<XName,SchemaType> }
+
+    let isQualified attrName node =
+        match node |> attrOrDefault attrName "unqualified" with
+        | "qualified" -> true
+        | "unqualified" -> false
+        | x -> failwithf "Unknown %s value '%s'" attrName.LocalName x
+
+    type SchemaExpr =
+        | Empty
+        | Item of string
+        | Maybe of SchemaExpr
+        | More of SchemaExpr
+        | Or of SchemaExpr list
+        | Sequence of SchemaExpr list
+
+    let eval (exp: SchemaExpr) nodeName =
+        let rec evalInner (exp: SchemaExpr) =
+            match exp with
+            | Empty -> (false, Empty)
+            | Item x -> if x = nodeName then (true, Empty) else (false, Empty)
+            | Maybe x -> let (_, rem) = evalInner x
+                         (true, rem)
+            | More x -> match evalInner x with
+                        | false, rem -> (true, rem)
+                        (res)
+
+
+    let walkExpr (expr: SchemaExpr) nodeName =
+        match expr with
+        | Empty -> failwithf "Unexpected element %s when none was allowed." nodeName
+        | Item x -> if x = nodeName then Empty
+                    else failwithf "Unexpected element %s when only %s was allowed." x nodeName
+        | Maybe expr
+
+    let complexTypeExpr =
+        Sequence [(Maybe (Item "annotation"))
+                  (Or [(Item "simpleContent")
+                       (Item "complexContent")
+                       (Sequence [(Maybe (Or [(Item "group"); (Item "all"); (Item "choice"); (Item "sequence")]))
+                                  (More (Or [(Item "attribute"); (Item "attributeGroup")]))
+                                  (Maybe (Item "anyAttribute"))])])]
+
+    let parseComplexType (node: XElement) =
+        let isAbstract = match node |> attrOrDefault (XName.Get("abstract")) "false" with
+                         | "true" -> true
+                         | "false" -> false
+                         | x -> failwithf "Invalid value %s for complexType::abstract attribute" x
+        let rec parseInnerNodes (exp: SchemaExpr) (nodes: XElement list) =
+            match nodes with
+            | [] -> typeSpec
+            | ((Xsd "annotation") as node)::nodes ->
+                let exp = walkExpr exp
+                ()
+            | ((Xsd "simpleContent" | Xsd "complexContent") as node)::nodes -> ()
+            | ((Xsd "group" | Xsd "all" | Xsd "choice" | Xsd "sequence") as node)::nodes -> ()
+            | ((Xsd "attribute" | Xsd "attributeGroup") as node)::nodes -> ()
+            | ((Xsd "anyAttribute") as node)::nodes -> ()
+        (*<complexType  id=ID
+                        name=NCName
+                        abstract=true|false
+                        mixed=true|false
+                        block=(#all|list of (extension|restriction))
+                        final=(#all|list of (extension|restriction))
+                        any attributes>
+            annotation?,
+            (
+                simpleContent|complexContent|
+                (
+                    (group|all|choice|sequence)?,
+                    (attribute|attributeGroup)*,
+                    anyAttribute?
+                )
+            )
+          </complexType>*)
+        node.Elements() |> List.ofSeq |> parseInnerNodes complexTypeExpr
+
+    let parseSchemaNode (node: XElement) =
+        let qattr = node |> isQualified (XName.Get("attributeFormDefault"))
+        let qelem = node |> isQualified (XName.Get("elementFormDefault"))
+        let tns = node |> attrOrDefault (XName.Get("targetNamespace")) "" |> XNamespace.Get
+        let snode = { QualifiedAttributes = qattr
+                      QualifiedElements = qelem
+                      TargetNamespace = tns
+                      Includes = []
+                      Imports = []
+                      Elements = Dictionary<XName,SchemaType>() }
+        let rec parseInnerNodes (snode: SchemaNode) cursor (nodes: XElement list) =
+            // (include|import|redefine|annotation)*,((simpleType|complexType|group|attributeGroup|element|attribute|notation),annotation*)*
+            match nodes with
+            | [] -> snode
+            | ((Xsd "annotation") as node)::nodes -> // Ignored
+                parseInnerNodes snode cursor nodes
+            | ((Xsd "include" | Xsd "import" | Xsd "redefine") as node)::nodes ->
+                match cursor with
+                | false ->
+                    match node.Name.LocalName with
+                    | "include" ->
+                        let schloc = node |> reqAttr (XName.Get("schemaLocation"))
+                        parseInnerNodes { snode with Includes = Uri(schloc)::snode.Includes } cursor nodes
+                    | "import" ->
+                        let ns = node |> attrOrDefault (XName.Get("namespace")) ""
+                        let schloc = node |> attr (XName.Get("schemaLocation")) |> Option.map (fun x -> Uri(x))
+                        parseInnerNodes { snode with Imports = (XNamespace.Get(ns), schloc)::snode.Imports } cursor nodes
+                    | x -> failwithf "Subelement %s for schema element is not supported." x
+                | _ -> failwithf "Unexpected %s element. Expected simpleType, complexType, group, attributeGroup, element, attribute, notation or annotation." node.Name.LocalName
+            | ((Xsd "simpleType" | Xsd "complexType" | Xsd "group" | Xsd "attributeGroup" | Xsd "element" | Xsd "attribute" | Xsd "notation") as node)::nodes ->
+                let name = node |> reqAttr (XName.Get("name"))
+                match node.Name.LocalName with
+                | "complexType" ->
+                    // annotation?,(simpleContent|complexContent|((group|all|choice|sequence)?,((attribute|attributeGroup)*,anyAttribute?)))
+                    parseInnerNodes snode true nodes
+                | "element" ->
+                    match node |> attr (XName.Get("type")) with
+                    | Some value ->
+                        snode.Elements.Add(XName.Get(name, tns.NamespaceName), TypeReference(parseXName node value))
+                        parseInnerNodes snode true nodes
+                    | _ ->
+                        // annotation?,(simpleType|complexType)?,(unique|key|keyref)*
+                        let typeDef = { Attributes = []; Properties = [] }
+                        snode.Elements.Add(XName.Get(name, tns.NamespaceName), TypeDefinition(typeDef))
+                        parseInnerNodes snode true nodes
+                | x -> failwithf "Subelement %s for schema element is not supported." x
+            | node::nodes -> failwithf "Unexpected subelement %A for schema element." node.Name
+        node.Elements() |> List.ofSeq |> parseInnerNodes snode false
