@@ -368,6 +368,7 @@ module XsdSchema =
 
     type ParserState =
         | Begin
+        | Header
         | Annotation
         | Content
         | Particle
@@ -537,38 +538,33 @@ module XsdSchema =
                       Imports = []
                       Elements = Dictionary<XName,SchemaType>()
                       Types = Dictionary<XName,TypeDefinition>() }
-        let rec parseInnerNodes (snode: SchemaNode) cursor (nodes: XElement list) =
-            // (include|import|redefine|annotation)*,((simpleType|complexType|group|attributeGroup|element|attribute|notation),annotation*)*
-            match nodes with
-            | [] -> snode
-            | ((Xsd "annotation") as node)::nodes -> // Ignored
-                parseInnerNodes snode cursor nodes
-            | ((Xsd "include" | Xsd "import" | Xsd "redefine") as node)::nodes ->
-                match cursor with
-                | false ->
-                    match node.Name.LocalName with
-                    | "include" ->
-                        let schloc = node |> reqAttr (XName.Get("schemaLocation"))
-                        parseInnerNodes { snode with Includes = Uri(schloc)::snode.Includes } cursor nodes
-                    | "import" ->
-                        let ns = node |> attrOrDefault (XName.Get("namespace")) ""
-                        let schloc = node |> attr (XName.Get("schemaLocation")) |> Option.map (fun x -> Uri(x))
-                        parseInnerNodes { snode with Imports = (XNamespace.Get(ns), schloc)::snode.Imports } cursor nodes
-                    | x -> failwithf "Subelement %s for schema element is not supported." x
-                | _ -> failwithf "Unexpected %s element. Expected simpleType, complexType, group, attributeGroup, element, attribute, notation or annotation." node.Name.LocalName
-            | ((Xsd "simpleType" | Xsd "complexType" | Xsd "group" | Xsd "attributeGroup" | Xsd "element" | Xsd "attribute" | Xsd "notation") as node)::nodes ->
-                match node.Name.LocalName with
-                | "complexType" ->
-                    let name = node |> reqAttr (XName.Get("name"))
-                    snode.Types.Add(XName.Get(name, tns.NamespaceName), parseComplexType node)
-                    parseInnerNodes snode true nodes
-                | "element" ->
-                    let name, tp = parseElement node
-                    snode.Elements.Add(XName.Get(name, tns.NamespaceName), tp)
-                    parseInnerNodes snode true nodes
-                | x -> failwithf "Subelement %s for schema element is not supported." x
-            | node::nodes -> failwithf "Unexpected subelement %A for schema element." node.Name
-        node.Elements() |> List.ofSeq |> parseInnerNodes snode false
+        let rec parseInnerNodes (state: ParserState) (snode: SchemaNode) (nodes: XElement list) =
+            match state, nodes with
+            | _, [] -> snode
+            | _, (Xsd "annotation" as node)::nodes ->
+                parseInnerNodes state snode nodes
+            | (Begin | Header), (Xsd "include" as node)::nodes ->
+                let schloc = node |> reqAttr (XName.Get("schemaLocation"))
+                parseInnerNodes Header { snode with Includes = Uri(schloc)::snode.Includes } nodes
+            | (Begin | Header), (Xsd "import" as node)::nodes ->
+                let ns = node |> attrOrDefault (XName.Get("namespace")) ""
+                let schloc = node |> attr (XName.Get("schemaLocation")) |> Option.map (fun x -> Uri(x))
+                parseInnerNodes Header { snode with Imports = (XNamespace.Get(ns), schloc)::snode.Imports } nodes
+            | (Begin | Header), (Xsd "redefine" as node)::nodes ->
+                failwithf "Element %A inside schema element is not implemented yet." node.Name
+            | _, (Xsd "complexType" as node)::nodes ->
+                let name = node |> reqAttr (XName.Get("name"))
+                snode.Types.Add(XName.Get(name, tns.NamespaceName), parseComplexType node)
+                parseInnerNodes TypeSpec snode nodes
+            | _, (Xsd "element" as node)::nodes ->
+                let name, tp = parseElement node
+                snode.Elements.Add(XName.Get(name, tns.NamespaceName), tp)
+                parseInnerNodes TypeSpec snode nodes
+            | _, ((Xsd "simpleType" | Xsd "group" | Xsd "attributeGroup" | Xsd "attribute" | Xsd "notation") as node)::nodes ->
+                failwithf "Element %A inside schema element is not implemented yet." node.Name
+            | _, node::_ ->
+                failwithf "Element %A inside schema element was not expected at the current position!" node.Name
+        node.Elements() |> List.ofSeq |> parseInnerNodes Begin snode
 
     let parseSchema (definitions: XElement) =
         match definitions.Element(XName.Get("types", XmlNamespace.Wsdl)) with
