@@ -44,7 +44,6 @@
     <Compile Include="XRoadTypeProvider.XRoad.fs" />
     <Compile Include="XRoadTypeProvider.Wsdl.fs" />
     <Compile Include="XRoadTypeProvider.Runtime.fs" />
-    <Compile Include="XRoadTypeProvider.DesignTime.fs" />
     <Compile Include="XRoadTypeProvider.fs" />
     <Content Include="packages.config" />
   </ItemGroup>

@@ -3,7 +3,6 @@
 open NUnit.Framework
 open Swensen.Unquote
 open System.IO
-open XRoadTypeProvider.DesignTime
 open XRoadTypeProvider.Wsdl
 
 [<TestFixture>]
