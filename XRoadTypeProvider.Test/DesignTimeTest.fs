@@ -98,20 +98,38 @@ module DesignTime =
         ()
 
     [<Test>]
-    let ``Parse Aktorstest XSD schema`` () =
-        let document = System.Xml.Linq.XDocument.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
-        let definitionsNode = document.Element(System.Xml.Linq.XName.Get("definitions", XmlNamespace.Wsdl))
-        let typesNode = definitionsNode.Element(System.Xml.Linq.XName.Get("types", XmlNamespace.Wsdl))
-        let schemaNode = typesNode.Element(System.Xml.Linq.XName.Get("schema", XmlNamespace.Xsd))
-        let result = XRoadTypeProvider.Wsdl.XsdSchema.parseSchemaNode(schemaNode)
-        printfn "%A" result
+    let ``Parse Aktorstest xml schema definition`` () =
+        let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let typeSchemas = schema.TypeSchemas
+        test <@ typeSchemas.Length = 1 @>
+        let mainSchema = typeSchemas.[0]
+        test <@ mainSchema.TargetNamespace.NamespaceName = "http://aktorstest.x-road.ee/producer" @>
+        test <@ mainSchema.QualifiedAttributes = false @>
+        test <@ mainSchema.QualifiedElements = false @>
+        test <@ mainSchema.Imports.Length = 2 @>
+        let ns1, uri1 = mainSchema.Imports.[1]
+        test <@ ns1.NamespaceName = "http://x-road.ee/xsd/x-road.xsd" @>
+        test <@ uri1.IsSome && uri1.Value.ToString() = "http://x-road.ee/xsd/x-road.xsd" @>
+        let ns2, uri2 = mainSchema.Imports.[0]
+        test <@ ns2.NamespaceName = "http://www.w3.org/2005/05/xmlmime" @>
+        test <@ uri2.IsSome && uri2.Value.ToString() = "http://www.w3.org/2005/05/xmlmime" @>
+        test <@ mainSchema.Includes.Length = 0 @>
+        test <@ mainSchema.Elements.Count = 14 @>
+        test <@ mainSchema.Types.Count = 4 @>
 
     [<Test>]
-    let ``Parse Maakataster XSD schema`` () =
+    let ``Parse Maakataster xml schema definition`` () =
+        let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml")
+        let typeSchemas = schema.TypeSchemas
+        test <@ typeSchemas.Length = 1 @>
+        let mainSchema = typeSchemas.[0]
+        test <@ mainSchema.TargetNamespace.NamespaceName = "http://producers.maakataster.xtee.riik.ee/producer/maakataster" @>
+        (*
         let document = System.Xml.Linq.XDocument.Load(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml")
         let definitionsNode = document.Element(System.Xml.Linq.XName.Get("definitions", XmlNamespace.Wsdl))
         let typesNode = definitionsNode.Element(System.Xml.Linq.XName.Get("types", XmlNamespace.Wsdl))
         let schemaNode = typesNode.Element(System.Xml.Linq.XName.Get("schema", XmlNamespace.Xsd))
         let result = XRoadTypeProvider.Wsdl.XsdSchema.parseSchemaNode(schemaNode)
         printfn "%A" result
-
+        *)
+        ()

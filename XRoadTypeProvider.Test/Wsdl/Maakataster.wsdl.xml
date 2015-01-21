@@ -293,7 +293,7 @@
             <soap:header message="tns:standardpais" part="toimik" use="encoded" namespace="http://x-tee.riik.ee/xsd/xtee.xsd" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
           </mime:part>
           <mime:part>
-            <mime:content part="p1" type="application/binary" />
+            <mime:content part="p2" type="application/binary" />
           </mime:part>
         </mime:multipartRelated>
       </output>

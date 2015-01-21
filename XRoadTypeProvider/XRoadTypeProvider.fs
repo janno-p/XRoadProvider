@@ -82,20 +82,31 @@ type public XRoadTypeProvider() as this =
                     let schema = resolveUri uri |> readSchema
 
                     let typeCache = Dictionary<XmlReference,ProvidedTypeDefinition>()
-                    schema.TypeCollections
-                    |> List.map (fun tc ->
-                        let typeNamespace = ProvidedTypeDefinition(tc.Namespace.NamespaceName, baseType, HideObjectMethods=true)
-                        tc.SchemaTypes
+
+                    schema.TypeSchemas
+                    |> List.map (fun schema ->
+                        let typeName = schema.TargetNamespace.NamespaceName
+                        let typeNamespace = ProvidedTypeDefinition(typeName, baseType, HideObjectMethods=true)
+                        
+                        schema.Elements
                         |> Seq.map (fun kvp ->
-                            let refName = match kvp.Key with
-                                          | SchemaElement x -> sprintf "%s'" x.LocalName
-                                          | SchemaType x -> x.LocalName
+                            let refName = sprintf "%s'" kvp.Key.LocalName
                             let tp = ProvidedTypeDefinition(refName, Some typeof<XRoadEntity>, HideObjectMethods=true)
                             tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
-                            typeCache.[kvp.Key] <- tp
+                            typeCache.[SchemaElement kvp.Key] <- tp
                             tp)
                         |> List.ofSeq
                         |> typeNamespace.AddMembers
+
+                        schema.Types
+                        |> Seq.map (fun kvp ->
+                            let tp = ProvidedTypeDefinition(kvp.Key.LocalName, Some typeof<XRoadEntity>, HideObjectMethods=true)
+                            tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
+                            typeCache.[SchemaType kvp.Key] <- tp
+                            tp)
+                        |> List.ofSeq
+                        |> typeNamespace.AddMembers
+
                         typeNamespace)
                     |> thisType.AddMembers
 
