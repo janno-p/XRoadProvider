@@ -31,7 +31,17 @@ type public XRoadTypeProvider() as this =
                     else yield ProvidedParameter(part.Name, typeof<obj>)
                     yield! getParameters xs fromCache }
             yield! getParameters msg.Body true
-            yield! getParameters msg.Header false
+
+            let rec getHeaderParameters (xs: MessagePart list) = seq {
+                match xs with
+                | [] -> ()
+                | (IsXRoadHeader true)::xs -> yield! getHeaderParameters xs
+                | x::xs -> yield ProvidedParameter(x.Name, typeof<obj>)
+                           yield! getHeaderParameters xs
+            }
+            yield ProvidedParameter("settings", typeof<XRoadHeader>)
+            yield! getHeaderParameters msg.Header
+
             yield! getParameters msg.MultipartContent false
         ]
         let parameters = getParameters operation.Request
@@ -64,6 +74,7 @@ type public XRoadTypeProvider() as this =
                                 | _ -> operation.Name
             let ps = args |> Seq.ofList |> Seq.skip 1 |> Seq.mapi (fun i exp -> match parameters.[i] with
                                                                                 | p when p.ParameterType = typeof<obj> -> Expr.Cast<obj> exp :> Expr
+                                                                                | p when p.ParameterType = typeof<XRoadHeader> -> Expr.Coerce(Expr.Cast<XRoadHeader> exp, typeof<obj>)
                                                                                 | _ -> Expr.Coerce(Expr.Cast<XRoadEntity> exp, typeof<obj>))
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
             <@@

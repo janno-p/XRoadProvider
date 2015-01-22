@@ -2,23 +2,34 @@
 
 open System.IO
 open XRoadTypeProvider
+open XRoadTypeProvider.Runtime
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"
 
 type Aktorstest = XRoadTypeProvider<wsdlPath>
 type testPort = Aktorstest.aktorstestService.Test
-
 type tns = Aktorstest.``http://aktorstest.x-road.ee/producer``
+
+printfn "Default port address: %s" testPort.DefaultAddress
+printfn "Default producer name: %s" testPort.DefaultProducer
+printfn "SOAP message binding style: %A" testPort.BindingStyle
 
 let service = testPort(Address="http://localhost:8001/")
 
-// File upload service
+printfn "Using port address: %s" service.Address
+printfn "Using producer name: %s" service.Producer
+
+let settings = XRoadHeader(Consumer=Some("10239452"),
+                           UserId=Some("EE:PIN:abc4567"))
+
+// File upload with multipart request
+
 let fup = tns.``fileUpload'``()
 fup.request <- tns.``fileUpload'``.``request'``()
 fup.request.fileName <- "test.txt"
 
-let fupResponse = service.fileUpload(fup, obj(), obj(), obj(), obj(), obj(), obj())
+let fupResponse = service.fileUpload(fup, settings, None)
 
 printfn "%s" fupResponse.response.faultCode
 printfn "%s" fupResponse.response.faultString
@@ -35,65 +46,21 @@ cad.request.aadress.majaNr <- "25A"
 cad.request.aadress.tanav <- "Paldiski mnt."
 cad.request.isikukood <- "30101010001"
 
-let cadResponse = service.changeAddress(cad, obj(), obj(), obj(), obj(), obj())
+let cadResponse = service.changeAddress(cad, settings)
 
 printfn "%s" cadResponse.response.faultCode
 printfn "%s" cadResponse.response.faultString
 
-// ---
+// List methods service
 
-let adr = tns.aadress()
-let fup = tns.fileUpload'()
+let methods = service.listMethods(obj(), settings)
 
-let req = tns.``fileUpload'``.``request'``()
-fup.request <- req
+// File download with multipart response
 
-let hdr = Runtime.XRoadHeader()
+let fdInput = tns.``fileDownload'``()
+fdInput.request <- tns.``fileDownload'``.``request'``()
+fdInput.request.fileName <- "document.pdf"
 
-printfn "%s" testPort.DefaultAddress
-printfn "%s" testPort.DefaultProducer
-printfn "%A" testPort.BindingStyle
-
-
-printfn "Using port address: %s" service.Address
-printfn "Using producer name: %s" service.Producer
-
-let ml = service.listMethods(box 0)
-
-let o1 = service.isikOtsing(tns.isikOtsing'(), box 2, box 3, box 4, box 5, box 6)
-let o2 = service.changeAddress(tns.changeAddress'(), box "service", box "id", box "userId", box "producer", box "consumer")
-
-let resp = service.fileDownload(tns.fileDownload'(), box "service", box "id", box "userId", box "producer", box "consumer")
+let resp = service.fileDownload(fdInput, settings)
 let stream = resp.Attachments.[0]
 let result = resp.Result
-
-(*
-let o3, f3 = service.fileDownload(obj())
-
-let hdr = XteeHeader(// DNS-name of the institution
-                     consumer="10239452",
-                     // Service invocation nonce (unique identifier)
-                     id="411d6755661409fed365ad8135f8210be07613da",
-                     // DNS-name of the database
-                     producer=service.Producer,
-                     // Name of the service to be invoked
-                     service="land-cadastre.allowedMethods",
-                     // ID code of the person invoking the service, preceded by a two letter country code (EE37702026518)
-                     userId="EE:PIN:abc4567")
-
-type Test = { T: string }
-
-let fu = Aktorstest.ServiceTypes.fileUpload()
-fu.body <- { T = "pizza" }
-fu.file <- new MemoryStream()
-
-printfn "%O" fu.body
-printfn "%s" hdr.consumer
-
-type fileUploadRequest = { fileName: string }
-
-let file = Runtime.AttachmentCollection()
-file.Add(File.OpenRead("test.txt"))
-
-//let result = testPort.Operations.fileUpload({ fileName = "test.txt" }, file)
-*)

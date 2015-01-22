@@ -641,3 +641,25 @@ let readSchema (uri: string) =
     let definitionsNode = document.Element(XName.Get("definitions", XmlNamespace.Wsdl))
     { Services = definitionsNode |> parseServices
       TypeSchemas = definitionsNode |> XsdSchema.parseSchema }
+
+let (|IsXRoadHeader|) (part: MessagePart) =
+    match part.Reference with
+    | SchemaElement name -> match name with
+                            | XsdSchema.XrdType "consumer"
+                            | XsdSchema.XrdType "producer"
+                            | XsdSchema.XrdType "userId"
+                            | XsdSchema.XrdType "id"
+                            | XsdSchema.XrdType "service"
+                            | XsdSchema.XrdType "issue"
+                            | XsdSchema.XrdType "unit"
+                            | XsdSchema.XrdType "position"
+                            | XsdSchema.XrdType "userName"
+                            | XsdSchema.XrdType "async"
+                            | XsdSchema.XrdType "authenticator"
+                            | XsdSchema.XrdType "paid"
+                            | XsdSchema.XrdType "encrypt"
+                            | XsdSchema.XrdType "encryptCert"
+                            | XsdSchema.XrdType "encrypted"
+                            | XsdSchema.XrdType "encryptedCert" -> true
+                            | _ -> false
+    | _ -> false
