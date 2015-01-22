@@ -343,6 +343,16 @@ module XsdSchema =
         | XmlNamespace.Xsd -> Some element.Name.LocalName
         | _ -> None
 
+    let (|XsdType|_|) (name: XName) =
+        match name.NamespaceName with
+        | XmlNamespace.Xsd -> Some name.LocalName
+        | _ -> None
+
+    let (|XrdType|_|) (name: XName) =
+        match name.NamespaceName with
+        | XmlNamespace.XRoad -> Some name.LocalName
+        | _ -> None
+
     type TypeDefinition =
       { Attributes: (string * SchemaType) list
         Properties: (string * SchemaType) list }
@@ -379,6 +389,15 @@ module XsdSchema =
 
     type TypeNode =
       { X: string }
+
+    let mapPrimitiveType = function
+        | XsdType "base64Binary" -> Some typeof<byte[]>
+        | XsdType "string" -> Some typeof<string>
+        | XsdType name -> failwithf "Unmapped XSD type %s" name
+        | XrdType "faultCode"
+        | XrdType "faultString" -> Some typeof<string>
+        | XrdType name -> failwithf "Unmapped XRD type %s" name
+        | _ -> None
 
     let rec parseElement (node: XElement) =
         (*<element  id=ID
@@ -432,6 +451,7 @@ module XsdSchema =
             | (Begin | Annotation), (Xsd "simpleContent" as node)::nodes ->
                 failwithf "Element %A in complexType element is not implemented yet!" node.Name
             | (Begin | Annotation), (Xsd "complexContent" as node)::nodes ->
+                parseComplexContent node
                 failwithf "Element %A in complexType element is not implemented yet!" node.Name
             | (Begin | Annotation), ((Xsd "group" | Xsd "choice") as node)::nodes ->
                 failwithf "Element %A in complexType element is not implemented yet!" node.Name
@@ -526,6 +546,41 @@ module XsdSchema =
             | _, node::_ ->
                 failwithf "Element %s was not expected at the current position." node.Name.LocalName
         node.Elements() |> List.ofSeq |> parseInnerNodes Begin []
+
+    and parseComplexContent (node: XElement) =
+        let rec parseInnerNodes (state: ParserState) spec (nodes: XElement list) =
+            match state, nodes with
+            | _, [] -> spec
+            | Begin, (Xsd "annotation" as node)::nodes -> parseInnerNodes Annotation spec nodes
+            | (Begin | Annotation), (Xsd "restriction" as node)::nodes ->
+                parseComplexContentRestriction node
+                failwithf "Element %A inside complexContent element was not expected at the current position!" node.Name
+            | (Begin | Annotation), (Xsd "extension" as node)::nodes ->
+                failwithf "Element %A inside complexContent element was not expected at the current position!" node.Name
+            | _, node::_ ->
+                failwithf "Element %A inside complexContent element was not expected at the current position!" node.Name
+        node.Elements() |> List.ofSeq |> parseInnerNodes Begin ()
+
+    and parseComplexContentRestriction (node: XElement) =
+        // annotation?,(group|all|choice|sequence)?,(attribute|attributeGroup)*,anyAttribute?
+        let rec parseInnerNodes (state: ParserState) spec (nodes: XElement list) =
+            match state, nodes with
+            | _, [] -> spec
+            | Begin, (Xsd "annotation" as node)::nodes -> parseInnerNodes Annotation spec nodes
+            | (Begin | Annotation), (Xsd "group" as node)::nodes
+            | (Begin | Annotation), (Xsd "all" as node)::nodes
+            | (Begin | Annotation), (Xsd "choice" as node)::nodes ->
+                failwithf "Element %A inside complexContent restriction element is not implemented." node.Name
+            | (Begin | Annotation), (Xsd "sequence" as node)::nodes ->
+                failwithf "Element %A inside complexContent restriction element is not implemented." node.Name
+            | (Begin | Annotation | Particle | Attribute), (Xsd "attribute" as node)::nodes
+            | (Begin | Annotation | Particle | Attribute), (Xsd "attributeGroup" as node)::nodes ->
+                failwithf "Element %A inside complexContent restriction element is not implemented." node.Name
+            | (Begin | Annotation | Particle | Attribute), (Xsd "anyAttribute" as node)::nodes ->
+                failwithf "Element %A inside complexContent restriction element is not implemented." node.Name
+            | _, node::_ ->
+                failwithf "Element %A inside complexContent restriction element was not expected at the current position!" node.Name
+        node.Elements() |> List.ofSeq |> parseInnerNodes Begin ()
 
     let parseSchemaNode (node: XElement) =
         let qattr = node |> isQualified (XName.Get("attributeFormDefault"))

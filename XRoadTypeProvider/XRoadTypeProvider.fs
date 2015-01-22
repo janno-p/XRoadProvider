@@ -6,7 +6,7 @@ open Microsoft.FSharp.Reflection
 open ProviderImplementation.ProvidedTypes
 open System.Collections.Generic
 open System.Reflection
-open System.Xml
+open System.Xml.Linq
 open XRoadTypeProvider.Wsdl
 open XRoadTypeProvider.Runtime
 
@@ -72,6 +72,50 @@ type public XRoadTypeProvider() as this =
             @@>)
         meth
 
+    let getRuntimeType (typeCache: IDictionary<XmlReference,ProvidedTypeDefinition>) (typeName: XName) =
+        match XsdSchema.mapPrimitiveType typeName with
+        | Some tp -> tp
+        | _ -> match typeCache.TryGetValue(SchemaType typeName) with
+               | true, tp -> upcast tp
+               | _ -> failwithf "Unknown type %A found." typeName
+
+    let buildXRoadEntityTypes typeCache (typeSchemas: XsdSchema.SchemaNode list) =
+        let rec populateTypeMembers (providedType: ProvidedTypeDefinition) (typeDef: XsdSchema.TypeDefinition) =
+            typeDef.Properties
+            |> List.map (fun (nm, tp) ->
+                let propType = match tp with
+                               | XsdSchema.TypeReference typeName ->
+                                   getRuntimeType typeCache typeName
+                               | XsdSchema.TypeDefinition typeDef ->
+                                   let newType = ProvidedTypeDefinition(sprintf "%s'" nm, Some typeof<XRoadEntity>, HideObjectMethods=true)
+                                   newType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
+                                   providedType.AddMember(newType)
+                                   typeDef |> populateTypeMembers newType
+                                   upcast newType
+                let propDef = ProvidedProperty(nm, propType)
+                propDef.GetterCode <- (fun args ->
+                    let meth =
+                        let m = typeof<XRoadEntity>.GetMethod("GetProperty")
+                        match propType with
+                        | :? ProvidedTypeDefinition -> m.MakeGenericMethod(typeof<XRoadEntity>)
+                        | _ -> m.MakeGenericMethod(propType)
+                    Expr.Call(args.[0], meth, [Expr.Value nm]))
+                propDef.SetterCode <- (fun args ->
+                    let meth =
+                        let m = typeof<XRoadEntity>.GetMethod("SetProperty")
+                        match propType with
+                        | :? ProvidedTypeDefinition -> m.MakeGenericMethod(typeof<XRoadEntity>)
+                        | _ -> m.MakeGenericMethod(propType)
+                    Expr.Call(args.[0], meth, [Expr.Value nm; args.[1]]))
+                propDef)
+            |> providedType.AddMembers
+        typeSchemas |> List.iter (fun schema ->
+            schema.Elements |> Seq.iter (fun kvp ->
+                match kvp.Value with
+                | XsdSchema.TypeReference typeName -> ()
+                | XsdSchema.TypeDefinition typeDef ->
+                    typeDef |> populateTypeMembers typeCache.[SchemaElement kvp.Key]))
+
     do newType.DefineStaticParameters(
         parameters = staticParams,
         instantiationFunction = (fun typeName parameterValues ->
@@ -87,7 +131,7 @@ type public XRoadTypeProvider() as this =
                     |> List.map (fun schema ->
                         let typeName = schema.TargetNamespace.NamespaceName
                         let typeNamespace = ProvidedTypeDefinition(typeName, baseType, HideObjectMethods=true)
-                        
+
                         schema.Elements
                         |> Seq.map (fun kvp ->
                             let refName = sprintf "%s'" kvp.Key.LocalName
@@ -109,6 +153,8 @@ type public XRoadTypeProvider() as this =
 
                         typeNamespace)
                     |> thisType.AddMembers
+
+                    schema.TypeSchemas |> buildXRoadEntityTypes typeCache
 
                     schema.Services
                     |> List.map (fun service ->

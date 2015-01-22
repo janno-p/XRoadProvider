@@ -10,7 +10,7 @@ type XRoadEntity () =
     let data = Dictionary<string, obj>()
 
     member __.SetProperty (name, value) =
-        data.[name] <- value
+        data.[name] <- box value
 
     member __.GetProperty<'T> (name) =
         if data.ContainsKey name then

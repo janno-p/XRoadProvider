@@ -11,8 +11,25 @@ type testPort = Aktorstest.aktorstestService.Test
 
 type tns = Aktorstest.``http://aktorstest.x-road.ee/producer``
 
+let service = testPort(Address="http://localhost:8001/")
+
+// File upload service
+let fup = tns.``fileUpload'``()
+fup.request <- tns.``fileUpload'``.``request'``()
+fup.request.fileName <- "test.txt"
+
+let response = service.fileUpload(fup, obj(), obj(), obj(), obj(), obj(), obj())
+
+printfn "%s" response.response.faultCode
+printfn "%s" response.response.faultString
+
+// ---
+
 let adr = tns.aadress()
 let fup = tns.fileUpload'()
+
+let req = tns.``fileUpload'``.``request'``()
+fup.request <- req
 
 let hdr = Runtime.XRoadHeader()
 
@@ -20,7 +37,7 @@ printfn "%s" testPort.DefaultAddress
 printfn "%s" testPort.DefaultProducer
 printfn "%A" testPort.BindingStyle
 
-let service = testPort(Address="http://localhost:8001/")
+
 printfn "Using port address: %s" service.Address
 printfn "Using producer name: %s" service.Producer
 
