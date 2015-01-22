@@ -5,8 +5,10 @@ infrastructure.
 
 ## TODO
 
-* Overrideable service settings (producer, soap address, doc language)
+* Overrideable service settings (producer, soap address, doc language).
 * Logging outgoing incoming messages when necessary.
+* Cleaner type hierarchy considering XRoad specific message structure.
+* Separate types for XRoad specific structures: header, non-technical fault etc.
 
 ## Mistakes in XRoad samples
 
