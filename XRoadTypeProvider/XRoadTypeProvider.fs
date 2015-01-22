@@ -218,23 +218,6 @@ type public XRoadTypeProvider() as this =
                         |> serviceType.AddMembers
                         serviceType)
                     |> thisType.AddMembers
-
-                    (*
-                        for part in message.Parts do
-                            let tp = match part.Element with
-                                     | null -> typeof<obj>
-                                     | qn when qn.Name = "" -> typeof<obj>
-                                     | qn -> resolveElementType qn description.TargetNamespace
-                            let pp = ProvidedProperty(part.Name, tp)
-                            pp.GetterCode <- (fun args ->
-                                let meth = typeof<XRoadEntity>.GetMethod("GetProperty").MakeGenericMethod(tp)
-                                Expr.Call(args.[0], meth, [Expr.Value part.Name]))
-                            pp.SetterCode <- (fun args ->
-                                let meth = typeof<XRoadEntity>.GetMethod("SetProperty").MakeGenericMethod(tp)
-                                Expr.Call(args.[0], meth, [Expr.Value part.Name; args.[1]]))
-                            messageType.AddMember(pp)
-                        typesType.AddMember(messageType)
-                    *)
                 | _ -> failwith "unexpected parameter values"
             with
             | e ->

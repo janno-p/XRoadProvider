@@ -89,13 +89,11 @@ type XRoadHeader () =
 type IXRoadContext =
     abstract member Address: string with get, set
     abstract member Producer: string with get, set
-    abstract member XRoadSettings: XRoadHeader with get
 
 type XRoadContext () =
     interface IXRoadContext with
         member val Address = "" with get, set
         member val Producer = "" with get, set
-        member val XRoadSettings = XRoadHeader() with get
 
 type AttachmentCollection () =
     member __.Add (stream: Stream) =
@@ -107,15 +105,20 @@ type IXRoadResponseWithAttachments<'T> =
     abstract member Attachments: Stream [] with get
 
 type XRoadServiceRequest () =
+    let generateNonce () =
+        ""
+
     member __.Execute(context: IXRoadContext, operationName, args: obj []) =
-        //let settings = defaultArg settings (XRoad.XRoadHeader())
-        let settings = XRoadHeader()
+        let settings = args |> Array.tryFind (fun arg -> arg :? XRoadHeader)
+                            |> Option.map (fun o -> o :?> XRoadHeader)
+                            |> Option.orDefault (XRoadHeader())
 
         let req = System.Net.WebRequest.Create(context.Address)
         req.Method <- "POST"
 
         let producer = defaultArg settings.Producer context.Producer
-        let serviceName = sprintf "%s.%s" producer operationName
+        let serviceName = defaultArg settings.Service (sprintf "%s.%s" producer operationName)
+        let requestId = defaultArg settings.Id (generateNonce())
 
         let writeReq () =
             use stream = req.GetRequestStream()
@@ -128,15 +131,35 @@ type XRoadServiceRequest () =
                 | _ -> ()
                 writer.WriteEndElement()
 
+            let writeOptionalXRoadProperty name (value: 'T option) (f: 'T -> unit) =
+                match value with
+                | Some value ->
+                    writer.WriteStartElement(name, XmlNamespace.XRoad)
+                    f(value)
+                    writer.WriteEndElement()
+                | _ -> ()
+
             let writeSoapHeader () =
                 writer.WriteStartElement("Header", XmlNamespace.SoapEnvelope)
                 writer.WriteAttributeString("xmlns", "xrd", null, XmlNamespace.XRoad)
-                writerXRoadProperty "consumer" (Some (defaultArg settings.Consumer "10239452"))
+
+                // TODO: Required elements are declared in WSDL. Others are optional.
+                writerXRoadProperty "consumer" settings.Consumer
                 writerXRoadProperty "producer" (Some producer)
-                writerXRoadProperty "userId" (Some (defaultArg settings.UserId "EE30101010007"))
-                writerXRoadProperty "id" (Some (defaultArg settings.Id "3aed1ae3813eb7fbed9396fda70ca1215d3f3fe1"))
+                writerXRoadProperty "userId" settings.UserId
+                writerXRoadProperty "id" (Some requestId)
                 writerXRoadProperty "service" (Some serviceName)
                 writerXRoadProperty "issue" None
+
+                writeOptionalXRoadProperty "unit" settings.Unit writer.WriteString
+                writeOptionalXRoadProperty "position" settings.Position writer.WriteString
+                writeOptionalXRoadProperty "userName" settings.UserName writer.WriteString
+                writeOptionalXRoadProperty "async" settings.Async writer.WriteValue
+                writeOptionalXRoadProperty "authenticator" settings.Authenticator writer.WriteString
+                writeOptionalXRoadProperty "paid" settings.Paid writer.WriteString
+                writeOptionalXRoadProperty "encrypt" settings.Encrypt writer.WriteString
+                writeOptionalXRoadProperty "encryptCert" settings.EncryptCert writer.WriteString
+
                 writer.WriteEndElement()
 
             writer.WriteStartDocument()
