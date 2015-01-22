@@ -114,7 +114,9 @@ type public XRoadTypeProvider() as this =
                 match kvp.Value with
                 | XsdSchema.TypeReference typeName -> ()
                 | XsdSchema.TypeDefinition typeDef ->
-                    typeDef |> populateTypeMembers typeCache.[SchemaElement kvp.Key]))
+                    typeDef |> populateTypeMembers typeCache.[SchemaElement kvp.Key])
+            schema.Types |> Seq.iter (fun kvp ->
+                kvp.Value |> populateTypeMembers typeCache.[SchemaType kvp.Key]))
 
     do newType.DefineStaticParameters(
         parameters = staticParams,

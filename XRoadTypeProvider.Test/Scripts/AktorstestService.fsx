@@ -18,10 +18,27 @@ let fup = tns.``fileUpload'``()
 fup.request <- tns.``fileUpload'``.``request'``()
 fup.request.fileName <- "test.txt"
 
-let response = service.fileUpload(fup, obj(), obj(), obj(), obj(), obj(), obj())
+let fupResponse = service.fileUpload(fup, obj(), obj(), obj(), obj(), obj(), obj())
 
-printfn "%s" response.response.faultCode
-printfn "%s" response.response.faultString
+printfn "%s" fupResponse.response.faultCode
+printfn "%s" fupResponse.response.faultString
+
+// Change address service
+
+let cad = tns.``changeAddress'``()
+cad.request <- tns.``changeAddress'``.``request'``()
+cad.request.aadress <- tns.aadress()
+cad.request.aadress.korteriNr <- 13
+cad.request.aadress.linnvald <- "Tallinn"
+cad.request.aadress.maakond <- "Harju"
+cad.request.aadress.majaNr <- "25A"
+cad.request.aadress.tanav <- "Paldiski mnt."
+cad.request.isikukood <- "30101010001"
+
+let cadResponse = service.changeAddress(cad, obj(), obj(), obj(), obj(), obj())
+
+printfn "%s" cadResponse.response.faultCode
+printfn "%s" cadResponse.response.faultString
 
 // ---
 

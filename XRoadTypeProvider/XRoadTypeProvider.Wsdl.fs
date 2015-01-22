@@ -391,11 +391,14 @@ module XsdSchema =
       { X: string }
 
     let mapPrimitiveType = function
+        | XsdType "integer" -> Some typeof<int>
         | XsdType "base64Binary" -> Some typeof<byte[]>
         | XsdType "string" -> Some typeof<string>
         | XsdType name -> failwithf "Unmapped XSD type %s" name
         | XrdType "faultCode"
         | XrdType "faultString" -> Some typeof<string>
+        | XrdType "jpg" -> Some typeof<byte[]>
+        | XrdType "maakond" -> Some typeof<string>
         | XrdType name -> failwithf "Unmapped XRD type %s" name
         | _ -> None
 
