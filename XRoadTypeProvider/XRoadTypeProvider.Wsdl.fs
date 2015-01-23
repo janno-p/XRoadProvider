@@ -354,8 +354,14 @@ module XsdSchema =
         | _ -> None
 
     type TypeDefinition =
-      { Attributes: (string * SchemaType) list
+      { ParentType: XName option
+        IsAbstract: bool
+        Attributes: (string * SchemaType) list
         Properties: (string * SchemaType) list }
+        static member Empty = { ParentType = None
+                                IsAbstract = false
+                                Attributes = []
+                                Properties = [] }
 
     and SchemaType =
         | TypeReference of XName
@@ -443,7 +449,7 @@ module XsdSchema =
                     notimplemented node "element"
                 | _ ->
                     notexpected node "element"
-                ) (Begin, { Attributes = []; Properties = [] })
+                ) (Begin, TypeDefinition.Empty)
             |> (fun (_, typeDef) -> (name, TypeDefinition(typeDef)))
 
     and parseComplexType (node: XElement) =
@@ -451,32 +457,33 @@ module XsdSchema =
                          | "true" -> true
                          | "false" -> false
                          | x -> failwithf "Invalid value %s for complexType::abstract attribute" x
-        node.Elements()
-        |> Seq.fold (fun (state, spec) node ->
-            match node, state with
-            | Xsd "annotation", Begin ->
-                Annotation, spec
-            | Xsd "simpleContent", (Begin | Annotation) ->
-                notimplemented node "complexType"
-            | Xsd "complexContent", (Begin | Annotation) ->
-                parseComplexContent node
-                notimplemented node "complexType"
-            | (Xsd "group" | Xsd "choice"), (Begin | Annotation) ->
-                notimplemented node "complexType"
-            | Xsd "sequence", (Begin | Annotation) ->
-                Particle, { spec with Properties = spec.Properties @ (parseSequence node) }
-            | Xsd "all", (Begin | Annotation) ->
-                Particle, { spec with Properties = spec.Properties @ (parseAll node) }
-            | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
-                Attribute, { spec with Attributes = spec.Attributes @ [parseAttribute node] }
-            | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
-                notimplemented node "complexType"
-            | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
-                notimplemented node "complexType"
-            | _ ->
-                notexpected node "complexType"
-            ) (Begin, { Attributes = []; Properties = [] })
-        |> snd
+        let typeDef =
+            node.Elements()
+            |> Seq.fold (fun (state, spec) node ->
+                match node, state with
+                | Xsd "annotation", Begin ->
+                    Annotation, spec
+                | Xsd "simpleContent", (Begin | Annotation) ->
+                    notimplemented node "complexType"
+                | Xsd "complexContent", (Begin | Annotation) ->
+                    Content, parseComplexContent node
+                | (Xsd "group" | Xsd "choice"), (Begin | Annotation) ->
+                    notimplemented node "complexType"
+                | Xsd "sequence", (Begin | Annotation) ->
+                    Particle, { spec with Properties = spec.Properties @ (parseSequence node) }
+                | Xsd "all", (Begin | Annotation) ->
+                    Particle, { spec with Properties = spec.Properties @ (parseAll node) }
+                | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
+                    Attribute, { spec with Attributes = spec.Attributes @ [parseAttribute node] }
+                | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
+                    notimplemented node "complexType"
+                | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
+                    notimplemented node "complexType"
+                | _ ->
+                    notexpected node "complexType"
+                ) (Begin, TypeDefinition.Empty)
+            |> snd
+        { typeDef with IsAbstract = isAbstract }
 
     and parseSequence (node: XElement): (string * SchemaType) list =
         (*<sequence id=ID
@@ -530,7 +537,7 @@ module XsdSchema =
                     notimplemented node "attribute"
                 | _ ->
                     notexpected node "attribute"
-                ) (Begin, { Attributes = []; Properties = [] })
+                ) (Begin, TypeDefinition.Empty)
             |> (fun (_, typeDef) -> (name, TypeDefinition(typeDef)))
 
     and parseAll (node: XElement) =
@@ -553,23 +560,29 @@ module XsdSchema =
             ) (Begin, [])
         |> snd
 
-    and parseComplexContent (node: XElement) =
-        node.Elements()
-        |> Seq.fold (fun (state, spec) node ->
-            match node, state with
-            | Xsd "annotation", Begin ->
-                Annotation, spec
-            | Xsd "restriction", (Begin | Annotation) ->
-                parseComplexContentRestriction node
-                notimplemented node "complexContent"
-            | Xsd "extension", (Begin | Annotation) ->
-                notimplemented node "complexContent"
-            | _ ->
-                notexpected node "complexContent"
-            ) (Begin, ())
-        |> snd
+    and parseComplexContent (node: XElement): TypeDefinition =
+        let content =
+            node.Elements()
+            |> Seq.fold (fun (state, spec) node ->
+                match node, state with
+                | Xsd "annotation", Begin ->
+                    Annotation, spec
+                | Xsd "restriction", (Begin | Annotation) ->
+                    parseComplexContentRestriction node
+                    notimplemented node "complexContent"
+                | Xsd "extension", (Begin | Annotation) ->
+                    Content, Some (parseExtension node)
+                | _ ->
+                    notexpected node "complexContent"
+                ) (Begin, None)
+            |> snd
+        match content with
+        | Some typeDef -> typeDef
+        | _ -> failwith "Element complexContent is expected to contain either restriction or extension element."
 
-    and parseComplexContentRestriction (node: XElement) =
+    and parseComplexContentRestriction (node: XElement): TypeDefinition =
+        let typeDef = { TypeDefinition.Empty with
+                            ParentType = Some(node |> reqAttr (XName.Get("base")) |> parseXName node) }
         // annotation?,(group|all|choice|sequence)?,(attribute|attributeGroup)*,anyAttribute?
         node.Elements()
         |> Seq.fold (fun (state, spec) node ->
@@ -581,15 +594,37 @@ module XsdSchema =
             | Xsd "choice", (Begin | Annotation) ->
                 notimplemented node "complexContent restriction"
             | Xsd "sequence", (Begin | Annotation) ->
-                notimplemented node "complexContent restriction"
-            | Xsd "attribute", (Begin | Annotation | Particle | Attribute)
+                Particle, { spec with Properties = spec.Properties @ (parseSequence node) }
+            | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
+                Attribute, { spec with Attributes = spec.Attributes @ [parseAttribute node] }
             | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
                 notimplemented node "complexContent restriction"
             | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
                 notimplemented node "complexContent restriction"
             | _ ->
                 notexpected node "complexContent restriction"
-            ) (Begin, ())
+            ) (Begin, typeDef)
+        |> snd
+
+    and parseExtension (node: XElement): TypeDefinition =
+        let typeDef = { TypeDefinition.Empty with
+                            ParentType = Some(node |> reqAttr (XName.Get("base")) |> parseXName node) }
+        node.Elements()
+        |> Seq.fold (fun (state, spec) node ->
+            match node, state with
+            | Xsd "annotation", Begin ->
+                Annotation, spec
+            | (Xsd "group" | Xsd "all" | Xsd "choice"), (Begin | Annotation) ->
+                notimplemented node "extension"
+            | Xsd "sequence", (Begin | Annotation) ->
+                Particle, { spec with Properties = spec.Properties @ (parseSequence node) }
+            | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | Particle | Attribute) ->
+                notimplemented node "extension"
+            | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
+                notimplemented node "extension"
+            | _ ->
+                notexpected node "extension"
+            ) (Begin, typeDef)
         |> snd
 
     let parseSchemaNode (node: XElement) =
