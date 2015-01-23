@@ -586,43 +586,41 @@ module XsdSchema =
         node.Elements() |> List.ofSeq |> parseInnerNodes Begin ()
 
     let parseSchemaNode (node: XElement) =
-        let qattr = node |> isQualified (XName.Get("attributeFormDefault"))
-        let qelem = node |> isQualified (XName.Get("elementFormDefault"))
-        let tns = node |> attrOrDefault (XName.Get("targetNamespace")) "" |> XNamespace.Get
-        let snode = { QualifiedAttributes = qattr
-                      QualifiedElements = qelem
-                      TargetNamespace = tns
+        let snode = { QualifiedAttributes = node |> isQualified (XName.Get("attributeFormDefault"))
+                      QualifiedElements = node |> isQualified (XName.Get("elementFormDefault"))
+                      TargetNamespace = node |> attrOrDefault (XName.Get("targetNamespace")) "" |> XNamespace.Get
                       Includes = []
                       Imports = []
                       Elements = Dictionary<XName,SchemaType>()
                       Types = Dictionary<XName,TypeDefinition>() }
-        let rec parseInnerNodes (state: ParserState) (snode: SchemaNode) (nodes: XElement list) =
-            match state, nodes with
-            | _, [] -> snode
-            | _, (Xsd "annotation" as node)::nodes ->
-                parseInnerNodes state snode nodes
-            | (Begin | Header), (Xsd "include" as node)::nodes ->
+        node.Elements()
+        |> Seq.fold (fun (state, snode) node ->
+            match state, node with
+            | _, Xsd "annotation" ->
+                state, snode
+            | (Begin | Header), Xsd "include" ->
                 let schloc = node |> reqAttr (XName.Get("schemaLocation"))
-                parseInnerNodes Header { snode with Includes = Uri(schloc)::snode.Includes } nodes
-            | (Begin | Header), (Xsd "import" as node)::nodes ->
+                Header, { snode with Includes = Uri(schloc)::snode.Includes }
+            | (Begin | Header), Xsd "import" ->
                 let ns = node |> attrOrDefault (XName.Get("namespace")) ""
                 let schloc = node |> attr (XName.Get("schemaLocation")) |> Option.map (fun x -> Uri(x))
-                parseInnerNodes Header { snode with Imports = (XNamespace.Get(ns), schloc)::snode.Imports } nodes
-            | (Begin | Header), (Xsd "redefine" as node)::nodes ->
+                Header, { snode with Imports = (XNamespace.Get(ns), schloc)::snode.Imports }
+            | (Begin | Header), Xsd "redefine" ->
                 failwithf "Element %A inside schema element is not implemented yet." node.Name
-            | _, (Xsd "complexType" as node)::nodes ->
+            | _, Xsd "complexType" ->
                 let name = node |> reqAttr (XName.Get("name"))
-                snode.Types.Add(XName.Get(name, tns.NamespaceName), parseComplexType node)
-                parseInnerNodes TypeSpec snode nodes
-            | _, (Xsd "element" as node)::nodes ->
+                snode.Types.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), parseComplexType node)
+                TypeSpec, snode
+            | _, Xsd "element" ->
                 let name, tp = parseElement node
-                snode.Elements.Add(XName.Get(name, tns.NamespaceName), tp)
-                parseInnerNodes TypeSpec snode nodes
-            | _, ((Xsd "simpleType" | Xsd "group" | Xsd "attributeGroup" | Xsd "attribute" | Xsd "notation") as node)::nodes ->
+                snode.Elements.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), tp)
+                TypeSpec, snode
+            | _, (Xsd "simpleType" | Xsd "group" | Xsd "attributeGroup" | Xsd "attribute" | Xsd "notation") ->
                 failwithf "Element %A inside schema element is not implemented yet." node.Name
-            | _, node::_ ->
+            | _ ->
                 failwithf "Element %A inside schema element was not expected at the current position!" node.Name
-        node.Elements() |> List.ofSeq |> parseInnerNodes Begin snode
+            ) (Begin, snode)
+        |> snd
 
     let parseSchema (definitions: XElement) =
         match definitions.Element(XName.Get("types", XmlNamespace.Wsdl)) with
