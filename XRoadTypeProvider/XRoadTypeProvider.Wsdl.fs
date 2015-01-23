@@ -402,6 +402,12 @@ module XsdSchema =
         | XrdType name -> failwithf "Unmapped XRD type %s" name
         | _ -> None
 
+    let private notexpected (node: XElement) containerName =
+        failwithf "Element %A inside %s element was not expected at the current position!" node.Name containerName
+
+    let private notimplemented (node: XElement) containerName =
+        failwithf "Element %A inside %s element is not implemented yet." node.Name containerName
+
     let rec parseElement (node: XElement) =
         (*<element  id=ID
                     name=NCName
@@ -420,60 +426,57 @@ module XsdSchema =
                     any attributes>
             annotation?,(simpleType|complexType)?,(unique|key|keyref)*
           </element>*)
-        let rec parseInnerNodes (part: ParserState) (typeDef: TypeDefinition) (nodes: XElement list) =
-            match part, nodes with
-            | _, [] -> typeDef
-            | Begin, ((Xsd "annotation") as node)::nodes -> // Ignored
-                parseInnerNodes Annotation typeDef nodes
-            | (Begin | Annotation), ((Xsd "simpleType") as node)::nodes ->
-                failwith "SimpleType elements for Element are not implemented yet!"
-            | (Begin | Annotation), ((Xsd "complexType") as node)::nodes ->
-                parseInnerNodes TypeSpec (parseComplexType node) nodes
-            | (Begin | Annotation | TypeSpec | Other), ((Xsd "unique" | Xsd "key" | Xsd "keyref") as node)::nodes ->
-                failwith "Other elements for Element are not implemented yet!"
-            | _, node::_ ->
-                failwithf "Element %s was not expected at the current position." node.Name.LocalName
         let name = node |> reqAttr (XName.Get("name"))
         match node |> attr (XName.Get("type")) with
         | Some value -> (name, TypeReference(parseXName node value))
         | _ ->
-            let typeDef = { Attributes = []; Properties = [] }
-            (name, node.Elements() |> List.ofSeq |> parseInnerNodes Begin typeDef |> TypeDefinition)
+            node.Elements()
+            |> Seq.fold (fun (state, spec) node ->
+                match node, state with
+                | Xsd "annotation", Begin ->
+                    Annotation, spec
+                | Xsd "simpleType", (Begin | Annotation) ->
+                    notimplemented node "element"
+                | Xsd "complexType", (Begin | Annotation) ->
+                    TypeSpec, (parseComplexType node)
+                | (Xsd "unique" | Xsd "key" | Xsd "keyref"), (Begin | Annotation | TypeSpec | Other) ->
+                    notimplemented node "element"
+                | _ ->
+                    notexpected node "element"
+                ) (Begin, { Attributes = []; Properties = [] })
+            |> (fun (_, typeDef) -> (name, TypeDefinition(typeDef)))
 
     and parseComplexType (node: XElement) =
         let isAbstract = match node |> attrOrDefault (XName.Get("abstract")) "false" with
                          | "true" -> true
                          | "false" -> false
                          | x -> failwithf "Invalid value %s for complexType::abstract attribute" x
-        let rec parseInnerNodes (part: ParserState) (typeDef: TypeDefinition) (nodes: XElement list) =
-            match part, nodes with
-            | _, [] ->
-                typeDef
-            | Begin, (Xsd "annotation" as node)::nodes ->
-                parseInnerNodes Annotation typeDef nodes
-            | (Begin | Annotation), (Xsd "simpleContent" as node)::nodes ->
-                failwithf "Element %A in complexType element is not implemented yet!" node.Name
-            | (Begin | Annotation), (Xsd "complexContent" as node)::nodes ->
+        node.Elements()
+        |> Seq.fold (fun (state, spec) node ->
+            match node, state with
+            | Xsd "annotation", Begin ->
+                Annotation, spec
+            | Xsd "simpleContent", (Begin | Annotation) ->
+                notimplemented node "complexType"
+            | Xsd "complexContent", (Begin | Annotation) ->
                 parseComplexContent node
-                failwithf "Element %A in complexType element is not implemented yet!" node.Name
-            | (Begin | Annotation), ((Xsd "group" | Xsd "choice") as node)::nodes ->
-                failwithf "Element %A in complexType element is not implemented yet!" node.Name
-            | (Begin | Annotation), ((Xsd "sequence") as node)::nodes ->
-                let properties = parseSequence node
-                parseInnerNodes Particle { typeDef with Properties = typeDef.Properties @ properties } nodes
-            | (Begin | Annotation), ((Xsd "all") as node)::nodes ->
-                let properties = parseAll node
-                parseInnerNodes Particle { typeDef with Properties = typeDef.Properties @ properties } nodes
-            | (Begin | Annotation | Particle | Attribute), (Xsd "attribute" as node)::nodes ->
-                let attribute = parseAttribute node
-                parseInnerNodes Attribute { typeDef with Attributes = typeDef.Attributes @ [attribute] } nodes
-            | (Begin | Annotation | Particle | Attribute), (Xsd "attributeGroup" as node)::nodes ->
-                failwithf "Element %A in complexType element is not implemented yet!" node.Name
-            | (Begin | Annotation | Particle | Attribute), ((Xsd "anyAttribute") as node)::nodes ->
-                failwithf "Element %A in complexType element is not implemented yet!" node.Name
-            | _, node::_ ->
-                failwithf "Element %A in complexType element was not expected at the current position!" node.Name
-        node.Elements() |> List.ofSeq |> parseInnerNodes Begin { Attributes = []; Properties = [] }
+                notimplemented node "complexType"
+            | (Xsd "group" | Xsd "choice"), (Begin | Annotation) ->
+                notimplemented node "complexType"
+            | Xsd "sequence", (Begin | Annotation) ->
+                Particle, { spec with Properties = spec.Properties @ (parseSequence node) }
+            | Xsd "all", (Begin | Annotation) ->
+                Particle, { spec with Properties = spec.Properties @ (parseAll node) }
+            | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
+                Attribute, { spec with Attributes = spec.Attributes @ [parseAttribute node] }
+            | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
+                notimplemented node "complexType"
+            | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
+                notimplemented node "complexType"
+            | _ ->
+                notexpected node "complexType"
+            ) (Begin, { Attributes = []; Properties = [] })
+        |> snd
 
     and parseSequence (node: XElement): (string * SchemaType) list =
         (*<sequence id=ID
@@ -488,18 +491,19 @@ module XsdSchema =
         let maxOccurs = match node |> attrOrDefault (XName.Get("maxOccurs")) "1" with
                         | "unbounded" -> None
                         | x -> Some(Int64.Parse(x))
-        let rec parseInnerNodes (part: ParserState) (spec: (string * SchemaType) list) (nodes: XElement list) =
-            match part, nodes with
-            | _, [] -> spec
-            | Begin, (Xsd "annotation" as node)::nodes ->
-                parseInnerNodes Annotation spec nodes
-            | (Begin | Annotation | Content), ((Xsd "group" | Xsd "choice" | Xsd "sequence" | Xsd "any") as node)::nodes ->
-                failwithf "Content element %A for Sequence element is not implemented yet!" node.Name
-            | (Begin | Annotation | Content), (Xsd "element" as node)::nodes ->
-                parseInnerNodes Content (parseElement(node)::spec) nodes
-            | _, node::_ ->
-                failwithf "Element %s was not expected at the current position." node.Name.LocalName
-        node.Elements() |> List.ofSeq |> parseInnerNodes Begin []
+        node.Elements()
+        |> Seq.fold (fun (state, spec) node ->
+            match node, state with
+            | Xsd "annotation", Begin ->
+                Annotation, spec
+            | (Xsd "group" | Xsd "choice" | Xsd "sequence" | Xsd "any"), (Begin | Annotation | Content) ->
+                notimplemented node "sequence"
+            | Xsd "element", (Begin | Annotation | Content) ->
+                Content, parseElement(node) :: spec
+            | _ ->
+                notexpected node "sequence"
+            ) (Begin, [])
+        |> snd
 
     and parseAttribute (node: XElement) =
         (*<attribute    default=string
@@ -513,22 +517,21 @@ module XsdSchema =
                         any attributes>
             annotation?,simpleType?
           </attribute>*)
-        let rec parseInnerNodes (part: ParserState) (spec: TypeDefinition) (nodes: XElement list) =
-            match part, nodes with
-            | _, [] ->
-                spec
-            | Begin, (Xsd "annotation" as node)::nodes ->
-                parseInnerNodes Annotation spec nodes
-            | (Begin | Annotation), (Xsd "simpleType" as node)::nodes ->
-                failwith "SimpleType element for Attribute element is not implemented yet!"
-            | _, node::_ ->
-                failwithf "Element %s was not expected at the current position." node.Name.LocalName
         let name = node |> reqAttr (XName.Get("name"))
         match node |> attr (XName.Get("type")) with
         | Some value -> (name, TypeReference(parseXName node value))
         | _ ->
-            let typeDef = { Attributes = []; Properties = [] }
-            (name, node.Elements() |> List.ofSeq |> parseInnerNodes Begin typeDef |> TypeDefinition)
+            node.Elements()
+            |> Seq.fold (fun (state, spec) node ->
+                match node, state with
+                | Xsd "annotation", Begin ->
+                    Annotation, spec
+                | Xsd "simpleType", (Begin | Annotation) ->
+                    notimplemented node "attribute"
+                | _ ->
+                    notexpected node "attribute"
+                ) (Begin, { Attributes = []; Properties = [] })
+            |> (fun (_, typeDef) -> (name, TypeDefinition(typeDef)))
 
     and parseAll (node: XElement) =
         let minOccurs = match node |> attrOrDefault (XName.Get("minOccurs")) "1" with
@@ -538,52 +541,56 @@ module XsdSchema =
         let maxOccurs = match node |> attrOrDefault (XName.Get("maxOccurs")) "1" with
                         | "1" -> 1
                         | x -> failwithf "Unexpected maxOccurs value %s." x
-        let rec parseInnerNodes (part: ParserState) (spec: (string * SchemaType) list) (nodes: XElement list) =
-            match part, nodes with
-            | _, [] ->
-                spec
-            | Begin, (Xsd "annotation" as node)::nodes ->
-                parseInnerNodes Annotation spec nodes
-            | (Begin | Annotation | Content), (Xsd "element" as node)::nodes ->
-                parseInnerNodes Content (parseElement(node)::spec) nodes
-            | _, node::_ ->
-                failwithf "Element %s was not expected at the current position." node.Name.LocalName
-        node.Elements() |> List.ofSeq |> parseInnerNodes Begin []
+        node.Elements()
+        |> Seq.fold (fun (state, spec) node ->
+            match node, state with
+            | Xsd "annotation", Begin ->
+                Annotation, spec
+            | Xsd "element", (Begin | Annotation | Content) ->
+                Content, parseElement(node) :: spec
+            | _ ->
+                notexpected node "all"
+            ) (Begin, [])
+        |> snd
 
     and parseComplexContent (node: XElement) =
-        let rec parseInnerNodes (state: ParserState) spec (nodes: XElement list) =
-            match state, nodes with
-            | _, [] -> spec
-            | Begin, (Xsd "annotation" as node)::nodes -> parseInnerNodes Annotation spec nodes
-            | (Begin | Annotation), (Xsd "restriction" as node)::nodes ->
+        node.Elements()
+        |> Seq.fold (fun (state, spec) node ->
+            match node, state with
+            | Xsd "annotation", Begin ->
+                Annotation, spec
+            | Xsd "restriction", (Begin | Annotation) ->
                 parseComplexContentRestriction node
-                failwithf "Element %A inside complexContent element was not expected at the current position!" node.Name
-            | (Begin | Annotation), (Xsd "extension" as node)::nodes ->
-                failwithf "Element %A inside complexContent element was not expected at the current position!" node.Name
-            | _, node::_ ->
-                failwithf "Element %A inside complexContent element was not expected at the current position!" node.Name
-        node.Elements() |> List.ofSeq |> parseInnerNodes Begin ()
+                notimplemented node "complexContent"
+            | Xsd "extension", (Begin | Annotation) ->
+                notimplemented node "complexContent"
+            | _ ->
+                notexpected node "complexContent"
+            ) (Begin, ())
+        |> snd
 
     and parseComplexContentRestriction (node: XElement) =
         // annotation?,(group|all|choice|sequence)?,(attribute|attributeGroup)*,anyAttribute?
-        let rec parseInnerNodes (state: ParserState) spec (nodes: XElement list) =
-            match state, nodes with
-            | _, [] -> spec
-            | Begin, (Xsd "annotation" as node)::nodes -> parseInnerNodes Annotation spec nodes
-            | (Begin | Annotation), (Xsd "group" as node)::nodes
-            | (Begin | Annotation), (Xsd "all" as node)::nodes
-            | (Begin | Annotation), (Xsd "choice" as node)::nodes ->
-                failwithf "Element %A inside complexContent restriction element is not implemented." node.Name
-            | (Begin | Annotation), (Xsd "sequence" as node)::nodes ->
-                failwithf "Element %A inside complexContent restriction element is not implemented." node.Name
-            | (Begin | Annotation | Particle | Attribute), (Xsd "attribute" as node)::nodes
-            | (Begin | Annotation | Particle | Attribute), (Xsd "attributeGroup" as node)::nodes ->
-                failwithf "Element %A inside complexContent restriction element is not implemented." node.Name
-            | (Begin | Annotation | Particle | Attribute), (Xsd "anyAttribute" as node)::nodes ->
-                failwithf "Element %A inside complexContent restriction element is not implemented." node.Name
-            | _, node::_ ->
-                failwithf "Element %A inside complexContent restriction element was not expected at the current position!" node.Name
-        node.Elements() |> List.ofSeq |> parseInnerNodes Begin ()
+        node.Elements()
+        |> Seq.fold (fun (state, spec) node ->
+            match node, state with
+            | Xsd "annotation", Begin ->
+                Annotation, spec
+            | Xsd "group", (Begin | Annotation)
+            | Xsd "all", (Begin | Annotation)
+            | Xsd "choice", (Begin | Annotation) ->
+                notimplemented node "complexContent restriction"
+            | Xsd "sequence", (Begin | Annotation) ->
+                notimplemented node "complexContent restriction"
+            | Xsd "attribute", (Begin | Annotation | Particle | Attribute)
+            | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
+                notimplemented node "complexContent restriction"
+            | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
+                notimplemented node "complexContent restriction"
+            | _ ->
+                notexpected node "complexContent restriction"
+            ) (Begin, ())
+        |> snd
 
     let parseSchemaNode (node: XElement) =
         let snode = { QualifiedAttributes = node |> isQualified (XName.Get("attributeFormDefault"))
@@ -595,30 +602,30 @@ module XsdSchema =
                       Types = Dictionary<XName,TypeDefinition>() }
         node.Elements()
         |> Seq.fold (fun (state, snode) node ->
-            match state, node with
-            | _, Xsd "annotation" ->
+            match node, state with
+            | Xsd "annotation", _ ->
                 state, snode
-            | (Begin | Header), Xsd "include" ->
+            | Xsd "include", (Begin | Header) ->
                 let schloc = node |> reqAttr (XName.Get("schemaLocation"))
                 Header, { snode with Includes = Uri(schloc)::snode.Includes }
-            | (Begin | Header), Xsd "import" ->
+            | Xsd "import", (Begin | Header) ->
                 let ns = node |> attrOrDefault (XName.Get("namespace")) ""
                 let schloc = node |> attr (XName.Get("schemaLocation")) |> Option.map (fun x -> Uri(x))
                 Header, { snode with Imports = (XNamespace.Get(ns), schloc)::snode.Imports }
-            | (Begin | Header), Xsd "redefine" ->
-                failwithf "Element %A inside schema element is not implemented yet." node.Name
-            | _, Xsd "complexType" ->
+            | Xsd "redefine", (Begin | Header) ->
+                notimplemented node "schema"
+            | Xsd "complexType", _ ->
                 let name = node |> reqAttr (XName.Get("name"))
                 snode.Types.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), parseComplexType node)
                 TypeSpec, snode
-            | _, Xsd "element" ->
+            | Xsd "element", _ ->
                 let name, tp = parseElement node
                 snode.Elements.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), tp)
                 TypeSpec, snode
-            | _, (Xsd "simpleType" | Xsd "group" | Xsd "attributeGroup" | Xsd "attribute" | Xsd "notation") ->
-                failwithf "Element %A inside schema element is not implemented yet." node.Name
+            | (Xsd "simpleType" | Xsd "group" | Xsd "attributeGroup" | Xsd "attribute" | Xsd "notation"), _ ->
+                notimplemented node "schema"
             | _ ->
-                failwithf "Element %A inside schema element was not expected at the current position!" node.Name
+                notexpected node "schema"
             ) (Begin, snode)
         |> snd
 
