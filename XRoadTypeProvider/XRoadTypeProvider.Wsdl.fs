@@ -354,6 +354,11 @@ module XsdSchema =
         | XmlNamespace.XRoad -> Some name.LocalName
         | _ -> None
 
+    let (|XteeType|_|) (name: XName) =
+        match name.NamespaceName with
+        | XmlNamespace.Xtee -> Some name.LocalName
+        | _ -> None
+
     let (|SoapEncType|_|) (name: XName) =
         match name.NamespaceName with
         | XmlNamespace.SoapEncoding -> Some name.LocalName
@@ -760,6 +765,29 @@ let readSchema (uri: string) =
     let definitionsNode = document.Element(XName.Get("definitions", XmlNamespace.Wsdl))
     { Services = definitionsNode |> parseServices
       TypeSchemas = definitionsNode |> XsdSchema.parseSchema }
+
+let (|IsXteeHeader|) (part: MessagePart) =
+    match part.Reference with
+    | SchemaElement name -> match name with
+                            | XsdSchema.XteeType "asutus"
+                            | XsdSchema.XteeType "andmekogu"
+                            | XsdSchema.XteeType "isikukood"
+                            | XsdSchema.XteeType "ametnik"
+                            | XsdSchema.XteeType "id"
+                            | XsdSchema.XteeType "nimi"
+                            | XsdSchema.XteeType "toimik"
+                            | XsdSchema.XteeType "allasutus"
+                            | XsdSchema.XteeType "amet"
+                            | XsdSchema.XteeType "ametniknimi"
+                            | XsdSchema.XteeType "asynkroonne"
+                            | XsdSchema.XteeType "autentija"
+                            | XsdSchema.XteeType "makstud"
+                            | XsdSchema.XteeType "salastada"
+                            | XsdSchema.XteeType "salastada_sertifikaadiga"
+                            | XsdSchema.XteeType "salastatud"
+                            | XsdSchema.XteeType "salastatud_sertifikaadiga" -> true
+                            | _ -> false
+    | _ -> false
 
 let (|IsXRoadHeader|) (part: MessagePart) =
     match part.Reference with

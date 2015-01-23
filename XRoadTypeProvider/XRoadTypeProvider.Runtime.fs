@@ -104,82 +104,105 @@ type IXRoadResponseWithAttachments<'T> =
     abstract member Result: 'T with get
     abstract member Attachments: Stream [] with get
 
-type XRoadServiceRequest () =
+module XRoadRequest =
+    let takeSettingsArg (args: obj []) =
+        args |> Array.tryFind (fun arg -> arg :? XRoadHeader)
+             |> Option.map (fun o -> o :?> XRoadHeader)
+             |> Option.orDefault (XRoadHeader())
+
     let generateNonce () =
-        ""
+        let nonce = Array.zeroCreate 42
+        let rng = System.Security.Cryptography.RNGCryptoServiceProvider.Create()
+        rng.GetNonZeroBytes(nonce)
+        Convert.ToBase64String(nonce)
 
-    member __.Execute(context: IXRoadContext, operationName, args: obj []) =
-        let settings = args |> Array.tryFind (fun arg -> arg :? XRoadHeader)
-                            |> Option.map (fun o -> o :?> XRoadHeader)
-                            |> Option.orDefault (XRoadHeader())
+    let initRequest (uri: string) =
+        let request = System.Net.WebRequest.Create(uri)
+        //request.Timeout <- timeout
+        request.Method <- "POST"
+        request.ContentType <- sprintf "text/xml; charset=%s" System.Text.Encoding.UTF8.HeaderName
+        request.Headers.Set("SOAPAction", "")
+        //request.Proxy <- System.Net.WebProxy()
+        request
 
-        let req = System.Net.WebRequest.Create(context.Address)
-        req.Method <- "POST"
+    let writeXRoadHeader ns (writer: XmlWriter) reqhdr name value f =
+        match reqhdr |> Array.exists ((=) name), value with
+        | false, None -> ()
+        | _ ->  writer.WriteStartElement(name, ns)
+                if value.IsSome then f(value.Value)
+                writer.WriteEndElement()
 
+    let makeXRoadCall (context: IXRoadContext) operationName args hf =
+        let settings = takeSettingsArg args
         let producer = defaultArg settings.Producer context.Producer
         let serviceName = defaultArg settings.Service (sprintf "%s.%s" producer operationName)
         let requestId = defaultArg settings.Id (generateNonce())
-
-        let writeReq () =
-            use stream = req.GetRequestStream()
+        let request = initRequest context.Address
+        (   use stream = request.GetRequestStream() in
             use writer = XmlWriter.Create(stream)
-
-            let writerXRoadProperty name value =
-                writer.WriteStartElement(name, XmlNamespace.XRoad)
-                match value with
-                | Some value -> writer.WriteString(value)
-                | _ -> ()
-                writer.WriteEndElement()
-
-            let writeOptionalXRoadProperty name (value: 'T option) (f: 'T -> unit) =
-                match value with
-                | Some value ->
-                    writer.WriteStartElement(name, XmlNamespace.XRoad)
-                    f(value)
-                    writer.WriteEndElement()
-                | _ -> ()
-
-            let writeSoapHeader () =
-                writer.WriteStartElement("Header", XmlNamespace.SoapEnvelope)
-                writer.WriteAttributeString("xmlns", "xrd", null, XmlNamespace.XRoad)
-
-                // TODO: Required elements are declared in WSDL. Others are optional.
-                writerXRoadProperty "consumer" settings.Consumer
-                writerXRoadProperty "producer" (Some producer)
-                writerXRoadProperty "userId" settings.UserId
-                writerXRoadProperty "id" (Some requestId)
-                writerXRoadProperty "service" (Some serviceName)
-                writerXRoadProperty "issue" None
-
-                writeOptionalXRoadProperty "unit" settings.Unit writer.WriteString
-                writeOptionalXRoadProperty "position" settings.Position writer.WriteString
-                writeOptionalXRoadProperty "userName" settings.UserName writer.WriteString
-                writeOptionalXRoadProperty "async" settings.Async writer.WriteValue
-                writeOptionalXRoadProperty "authenticator" settings.Authenticator writer.WriteString
-                writeOptionalXRoadProperty "paid" settings.Paid writer.WriteString
-                writeOptionalXRoadProperty "encrypt" settings.Encrypt writer.WriteString
-                writeOptionalXRoadProperty "encryptCert" settings.EncryptCert writer.WriteString
-
-                writer.WriteEndElement()
-
             writer.WriteStartDocument()
             writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnvelope)
-            writeSoapHeader()
-            writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
 
+            writer.WriteStartElement("Header", XmlNamespace.SoapEnvelope)
+            hf(writer, settings, producer, serviceName, requestId)
+            writer.WriteEndElement()
+
+            writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
             writer.WriteStartElement("listMethods")
             writer.WriteEndElement()
+            writer.WriteEndElement()
 
             writer.WriteEndElement()
-            writer.WriteEndElement()
-            writer.WriteEndDocument()
-
-        writeReq()
-
-        use resp = req.GetResponse()
+            writer.WriteEndDocument())
+        use resp = request.GetResponse()
         use reader = new System.IO.StreamReader(resp.GetResponseStream())
         printfn "%A" (reader.ReadToEnd())
         obj()
-    interface IDisposable with
-        override __.Dispose() = ()
 
+    let rpcHeaders = [ "asutus"; "andmekogu"; "isikukood"; "ametnik"; "id"; "nimi"; "toimik"
+                       "allasutus"; "amet"; "ametniknimi"; "asynkroonne"; "autentija"; "makstud"
+                       "salastada"; "salastada_sertifikaadiga" ]
+
+    let makeRpcCall (context: IXRoadContext, operationName, args, xthdr) =
+        let writeHeader (writer: XmlWriter, settings: XRoadHeader, producer, serviceName, requestId) =
+            let writeXRoadHeader' = writeXRoadHeader XmlNamespace.Xtee writer xthdr
+            writer.WriteAttributeString("xmlns", "xtee", null, XmlNamespace.Xtee)
+            writeXRoadHeader' "asutus" settings.Consumer writer.WriteString
+            writeXRoadHeader' "andmekogu" (Some producer) writer.WriteString
+            writeXRoadHeader' "isikukood" settings.UserId writer.WriteString
+            //writeXRoadHeader' "ametnik" settings.UserId writer.WriteString
+            writeXRoadHeader' "id" (Some requestId) writer.WriteString
+            writeXRoadHeader' "nimi" (Some serviceName) writer.WriteString
+            writeXRoadHeader' "toimik" settings.Issue writer.WriteString
+            writeXRoadHeader' "allasutus" settings.Unit writer.WriteString
+            writeXRoadHeader' "amet" settings.Position writer.WriteString
+            writeXRoadHeader' "ametniknimi" settings.UserName writer.WriteString
+            writeXRoadHeader XmlNamespace.Xtee writer xthdr "asynkroonne" settings.Async writer.WriteValue
+            writeXRoadHeader' "autentija" settings.Authenticator writer.WriteString
+            writeXRoadHeader' "makstud" settings.Paid writer.WriteString
+            writeXRoadHeader' "salastada" settings.Encrypt writer.WriteString
+            writeXRoadHeader' "salastada_sertifikaadiga" settings.EncryptCert writer.WriteString
+        makeXRoadCall context operationName args writeHeader
+
+    let docHeaders = [ "consumer"; "producer"; "userId"; "id"; "service"; "issue"; "unit"; "position"
+                       "userName"; "async"; "authenticator"; "paid"; "encrypt"; "encryptCert" ]
+
+    let makeDocumentCall (context: IXRoadContext, operationName, args, xthdr) =
+        let writeHeader (writer: XmlWriter, settings: XRoadHeader, producer, serviceName, requestId) =
+            let writeXRoadHeader' = writeXRoadHeader XmlNamespace.XRoad writer xthdr
+            writer.WriteAttributeString("xmlns", "xrd", null, XmlNamespace.XRoad)
+            writeXRoadHeader' "consumer" settings.Consumer writer.WriteString
+            writeXRoadHeader' "producer" (Some producer) writer.WriteString
+            writeXRoadHeader' "userId" settings.UserId writer.WriteString
+            writeXRoadHeader' "id" (Some requestId) writer.WriteString
+            writeXRoadHeader' "service" (Some serviceName) writer.WriteString
+            writeXRoadHeader' "issue" settings.Issue writer.WriteString
+            writeXRoadHeader' "unit" settings.Unit writer.WriteString
+            writeXRoadHeader' "position" settings.Position writer.WriteString
+            writeXRoadHeader' "userName" settings.UserName writer.WriteString
+            writeXRoadHeader XmlNamespace.Xtee writer xthdr "async" settings.Async writer.WriteValue
+            writeXRoadHeader' "authenticator" settings.Authenticator writer.WriteString
+            writeXRoadHeader' "paid" settings.Paid writer.WriteString
+            writeXRoadHeader' "encrypt" settings.Encrypt writer.WriteString
+            writeXRoadHeader' "encryptCert" settings.EncryptCert writer.WriteString
+        makeXRoadCall context operationName args writeHeader

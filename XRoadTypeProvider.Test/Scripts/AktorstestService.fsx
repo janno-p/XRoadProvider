@@ -39,7 +39,7 @@ printfn "%s" fupResponse.response.faultString
 let cad = tns.``changeAddress'``()
 cad.request <- tns.``changeAddress'``.``request'``()
 cad.request.aadress <- tns.aadress()
-cad.request.aadress.korteriNr <- 13
+cad.request.aadress.korteriNr <- 13I
 cad.request.aadress.linnvald <- "Tallinn"
 cad.request.aadress.maakond <- "Harju"
 cad.request.aadress.majaNr <- "25A"

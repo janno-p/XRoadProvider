@@ -22,6 +22,15 @@ type public XRoadTypeProvider() as this =
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
     let createXRoadOperation (typeCache: Dictionary<XmlReference,ProvidedTypeDefinition>) (operation: Operation) =
+        let xthdrs = operation.Request.Header
+                     |> List.choose (fun p -> match p with
+                                              | IsXteeHeader true when operation.Style = XRoad.XRoadBindingStyle.RpcEncoded ->
+                                                  Some p.Name
+                                              | IsXRoadHeader true when operation.Style = XRoad.XRoadBindingStyle.DocumentLiteral ->
+                                                  Some p.Name
+                                              | _ -> None)
+                     |> Array.ofList
+
         let getParameters (msg: OperationMessage) = [
             let rec getParameters (xs: MessagePart list) fromCache = seq {
                 match xs with
@@ -35,7 +44,10 @@ type public XRoadTypeProvider() as this =
             let rec getHeaderParameters (xs: MessagePart list) = seq {
                 match xs with
                 | [] -> ()
-                | (IsXRoadHeader true)::xs -> yield! getHeaderParameters xs
+                | (IsXteeHeader true)::xs when operation.Style = XRoad.XRoadBindingStyle.RpcEncoded ->
+                    yield! getHeaderParameters xs
+                | (IsXRoadHeader true)::xs when operation.Style = XRoad.XRoadBindingStyle.DocumentLiteral ->
+                    yield! getHeaderParameters xs
                 | x::xs -> yield ProvidedParameter(x.Name, typeof<obj>)
                            yield! getHeaderParameters xs
             }
@@ -77,10 +89,11 @@ type public XRoadTypeProvider() as this =
                                                                                 | p when p.ParameterType = typeof<XRoadHeader> -> Expr.Coerce(Expr.Cast<XRoadHeader> exp, typeof<obj>)
                                                                                 | _ -> Expr.Coerce(Expr.Cast<XRoadEntity> exp, typeof<obj>))
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
-            <@@
-                use req = new XRoadServiceRequest()
-                req.Execute((%%args.[0]: XRoadContext) :> IXRoadContext, operationName, %%pl)
-            @@>)
+            match operation.Style with
+            | XRoad.XRoadBindingStyle.RpcEncoded ->
+                <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext, operationName, %%pl, xthdrs) @@>
+            | _ ->
+                <@@ XRoadRequest.makeDocumentCall((%%args.[0]: XRoadContext) :> IXRoadContext, operationName, %%pl, xthdrs) @@>)
         meth
 
     let getRuntimeType (typeCache: IDictionary<XmlReference,ProvidedTypeDefinition>) (typeName: XName) =
