@@ -9,6 +9,7 @@ module XmlNamespace =
     let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
     let [<Literal>] Mime = "http://schemas.xmlsoap.org/wsdl/mime/"
     let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
+    let [<Literal>] SoapEncoding = "http://schemas.xmlsoap.org/soap/encoding/"
     let [<Literal>] SoapEnvelope = "http://schemas.xmlsoap.org/soap/envelope/"
     let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
     let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
@@ -353,6 +354,11 @@ module XsdSchema =
         | XmlNamespace.XRoad -> Some name.LocalName
         | _ -> None
 
+    let (|SoapEncType|_|) (name: XName) =
+        match name.NamespaceName with
+        | XmlNamespace.SoapEncoding -> Some name.LocalName
+        | _ -> None
+
     type TypeDefinition =
       { ParentType: XName option
         IsAbstract: bool
@@ -364,6 +370,7 @@ module XsdSchema =
                                 Properties = [] }
 
     and SchemaType =
+        | XmlReference of XName
         | TypeReference of XName
         | TypeDefinition of TypeDefinition
 
@@ -396,9 +403,19 @@ module XsdSchema =
     type TypeNode =
       { X: string }
 
+    // XRoad RPC/Encoded spec
+    // Kui teenus esitatakse MIME-konteinerina, siis manustena saadetakse parajasti kõik
+    // teenuse sisendis olevad skalaarsed elemendid, mille tüüp on xsd:base64Binary või
+    // xsd:hexBinary.
+
     let mapPrimitiveType = function
-        | XsdType "integer" -> Some typeof<int>
         | XsdType "base64Binary" -> Some typeof<byte[]>
+        | XsdType "boolean" -> Some typeof<bool>
+        | XsdType "dateTime" -> Some typeof<DateTime>
+        | XsdType "decimal" -> Some typeof<decimal>
+        | XsdType "int" -> Some typeof<int>
+        | XsdType "integer" -> Some typeof<bigint>
+        | XsdType "long" -> Some typeof<int64>
         | XsdType "string" -> Some typeof<string>
         | XsdType name -> failwithf "Unmapped XSD type %s" name
         | XrdType "faultCode"
@@ -406,6 +423,8 @@ module XsdSchema =
         | XrdType "jpg" -> Some typeof<byte[]>
         | XrdType "maakond" -> Some typeof<string>
         | XrdType name -> failwithf "Unmapped XRD type %s" name
+        | SoapEncType "base64Binary" -> Some typeof<byte[]>
+        | SoapEncType name -> failwithf "Unmapped SOAP-ENC type %s" name
         | _ -> None
 
     let private notexpected (node: XElement) containerName =
@@ -452,6 +471,49 @@ module XsdSchema =
                 ) (Begin, TypeDefinition.Empty)
             |> (fun (_, typeDef) -> (name, TypeDefinition(typeDef)))
 
+    and parseSimpleType (node: XElement) =
+        let content =
+            node.Elements()
+            |> Seq.fold (fun (state, spec) node ->
+                match node, state with
+                | Xsd "annotation", Begin ->
+                    Annotation, spec
+                | Xsd "restriction", (Begin | Annotation) ->
+                    parseSimpleTypeRestriction node |> ignore
+                    notimplemented node "simpleType"
+                | (Xsd "list" | Xsd "union"), (Begin | Annotation) ->
+                    notimplemented node "simpleType"
+                | _ ->
+                    notexpected node "simpleType"
+                ) (Begin, None)
+            |> snd
+        match content with
+        | Some typeDef -> typeDef
+        | _ -> failwith "Element simpleType is expected to contain either restriction, list or union element."
+
+    and parseSimpleTypeRestriction (node: XElement) =
+        let typeDef = { TypeDefinition.Empty with
+                            ParentType = Some(node |> reqAttr (XName.Get("base")) |> parseXName node) }
+        node.Elements()
+        |> Seq.fold (fun (state, spec) node ->
+            match node, state with
+            | Xsd "annotation", Begin ->
+                state, spec
+            | Xsd "simpleType", (Begin | Annotation) ->
+                notimplemented node "simpleType restriction"
+            |  Xsd "enumeration", (Begin | Annotation | TypeSpec | Content) ->
+                notimplemented node "simpleType restriction"
+            | (Xsd "minExclusive" | Xsd "minInclusive" | Xsd "maxExclusive" | Xsd "maxInclusive" | Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace" | Xsd "pattern"), (Begin | Annotation | TypeSpec | Content) ->
+                notimplemented node "simpleType restriction"
+            | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | TypeSpec | Content | Attribute) ->
+                notimplemented node "simpleType restriction"
+            | Xsd "anyAttribute", (Begin | Annotation | TypeSpec | Content | Attribute) ->
+                notimplemented node "simpleType restriction"
+            | _ ->
+                notexpected node "simpleType restriction"
+            ) (Begin, typeDef)
+        |> snd
+
     and parseComplexType (node: XElement) =
         let isAbstract = match node |> attrOrDefault (XName.Get("abstract")) "false" with
                          | "true" -> true
@@ -464,7 +526,7 @@ module XsdSchema =
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "simpleContent", (Begin | Annotation) ->
-                    notimplemented node "complexType"
+                    Content, parseSimpleContent node
                 | Xsd "complexContent", (Begin | Annotation) ->
                     Content, parseComplexContent node
                 | (Xsd "group" | Xsd "choice"), (Begin | Annotation) ->
@@ -513,32 +575,27 @@ module XsdSchema =
         |> snd
 
     and parseAttribute (node: XElement) =
-        (*<attribute    default=string
-                        fixed=string
-                        form=qualified|unqualified
-                        id=ID
-                        name=NCName
-                        ref=QName
-                        type=QName
-                        use=optional|prohibited|required
-                        any attributes>
-            annotation?,simpleType?
-          </attribute>*)
-        let name = node |> reqAttr (XName.Get("name"))
-        match node |> attr (XName.Get("type")) with
-        | Some value -> (name, TypeReference(parseXName node value))
+        match node |> attr (XName.Get("ref")) with
+        | Some refv ->
+            match node |> attr (XName.Get("name")) with
+            | Some _ -> failwith "Attribute element name and ref attribute cannot be present at the same time."
+            | _ -> ("", XmlReference (parseXName node refv))
         | _ ->
-            node.Elements()
-            |> Seq.fold (fun (state, spec) node ->
-                match node, state with
-                | Xsd "annotation", Begin ->
-                    Annotation, spec
-                | Xsd "simpleType", (Begin | Annotation) ->
-                    notimplemented node "attribute"
-                | _ ->
-                    notexpected node "attribute"
-                ) (Begin, TypeDefinition.Empty)
-            |> (fun (_, typeDef) -> (name, TypeDefinition(typeDef)))
+            let name = node |> reqAttr (XName.Get("name"))
+            match node |> attr (XName.Get("type")) with
+            | Some value -> (name, TypeReference(parseXName node value))
+            | _ ->
+                node.Elements()
+                |> Seq.fold (fun (state, spec) node ->
+                    match node, state with
+                    | Xsd "annotation", Begin ->
+                        Annotation, spec
+                    | Xsd "simpleType", (Begin | Annotation) ->
+                        notimplemented node "attribute"
+                    | _ ->
+                        notexpected node "attribute"
+                    ) (Begin, TypeDefinition.Empty)
+                |> (fun (_, typeDef) -> (name, TypeDefinition(typeDef)))
 
     and parseAll (node: XElement) =
         let minOccurs = match node |> attrOrDefault (XName.Get("minOccurs")) "1" with
@@ -568,13 +625,12 @@ module XsdSchema =
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "restriction", (Begin | Annotation) ->
-                    parseComplexContentRestriction node
-                    notimplemented node "complexContent"
+                    Content, Some(parseComplexContentRestriction node)
                 | Xsd "extension", (Begin | Annotation) ->
-                    Content, Some (parseExtension node)
+                    Content, Some(parseExtension node)
                 | _ ->
-                    notexpected node "complexContent"
-                ) (Begin, None)
+                    notexpected node "complexContent")
+                (Begin, None)
             |> snd
         match content with
         | Some typeDef -> typeDef
@@ -619,13 +675,32 @@ module XsdSchema =
             | Xsd "sequence", (Begin | Annotation) ->
                 Particle, { spec with Properties = spec.Properties @ (parseSequence node) }
             | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | Particle | Attribute) ->
-                notimplemented node "extension"
+                Attribute, { spec with Attributes = spec.Attributes @ [parseAttribute node] }
             | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
                 notimplemented node "extension"
             | _ ->
                 notexpected node "extension"
             ) (Begin, typeDef)
         |> snd
+
+    and parseSimpleContent (node: XElement) =
+        let content =
+            node.Elements()
+            |> Seq.fold (fun (state, spec) node ->
+                match node, state with
+                | Xsd "annotation", Begin ->
+                    Annotation, spec
+                | Xsd "restriction", (Begin | Annotation) ->
+                    notimplemented node "simpleContent"
+                | Xsd "extension", (Begin | Annotation) ->
+                    Content, Some(parseExtension node)
+                | _ ->
+                    notexpected node "simpleContent"
+                ) (Begin, None)
+            |> snd
+        match content with
+        | Some typeDef -> typeDef
+        | _ -> failwith "Element simpleContent is expected to contain either restriction or extension element."
 
     let parseSchemaNode (node: XElement) =
         let snode = { QualifiedAttributes = node |> isQualified (XName.Get("attributeFormDefault"))
@@ -657,7 +732,11 @@ module XsdSchema =
                 let name, tp = parseElement node
                 snode.Elements.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), tp)
                 TypeSpec, snode
-            | (Xsd "simpleType" | Xsd "group" | Xsd "attributeGroup" | Xsd "attribute" | Xsd "notation"), _ ->
+            | Xsd "simpleType", _ ->
+                let name = node |> reqAttr (XName.Get("name"))
+                snode.Types.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), parseSimpleType node)
+                TypeSpec, snode
+            | (Xsd "group" | Xsd "attributeGroup" | Xsd "attribute" | Xsd "notation"), _ ->
                 notimplemented node "schema"
             | _ ->
                 notexpected node "schema"

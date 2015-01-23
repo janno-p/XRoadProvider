@@ -95,6 +95,7 @@ type public XRoadTypeProvider() as this =
             typeDef.Properties
             |> List.map (fun (nm, tp) ->
                 let propType = match tp with
+                               | XsdSchema.XmlReference refName -> failwith "never"
                                | XsdSchema.TypeReference typeName ->
                                    getRuntimeType typeCache typeName
                                | XsdSchema.TypeDefinition typeDef ->
@@ -123,6 +124,7 @@ type public XRoadTypeProvider() as this =
         typeSchemas |> List.iter (fun schema ->
             schema.Elements |> Seq.iter (fun kvp ->
                 match kvp.Value with
+                | XsdSchema.XmlReference refName -> ()
                 | XsdSchema.TypeReference typeName -> ()
                 | XsdSchema.TypeDefinition typeDef ->
                     typeDef |> populateTypeMembers typeCache.[SchemaElement kvp.Key])
