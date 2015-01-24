@@ -121,6 +121,13 @@ type public XRoadTypeProvider() as this =
 
     let buildXRoadEntityTypes typeCache (typeSchemas: XsdSchema.SchemaNode list) =
         let rec populateTypeMembers (providedType: ProvidedTypeDefinition) (typeDef: XsdSchema.TypeDefinition) =
+            match typeDef.ParentType with
+            | Some xname ->
+                match xname with
+                | XsdSchema.SoapEncType "Array" -> () // TODO
+                | _ -> providedType.SetBaseType(getRuntimeType typeCache xname)
+            | _ -> ()
+
             typeDef.Properties
             |> List.map (fun (nm, tp) ->
                 let propType = match tp with
