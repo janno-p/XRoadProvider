@@ -196,7 +196,8 @@ type public XRoadTypeProvider() as this =
                         schema.Types
                         |> Seq.map (fun kvp ->
                             let tp = ProvidedTypeDefinition(kvp.Key.LocalName, Some typeof<XRoadEntity>, HideObjectMethods=true)
-                            tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
+                            if not <| kvp.Value.IsAbstract then
+                                tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
                             typeCache.[SchemaType kvp.Key] <- tp
                             tp)
                         |> List.ofSeq
