@@ -90,7 +90,7 @@ type public XRoadTypeProvider() as this =
                                                                                 | p when p.ParameterType = typeof<obj> -> Expr.Cast<obj> exp :> Expr
                                                                                 | p when p.ParameterType = typeof<XRoadHeader> -> Expr.Coerce(Expr.Cast<XRoadHeader> exp, typeof<obj>)
                                                                                 | p ->
-                                                                                    let pi = typeof<XRoadEntity>.GetProperty("RootName")
+                                                                                    let pi = typeof<IXRoadEntity>.GetProperty("RootName")
                                                                                     Expr.Sequential(
                                                                                         Expr.PropertySet(Expr.Cast<XRoadEntity> exp, pi, Expr.Value(p.Name)),
                                                                                         Expr.Coerce(Expr.Cast<XRoadEntity> exp, typeof<obj>)))
@@ -143,14 +143,14 @@ type public XRoadTypeProvider() as this =
                 let propDef = ProvidedProperty(nm, propType)
                 propDef.GetterCode <- (fun args ->
                     let meth =
-                        let m = typeof<XRoadEntity>.GetMethod("GetProperty")
+                        let m = typeof<IXRoadEntity>.GetMethod("GetProperty")
                         match propType with
                         | :? ProvidedTypeDefinition -> m.MakeGenericMethod(typeof<XRoadEntity>)
                         | _ -> m.MakeGenericMethod(propType)
                     Expr.Call(args.[0], meth, [Expr.Value nm]))
                 propDef.SetterCode <- (fun args ->
                     let meth =
-                        let m = typeof<XRoadEntity>.GetMethod("SetProperty")
+                        let m = typeof<IXRoadEntity>.GetMethod("SetProperty")
                         match propType with
                         | :? ProvidedTypeDefinition -> m.MakeGenericMethod(typeof<XRoadEntity>)
                         | _ -> m.MakeGenericMethod(propType)

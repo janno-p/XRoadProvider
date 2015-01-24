@@ -6,26 +6,34 @@ open System.IO
 open System.Xml
 open XRoadTypeProvider.Wsdl
 
+[<Interface>]
+type IXRoadEntity =
+    abstract member RootName: string with get, set
+    abstract member SetProperty: string * 'T -> unit
+    abstract member GetProperty: string -> 'T
+    abstract member Serialize: XmlWriter -> unit
+
 type XRoadEntity () =
     let data = Dictionary<string, obj>()
 
-    member val RootName = "" with get, set
+    interface IXRoadEntity with
+        override  val RootName = "" with get, set
 
-    member __.SetProperty (name, value) =
-        data.[name] <- box value
+        override __.SetProperty (name, value) =
+            data.[name] <- box value
 
-    member __.GetProperty<'T> (name) =
-        if data.ContainsKey name then
-            unbox data.[name]
-        else Unchecked.defaultof<'T>
+        override __.GetProperty<'T> (name) =
+            if data.ContainsKey name then
+                unbox data.[name]
+            else Unchecked.defaultof<'T>
 
-    member __.Serialize (writer: XmlWriter) =
-        data |> Seq.iter (fun kvp ->
-            writer.WriteStartElement(kvp.Key)
-            match kvp.Value with
-            | :? XRoadEntity as xre -> xre.Serialize(writer)
-            | x -> writer.WriteValue(x)
-            writer.WriteEndElement())
+        override __.Serialize (writer: XmlWriter) =
+            data |> Seq.iter (fun kvp ->
+                writer.WriteStartElement(kvp.Key)
+                match kvp.Value with
+                | :? IXRoadEntity as xre -> xre.Serialize(writer)
+                | x -> writer.WriteValue(x)
+                writer.WriteEndElement())
 
 type Base64 = string
 
@@ -164,8 +172,8 @@ module XRoadRequest =
             writer.WriteEndElement()
 
             writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
-            let entities = args |> Array.filter (fun ent -> ent :? XRoadEntity)
-                                |> Array.map (fun ent -> ent :?> XRoadEntity)
+            let entities = args |> Array.filter (fun ent -> ent :? IXRoadEntity)
+                                |> Array.map (fun ent -> ent :?> IXRoadEntity)
                                 |> List.ofArray
             bf(writer, entities)
             writer.WriteEndElement()
@@ -200,7 +208,7 @@ module XRoadRequest =
             writeXRoadHeader' "makstud" settings.Paid writer.WriteString
             writeXRoadHeader' "salastada" settings.Encrypt writer.WriteString
             writeXRoadHeader' "salastada_sertifikaadiga" settings.EncryptCert writer.WriteString
-        let writeBody (writer: XmlWriter, args: XRoadEntity list) =
+        let writeBody (writer: XmlWriter, args: IXRoadEntity list) =
             writer.WriteStartElement(opnm, opns)
             args |> List.iter (fun arg -> writer.WriteStartElement(arg.RootName)
                                           arg.Serialize(writer)
@@ -229,6 +237,6 @@ module XRoadRequest =
             writeXRoadHeader' "paid" settings.Paid writer.WriteString
             writeXRoadHeader' "encrypt" settings.Encrypt writer.WriteString
             writeXRoadHeader' "encryptCert" settings.EncryptCert writer.WriteString
-        let writeBody (writer: XmlWriter, args: XRoadEntity list) =
+        let writeBody (writer: XmlWriter, args: IXRoadEntity list) =
             ()
         makeXRoadCall context (opnm, opver, opns) args writeHeader writeBody
