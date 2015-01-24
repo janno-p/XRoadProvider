@@ -10,6 +10,10 @@ open System.Xml.Linq
 open XRoadTypeProvider.Wsdl
 open XRoadTypeProvider.Runtime
 
+type RequestFormat =
+    | Legacy = 0uy
+    | New = 1uy
+
 [<TypeProvider>]
 type public XRoadTypeProvider() as this =
     inherit TypeProviderForNamespaces()
@@ -24,9 +28,9 @@ type public XRoadTypeProvider() as this =
     let createXRoadOperation (typeCache: Dictionary<XmlReference,ProvidedTypeDefinition>) (operation: Operation) =
         let xthdrs = operation.Request.Header
                      |> List.choose (fun p -> match p with
-                                              | IsXteeHeader true when operation.Style = XRoad.XRoadBindingStyle.RpcEncoded ->
+                                              | IsXteeHeader true when operation.Style = RpcEncoded ->
                                                   Some p.Name
-                                              | IsXRoadHeader true when operation.Style = XRoad.XRoadBindingStyle.DocumentLiteral ->
+                                              | IsXRoadHeader true when operation.Style = DocLiteral ->
                                                   Some p.Name
                                               | _ -> None)
                      |> Array.ofList
@@ -44,9 +48,9 @@ type public XRoadTypeProvider() as this =
             let rec getHeaderParameters (xs: MessagePart list) = seq {
                 match xs with
                 | [] -> ()
-                | (IsXteeHeader true)::xs when operation.Style = XRoad.XRoadBindingStyle.RpcEncoded ->
+                | (IsXteeHeader true)::xs when operation.Style = RpcEncoded ->
                     yield! getHeaderParameters xs
-                | (IsXRoadHeader true)::xs when operation.Style = XRoad.XRoadBindingStyle.DocumentLiteral ->
+                | (IsXRoadHeader true)::xs when operation.Style = DocLiteral ->
                     yield! getHeaderParameters xs
                 | x::xs -> yield ProvidedParameter(x.Name, typeof<obj>)
                            yield! getHeaderParameters xs
@@ -90,9 +94,9 @@ type public XRoadTypeProvider() as this =
                                                                                 | _ -> Expr.Coerce(Expr.Cast<XRoadEntity> exp, typeof<obj>))
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
             match operation.Style with
-            | XRoad.XRoadBindingStyle.RpcEncoded ->
+            | RpcEncoded ->
                 <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext, operationName, %%pl, xthdrs) @@>
-            | _ ->
+            | DocLiteral ->
                 <@@ XRoadRequest.makeDocumentCall((%%args.[0]: XRoadContext) :> IXRoadContext, operationName, %%pl, xthdrs) @@>)
         meth
 
@@ -223,7 +227,12 @@ type public XRoadTypeProvider() as this =
                             defaultProducerField.AddXmlDoc("Default producer name defined in WSDL. Overrideable through XRoadSettings.")
                             portType.AddMember(defaultProducerField)
 
-                            portType.AddMember(ProvidedLiteralField("BindingStyle", typeof<XRoad.XRoadBindingStyle>, port.Style))
+                            let formatVersion = match port.Style with
+                                                | RpcEncoded -> RequestFormat.Legacy
+                                                | DocLiteral -> RequestFormat.New
+
+                            let requestFormatField = ProvidedLiteralField("RequestFormat", typeof<RequestFormat>, formatVersion)
+                            portType.AddMember(requestFormatField)
 
                             port.Operations
                             |> List.map (fun op -> op |> createXRoadOperation typeCache)

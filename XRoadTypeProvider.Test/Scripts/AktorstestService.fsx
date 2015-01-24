@@ -13,7 +13,7 @@ type tns = Aktorstest.``http://aktorstest.x-road.ee/producer``
 
 printfn "Default port address: %s" testPort.DefaultAddress
 printfn "Default producer name: %s" testPort.DefaultProducer
-printfn "SOAP message binding style: %A" testPort.BindingStyle
+printfn "XRoad request format: %A" testPort.RequestFormat
 
 let service = testPort(Address="http://localhost:8001/")
 

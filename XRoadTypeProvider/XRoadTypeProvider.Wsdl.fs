@@ -123,10 +123,12 @@ type OperationMessage =
     MultipartContent: MessagePart list }
     static member Empty with get() = { Body = []; Header = []; MultipartContent = [] }
 
+type OperationStyle = RpcEncoded | DocLiteral
+
 type Operation =
   { Name: string
     Version: string option
-    Style: XRoad.XRoadBindingStyle
+    Style: OperationStyle
     Request: OperationMessage
     Response: OperationMessage
     Documentation: IDictionary<string,string> }
@@ -137,13 +139,7 @@ type PortBinding =
     Producer: string
     Documentation: IDictionary<string,string>
     Operations: Operation list
-    Style: XRoad.XRoadBindingStyle }
-    static member Empty with get() = { Name = ""
-                                       Address = ""
-                                       Producer = ""
-                                       Documentation = Dictionary<_,_>()
-                                       Operations = []
-                                       Style = XRoad.XRoadBindingStyle.DocumentLiteral }
+    Style: OperationStyle }
 
 type Service =
   { Name: string
@@ -218,13 +214,13 @@ let parseSoapBody msgName (abstractParts: IDictionary<string,XmlReference>) (ele
             ) opmsg
     | _ -> opmsg
 
-let parseSoapHeader (style: XRoad.XRoadBindingStyle) (definitions: XElement) (elem: XElement) (opmsg: OperationMessage) =
+let parseSoapHeader (style: OperationStyle) (definitions: XElement) (elem: XElement) (opmsg: OperationMessage) =
     let messageName = elem |> reqAttr (XName.Get("message")) |> parseXName elem
     let partName = elem |> reqAttr (XName.Get("part"))
     match elem |> reqAttr (XName.Get("use")), style with
-    | "literal", XRoad.XRoadBindingStyle.RpcEncoded ->
+    | "literal", RpcEncoded ->
         failwith "Invalid use value literal for RPC style, only encoded is allowed."
-    | "encoded", XRoad.XRoadBindingStyle.DocumentLiteral ->
+    | "encoded", DocLiteral ->
         failwith "Invalid use value encoded for document style, only literal is allowed."
     | _ -> ()
     let message = parseParam definitions messageName
@@ -233,7 +229,7 @@ let parseSoapHeader (style: XRoad.XRoadBindingStyle) (definitions: XElement) (el
     | true, value -> { opmsg with Header = { Name = partName; Reference = value } :: opmsg.Header }
     | _ -> failwithf "Message %s does not contain part %s" messageName.LocalName partName
 
-let parseOperationMessage (style: XRoad.XRoadBindingStyle) (binding: XElement) (abstractDef: XElement) =
+let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractDef: XElement) =
     let msgName = abstractDef |> reqAttr (XName.Get("name"))
     let definitions = binding.Parent.Parent.Parent
     let abstractParts = abstractDef |> parseAbstractParts msgName
@@ -264,28 +260,37 @@ let parseOperationMessage (style: XRoad.XRoadBindingStyle) (binding: XElement) (
             | _ -> opmsg) OperationMessage.Empty
     abstractParts |> Seq.fold (fun opmsg p -> { opmsg with Body = { Name = p.Key; Reference = p.Value } :: opmsg.Body }) operationMessage
 
-let parseOperation (operation: XElement) (portType: XElement) (definitions: XElement) (style: XRoad.XRoadBindingStyle) =
+let validateOperationStyle styleValue style =
+    match styleValue with
+    | "document" -> match style with
+                    | RpcEncoded -> failwith "Binding style `document` doesn't match legacy message format."
+                    | DocLiteral -> ()
+    | "rpc" -> match style with
+               | RpcEncoded -> ()
+               | DocLiteral -> failwith "Binding style `rpc` doesn't match new message format."
+    | x -> failwithf "Unknown SOAP binding style %s" x
+
+let parseOperation (operation: XElement) (portType: XElement) (definitions: XElement) (style: OperationStyle) =
     let name = operation |> reqAttr (XName.Get("name"))
-    let version = match operation.Element(XName.Get("version", XmlNamespace.XRoad)) with
-                  | null -> None
-                  | el -> Some el.Value
-    let bindingStyle =
-        match operation.Element(XName.Get("operation", XmlNamespace.Soap)) with
-        | null -> style
-        | soapOperation -> match soapOperation |> attr (XName.Get("style")) with
-                           | Some "document" -> XRoad.XRoadBindingStyle.DocumentLiteral
-                           | Some "rpc" -> XRoad.XRoadBindingStyle.RpcEncoded
-                           | Some x -> failwithf "Unknown SOAP binding style %s" x
-                           | _ -> style
+    let version =
+        let ns = match style with | RpcEncoded -> XmlNamespace.Xtee | DocLiteral -> XmlNamespace.XRoad
+        match operation.Element(XName.Get("version", ns)) with
+        | null -> None
+        | el -> Some el.Value
+    match operation.Element(XName.Get("operation", XmlNamespace.Soap)) with
+    | null -> ()
+    | soapOperation ->
+        let styleValue = soapOperation |> attrOrDefault (XName.Get("style")) (match style with | DocLiteral -> "document" | RpcEncoded -> "rpc")
+        validateOperationStyle styleValue style
     let abstractDesc = portType.Elements(XName.Get("operation", XmlNamespace.Wsdl))
                        |> Seq.find (fun op -> (op |> reqAttr (XName.Get("name"))) = name)
     let paramInput = abstractDesc |> parseParamName "input" |> parseParam definitions
     let paramOutput = abstractDesc |> parseParamName "output" |> parseParam definitions
     { Name = name
       Version = version
-      Style = bindingStyle
-      Request = parseOperationMessage bindingStyle (operation.Element(XName.Get("input", XmlNamespace.Wsdl))) paramInput
-      Response = parseOperationMessage bindingStyle (operation.Element(XName.Get("output", XmlNamespace.Wsdl))) paramOutput
+      Style = style
+      Request = parseOperationMessage style (operation.Element(XName.Get("input", XmlNamespace.Wsdl))) paramInput
+      Response = parseOperationMessage style (operation.Element(XName.Get("output", XmlNamespace.Wsdl))) paramOutput
       Documentation = readDocumentation abstractDesc }
 
 let parseBinding (definitions: XElement) (bindingName: XName) (portBinding: PortBinding) =
@@ -300,18 +305,15 @@ let parseBinding (definitions: XElement) (bindingName: XName) (portBinding: Port
     let portType = definitions.Elements(XName.Get("portType", XmlNamespace.Wsdl))
                    |> Seq.find (fun el -> (el |> reqAttr (XName.Get("name"))) = portTypeName.LocalName)
     let soapBinding = binding.Element(XName.Get("binding", XmlNamespace.Soap))
-    let bindingStyle = match soapBinding |> attrOrDefault (XName.Get("style")) "document" with
-                       | "document" -> XRoad.XRoadBindingStyle.DocumentLiteral
-                       | "rpc" -> XRoad.XRoadBindingStyle.RpcEncoded
-                       | x -> failwithf "Unknown SOAP binding style %s" x
+    validateOperationStyle (soapBinding |> attrOrDefault (XName.Get("style")) "document") portBinding.Style
     let transport = soapBinding |> attrOrDefault (XName.Get("transport")) ""
     if transport <> XmlNamespace.Http then
         failwithf "Only HTTP transport is allowed. Specified %s" transport
     let operations =
         binding.Elements(XName.Get("operation", XmlNamespace.Wsdl))
-        |> Seq.map (fun op -> parseOperation op portType definitions bindingStyle)
+        |> Seq.map (fun op -> parseOperation op portType definitions portBinding.Style)
         |> List.ofSeq
-    { portBinding with Operations = operations; Style = bindingStyle }
+    { portBinding with Operations = operations }
 
 let parseServices (definitions: XElement) =
     definitions.Elements(XName.Get("service", XmlNamespace.Wsdl))
@@ -319,22 +321,33 @@ let parseServices (definitions: XElement) =
         let name =  service |> reqAttr (XName.Get("name"))
         let ports =
             service.Elements(XName.Get("port", XmlNamespace.Wsdl))
-            |> Seq.map (fun servicePort ->
+            |> Seq.choose (fun servicePort ->
                 let name = servicePort |> reqAttr (XName.Get("name"))
                 let binding = servicePort |> reqAttr (XName.Get("binding")) |> parseXName servicePort
                 let address = match servicePort.Element(XName.Get("address", XmlNamespace.Soap)) with
                               | null -> ""
                               | elem -> elem |> reqAttr (XName.Get("location"))
-                let producer = match servicePort.Element (XName.Get("address", XmlNamespace.XRoad)) with
-                               | null -> ""
-                               | elem -> match elem |> attr (XName.Get("producer")) with | None -> "" | Some v -> v
-                let portBinding = PortBinding.Empty
-                let doc = readLanguages servicePort
-                { portBinding with Name = name
-                                   Address = address
-                                   Producer = producer
-                                   Documentation = doc }
-                |> parseBinding definitions binding)
+                let producer =
+                    let current = servicePort.Element (XName.Get("address", XmlNamespace.XRoad))
+                    let legacy = servicePort.Element (XName.Get("address", XmlNamespace.Xtee))
+                    match current, legacy with
+                    | null, null -> None
+                    | elem, null
+                    | null, elem ->
+                        let name = elem |> attr (XName.Get("producer")) |> Option.orDefault ""
+                        let style = if elem.Name.NamespaceName = XmlNamespace.XRoad then DocLiteral
+                                    else RpcEncoded
+                        Some(name, style)
+                    | _ -> failwith "Mixing legacy operations with new message format is not supported."
+                producer |> Option.map (fun (producer, style) ->
+                    let doc = readLanguages servicePort
+                    let bindingSpec = { Name = name
+                                        Address = address
+                                        Producer = producer
+                                        Documentation = doc
+                                        Operations = []
+                                        Style = style }
+                    parseBinding definitions binding bindingSpec))
         { Name = name; Ports = ports |> List.ofSeq })
     |> List.ofSeq
 
