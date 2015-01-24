@@ -126,7 +126,7 @@ type OperationMessage =
 type OperationStyle = RpcEncoded | DocLiteral
 
 type Operation =
-  { Name: string
+  { Name: XName
     Version: string option
     Style: OperationStyle
     Request: OperationMessage
@@ -270,7 +270,7 @@ let validateOperationStyle styleValue style =
                | DocLiteral -> failwith "Binding style `rpc` doesn't match new message format."
     | x -> failwithf "Unknown SOAP binding style %s" x
 
-let parseOperation (operation: XElement) (portType: XElement) (definitions: XElement) (style: OperationStyle) =
+let parseOperation (operation: XElement) (portType: XElement) (definitions: XElement) (style: OperationStyle) ns =
     let name = operation |> reqAttr (XName.Get("name"))
     let version =
         let ns = match style with | RpcEncoded -> XmlNamespace.Xtee | DocLiteral -> XmlNamespace.XRoad
@@ -286,7 +286,7 @@ let parseOperation (operation: XElement) (portType: XElement) (definitions: XEle
                        |> Seq.find (fun op -> (op |> reqAttr (XName.Get("name"))) = name)
     let paramInput = abstractDesc |> parseParamName "input" |> parseParam definitions
     let paramOutput = abstractDesc |> parseParamName "output" |> parseParam definitions
-    { Name = name
+    { Name = XName.Get(name, ns)
       Version = version
       Style = style
       Request = parseOperationMessage style (operation.Element(XName.Get("input", XmlNamespace.Wsdl))) paramInput
@@ -311,7 +311,7 @@ let parseBinding (definitions: XElement) (bindingName: XName) (portBinding: Port
         failwithf "Only HTTP transport is allowed. Specified %s" transport
     let operations =
         binding.Elements(XName.Get("operation", XmlNamespace.Wsdl))
-        |> Seq.map (fun op -> parseOperation op portType definitions portBinding.Style)
+        |> Seq.map (fun op -> parseOperation op portType definitions portBinding.Style portTypeName.NamespaceName)
         |> List.ofSeq
     { portBinding with Operations = operations }
 

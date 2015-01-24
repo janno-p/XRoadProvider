@@ -83,21 +83,33 @@ type public XRoadTypeProvider() as this =
                 let tp = typedefof<Runtime.IXRoadResponseWithAttachments<_>>
                 tp.MakeGenericType(innerType)
 
-        let meth = ProvidedMethod(operation.Name, parameters, returnType)
+        let meth = ProvidedMethod(operation.Name.LocalName, parameters, returnType)
         meth.InvokeCode <- (fun args ->
-            let operationName = match operation.Version with
-                                | Some v -> sprintf "%s.%s" operation.Name v
-                                | _ -> operation.Name
+            let opName, opVer, opNs = (operation.Name.LocalName, operation.Version |> Option.orDefault "", operation.Name.NamespaceName)
             let ps = args |> Seq.ofList |> Seq.skip 1 |> Seq.mapi (fun i exp -> match parameters.[i] with
                                                                                 | p when p.ParameterType = typeof<obj> -> Expr.Cast<obj> exp :> Expr
                                                                                 | p when p.ParameterType = typeof<XRoadHeader> -> Expr.Coerce(Expr.Cast<XRoadHeader> exp, typeof<obj>)
-                                                                                | _ -> Expr.Coerce(Expr.Cast<XRoadEntity> exp, typeof<obj>))
+                                                                                | p ->
+                                                                                    let pi = typeof<XRoadEntity>.GetProperty("RootName")
+                                                                                    Expr.Sequential(
+                                                                                        Expr.PropertySet(Expr.Cast<XRoadEntity> exp, pi, Expr.Value(p.Name)),
+                                                                                        Expr.Coerce(Expr.Cast<XRoadEntity> exp, typeof<obj>)))
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
             match operation.Style with
             | RpcEncoded ->
-                <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext, operationName, %%pl, xthdrs) @@>
+                <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext,
+                                             opName,
+                                             opVer,
+                                             opNs,
+                                             %%pl,
+                                             xthdrs) @@>
             | DocLiteral ->
-                <@@ XRoadRequest.makeDocumentCall((%%args.[0]: XRoadContext) :> IXRoadContext, operationName, %%pl, xthdrs) @@>)
+                <@@ XRoadRequest.makeDocumentCall((%%args.[0]: XRoadContext) :> IXRoadContext,
+                                                  opName,
+                                                  opVer,
+                                                  opNs,
+                                                  %%pl,
+                                                  xthdrs) @@>)
         meth
 
     let getRuntimeType (typeCache: IDictionary<XmlReference,ProvidedTypeDefinition>) (typeName: XName) =

@@ -9,6 +9,8 @@ open XRoadTypeProvider.Wsdl
 type XRoadEntity () =
     let data = Dictionary<string, obj>()
 
+    member val RootName = "" with get, set
+
     member __.SetProperty (name, value) =
         data.[name] <- box value
 
@@ -16,6 +18,14 @@ type XRoadEntity () =
         if data.ContainsKey name then
             unbox data.[name]
         else Unchecked.defaultof<'T>
+
+    member __.Serialize (writer: XmlWriter) =
+        data |> Seq.iter (fun kvp ->
+            writer.WriteStartElement(kvp.Key)
+            match kvp.Value with
+            | :? XRoadEntity as xre -> xre.Serialize(writer)
+            | x -> writer.WriteValue(x)
+            writer.WriteEndElement())
 
 type Base64 = string
 
@@ -132,24 +142,32 @@ module XRoadRequest =
                 if value.IsSome then f(value.Value)
                 writer.WriteEndElement()
 
-    let makeXRoadCall (context: IXRoadContext) operationName args hf =
+    let makeXRoadCall (context: IXRoadContext) (opName, opVersion, opNamespace) args hf bf =
         let settings = takeSettingsArg args
         let producer = defaultArg settings.Producer context.Producer
-        let serviceName = defaultArg settings.Service (sprintf "%s.%s" producer operationName)
+        let serviceName =
+            match settings.Service with
+            | Some v -> v
+            | _ -> match opVersion with
+                   | "" -> sprintf "%s.%s" producer opName
+                   | v -> sprintf "%s.%s.%s" producer opName v
         let requestId = defaultArg settings.Id (generateNonce())
         let request = initRequest context.Address
         (   use stream = request.GetRequestStream() in
             use writer = XmlWriter.Create(stream)
             writer.WriteStartDocument()
             writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnvelope)
+            writer.WriteAttributeString("xmlns", "svc", null, opNamespace)
 
             writer.WriteStartElement("Header", XmlNamespace.SoapEnvelope)
             hf(writer, settings, producer, serviceName, requestId)
             writer.WriteEndElement()
 
             writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
-            writer.WriteStartElement("listMethods")
-            writer.WriteEndElement()
+            let entities = args |> Array.filter (fun ent -> ent :? XRoadEntity)
+                                |> Array.map (fun ent -> ent :?> XRoadEntity)
+                                |> List.ofArray
+            bf(writer, entities)
             writer.WriteEndElement()
 
             writer.WriteEndElement()
@@ -163,7 +181,7 @@ module XRoadRequest =
                        "allasutus"; "amet"; "ametniknimi"; "asynkroonne"; "autentija"; "makstud"
                        "salastada"; "salastada_sertifikaadiga" ]
 
-    let makeRpcCall (context: IXRoadContext, operationName, args, xthdr) =
+    let makeRpcCall (context: IXRoadContext, opnm, opver, opns, args, xthdr) =
         let writeHeader (writer: XmlWriter, settings: XRoadHeader, producer, serviceName, requestId) =
             let writeXRoadHeader' = writeXRoadHeader XmlNamespace.Xtee writer xthdr
             writer.WriteAttributeString("xmlns", "xtee", null, XmlNamespace.Xtee)
@@ -182,12 +200,18 @@ module XRoadRequest =
             writeXRoadHeader' "makstud" settings.Paid writer.WriteString
             writeXRoadHeader' "salastada" settings.Encrypt writer.WriteString
             writeXRoadHeader' "salastada_sertifikaadiga" settings.EncryptCert writer.WriteString
-        makeXRoadCall context operationName args writeHeader
+        let writeBody (writer: XmlWriter, args: XRoadEntity list) =
+            writer.WriteStartElement(opnm, opns)
+            args |> List.iter (fun arg -> writer.WriteStartElement(arg.RootName)
+                                          arg.Serialize(writer)
+                                          writer.WriteEndElement())
+            writer.WriteEndElement()
+        makeXRoadCall context (opnm, opver, opns) args writeHeader writeBody
 
     let docHeaders = [ "consumer"; "producer"; "userId"; "id"; "service"; "issue"; "unit"; "position"
                        "userName"; "async"; "authenticator"; "paid"; "encrypt"; "encryptCert" ]
 
-    let makeDocumentCall (context: IXRoadContext, operationName, args, xthdr) =
+    let makeDocumentCall (context: IXRoadContext, opnm, opver, opns, args, xthdr) =
         let writeHeader (writer: XmlWriter, settings: XRoadHeader, producer, serviceName, requestId) =
             let writeXRoadHeader' = writeXRoadHeader XmlNamespace.XRoad writer xthdr
             writer.WriteAttributeString("xmlns", "xrd", null, XmlNamespace.XRoad)
@@ -205,4 +229,6 @@ module XRoadRequest =
             writeXRoadHeader' "paid" settings.Paid writer.WriteString
             writeXRoadHeader' "encrypt" settings.Encrypt writer.WriteString
             writeXRoadHeader' "encryptCert" settings.EncryptCert writer.WriteString
-        makeXRoadCall context operationName args writeHeader
+        let writeBody (writer: XmlWriter, args: XRoadEntity list) =
+            ()
+        makeXRoadCall context (opnm, opver, opns) args writeHeader writeBody

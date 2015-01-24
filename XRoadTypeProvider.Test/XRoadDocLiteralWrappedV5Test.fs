@@ -28,7 +28,7 @@ module XRoadDocLiteralWrappedV5Test =
     let ``Parse multipart input operation`` () =
         let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
         let services = schema.Services
-        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name = "fileUpload")
+        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name.LocalName = "fileUpload")
         test <@ operation.Documentation.Count = 2 @>
         test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "File Upload" @>
         test <@ operation.Documentation.ContainsKey("et") && operation.Documentation.["et"] = "Faili üleslaadimine" @>
@@ -46,7 +46,7 @@ module XRoadDocLiteralWrappedV5Test =
     let ``Parse multipart output operation`` () =
         let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
         let services = schema.Services
-        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name = "fileDownload")
+        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name.LocalName = "fileDownload")
         test <@ operation.Documentation.Count = 2 @>
         test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "File download" @>
         test <@ operation.Documentation.ContainsKey("et") && operation.Documentation.["et"] = "Faili allalaadimine" @>
@@ -64,7 +64,7 @@ module XRoadDocLiteralWrappedV5Test =
     let ``Parse operation without version number`` () =
         let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
         let services = schema.Services
-        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name = "listMethods")
+        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name.LocalName = "listMethods")
         test <@ operation.Documentation.Count = 1 @>
         test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "listMethods" @>
         test <@ operation.Style = DocLiteral @>
@@ -81,8 +81,8 @@ module XRoadDocLiteralWrappedV5Test =
     let ``Parse non-multipart operation`` () =
         let schema = readSchema(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
         let services = schema.Services
-        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name = "isikOtsing")
-        test <@ operation.Name = "isikOtsing" @>
+        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name.LocalName = "isikOtsing")
+        test <@ operation.Name.LocalName = "isikOtsing" @>
         test <@ operation.Documentation.Count = 2 @>
         test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "Search person by Id-code" @>
         test <@ operation.Documentation.ContainsKey("et") && operation.Documentation.["et"] = "Isiku andmete otsimine isikukoodi järgi" @>
