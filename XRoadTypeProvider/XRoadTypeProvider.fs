@@ -35,12 +35,17 @@ type public XRoadTypeProvider() as this =
                                               | _ -> None)
                      |> Array.ofList
 
+        let getTypeFromCache id =
+            match typeCache.TryGetValue(id) with
+            | true, tp -> tp :> System.Type
+            | _ -> typeof<obj>
+
         let getParameters (msg: OperationMessage) = [
             let rec getParameters (xs: MessagePart list) fromCache = seq {
                 match xs with
                 | [] -> ()
                 | part::xs ->
-                    if fromCache then yield ProvidedParameter(part.Name, match typeCache.TryGetValue(part.Reference) with | true, tp -> tp :> System.Type | _ -> typeof<obj>)
+                    if fromCache then yield ProvidedParameter(part.Name, getTypeFromCache part.Reference)
                     else yield ProvidedParameter(part.Name, typeof<obj>)
                     yield! getParameters xs fromCache }
             yield! getParameters msg.Body true
@@ -83,6 +88,13 @@ type public XRoadTypeProvider() as this =
                 let tp = typedefof<Runtime.IXRoadResponseWithAttachments<_>>
                 tp.MakeGenericType(innerType)
 
+        let tpoox = parameters
+                    |> List.choose (fun pm -> match pm.ParameterType with
+                                              | :? ProvidedTypeDefinition as x -> Some x
+                                              | _ -> None)
+                    |> List.map (fun tp -> tp, tp.GetMember("Serialize").[0] :?> MethodInfo)
+                    |> List.tryFind (fun _ -> true)
+
         let meth = ProvidedMethod(operation.Name.LocalName, parameters, returnType)
         meth.InvokeCode <- (fun args ->
             let opName, opVer, opNs = (operation.Name.LocalName, operation.Version |> Option.orDefault "", operation.Name.NamespaceName)
@@ -97,12 +109,17 @@ type public XRoadTypeProvider() as this =
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
             match operation.Style with
             | RpcEncoded ->
+                match tpoox with
+                | Some (tp, mi) -> Expr.Call(Expr.Coerce(args.[1], tp), mi, [Expr.Coerce(Expr.Value(null), typeof<System.Xml.XmlWriter>)])
+                | _ -> <@@ printfn "Nuthin'!" @@>
+                (*
                 <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext,
                                              opName,
                                              opVer,
                                              opNs,
                                              %%pl,
                                              xthdrs) @@>
+                *)
             | DocLiteral ->
                 <@@ XRoadRequest.makeDocumentCall((%%args.[0]: XRoadContext) :> IXRoadContext,
                                                   opName,
@@ -127,6 +144,12 @@ type public XRoadTypeProvider() as this =
                 | XsdSchema.SoapEncType "Array" -> () // TODO
                 | _ -> providedType.SetBaseType(getRuntimeType typeCache xname)
             | _ -> ()
+
+            let serializeMethod = ProvidedMethod("Serialize", [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ], typeof<unit>)
+            serializeMethod.InvokeCode <- (fun _ ->
+                let name = providedType.Name
+                <@@ printfn "%s" name @@>)
+            providedType.AddMember(serializeMethod)
 
             typeDef.Properties
             |> List.map (fun (nm, tp) ->
