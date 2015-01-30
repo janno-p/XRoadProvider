@@ -189,7 +189,7 @@ module XRoadRequest =
                        "allasutus"; "amet"; "ametniknimi"; "asynkroonne"; "autentija"; "makstud"
                        "salastada"; "salastada_sertifikaadiga" ]
 
-    let makeRpcCall (context: IXRoadContext, opnm, opver, opns, args, xthdr) =
+    let makeRpcCall (context: IXRoadContext, opnm, opver, opns, args, xthdr, f) =
         let writeHeader (writer: XmlWriter, settings: XRoadHeader, producer, serviceName, requestId) =
             let writeXRoadHeader' = writeXRoadHeader XmlNamespace.Xtee writer xthdr
             writer.WriteAttributeString("xmlns", "xtee", null, XmlNamespace.Xtee)
@@ -210,9 +210,10 @@ module XRoadRequest =
             writeXRoadHeader' "salastada_sertifikaadiga" settings.EncryptCert writer.WriteString
         let writeBody (writer: XmlWriter, args: IXRoadEntity list) =
             writer.WriteStartElement(opnm, opns)
-            args |> List.iter (fun arg -> writer.WriteStartElement(arg.RootName)
-                                          arg.Serialize(writer)
-                                          writer.WriteEndElement())
+            f(writer)
+            //args |> List.iter (fun arg -> writer.WriteStartElement(arg.RootName)
+            //                              arg.Serialize(writer)
+            //                              writer.WriteEndElement())
             writer.WriteEndElement()
         makeXRoadCall context (opnm, opver, opns) args writeHeader writeBody
 

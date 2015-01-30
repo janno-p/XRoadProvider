@@ -109,17 +109,19 @@ type public XRoadTypeProvider() as this =
             let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
             match operation.Style with
             | RpcEncoded ->
-                match tpoox with
-                | Some (tp, mi) -> Expr.Call(Expr.Coerce(args.[1], tp), mi, [Expr.Coerce(Expr.Value(null), typeof<System.Xml.XmlWriter>)])
-                | _ -> <@@ printfn "Nuthin'!" @@>
-                (*
+                let f =
+                    match tpoox with
+                    | Some (tp, mi) ->
+                        let v = Var("w", typeof<System.Xml.XmlWriter>)
+                        Expr.Lambda(v, Expr.Call(Expr.Coerce(args.[1], tp), mi, [Expr.Coerce(Expr.Var(v), typeof<System.Xml.XmlWriter>)]))
+                    | _ -> <@@ printfn "Nuthin'!" @@>
                 <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext,
                                              opName,
                                              opVer,
                                              opNs,
                                              %%pl,
-                                             xthdrs) @@>
-                *)
+                                             xthdrs,
+                                             (%%f: System.Xml.XmlWriter -> unit)) @@>
             | DocLiteral ->
                 <@@ XRoadRequest.makeDocumentCall((%%args.[0]: XRoadContext) :> IXRoadContext,
                                                   opName,
