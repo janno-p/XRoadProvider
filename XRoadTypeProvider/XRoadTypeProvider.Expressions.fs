@@ -5,6 +5,7 @@ open Microsoft.FSharp.Reflection
 open ProviderImplementation.ProvidedTypes
 open System.Collections.Generic
 open System.Reflection
+open System.Xml
 open XRoadTypeProvider.Runtime
 open XRoadTypeProvider.Wsdl
 
@@ -28,44 +29,74 @@ let getType id (cache: TypeCache) =
     | _ -> failwithf "Unknown WSDL type: %A" id // typeof<obj>??
 
 let buildReturnType typeCache operation =
-    let getResponseTypes () = [|
-        let rec getTypes (xs: MessagePart list) = seq {
-            match xs with
-            | [] -> ()
-            | part::xs -> yield typeCache |> getType part.Reference
-                          yield! getTypes xs
-        }
-        yield! getTypes operation.Response.Body
-    |]
-    let innerType = match getResponseTypes() with
-                    | [||] -> typeof<unit>
-                    | [|tp|] -> tp
-                    | many -> FSharpType.MakeTupleType many
+    let responseTypes = operation.Response.Body
+                        |> List.map (fun p -> typeCache |> getType p.Reference)
+    let innerType = match responseTypes with
+                    | [] -> typeof<unit>
+                    | tp::[] -> tp
+                    | many -> many |> Array.ofList |> FSharpType.MakeTupleType
     // Multipart content will be implemented later
     //match operation.Response.MultipartContent with
     //| [] -> innerType
     //| _ -> typedefof<Runtime.IXRoadResponseWithAttachments<_>>.MakeGenericType(innerType)
     innerType
 
-let buildParameters typeCache operation = [
-    yield! [] |> List.foldBack (fun (p: MessagePart) args ->
-                    ProvidedParameter(p.Name, typeCache |> getType p.Reference)::args
-                    ) operation.Request.Body
-    yield ProvidedParameter("settings", typeof<XRoadHeader>)
-]
+let buildParameters typeCache operation =
+  [ yield! operation.Request.Body
+           |> List.map (fun p -> ProvidedParameter(p.Name, typeCache |> getType p.Reference))
+    yield ProvidedParameter("settings", typeof<XRoadHeader>) ]
 
-let createXRoadOperationMethod (typeCache: TypeCache) operation =
+let writeStartElement = typeof<XmlWriter>.GetMethod("WriteStartElement", [| typeof<string> |])
+let writeEndElement = typeof<XmlWriter>.GetMethod("WriteEndElement", [| |])
+
+let createXRoadOperationMethod typeCache operation =
     let xrdHeaders = requiredXRoadHeaders(operation)
     let parameters = operation |> buildParameters typeCache
     let returnType = operation |> buildReturnType typeCache
 
+    let settingsIndex = 1 + (parameters |> List.findIndex (fun p -> p.ParameterType = typeof<XRoadHeader>))
+
+    let providedMethod = ProvidedMethod(operation.Name.LocalName, parameters, returnType)
+    providedMethod.InvokeCode <- fun args ->
+        let operationName = operation.Name.LocalName
+        let operationNamespace = operation.Name.NamespaceName
+        let operationVersion = operation.Version |> Option.orDefault ""
+        let writer = Var("writer", typeof<XmlWriter>)
+        let f =
+            Expr.Lambda(writer,
+                let exps = operation.Request.Body
+                           |> List.mapi (fun i part ->
+                               let partName = part.Name
+                               let index = i
+                               let tp = typeCache |> getType part.Reference
+                               let mi = tp.GetMethod("Serialize", [| typeof<XmlWriter> |])
+                               Expr.Sequential(
+                                   Expr.Call(Expr.Var(writer), writeStartElement, [ Expr.Value(partName) ]),
+                                   Expr.Sequential(
+                                       Expr.Call(Expr.Coerce(args.[index + 1], tp), mi, [Expr.Coerce(Expr.Var(writer), typeof<System.Xml.XmlWriter>)]),
+                                       Expr.Call(Expr.Var(writer), writeEndElement, [])
+                                       )))
+                match exps with
+                | [] -> Expr.Value(())
+                | exp::[] -> exp
+                | exp::exps -> exps |> List.fold (fun exp e -> Expr.Sequential(exp, e)) exp)
+        <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext,
+                                     operationName,
+                                     operationVersion,
+                                     operationNamespace,
+                                     (%%args.[settingsIndex]: XRoadHeader),
+                                     xrdHeaders |> Array.ofList,
+                                     (%%f: System.Xml.XmlWriter -> unit)) @@>
+    providedMethod
+
     // ====
 
+    (*
     let tpoox = parameters
                 |> List.choose (fun pm -> match pm.ParameterType with
                                             | :? ProvidedTypeDefinition as x -> Some x
                                             | _ -> None)
-                |> List.map (fun tp -> tp, tp.GetMember("Serialize").[0] :?> MethodInfo)
+                |> List.map (fun tp -> tp, )
                 |> List.tryFind (fun _ -> true)
 
     let meth = ProvidedMethod(operation.Name.LocalName, parameters, returnType)
@@ -103,5 +134,5 @@ let createXRoadOperationMethod (typeCache: TypeCache) operation =
                                                 %%pl,
                                                 xrdHeaders |> Array.ofList) @@>)
     meth
-    
+    *)
 
