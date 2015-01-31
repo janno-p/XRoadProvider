@@ -802,7 +802,7 @@ let (|IsXteeHeader|_|) (part: MessagePart) =
                             | _ -> None
     | _ -> None
 
-let (|IsXRoadHeader|) (part: MessagePart) =
+let (|IsXRoadHeader|_|) (part: MessagePart) =
     match part.Reference with
     | SchemaElement name -> match name with
                             | XsdSchema.XrdType "consumer"
@@ -820,6 +820,6 @@ let (|IsXRoadHeader|) (part: MessagePart) =
                             | XsdSchema.XrdType "encrypt"
                             | XsdSchema.XrdType "encryptCert"
                             | XsdSchema.XrdType "encrypted"
-                            | XsdSchema.XrdType "encryptedCert" -> true
-                            | _ -> false
-    | _ -> false
+                            | XsdSchema.XrdType "encryptedCert" -> Some(name)
+                            | _ -> None
+    | _ -> None
