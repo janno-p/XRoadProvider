@@ -779,7 +779,7 @@ let readSchema (uri: string) =
     { Services = definitionsNode |> parseServices
       TypeSchemas = definitionsNode |> XsdSchema.parseSchema }
 
-let (|IsXteeHeader|) (part: MessagePart) =
+let (|IsXteeHeader|_|) (part: MessagePart) =
     match part.Reference with
     | SchemaElement name -> match name with
                             | XsdSchema.XteeType "asutus"
@@ -798,9 +798,9 @@ let (|IsXteeHeader|) (part: MessagePart) =
                             | XsdSchema.XteeType "salastada"
                             | XsdSchema.XteeType "salastada_sertifikaadiga"
                             | XsdSchema.XteeType "salastatud"
-                            | XsdSchema.XteeType "salastatud_sertifikaadiga" -> true
-                            | _ -> false
-    | _ -> false
+                            | XsdSchema.XteeType "salastatud_sertifikaadiga" -> Some(name)
+                            | _ -> None
+    | _ -> None
 
 let (|IsXRoadHeader|) (part: MessagePart) =
     match part.Reference with

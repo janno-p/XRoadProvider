@@ -43,6 +43,7 @@
     <Compile Include="DebugProvidedTypes.fs" />
     <Compile Include="XRoadTypeProvider.Wsdl.fs" />
     <Compile Include="XRoadTypeProvider.Runtime.fs" />
+    <Compile Include="XRoadTypeProvider.Expressions.fs" />
     <Compile Include="XRoadTypeProvider.fs" />
     <Content Include="packages.config" />
   </ItemGroup>

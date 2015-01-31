@@ -25,112 +25,6 @@ type public XRoadTypeProvider() as this =
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let createXRoadOperation (typeCache: Dictionary<XmlReference,ProvidedTypeDefinition>) (operation: Operation) =
-        let xthdrs = operation.Request.Header
-                     |> List.choose (fun p -> match p with
-                                              | IsXteeHeader true when operation.Style = RpcEncoded ->
-                                                  Some p.Name
-                                              | IsXRoadHeader true when operation.Style = DocLiteral ->
-                                                  Some p.Name
-                                              | _ -> None)
-                     |> Array.ofList
-
-        let getTypeFromCache id =
-            match typeCache.TryGetValue(id) with
-            | true, tp -> tp :> System.Type
-            | _ -> typeof<obj>
-
-        let getParameters (msg: OperationMessage) = [
-            let rec getParameters (xs: MessagePart list) fromCache = seq {
-                match xs with
-                | [] -> ()
-                | part::xs ->
-                    if fromCache then yield ProvidedParameter(part.Name, getTypeFromCache part.Reference)
-                    else yield ProvidedParameter(part.Name, typeof<obj>)
-                    yield! getParameters xs fromCache }
-            yield! getParameters msg.Body true
-
-            let rec getHeaderParameters (xs: MessagePart list) = seq {
-                match xs with
-                | [] -> ()
-                | (IsXteeHeader true)::xs when operation.Style = RpcEncoded ->
-                    yield! getHeaderParameters xs
-                | (IsXRoadHeader true)::xs when operation.Style = DocLiteral ->
-                    yield! getHeaderParameters xs
-                | x::xs -> yield ProvidedParameter(x.Name, typeof<obj>)
-                           yield! getHeaderParameters xs
-            }
-            yield ProvidedParameter("settings", typeof<XRoadHeader>)
-            yield! getHeaderParameters msg.Header
-
-            yield! getParameters msg.MultipartContent false
-        ]
-        let parameters = getParameters operation.Request
-
-        let getReturnType () = [|
-            let rec getTypes (xs: MessagePart list) = seq {
-                match xs with
-                | [] -> ()
-                | part::xs -> yield match typeCache.TryGetValue(part.Reference) with | true, tp -> tp :> System.Type | _ -> typeof<obj>
-                              yield! getTypes xs }
-            yield! getTypes operation.Response.Body
-        |]
-
-        let returnType =
-            let innerType =
-                match getReturnType() with
-                | [||] -> typeof<unit>
-                | [| tp |] -> tp
-                | many -> FSharpType.MakeTupleType many
-            if operation.Response.MultipartContent |> List.isEmpty then
-                innerType
-            else
-                let tp = typedefof<Runtime.IXRoadResponseWithAttachments<_>>
-                tp.MakeGenericType(innerType)
-
-        let tpoox = parameters
-                    |> List.choose (fun pm -> match pm.ParameterType with
-                                              | :? ProvidedTypeDefinition as x -> Some x
-                                              | _ -> None)
-                    |> List.map (fun tp -> tp, tp.GetMember("Serialize").[0] :?> MethodInfo)
-                    |> List.tryFind (fun _ -> true)
-
-        let meth = ProvidedMethod(operation.Name.LocalName, parameters, returnType)
-        meth.InvokeCode <- (fun args ->
-            let opName, opVer, opNs = (operation.Name.LocalName, operation.Version |> Option.orDefault "", operation.Name.NamespaceName)
-            let ps = args |> Seq.ofList |> Seq.skip 1 |> Seq.mapi (fun i exp -> match parameters.[i] with
-                                                                                | p when p.ParameterType = typeof<obj> -> Expr.Cast<obj> exp :> Expr
-                                                                                | p when p.ParameterType = typeof<XRoadHeader> -> Expr.Coerce(Expr.Cast<XRoadHeader> exp, typeof<obj>)
-                                                                                | p ->
-                                                                                    let pi = typeof<IXRoadEntity>.GetProperty("RootName")
-                                                                                    Expr.Sequential(
-                                                                                        Expr.PropertySet(Expr.Cast<XRoadEntity> exp, pi, Expr.Value(p.Name)),
-                                                                                        Expr.Coerce(Expr.Cast<XRoadEntity> exp, typeof<obj>)))
-            let pl = Expr.NewArray(typeof<obj>, ps |> Seq.toList)
-            match operation.Style with
-            | RpcEncoded ->
-                let f =
-                    match tpoox with
-                    | Some (tp, mi) ->
-                        let v = Var("w", typeof<System.Xml.XmlWriter>)
-                        Expr.Lambda(v, Expr.Call(Expr.Coerce(args.[1], tp), mi, [Expr.Coerce(Expr.Var(v), typeof<System.Xml.XmlWriter>)]))
-                    | _ -> <@@ printfn "Nuthin'!" @@>
-                <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext,
-                                             opName,
-                                             opVer,
-                                             opNs,
-                                             %%pl,
-                                             xthdrs,
-                                             (%%f: System.Xml.XmlWriter -> unit)) @@>
-            | DocLiteral ->
-                <@@ XRoadRequest.makeDocumentCall((%%args.[0]: XRoadContext) :> IXRoadContext,
-                                                  opName,
-                                                  opVer,
-                                                  opNs,
-                                                  %%pl,
-                                                  xthdrs) @@>)
-        meth
-
     let getRuntimeType (typeCache: IDictionary<XmlReference,ProvidedTypeDefinition>) (typeName: XName) =
         match XsdSchema.mapPrimitiveType typeName with
         | Some tp -> tp
@@ -280,7 +174,7 @@ type public XRoadTypeProvider() as this =
                             portType.AddMember(requestFormatField)
 
                             port.Operations
-                            |> List.map (fun op -> op |> createXRoadOperation typeCache)
+                            |> List.map (fun op -> op |> Expressions.createXRoadOperationMethod typeCache)
                             |> portType.AddMembers
 
                             portType)
