@@ -25,66 +25,16 @@ type public XRoadTypeProvider() as this =
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let getRuntimeType (typeCache: IDictionary<XmlReference,ProvidedTypeDefinition>) (typeName: XName) =
-        match XsdSchema.mapPrimitiveType typeName with
-        | Some tp -> tp
-        | _ -> match typeCache.TryGetValue(SchemaType typeName) with
-               | true, tp -> upcast tp
-               | _ -> failwithf "Unknown type %A found." typeName
-
-    let buildXRoadEntityTypes typeCache (typeSchemas: XsdSchema.SchemaNode list) =
-        let rec populateTypeMembers (providedType: ProvidedTypeDefinition) (typeDef: XsdSchema.TypeDefinition) =
-            match typeDef.ParentType with
-            | Some xname ->
-                match xname with
-                | XsdSchema.SoapEncType "Array" -> () // TODO
-                | _ -> providedType.SetBaseType(getRuntimeType typeCache xname)
-            | _ -> ()
-
-            let serializeMethod = ProvidedMethod("Serialize", [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ], typeof<unit>)
-            serializeMethod.InvokeCode <- (fun _ ->
-                let name = providedType.Name
-                <@@ printfn "%s" name @@>)
-            providedType.AddMember(serializeMethod)
-
-            typeDef.Properties
-            |> List.map (fun (nm, tp) ->
-                let propType = match tp with
-                               | XsdSchema.XmlReference refName -> failwith "never"
-                               | XsdSchema.TypeReference typeName ->
-                                   getRuntimeType typeCache typeName
-                               | XsdSchema.TypeDefinition typeDef ->
-                                   let newType = ProvidedTypeDefinition(sprintf "%s'" nm, Some typeof<XRoadEntity>, HideObjectMethods=true)
-                                   newType.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
-                                   providedType.AddMember(newType)
-                                   typeDef |> populateTypeMembers newType
-                                   upcast newType
-                let propDef = ProvidedProperty(nm, propType)
-                propDef.GetterCode <- (fun args ->
-                    let meth =
-                        let m = typeof<IXRoadEntity>.GetMethod("GetProperty")
-                        match propType with
-                        | :? ProvidedTypeDefinition -> m.MakeGenericMethod(typeof<XRoadEntity>)
-                        | _ -> m.MakeGenericMethod(propType)
-                    Expr.Call(args.[0], meth, [Expr.Value nm]))
-                propDef.SetterCode <- (fun args ->
-                    let meth =
-                        let m = typeof<IXRoadEntity>.GetMethod("SetProperty")
-                        match propType with
-                        | :? ProvidedTypeDefinition -> m.MakeGenericMethod(typeof<XRoadEntity>)
-                        | _ -> m.MakeGenericMethod(propType)
-                    Expr.Call(args.[0], meth, [Expr.Value nm; args.[1]]))
-                propDef)
-            |> providedType.AddMembers
+    let buildXRoadEntityTypes (typeCache: Expressions.TypeCache) (typeSchemas: XsdSchema.SchemaNode list) =
         typeSchemas |> List.iter (fun schema ->
             schema.Elements |> Seq.iter (fun kvp ->
                 match kvp.Value with
                 | XsdSchema.XmlReference refName -> ()
                 | XsdSchema.TypeReference typeName -> ()
                 | XsdSchema.TypeDefinition typeDef ->
-                    typeDef |> populateTypeMembers typeCache.[SchemaElement kvp.Key])
+                    Expressions.addXRoadEntityMembers typeCache.[SchemaElement kvp.Key] typeDef typeCache)
             schema.Types |> Seq.iter (fun kvp ->
-                kvp.Value |> populateTypeMembers typeCache.[SchemaType kvp.Key]))
+                    Expressions.addXRoadEntityMembers typeCache.[SchemaType kvp.Key] kvp.Value typeCache))
 
     do newType.DefineStaticParameters(
         parameters = staticParams,
@@ -114,9 +64,15 @@ type public XRoadTypeProvider() as this =
 
                         schema.Types
                         |> Seq.map (fun kvp ->
+                            let nm, ns = kvp.Key.LocalName, kvp.Key.NamespaceName
                             let tp = ProvidedTypeDefinition(kvp.Key.LocalName, Some typeof<XRoadEntity>, HideObjectMethods=true)
                             if not <| kvp.Value.IsAbstract then
-                                tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
+                                let ctor = ProvidedConstructor([])
+                                ctor.InvokeCode <- (fun _ ->
+                                    <@@ let xre = XRoadEntity()
+                                        (xre :> IXRoadEntity).TypeName <- (nm, ns)
+                                        xre @@>)
+                                tp.AddMember(ctor)
                             typeCache.[SchemaType kvp.Key] <- tp
                             tp)
                         |> List.ofSeq

@@ -15,6 +15,7 @@ module XmlNamespace =
     let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
+    let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
 module Option =
