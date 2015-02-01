@@ -183,7 +183,17 @@ let serializePropertyExpr (e: ElementSpec) (typ: Type) (args: Expr list) =
             match typ with
             | :? ProvidedTypeDefinition ->
                 let mi = typ.GetMethod("Serialize")
-                Expr.Call(Expr.Coerce(varValue, typ), mi, [args.[1]])
+                let testExpr = Expr.Coerce(varValue, typeof<IXRoadEntity>)
+                match e.Type with
+                | RefOrType.Name name ->
+                    let nm, ns = name.LocalName, name.NamespaceName
+                    Expr.IfThenElse(<@@ (%%testExpr: IXRoadEntity).TypeName <> (nm, ns) @@>,
+                                    <@@ (%%args.[1]: XmlWriter).WriteStartAttribute("type", XmlNamespace.Xsi)
+                                        (%%args.[1]: XmlWriter).WriteQualifiedName((%%testExpr: IXRoadEntity).TypeName)
+                                        (%%args.[1]: XmlWriter).WriteEndAttribute() @@>,
+                                    Expr.Value(()))
+                | _ -> Expr.Value(())
+                |> andThen (Expr.Call(Expr.Coerce(varValue, typ), mi, [args.[1]]))
             | tp when tp = typeof<string> ->
                 <@@ (%%args.[1]: XmlWriter).WriteValue(unbox<string> %%varValue) @@>
             | tp when tp = typeof<int64> ->
@@ -258,7 +268,13 @@ let rec addXRoadEntityMembers providedType name typ cache =
         | ComplexContent(spec) ->
             match spec with
             | ComplexContentSpec.Extension(spec) ->
-                cache |> getParentType spec.Base |> providedType.SetBaseType
+                let baseType = cache |> getParentType spec.Base
+                providedType.SetBaseType(baseType)
+                match baseType with
+                | :? ProvidedTypeDefinition ->
+                    let mi = baseType.GetMethod("Serialize")
+                    serializeExp.Add(fun args -> Expr.Call(Expr.Coerce(args.[0], baseType), mi, [args.[1]]))
+                | _ -> ()
                 spec.Content |> parseComplexTypeContentSpec
             | ComplexContentSpec.Restriction(_) ->
                 ()
