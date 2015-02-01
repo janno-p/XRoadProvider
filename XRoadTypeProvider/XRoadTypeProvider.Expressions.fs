@@ -153,14 +153,11 @@ let createXRoadOperationMethod typeCache operation =
     *)
 
 
-(*
-let getParentType (cache: TypeCache) (typ: SchemaType) =
-    typeDef.ParentType
-    |> Option.bind (fun name ->
-        match name with
-        | SoapEncType "Array" -> None
-        | _ -> cache |> getRuntimeType name |> Some)
-*)
+
+let getParentType name (cache: TypeCache) =
+    match name with
+    | SoapEncType "Array" -> typeof<obj[]>
+    | _ -> cache |> getRuntimeType name
 
 let addDefaultConstructor (name: XName option) (typ: SchemaType) (providedType: ProvidedTypeDefinition) =
     match typ with
@@ -188,7 +185,6 @@ let serializePropertyExpr (e: ElementSpec) (args: Expr list) =
     | _ -> failwith "Not implemented!"
 
 let rec addXRoadEntityMembers providedType name typ cache =
-    //typeDef |> getParentType cache |> Option.iter (fun tp -> providedType.SetBaseType(tp))
     providedType |> addDefaultConstructor name typ
 
     let createNestedType name typeDef =
@@ -212,26 +208,44 @@ let rec addXRoadEntityMembers providedType name typ cache =
 
     let serializeExp = List<(Expr list -> Expr)>()
 
+    let parseComplexTypeContentSpec (spec: ComplexTypeContentSpec) =
+        match spec.Content with
+        | Some(content) ->
+            match content with
+            | ComplexTypeParticle.All(spec) ->
+                spec.Elements
+                |> List.iter (fun element ->
+                    providedType.AddMember(createProperty element.Name element.Type)
+                    serializeExp.Add(serializePropertyExpr element))
+            | ComplexTypeParticle.Sequence(spec) ->
+                spec.Content
+                |> List.iter (fun c ->
+                    match c with
+                    | SequenceContent.Element(element) ->
+                        providedType.AddMember(createProperty element.Name element.Type)
+                        serializeExp.Add(serializePropertyExpr element)
+                    | _ -> failwith "not implemented!")
+                ()
+        | _ -> ()
+
     match typ with
     | ComplexType(spec) ->
         match spec.Content with
-        | ComplexContent(spec) -> ()
-        | SimpleContent(spec) -> ()
+        | ComplexContent(spec) ->
+            match spec with
+            | ComplexContentSpec.Extension(spec) ->
+                cache |> getParentType spec.Base |> providedType.SetBaseType
+                spec.Content |> parseComplexTypeContentSpec
+            | ComplexContentSpec.Restriction(_) ->
+                ()
+        | SimpleContent(_) ->
+            ()
         | ComplexTypeContent.Particle(spec) ->
-            match spec.Content with
-            | Some(content) ->
-                match content with
-                | ComplexTypeParticle.All(spec) ->
-                    spec.Elements
-                    |> List.iter (fun element ->
-                        providedType.AddMember(createProperty element.Name element.Type)
-                        serializeExp.Add(serializePropertyExpr element))
-                | ComplexTypeParticle.Sequence(spec) ->
-                    ()
-            | _ -> ()
+            spec |> parseComplexTypeContentSpec
     | SimpleType(spec) ->
         match spec with
-        | SimpleTypeSpec.Restriction(spec) -> ()
+        | SimpleTypeSpec.Restriction(_) ->
+            ()
 
     let serializeMethodParams = [ ProvidedParameter("writer", typeof<XmlWriter>) ]
     let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
