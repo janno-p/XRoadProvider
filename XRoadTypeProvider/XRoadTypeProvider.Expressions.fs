@@ -173,14 +173,36 @@ let addDefaultConstructor (name: XName option) (typ: SchemaType) (providedType: 
                         xre @@>)
            providedType.AddMember(ctor)
 
-let serializePropertyExpr (e: ElementSpec) (args: Expr list) =
+let serializePropertyExpr (e: ElementSpec) (typ: Type) (args: Expr list) =
+    let entityExpr = Expr.Coerce(args.[0], typeof<IXRoadEntity>)
+    let propertyName = e.Name
+    let writeValueExpr =
+        let matchValue = Var("matchValue", typeof<obj>)
+        let varValue = Expr.Var(matchValue)
+        let serializeExpr =
+            match typ with
+            | :? ProvidedTypeDefinition ->
+                let mi = typ.GetMethod("Serialize")
+                Expr.Call(Expr.Coerce(varValue, typ), mi, [args.[1]])
+            | tp when tp = typeof<string> ->
+                <@@ (%%args.[1]: XmlWriter).WriteValue(unbox<string> %%varValue) @@>
+            | tp when tp = typeof<int64> ->
+                <@@ (%%args.[1]: XmlWriter).WriteValue(unbox<int64> %%varValue) @@>
+            | _ ->
+                Expr.Value(())
+        Expr.Let(matchValue,
+                 <@@ (%%entityExpr: IXRoadEntity).GetProperty(propertyName) @@>,
+                 Expr.IfThenElse(<@@ %%varValue = null @@>,
+                                 <@@ (%%args.[1]: XmlWriter).WriteAttributeString("nil", XmlNamespace.Xsi, "true") @@>,
+                                 serializeExpr))
     let writeElementValueExpr =
-        Expr.Call(args.[1], mWriteStartElement, [ Expr.Value(e.Name) ])
-        |> andThen (Expr.Call(args.[1], mWriteEndElement, []))
+        <@@ (%%args.[1]: XmlWriter).WriteStartElement(propertyName)
+            (%%writeValueExpr)
+            (%%args.[1]: XmlWriter).WriteEndElement() @@>
     match e.MinOccurs with
-    | 0u -> Expr.IfThenElse(Expr.Call(Expr.Coerce(args.[0], typeof<IXRoadEntity>), mHasProperty, [ Expr.Value(e.Name) ]),
-                            writeElementValueExpr,
-                            Expr.Value(()))
+    | 0u -> <@@ match (%%entityExpr: IXRoadEntity).HasProperty(propertyName) with
+                | true -> %%writeElementValueExpr
+                | _ -> () @@>
     | 1u -> writeElementValueExpr
     | _ -> failwith "Not implemented!"
 
@@ -215,15 +237,17 @@ let rec addXRoadEntityMembers providedType name typ cache =
             | ComplexTypeParticle.All(spec) ->
                 spec.Elements
                 |> List.iter (fun element ->
-                    providedType.AddMember(createProperty element.Name element.Type)
-                    serializeExp.Add(serializePropertyExpr element))
+                    let property = createProperty element.Name element.Type
+                    providedType.AddMember(property)
+                    serializeExp.Add(serializePropertyExpr element property.PropertyType))
             | ComplexTypeParticle.Sequence(spec) ->
                 spec.Content
                 |> List.iter (fun c ->
                     match c with
                     | SequenceContent.Element(element) ->
-                        providedType.AddMember(createProperty element.Name element.Type)
-                        serializeExp.Add(serializePropertyExpr element)
+                        let property = createProperty element.Name element.Type
+                        providedType.AddMember(property)
+                        serializeExp.Add(serializePropertyExpr element property.PropertyType)
                     | _ -> failwith "not implemented!")
                 ()
         | _ -> ()
@@ -247,9 +271,15 @@ let rec addXRoadEntityMembers providedType name typ cache =
         | SimpleTypeSpec.Restriction(_) ->
             ()
 
-    let serializeMethodParams = [ ProvidedParameter("writer", typeof<XmlWriter>) ]
-    let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
-    providedType.AddMember(serializeMethod)
+    let serializeMethod =
+        match providedType.GetMethod("Serialize") with
+        | :? ProvidedMethod as serializeMethod ->
+            serializeMethod
+        | _ ->
+            let serializeMethodParams = [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ]
+            let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
+            providedType.AddMember(serializeMethod)
+            serializeMethod
 
     serializeMethod.InvokeCode <- (fun args ->
         match serializeExp |> Seq.toList with

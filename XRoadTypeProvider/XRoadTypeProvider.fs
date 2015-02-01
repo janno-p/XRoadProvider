@@ -58,6 +58,9 @@ type public XRoadTypeProvider() as this =
                             let refName = sprintf "%s'" kvp.Key.LocalName
                             let tp = ProvidedTypeDefinition(refName, Some typeof<XRoadEntity>, HideObjectMethods=true)
                             tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
+                            let serializeMethodParams = [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ]
+                            let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
+                            tp.AddMember(serializeMethod)
                             typeCache.[SchemaElement kvp.Key] <- tp
                             tp)
                         |> List.ofSeq
@@ -67,6 +70,9 @@ type public XRoadTypeProvider() as this =
                         |> Seq.map (fun kvp ->
                             let nm, ns = kvp.Key.LocalName, kvp.Key.NamespaceName
                             let tp = ProvidedTypeDefinition(kvp.Key.LocalName, Some typeof<XRoadEntity>, HideObjectMethods=true)
+                            let serializeMethodParams = [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ]
+                            let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
+                            tp.AddMember(serializeMethod)
                             typeCache.[SchemaType kvp.Key] <- tp
                             tp)
                         |> List.ofSeq
