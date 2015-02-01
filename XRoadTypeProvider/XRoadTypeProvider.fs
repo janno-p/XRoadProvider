@@ -8,6 +8,7 @@ open System.Collections.Generic
 open System.Reflection
 open System.Xml.Linq
 open XRoadTypeProvider.Wsdl
+open XRoadTypeProvider.Wsdl.XsdSchema
 open XRoadTypeProvider.Runtime
 
 type RequestFormat =
@@ -25,16 +26,16 @@ type public XRoadTypeProvider() as this =
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let buildXRoadEntityTypes (typeCache: Expressions.TypeCache) (typeSchemas: XsdSchema.SchemaNode list) =
+    let buildXRoadEntityTypes (typeCache: Expressions.TypeCache) (typeSchemas: SchemaNode list) =
         typeSchemas |> List.iter (fun schema ->
             schema.Elements |> Seq.iter (fun kvp ->
                 match kvp.Value with
-                | XsdSchema.XmlReference refName -> ()
-                | XsdSchema.TypeReference typeName -> ()
-                | XsdSchema.TypeDefinition typeDef ->
-                    Expressions.addXRoadEntityMembers typeCache.[SchemaElement kvp.Key] typeDef typeCache)
+                | Ref refName -> ()
+                | Name typeName -> ()
+                | Type typ ->
+                    Expressions.addXRoadEntityMembers typeCache.[SchemaElement kvp.Key] (Some kvp.Key) typ typeCache)
             schema.Types |> Seq.iter (fun kvp ->
-                    Expressions.addXRoadEntityMembers typeCache.[SchemaType kvp.Key] kvp.Value typeCache))
+                    Expressions.addXRoadEntityMembers typeCache.[SchemaType kvp.Key] (Some kvp.Key) kvp.Value typeCache))
 
     do newType.DefineStaticParameters(
         parameters = staticParams,
@@ -66,13 +67,6 @@ type public XRoadTypeProvider() as this =
                         |> Seq.map (fun kvp ->
                             let nm, ns = kvp.Key.LocalName, kvp.Key.NamespaceName
                             let tp = ProvidedTypeDefinition(kvp.Key.LocalName, Some typeof<XRoadEntity>, HideObjectMethods=true)
-                            if not <| kvp.Value.IsAbstract then
-                                let ctor = ProvidedConstructor([])
-                                ctor.InvokeCode <- (fun _ ->
-                                    <@@ let xre = XRoadEntity()
-                                        (xre :> IXRoadEntity).TypeName <- (nm, ns)
-                                        xre @@>)
-                                tp.AddMember(ctor)
                             typeCache.[SchemaType kvp.Key] <- tp
                             tp)
                         |> List.ofSeq
