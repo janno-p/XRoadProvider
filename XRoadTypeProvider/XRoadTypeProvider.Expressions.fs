@@ -12,7 +12,12 @@ open XRoadTypeProvider.Runtime
 open XRoadTypeProvider.Wsdl
 open XRoadTypeProvider.Wsdl.XsdSchema
 
-type TypeCache = Dictionary<XmlReference,ProvidedTypeDefinition>
+type TypeInfo =
+  { Name: XName
+    Type: ProvidedTypeDefinition
+    DependentTypes: TypeInfo list }
+
+type TypeCache = Dictionary<XmlReference,TypeInfo>
 
 let andThen e2 e1 = Expr.Sequential(e1, e2)
 
@@ -36,17 +41,24 @@ let requiredXRoadHeaders operation =
 
 let getType id (cache: TypeCache) =
     match cache.TryGetValue(id) with
-    | true, tp -> tp :> System.Type
+    | true, tp -> tp
     | _ -> failwithf "Unknown WSDL type: %A" id // typeof<obj>??
+
+type RuntimeTypeInfo =
+    | ProvidedType of TypeInfo
+    | SystemType of Type
+    member x.Type with get () = match x with
+                                | ProvidedType(tp) -> tp.Type :> Type
+                                | SystemType(tp) -> tp
 
 let getRuntimeType typeName cache =
     match mapPrimitiveType typeName with
-    | Some tp -> tp
-    | _ -> cache |> getType (SchemaType(typeName))
+    | Some tp -> SystemType(tp)
+    | _ -> ProvidedType(cache |> getType (SchemaType(typeName)))
 
 let buildReturnType typeCache operation =
     let responseTypes = operation.Response.Body
-                        |> List.map (fun p -> typeCache |> getType p.Reference)
+                        |> List.map (fun p -> (typeCache |> getType p.Reference).Type :> Type)
     let innerType = match responseTypes with
                     | [] -> typeof<unit>
                     | tp::[] -> tp
@@ -59,7 +71,7 @@ let buildReturnType typeCache operation =
 
 let buildParameters typeCache operation =
   [ yield! operation.Request.Body
-           |> List.map (fun p -> ProvidedParameter(p.Name, typeCache |> getType p.Reference))
+           |> List.map (fun p -> ProvidedParameter(p.Name, (typeCache |> getType p.Reference).Type))
     yield ProvidedParameter("settings", typeof<XRoadHeader>) ]
 
 let mWriteStartElement = typeof<XmlWriter>.GetMethod("WriteStartElement", [| typeof<string> |])
@@ -90,7 +102,7 @@ let createXRoadOperationMethod typeCache operation =
                 |> List.mapi (fun i part ->
                     let partName = part.Name
                     let index = i
-                    let tp = typeCache |> getType part.Reference
+                    let tp = (typeCache |> getType part.Reference).Type
                     let mi = tp.GetMethod("Serialize", [| typeof<XmlWriter> |])
                     Expr.Call(Expr.Var(writer), mWriteStartElement, [ Expr.Value(partName) ])
                     |> andThen (Expr.Call(Expr.Coerce(args.[index + 1], tp), mi, [Expr.Coerce(Expr.Var(writer), typeof<System.Xml.XmlWriter>)]))
@@ -157,7 +169,7 @@ let createXRoadOperationMethod typeCache operation =
 let getParentType name (cache: TypeCache) =
     match name with
     | SoapEncType "Array" -> typeof<obj[]>
-    | _ -> cache |> getRuntimeType name
+    | _ -> (cache |> getRuntimeType name).Type
 
 let addDefaultConstructor (name: XName option) (typ: SchemaType) (providedType: ProvidedTypeDefinition) =
     match typ with
@@ -173,30 +185,39 @@ let addDefaultConstructor (name: XName option) (typ: SchemaType) (providedType: 
                         xre @@>)
            providedType.AddMember(ctor)
 
-let serializePropertyExpr (e: ElementSpec) (typ: Type) (args: Expr list) =
+let serializePropertyExpr (e: ElementSpec) (rti: RuntimeTypeInfo) (args: Expr list) =
     let entityExpr = Expr.Coerce(args.[0], typeof<IXRoadEntity>)
     let propertyName = e.Name
     let writeValueExpr =
         let matchValue = Var("matchValue", typeof<obj>)
         let varValue = Expr.Var(matchValue)
         let serializeExpr =
-            match typ with
-            | :? ProvidedTypeDefinition ->
-                let mi = typ.GetMethod("Serialize")
+            match rti with
+            | ProvidedType typ ->
+                let mi = typ.Type.GetMethod("Serialize")
                 let testExpr = Expr.Coerce(varValue, typeof<IXRoadEntity>)
-                match e.Type with
-                | RefOrType.Name name ->
-                    let nm, ns = name.LocalName, name.NamespaceName
-                    Expr.IfThenElse(<@@ (%%testExpr: IXRoadEntity).TypeName <> (nm, ns) @@>,
-                                    <@@ (%%args.[1]: XmlWriter).WriteStartAttribute("type", XmlNamespace.Xsi)
-                                        (%%args.[1]: XmlWriter).WriteQualifiedName((%%testExpr: IXRoadEntity).TypeName)
-                                        (%%args.[1]: XmlWriter).WriteEndAttribute() @@>,
-                                    Expr.Value(()))
-                | _ -> Expr.Value(())
-                |> andThen (Expr.Call(Expr.Coerce(varValue, typ), mi, [args.[1]]))
-            | tp when tp = typeof<string> ->
+
+                let attrExp =
+                    match e.Type with
+                    | RefOrType.Name name ->
+                        let nm, ns = name.LocalName, name.NamespaceName
+                        Expr.IfThenElse(<@@ (%%testExpr: IXRoadEntity).TypeName <> (nm, ns) @@>,
+                                        <@@ (%%args.[1]: XmlWriter).WriteStartAttribute("type", XmlNamespace.Xsi)
+                                            (%%args.[1]: XmlWriter).WriteQualifiedName((%%testExpr: IXRoadEntity).TypeName)
+                                            (%%args.[1]: XmlWriter).WriteEndAttribute() @@>,
+                                        Expr.Value(()))
+                    | _ -> Expr.Value(())
+
+                (typ::typ.DependentTypes)
+                |> List.map (fun depType ->
+                    let nm, ns = depType.Name.LocalName, depType.Name.NamespaceName
+                    let mi = depType.Type.GetMethod("Serialize")
+                    let serializeCall = Expr.Call(Expr.Coerce(varValue, depType.Type), mi, [args.[1]])
+                    <@@ if (%%testExpr: IXRoadEntity).TypeName = (nm, ns) then %%serializeCall @@>)
+                |> List.fold (fun aggExp exp -> aggExp |> andThen exp) attrExp
+            | SystemType(tp) when tp = typeof<string> ->
                 <@@ (%%args.[1]: XmlWriter).WriteValue(unbox<string> %%varValue) @@>
-            | tp when tp = typeof<int64> ->
+            | SystemType(tp) when tp = typeof<int64> ->
                 <@@ (%%args.[1]: XmlWriter).WriteValue(unbox<int64> %%varValue) @@>
             | _ ->
                 Expr.Value(())
@@ -223,19 +244,21 @@ let rec addXRoadEntityMembers providedType name typ cache =
         let nestedType = ProvidedTypeDefinition(sprintf "%s'" name, Some typeof<XRoadEntity>, HideObjectMethods=true)
         providedType.AddMember(nestedType)
         addXRoadEntityMembers nestedType None typeDef cache
-        nestedType :> Type
+        { Name = XName.Get("_"); Type = nestedType; DependentTypes = [] }
 
     let makeGenericMethod (tp: Type) (meth: MethodInfo) =
         meth.MakeGenericMethod(match tp with | :? ProvidedTypeDefinition -> typeof<XRoadEntity> | _ -> tp)
 
-    let createProperty name (typ: RefOrType) =
-        let propType = match typ with
-                       | RefOrType.Ref(name) -> failwith "Not supported"
-                       | RefOrType.Name(name) -> cache |> getRuntimeType name
-                       | RefOrType.Type(typ) -> createNestedType name typ
-        let property = ProvidedProperty(name, propType)
-        property.GetterCode <- (fun args -> Expr.Call(args.[0], (mGetProperty |> makeGenericMethod propType), [Expr.Value(name)]))
-        property.SetterCode <- (fun args -> Expr.Call(args.[0], (mSetProperty |> makeGenericMethod propType), [Expr.Value(name); args.[1]]))
+    let getRuntimeTypeInfo name (typ: RefOrType) =
+        match typ with
+        | RefOrType.Ref(name) -> failwith "Not supported"
+        | RefOrType.Name(name) -> cache |> getRuntimeType name
+        | RefOrType.Type(typ) -> ProvidedType(createNestedType name typ)
+
+    let createProperty name (typ: Type) =
+        let property = ProvidedProperty(name, typ)
+        property.GetterCode <- (fun args -> Expr.Call(args.[0], (mGetProperty |> makeGenericMethod typ), [Expr.Value(name)]))
+        property.SetterCode <- (fun args -> Expr.Call(args.[0], (mSetProperty |> makeGenericMethod typ), [Expr.Value(name); args.[1]]))
         property
 
     let serializeExp = List<(Expr list -> Expr)>()
@@ -247,17 +270,19 @@ let rec addXRoadEntityMembers providedType name typ cache =
             | ComplexTypeParticle.All(spec) ->
                 spec.Elements
                 |> List.iter (fun element ->
-                    let property = createProperty element.Name element.Type
+                    let typ = getRuntimeTypeInfo element.Name element.Type
+                    let property = createProperty element.Name typ.Type
                     providedType.AddMember(property)
-                    serializeExp.Add(serializePropertyExpr element property.PropertyType))
+                    serializeExp.Add(serializePropertyExpr element typ))
             | ComplexTypeParticle.Sequence(spec) ->
                 spec.Content
                 |> List.iter (fun c ->
                     match c with
                     | SequenceContent.Element(element) ->
-                        let property = createProperty element.Name element.Type
+                        let typ = getRuntimeTypeInfo element.Name element.Type
+                        let property = createProperty element.Name typ.Type
                         providedType.AddMember(property)
-                        serializeExp.Add(serializePropertyExpr element property.PropertyType)
+                        serializeExp.Add(serializePropertyExpr element typ)
                     | _ -> failwith "not implemented!")
                 ()
         | _ -> ()

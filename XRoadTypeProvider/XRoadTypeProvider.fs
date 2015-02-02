@@ -26,16 +26,39 @@ type public XRoadTypeProvider() as this =
     
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let buildXRoadEntityTypes (typeCache: Expressions.TypeCache) (typeSchemas: SchemaNode list) =
+    let buildDependentTypes (typeSchemas: SchemaNode list) (typeCache: Expressions.TypeCache) =
+        typeSchemas |> List.iter (fun schema ->
+            schema.Types |> Seq.iter (fun tpi ->
+                match typeCache.TryGetValue(SchemaType tpi.Key) with
+                | true, typ ->
+                    match tpi.Value with
+                    | ComplexType(spec) ->
+                        match spec.Content with
+                        | ComplexContent(spec) ->
+                            match spec with
+                            | ComplexContentSpec.Extension(spec) ->
+                                match typeCache.TryGetValue(XmlReference.SchemaType spec.Base) with
+                                | true, ti ->
+                                    let ti = { ti with DependentTypes = typ::ti.DependentTypes }
+                                    typeCache.[XmlReference.SchemaType spec.Base] <- ti
+                                | _ -> ()
+                            | _ -> ()
+                        | _ -> ()
+                    | _ -> ()
+                | _ -> ()))
+
+    let buildXRoadEntityTypes typeCache typeSchemas =
+        typeCache |> buildDependentTypes typeSchemas
+
         typeSchemas |> List.iter (fun schema ->
             schema.Elements |> Seq.iter (fun kvp ->
                 match kvp.Value with
                 | Ref refName -> ()
                 | Name typeName -> ()
                 | Type typ ->
-                    Expressions.addXRoadEntityMembers typeCache.[SchemaElement kvp.Key] (Some kvp.Key) typ typeCache)
+                    Expressions.addXRoadEntityMembers typeCache.[SchemaElement kvp.Key].Type (Some kvp.Key) typ typeCache)
             schema.Types |> Seq.iter (fun kvp ->
-                    Expressions.addXRoadEntityMembers typeCache.[SchemaType kvp.Key] (Some kvp.Key) kvp.Value typeCache))
+                    Expressions.addXRoadEntityMembers typeCache.[SchemaType kvp.Key].Type (Some kvp.Key) kvp.Value typeCache))
 
     do newType.DefineStaticParameters(
         parameters = staticParams,
@@ -46,7 +69,7 @@ type public XRoadTypeProvider() as this =
                 | [| :? string as uri |] ->
                     let schema = resolveUri uri |> readSchema
 
-                    let typeCache = Dictionary<XmlReference,ProvidedTypeDefinition>()
+                    let typeCache = Expressions.TypeCache()
 
                     schema.TypeSchemas
                     |> List.map (fun schema ->
@@ -61,7 +84,7 @@ type public XRoadTypeProvider() as this =
                             let serializeMethodParams = [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ]
                             let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
                             tp.AddMember(serializeMethod)
-                            typeCache.[SchemaElement kvp.Key] <- tp
+                            typeCache.[SchemaElement kvp.Key] <- { Name = kvp.Key; Type = tp; DependentTypes = [] }
                             tp)
                         |> List.ofSeq
                         |> typeNamespace.AddMembers
@@ -73,7 +96,7 @@ type public XRoadTypeProvider() as this =
                             let serializeMethodParams = [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ]
                             let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
                             tp.AddMember(serializeMethod)
-                            typeCache.[SchemaType kvp.Key] <- tp
+                            typeCache.[SchemaType kvp.Key] <- { Name = kvp.Key; Type = tp; DependentTypes = [] }
                             tp)
                         |> List.ofSeq
                         |> typeNamespace.AddMembers
