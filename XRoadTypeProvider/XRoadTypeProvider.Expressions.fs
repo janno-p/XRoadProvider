@@ -62,15 +62,6 @@ let buildParameters typeCache operation =
            |> List.map (fun p -> ProvidedParameter(p.Name, typeCache |> getType p.Reference))
     yield ProvidedParameter("settings", typeof<XRoadHeader>) ]
 
-let mWriteStartElement = typeof<XmlWriter>.GetMethod("WriteStartElement", [| typeof<string> |])
-let mWriteEndElement = typeof<XmlWriter>.GetMethod("WriteEndElement", [| |])
-let mWriteStartAttribute = typeof<XmlWriter>.GetMethod("WriteStartAttribute", [| typeof<string>; typeof<string> |])
-let mWriteEndAttribute = typeof<XmlWriter>.GetMethod("WriteEndAttribute", [| |])
-let mWriteQualifiedName = typeof<XmlWriter>.GetMethod("WriteQualifiedName", [| typeof<string>; typeof<string> |])
-let mHasProperty = typeof<IXRoadEntity>.GetMethod("HasProperty")
-let mGetProperty = typeof<IXRoadEntity>.GetMethod("GetProperty")
-let mSetProperty = typeof<IXRoadEntity>.GetMethod("SetProperty")
-
 let createXRoadOperationMethod typeCache operation =
     let xrdHeaders = requiredXRoadHeaders(operation)
     let parameters = operation |> buildParameters typeCache
@@ -91,10 +82,10 @@ let createXRoadOperationMethod typeCache operation =
                     let partName = part.Name
                     let index = i
                     let tp = typeCache |> getType part.Reference
-                    let entityExpr = Expr.Coerce(Expr.Coerce(args.[index + 1], tp), typeof<IXRoadEntity>)
+                    let entityExpr = Expr.Coerce(Expr.Coerce(args.[index + 1], tp), typeof<XRoadEntity>)
                     let writerExpr = Expr.Var(writer)
                     <@@ (%%writerExpr: XmlWriter).WriteStartElement(partName)
-                        (%%entityExpr: IXRoadEntity).Serializer(%%writerExpr: XmlWriter)
+                        (%%entityExpr: XRoadEntity).Serializer(%%writerExpr: XmlWriter)
                         (%%writerExpr: XmlWriter).WriteEndElement() @@>)
                 |> execute (Expr.Value(())))
         <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext,
@@ -168,19 +159,19 @@ let serializePropertyExpr (e: ElementSpec) (typ: Type) (entityExpr: Expr) (write
         let serializeExpr =
             match typ with
             | :? ProvidedTypeDefinition as typ ->
-                let testExpr = Expr.Coerce(varValue, typeof<IXRoadEntity>)
+                let testExpr = Expr.Coerce(varValue, typeof<XRoadEntity>)
                 let attributeExpr =
                     match e.Type with
                     | RefOrType.Name(xname) ->
                         let nm, ns = xname.LocalName, xname.NamespaceName
-                        Expr.IfThenElse(<@@ (%%testExpr: IXRoadEntity).TypeName <> (nm, ns) @@>,
+                        Expr.IfThenElse(<@@ (%%testExpr: XRoadEntity).TypeName <> (nm, ns) @@>,
                                         <@@ (%%writerExpr: XmlWriter).WriteStartAttribute("type", XmlNamespace.Xsi)
-                                            (%%writerExpr: XmlWriter).WriteQualifiedName((%%testExpr: IXRoadEntity).TypeName)
+                                            (%%writerExpr: XmlWriter).WriteQualifiedName((%%testExpr: XRoadEntity).TypeName)
                                             (%%writerExpr: XmlWriter).WriteEndAttribute() @@>,
                                         Expr.Value(()))
                         |> Some
                     | _ -> None
-                let serializeExpr = <@@ (%%testExpr: IXRoadEntity).Serializer(%%writerExpr: XmlWriter) @@>
+                let serializeExpr = <@@ (%%testExpr: XRoadEntity).Serializer(%%writerExpr: XmlWriter) @@>
                 attributeExpr |> Option.fold (fun aggExp exp -> exp |> andThen aggExp) serializeExpr
             | tp when tp = typeof<string> ->
                 <@@ (%%writerExpr: XmlWriter).WriteValue(unbox<string> %%varValue) @@>
@@ -189,7 +180,7 @@ let serializePropertyExpr (e: ElementSpec) (typ: Type) (entityExpr: Expr) (write
             | _ ->
                 Expr.Value(())
         Expr.Let(matchValue,
-                 <@@ (%%entityExpr: IXRoadEntity).GetProperty(propertyName) @@>,
+                 <@@ (%%entityExpr: XRoadEntity).GetProperty(propertyName) @@>,
                  Expr.IfThenElse(<@@ %%varValue = null @@>,
                                  <@@ (%%writerExpr: XmlWriter).WriteAttributeString("nil", XmlNamespace.Xsi, "true") @@>,
                                  serializeExpr))
@@ -198,11 +189,14 @@ let serializePropertyExpr (e: ElementSpec) (typ: Type) (entityExpr: Expr) (write
             (%%writeValueExpr)
             (%%writerExpr: XmlWriter).WriteEndElement() @@>
     match e.MinOccurs with
-    | 0u -> <@@ match (%%entityExpr: IXRoadEntity).HasProperty(propertyName) with
+    | 0u -> <@@ match (%%entityExpr: XRoadEntity).HasProperty(propertyName) with
                 | true -> %%writeElementValueExpr
                 | _ -> () @@>
     | 1u -> writeElementValueExpr
     | _ -> failwith "Not implemented!"
+
+let mGetProperty = typeof<XRoadEntity>.GetMethod("GetProperty")
+let mSetProperty = typeof<XRoadEntity>.GetMethod("SetProperty")
 
 let rec addXRoadEntityMembers (providedType: ProvidedTypeDefinition) (name: XName option) typ cache =
     let createNestedType name typeDef =
@@ -222,8 +216,13 @@ let rec addXRoadEntityMembers (providedType: ProvidedTypeDefinition) (name: XNam
 
     let createProperty name (typ: Type) =
         let property = ProvidedProperty(name, typ)
-        property.GetterCode <- (fun args -> Expr.Call(args.[0], (mGetProperty |> makeGenericMethod typ), [Expr.Value(name)]))
-        property.SetterCode <- (fun args -> Expr.Call(args.[0], (mSetProperty |> makeGenericMethod typ), [Expr.Value(name); args.[1]]))
+        property.GetterCode <- (fun args -> Expr.Call(<@@ ((%%args.[0]: obj) :?> XRoadEntity) @@>, (mGetProperty |> makeGenericMethod typ), [Expr.Value(name)]))
+        property.SetterCode <- (fun args ->
+            Expr.Call(<@@ ((%%args.[0]: obj) :?> XRoadEntity) @@>,
+                      mSetProperty |> makeGenericMethod typ,
+                      [Expr.Value(name); (match typ with
+                                          | :? ProvidedTypeDefinition -> <@@ ((%%args.[1]: obj) :?> XRoadEntity) @@>
+                                          | _ -> args.[1])]))
         property
 
     let serializeExp = List<(Expr -> Expr -> Expr)>()
@@ -278,7 +277,7 @@ let rec addXRoadEntityMembers (providedType: ProvidedTypeDefinition) (name: XNam
         | SimpleTypeSpec.Restriction(_) ->
             ()
 
-    let entity = Var("entity", typeof<IXRoadEntity>)
+    let entity = Var("entity", typeof<XRoadEntity>)
     let entityExpr = Expr.Var(entity)
     let writer = Var("writer", typeof<XmlWriter>)
     let writerExpr = Expr.Var(writer)
@@ -296,11 +295,11 @@ let rec addXRoadEntityMembers (providedType: ProvidedTypeDefinition) (name: XNam
     | _ -> let ctor = ProvidedConstructor([])
            ctor.InvokeCode <- (fun _ ->
                 match name with
-                | None -> <@@ XRoadEntity() @@>
+                | None -> <@@ box (XRoadEntity()) @@>
                 | Some(name) ->
                     let nm, ns = name.LocalName, name.NamespaceName
                     <@@ let xre = XRoadEntity()
-                        (xre :> IXRoadEntity).TypeName <- (nm, ns)
-                        (xre :> IXRoadEntity).Serializer <- (%%serializerExpr: IXRoadEntity -> XmlWriter -> unit)(xre :> IXRoadEntity)
-                        xre @@>)
+                        xre.TypeName <- (nm, ns)
+                        xre.Serializer <- (%%serializerExpr: XRoadEntity -> XmlWriter -> unit) xre
+                        box xre @@>)
            providedType.AddMember(ctor)

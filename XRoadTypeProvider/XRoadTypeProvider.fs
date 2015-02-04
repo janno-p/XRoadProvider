@@ -56,8 +56,8 @@ type public XRoadTypeProvider() as this =
                         schema.Elements
                         |> Seq.map (fun kvp ->
                             let refName = sprintf "%s'" kvp.Key.LocalName
-                            let tp = ProvidedTypeDefinition(refName, Some typeof<XRoadEntity>, HideObjectMethods=true)
-                            tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
+                            let tp = ProvidedTypeDefinition(refName, baseType, HideObjectMethods=true)
+                            tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ box (XRoadEntity()) @@>)))
                             typeCache.[SchemaElement kvp.Key] <- tp
                             tp)
                         |> List.ofSeq
@@ -66,7 +66,7 @@ type public XRoadTypeProvider() as this =
                         schema.Types
                         |> Seq.map (fun kvp ->
                             let nm, ns = kvp.Key.LocalName, kvp.Key.NamespaceName
-                            let tp = ProvidedTypeDefinition(kvp.Key.LocalName, Some typeof<XRoadEntity>, HideObjectMethods=true)
+                            let tp = ProvidedTypeDefinition(kvp.Key.LocalName, baseType, HideObjectMethods=true)
                             typeCache.[SchemaType kvp.Key] <- tp
                             tp)
                         |> List.ofSeq

@@ -6,31 +6,18 @@ open System.IO
 open System.Xml
 open XRoadTypeProvider.Wsdl
 
-[<Interface>]
-type IXRoadEntity =
-    abstract member TypeName: string * string with get, set
-    abstract member Serializer: (XmlWriter -> unit) with get, set
-    abstract member HasProperty: string -> bool
-    abstract member SetProperty: string * 'T -> unit
-    abstract member GetProperty: string -> 'T
-
 type XRoadEntity () =
     let data = Dictionary<string, obj>()
 
-    interface IXRoadEntity with
-        override val TypeName = ("", "") with get, set
-        override val Serializer = (fun _ -> ()) with get, set
+    member val TypeName = ("", "") with get, set
+    member val Serializer = (fun (_: XmlWriter) -> ()) with get, set
+    member __.HasProperty (name) = data.ContainsKey(name)
+    member __.SetProperty (name, value) = data.[name] <- box value
 
-        override __.HasProperty (name) =
-            data.ContainsKey(name)
-
-        override __.SetProperty (name, value) =
-            data.[name] <- box value
-
-        override __.GetProperty<'T> (name) =
-            match data.TryGetValue(name) with
-            | true, value -> unbox value
-            | _ -> Unchecked.defaultof<'T>
+    member __.GetProperty<'T> (name) =
+        match data.TryGetValue(name) with
+        | true, value -> unbox value
+        | _ -> Unchecked.defaultof<'T>
 
 type Base64 = string
 
