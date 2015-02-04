@@ -9,6 +9,7 @@ open XRoadTypeProvider.Wsdl
 [<Interface>]
 type IXRoadEntity =
     abstract member TypeName: string * string with get, set
+    abstract member Serializer: (XmlWriter -> unit) with get, set
     abstract member HasProperty: string -> bool
     abstract member SetProperty: string * 'T -> unit
     abstract member GetProperty: string -> 'T
@@ -18,6 +19,7 @@ type XRoadEntity () =
 
     interface IXRoadEntity with
         override val TypeName = ("", "") with get, set
+        override val Serializer = (fun _ -> ()) with get, set
 
         override __.HasProperty (name) =
             data.ContainsKey(name)

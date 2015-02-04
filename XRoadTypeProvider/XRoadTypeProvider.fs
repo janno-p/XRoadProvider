@@ -20,10 +20,10 @@ type public XRoadTypeProvider() as this =
     inherit TypeProviderForNamespaces()
 
     let thisAssembly = Assembly.GetExecutingAssembly()
-    let rootNamespace = "XRoadTypeProvider"
+    let rootNamespace = "XRoad.Providers"
     let baseType = Some typeof<obj>
     let staticParams = [ProvidedStaticParameter("uri", typeof<string>)]
-    
+
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
     let buildDependentTypes (typeSchemas: SchemaNode list) (typeCache: Expressions.TypeCache) =
@@ -171,6 +171,3 @@ type public XRoadTypeProvider() as this =
             thisType))
 
     do this.AddNamespace(rootNamespace, [newType])
-
-[<TypeProviderAssembly>]
-do ()

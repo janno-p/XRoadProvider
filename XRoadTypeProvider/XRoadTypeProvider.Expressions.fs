@@ -103,10 +103,11 @@ let createXRoadOperationMethod typeCache operation =
                     let partName = part.Name
                     let index = i
                     let tp = (typeCache |> getType part.Reference).Type
-                    let mi = tp.GetMethod("Serialize", [| typeof<XmlWriter> |])
-                    Expr.Call(Expr.Var(writer), mWriteStartElement, [ Expr.Value(partName) ])
-                    |> andThen (Expr.Call(Expr.Coerce(args.[index + 1], tp), mi, [Expr.Coerce(Expr.Var(writer), typeof<System.Xml.XmlWriter>)]))
-                    |> andThen (Expr.Call(Expr.Var(writer), mWriteEndElement, [])))
+                    let entityExpr = Expr.Coerce(Expr.Coerce(args.[index + 1], tp), typeof<IXRoadEntity>)
+                    let writerExpr = Expr.Var(writer)
+                    <@@ (%%writerExpr: XmlWriter).WriteStartElement(partName)
+                        (%%entityExpr: IXRoadEntity).Serializer(%%writerExpr: XmlWriter)
+                        (%%writerExpr: XmlWriter).WriteEndElement() @@>)
                 |> execute (Expr.Value(())))
         <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext,
                                      operationName,
