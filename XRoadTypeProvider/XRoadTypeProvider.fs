@@ -26,39 +26,16 @@ type public XRoadTypeProvider() as this =
 
     let newType = ProvidedTypeDefinition(thisAssembly, rootNamespace, "XRoadTypeProvider", baseType)
 
-    let buildDependentTypes (typeSchemas: SchemaNode list) (typeCache: Expressions.TypeCache) =
-        typeSchemas |> List.iter (fun schema ->
-            schema.Types |> Seq.iter (fun tpi ->
-                match typeCache.TryGetValue(SchemaType tpi.Key) with
-                | true, typ ->
-                    match tpi.Value with
-                    | ComplexType(spec) ->
-                        match spec.Content with
-                        | ComplexContent(spec) ->
-                            match spec with
-                            | ComplexContentSpec.Extension(spec) ->
-                                match typeCache.TryGetValue(XmlReference.SchemaType spec.Base) with
-                                | true, ti ->
-                                    let ti = { ti with DependentTypes = typ::ti.DependentTypes }
-                                    typeCache.[XmlReference.SchemaType spec.Base] <- ti
-                                | _ -> ()
-                            | _ -> ()
-                        | _ -> ()
-                    | _ -> ()
-                | _ -> ()))
-
-    let buildXRoadEntityTypes typeCache typeSchemas =
-        typeCache |> buildDependentTypes typeSchemas
-
+    let buildXRoadEntityTypes (typeCache: Expressions.TypeCache) typeSchemas =
         typeSchemas |> List.iter (fun schema ->
             schema.Elements |> Seq.iter (fun kvp ->
                 match kvp.Value with
                 | Ref refName -> ()
                 | Name typeName -> ()
                 | Type typ ->
-                    Expressions.addXRoadEntityMembers typeCache.[SchemaElement kvp.Key].Type (Some kvp.Key) typ typeCache)
+                    Expressions.addXRoadEntityMembers typeCache.[SchemaElement kvp.Key] (Some kvp.Key) typ typeCache)
             schema.Types |> Seq.iter (fun kvp ->
-                    Expressions.addXRoadEntityMembers typeCache.[SchemaType kvp.Key].Type (Some kvp.Key) kvp.Value typeCache))
+                    Expressions.addXRoadEntityMembers typeCache.[SchemaType kvp.Key] (Some kvp.Key) kvp.Value typeCache))
 
     do newType.DefineStaticParameters(
         parameters = staticParams,
@@ -81,10 +58,7 @@ type public XRoadTypeProvider() as this =
                             let refName = sprintf "%s'" kvp.Key.LocalName
                             let tp = ProvidedTypeDefinition(refName, Some typeof<XRoadEntity>, HideObjectMethods=true)
                             tp.AddMember(ProvidedConstructor([], InvokeCode=(fun _ -> <@@ XRoadEntity() @@>)))
-                            let serializeMethodParams = [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ]
-                            let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
-                            tp.AddMember(serializeMethod)
-                            typeCache.[SchemaElement kvp.Key] <- { Name = kvp.Key; Type = tp; DependentTypes = [] }
+                            typeCache.[SchemaElement kvp.Key] <- tp
                             tp)
                         |> List.ofSeq
                         |> typeNamespace.AddMembers
@@ -93,10 +67,7 @@ type public XRoadTypeProvider() as this =
                         |> Seq.map (fun kvp ->
                             let nm, ns = kvp.Key.LocalName, kvp.Key.NamespaceName
                             let tp = ProvidedTypeDefinition(kvp.Key.LocalName, Some typeof<XRoadEntity>, HideObjectMethods=true)
-                            let serializeMethodParams = [ ProvidedParameter("writer", typeof<System.Xml.XmlWriter>) ]
-                            let serializeMethod = ProvidedMethod("Serialize", serializeMethodParams, typeof<unit>)
-                            tp.AddMember(serializeMethod)
-                            typeCache.[SchemaType kvp.Key] <- { Name = kvp.Key; Type = tp; DependentTypes = [] }
+                            typeCache.[SchemaType kvp.Key] <- tp
                             tp)
                         |> List.ofSeq
                         |> typeNamespace.AddMembers
