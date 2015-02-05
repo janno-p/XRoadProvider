@@ -5,7 +5,7 @@ open System.Xml.Linq
 open XRoadTypeProvider.Runtime
 open XRoadTypeProvider.Wsdl
 
-type Producers =
+type Producer =
   { Name: string
     WsdlUri: string
     Description: string }

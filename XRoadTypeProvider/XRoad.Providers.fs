@@ -1,4 +1,4 @@
-﻿module XRoadProviders
+﻿module XRoad.Providers
 
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
