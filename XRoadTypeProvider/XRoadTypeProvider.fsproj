@@ -47,7 +47,7 @@
     <Compile Include="XRoadTypeProvider.fs" />
     <Compile Include="XRoad.ProducerDefinition.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
-    <Compile Include="XRoadProviders.fs" />
+    <Compile Include="XRoad.Providers.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
