@@ -3,6 +3,7 @@
 open ProviderImplementation.ProvidedTypes
 open System.Collections.Generic
 open System.Text.RegularExpressions
+open System.Xml
 open System.Xml.Linq
 open XRoadTypeProvider.Wsdl
 
@@ -21,6 +22,9 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
         serviceTypesTy.AddMember(namespaceTy)
         typeSchema.Types |> Seq.iter (fun kvp ->
             let providedTy = ProvidedTypeDefinition(kvp.Key.LocalName, Some typeof<obj>, IsErased=false)
+            let serializeMeth = ProvidedMethod("Serialize", [ProvidedParameter("writer", typeof<XmlWriter>)], typeof<System.Void>)
+            serializeMeth.InvokeCode <- fun _ -> <@@ () @@>
+            providedTy.AddMember(serializeMeth)
             namespaceTy.AddMember(providedTy)
             typeCache.Add(kvp.Key, providedTy)))
 
