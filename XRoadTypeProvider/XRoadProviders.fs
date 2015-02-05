@@ -22,7 +22,11 @@ type XRoadProviders(config: TypeProviderConfig) as this =
             [ProvidedStaticParameter("ProducerUri", typeof<string>)],
             fun typeName parameterValues ->
                 let thisTy = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy, IsErased=false)
-                producerAssembly.AddTypes([thisTy])
+                match parameterValues with
+                | [| :? string as producerUri |] ->
+                    thisTy.AddMembers(XRoad.ProducerDefinition.getProducerDefinition(producerUri, theAssembly, namespaceName))
+                    producerAssembly.AddTypes([thisTy])
+                | _ ->  failwith "Unexpected parameter values!"
                 thisTy)
 
         serverTy.DefineStaticParameters(
