@@ -43,6 +43,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             let ctor = ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>))
             typ.AddMember(ctor)
             let serializeMeth = ProvidedMethod("Serialize", [ProvidedParameter("writer", typeof<XmlWriter>)], typeof<System.Void>)
+            serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
             serializeMeth.InvokeCode <- fun _ -> <@@ () @@>
             typ.AddMember(serializeMeth)
             let namespaceTy = getOrCreateNamespace (name.Namespace)
@@ -72,6 +73,8 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                     providedTy.SetBaseType(baseTy)
                     let baseCtor = getConstructor(baseTy)
                     ctor.BaseConstructorCall <- (fun args -> baseCtor :> ConstructorInfo, args)
+                    let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
+                    serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
                 | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
                     ()
                 | ComplexTypeContent.Particle(spec) ->
