@@ -631,6 +631,8 @@ type ProvidedConstructor(parameters : ProvidedParameter list) =
         | None -> None
     member this.IsImplicitCtor with get() = isImplicitCtor and set v = isImplicitCtor <- v
 
+    member this.SetConstructorAttrs attrs = ctorAttributes <- attrs
+
     // Implement overloads
     override this.GetParameters() = parameters |> List.toArray 
     override this.Attributes = ctorAttributes
@@ -2314,6 +2316,10 @@ type AssemblyGenerator(assemblyFileName) =
                 | Some f -> 
                     // argExprs should always include 'this'
                     let (cinfo,argExprs) = f (Array.toList parameters)
+                    let cinfo =
+                        match cinfo with
+                        | :? ProvidedConstructor as pc -> ctorMap.[pc] :> ConstructorInfo
+                        | _ -> cinfo
                     for argExpr in argExprs do 
                         emitExpr (ilg, locals, parameterVars) ExpectedStackState.Value argExpr
                     ilg.Emit(OpCodes.Call,cinfo)
@@ -2392,7 +2398,19 @@ type AssemblyGenerator(assemblyFileName) =
 
 
         // phase 4 - complete types
-        iterateTypes (fun tb _ptd -> tb.CreateType() |> ignore)
+        iterateTypes (fun tb _ptd ->
+            let rec createBaseType (ptd: ProvidedTypeDefinition) =
+                match ptd.BaseType with
+                | :? ProvidedTypeDefinition as ptd ->
+                    let (succ, tb) = typeMap.TryGetValue(ptd)
+                    if succ then
+                        tb.CreateType() |> ignore
+                        createBaseType ptd
+                | _ -> ()
+            match _ptd with
+            | Some ptd -> createBaseType ptd
+            | _ -> ()
+            tb.CreateType() |> ignore)
 
 #if FX_NO_LOCAL_FILESYSTEM
 #else
