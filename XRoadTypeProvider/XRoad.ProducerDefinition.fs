@@ -1,5 +1,6 @@
 ﻿module internal XRoad.ProducerDefinition
 
+open Microsoft.FSharp.Quotations
 open ProviderImplementation.ProvidedTypes
 open System.Collections.Generic
 open System.Reflection
@@ -44,41 +45,57 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             typ.AddMember(ctor)
             let serializeMeth = ProvidedMethod("Serialize", [ProvidedParameter("writer", typeof<XmlWriter>)], typeof<System.Void>)
             serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
-            serializeMeth.InvokeCode <- fun _ -> <@@ () @@>
             typ.AddMember(serializeMeth)
             let namespaceTy = getOrCreateNamespace (name.Namespace)
             namespaceTy.AddMember(typ)
             typeCache.Add(name, typ)
             typ
 
-    // Step 1: Populate all global types from schema
-    schema.TypeSchemas |> List.iter (fun typeSchema ->
-        typeSchema.Types |> Seq.iter (fun kvp ->
-            let providedTy = getOrCreateType(kvp.Key)
-            match kvp.Value with
-            | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
+    let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType) =
+        let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
+        let serializeExpr = List<(Expr list -> Expr)>()
+        let handleComplexTypeContentSpec (spec: ComplexTypeContentSpec) =
+            if not(List.isEmpty spec.Attributes) then
+                failwithf "TODO: handle complex type content attributes for type %A" providedTy.Name
+            match spec.Content with
+            | Some(ComplexTypeParticle.All(particle)) -> ()
+            | Some(ComplexTypeParticle.Sequence(particle)) -> ()
+            | _ -> ()
+        match typeInfo with
+        | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
+            ()
+        | ComplexType(spec) ->
+            let ctor = getConstructor(providedTy)
+            if spec.IsAbstract then
+                providedTy.SetAttributes(TypeAttributes.Abstract ||| TypeAttributes.Public ||| TypeAttributes.Class)
+                ctor.SetConstructorAttrs(MethodAttributes.Family ||| MethodAttributes.RTSpecialName)
+            match spec.Content with
+            | SimpleContent(SimpleContentSpec.Extension(spec)) ->
                 ()
-            | ComplexType(spec) ->
-                let ctor = getConstructor(providedTy)
-                if spec.IsAbstract then
-                    providedTy.SetAttributes(TypeAttributes.Abstract ||| TypeAttributes.Public ||| TypeAttributes.Class)
-                    ctor.SetConstructorAttrs(MethodAttributes.Family ||| MethodAttributes.RTSpecialName)
-                match spec.Content with
-                | SimpleContent(SimpleContentSpec.Extension(spec)) ->
-                    ()
-                | SimpleContent(SimpleContentSpec.Restriction(spec)) ->
-                    ()
-                | ComplexContent(ComplexContentSpec.Extension(spec)) ->
-                    let baseTy = getOrCreateType(spec.Base)
-                    providedTy.SetBaseType(baseTy)
-                    let baseCtor = getConstructor(baseTy)
-                    ctor.BaseConstructorCall <- (fun args -> baseCtor :> ConstructorInfo, args)
-                    let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
-                    serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
-                | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
-                    ()
-                | ComplexTypeContent.Particle(spec) ->
-                    ()
-            ))
+            | SimpleContent(SimpleContentSpec.Restriction(spec)) ->
+                ()
+            | ComplexContent(ComplexContentSpec.Extension(spec)) ->
+                let baseTy = getOrCreateType(spec.Base)
+                providedTy.SetBaseType(baseTy)
+                let baseCtor = getConstructor(baseTy)
+                ctor.BaseConstructorCall <- (fun args -> baseCtor :> ConstructorInfo, args)
+                serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
+                let baseSerialize = baseTy.GetMethod("Serialize") :?> ProvidedMethod
+                serializeExpr.Add(fun (this::args) -> Expr.Call(this, baseSerialize, args))
+                handleComplexTypeContentSpec(spec.Content)
+            | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
+                ()
+            | ComplexTypeContent.Particle(spec) ->
+                handleComplexTypeContentSpec(spec)
+        serializeMeth.InvokeCode <-
+            match serializeExpr |> List.ofSeq with
+            | [] -> fun _ -> <@@ () @@>
+            | exp::[] -> fun args -> exp(args)
+            | exp::more -> fun args -> List.fold (fun exp e -> Expr.Sequential(exp, e args)) (exp args) more
+
+    schema.TypeSchemas
+    |> List.iter (fun typeSchema ->
+        typeSchema.Types
+        |> Seq.iter (fun kvp -> buildType(getOrCreateType(kvp.Key), kvp.Value)))
 
     [serviceTypesTy]
