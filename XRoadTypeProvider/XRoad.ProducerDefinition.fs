@@ -20,7 +20,8 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
     let typeCache = Dictionary<XName,ProvidedTypeDefinition>()
     let namespaceCache = Dictionary<XNamespace,ProvidedTypeDefinition>()
 
-    let serviceTypesTy = ProvidedTypeDefinition("ServiceTypes", Some typeof<obj>, IsErased=false)
+    let baseTy = typeof<obj>
+    let serviceTypesTy = ProvidedTypeDefinition("ServiceTypes", Some baseTy, IsErased=false)
 
     let getOrCreateNamespace (name: XNamespace) =
         match namespaceCache.TryGetValue(name) with
@@ -30,7 +31,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                 match Regex.Match(name.NamespaceName, @"^http://producers\.\w+\.xtee\.riik\.ee/producer/(\w+)$") with
                 | m when m.Success -> m.Groups.[1].Value
                 | _ -> failwithf "TODO: Implement normal namespace handling for tns: %A" name
-            let typ = ProvidedTypeDefinition(producerName, Some typeof<obj>, IsErased=false)
+            let typ = ProvidedTypeDefinition(producerName, Some baseTy, IsErased=false)
             serviceTypesTy.AddMember(typ)
             namespaceCache.Add(name, typ)
             typ
@@ -39,7 +40,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
         match typeCache.TryGetValue(name) with
         | true, typ -> typ
         | _ ->
-            let typ = ProvidedTypeDefinition(name.LocalName, Some typeof<obj>, IsErased=false)
+            let typ = ProvidedTypeDefinition(name.LocalName, Some baseTy, IsErased=false)
             typ.SetAttributes(TypeAttributes.Public ||| TypeAttributes.Class)
             let ctor = ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>))
             typ.AddMember(ctor)
@@ -130,4 +131,44 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
         typeSchema.Types
         |> Seq.iter (fun kvp -> buildType(getOrCreateType(kvp.Key), kvp.Value)))
 
-    [serviceTypesTy]
+    let serviceTypes =
+        schema.Services |> List.map (fun service ->
+            let serviceTy = ProvidedTypeDefinition(service.Name, Some baseTy, IsErased=false)
+            service.Ports |> List.map (fun port ->
+                let portTy = ProvidedTypeDefinition(port.Name, Some baseTy, IsErased=false)
+
+                let addressField = ProvidedField("b__Address", typeof<string>)
+                portTy.AddMember(addressField)
+
+                let addressProperty = ProvidedProperty("Address", typeof<string>)
+                addressProperty.GetterCode <- fun args -> Expr.FieldGet(args.[0], addressField)
+                addressProperty.SetterCode <- fun args -> Expr.FieldSet(args.[0], addressField, args.[1])
+                portTy.AddMember(addressProperty)
+
+                let producerField = ProvidedField("b__Producer", typeof<string>)
+                portTy.AddMember(producerField)
+
+                let producerProperty = ProvidedProperty("Producer", typeof<string>)
+                producerProperty.GetterCode <- fun args -> Expr.FieldGet(args.[0], producerField)
+                producerProperty.SetterCode <- fun args -> Expr.FieldSet(args.[0], producerField, args.[1])
+                portTy.AddMember(producerProperty)
+
+                let addressValue = port.Address
+                let producerValue = port.Producer
+
+                let ctor = ProvidedConstructor([])
+                ctor.InvokeCode <- fun args -> Expr.Sequential(Expr.FieldSet(args.[0], addressField, Expr.Value(addressValue)),
+                                                               Expr.FieldSet(args.[0], producerField, Expr.Value(producerValue)))
+                portTy.AddMember(ctor)
+
+                match port.Documentation.TryGetValue("et") with
+                | true, docString -> portTy.AddXmlDoc(docString)
+                | _ -> ()
+
+                port.Operations |> List.map (fun op -> ()) |> ignore // TODO!!
+
+                portTy)
+            |> serviceTy.AddMembers
+            serviceTy)
+
+    serviceTypesTy::serviceTypes
