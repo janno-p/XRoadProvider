@@ -51,6 +51,11 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             typeCache.Add(name, typ)
             typ
 
+    let getRuntimeType typeName =
+        match mapPrimitiveType typeName with
+        | Some tp -> tp
+        | _ -> getOrCreateType typeName :> Type
+
     let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType) =
         let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
         let serializeExpr = List<(Expr list -> Expr)>()
@@ -59,7 +64,34 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                 failwithf "TODO: handle complex type content attributes for type %A" providedTy.Name
             match spec.Content with
             | Some(ComplexTypeParticle.All(particle)) -> ()
-            | Some(ComplexTypeParticle.Sequence(particle)) -> ()
+            | Some(ComplexTypeParticle.Sequence(sequence)) ->
+                if sequence.MinOccurs <> 1u || sequence.MaxOccurs <> 1u then
+                    failwith "Not supported!"
+                sequence.Content |> List.iter (fun item ->
+                    match item with
+                    | SequenceContent.Element(element) ->
+                        let elementType =
+                            match element.Type with
+                            | RefOrType.Name(xname) ->
+                                let typ = getRuntimeType(xname)
+                                if element.MaxOccurs > 1u then typ.MakeArrayType()
+                                else typ
+                            | _ -> typeof<obj> // TODO: failwith "Not supported!"
+                        let setField =
+                            match element.MinOccurs with
+                            | 0u -> Some(ProvidedField("s__" + element.Name, typeof<bool>))
+                            | _ -> None
+                        let backingField = ProvidedField("b__" + element.Name, elementType)
+                        providedTy.AddMembers(setField |> Option.fold (fun d f -> f::d) [backingField])
+                        let prop = ProvidedProperty(element.Name, elementType)
+                        prop.GetterCode <- fun args -> Expr.FieldGet(args.[0], backingField)
+                        prop.SetterCode <- fun args ->
+                            let valueExpr = Expr.FieldSet(args.[0], backingField, args.[1])
+                            match setField with
+                            | Some(f) -> Expr.Sequential(valueExpr, Expr.FieldSet(args.[0], f, Expr.Value(true)))
+                            | _ -> valueExpr
+                        providedTy.AddMember(prop)
+                    | SequenceContent.Sequence(sequence) -> failwith "Not supported!")
             | _ -> ()
         match typeInfo with
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
@@ -81,7 +113,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                 ctor.BaseConstructorCall <- (fun args -> baseCtor :> ConstructorInfo, args)
                 serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
                 let baseSerialize = baseTy.GetMethod("Serialize") :?> ProvidedMethod
-                serializeExpr.Add(fun (this::args) -> Expr.Call(this, baseSerialize, args))
+                serializeExpr.Add(fun args -> Expr.Call(args.Head, baseSerialize, args.Tail))
                 handleComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
                 ()
