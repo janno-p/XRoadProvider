@@ -36,17 +36,21 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             namespaceCache.Add(name, typ)
             typ
 
+    let createType name =
+        let typ = ProvidedTypeDefinition(name, Some baseTy, IsErased=false)
+        typ.SetAttributes(TypeAttributes.Public ||| TypeAttributes.Class)
+        let ctor = ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>))
+        typ.AddMember(ctor)
+        let serializeMeth = ProvidedMethod("Serialize", [ProvidedParameter("writer", typeof<XmlWriter>)], typeof<System.Void>)
+        serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
+        typ.AddMember(serializeMeth)
+        typ
+
     let getOrCreateType (name: XName) =
         match typeCache.TryGetValue(name) with
         | true, typ -> typ
         | _ ->
-            let typ = ProvidedTypeDefinition(name.LocalName, Some baseTy, IsErased=false)
-            typ.SetAttributes(TypeAttributes.Public ||| TypeAttributes.Class)
-            let ctor = ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>))
-            typ.AddMember(ctor)
-            let serializeMeth = ProvidedMethod("Serialize", [ProvidedParameter("writer", typeof<XmlWriter>)], typeof<System.Void>)
-            serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
-            typ.AddMember(serializeMeth)
+            let typ = createType name.LocalName
             let namespaceTy = getOrCreateNamespace (name.Namespace)
             namespaceTy.AddMember(typ)
             typeCache.Add(name, typ)
@@ -56,6 +60,29 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
         match mapPrimitiveType typeName with
         | Some tp -> tp
         | _ -> getOrCreateType typeName :> Type
+
+    let (|SoapEncArray|_|) (elementType: RefOrType) =
+        let getArrayType arrayType =
+            match arrayType with
+            | Some(typeName, rank) ->
+                [1..rank] |> List.fold (fun (aggTyp: Type) _ -> aggTyp.MakeArrayType()) (getRuntimeType(typeName))
+            | _ -> failwith "Array underlying type specification is missing."
+
+        match elementType with
+        | RefOrType.Type(SchemaType.ComplexType(spec)) ->
+            match spec.Content with
+            | ComplexTypeContent.ComplexContent(ComplexContentSpec.Restriction(spec)) ->
+                match spec.Base.LocalName, spec.Base.NamespaceName with
+                | "Array", XmlNamespace.SoapEncoding ->
+                    match spec.Content.Attributes with
+                    | [ arrayType ] when arrayType.Name = Some("arrayType") ->
+                        Some(getArrayType(arrayType.ArrayType))
+                    | [ arrayType ] when arrayType.RefOrType = RefOrType.Ref(XName.Get("arrayType", XmlNamespace.SoapEncoding)) ->
+                        Some(getArrayType(arrayType.ArrayType))
+                    | _ -> None
+                | _ -> None
+            | _ -> None
+        | _ -> None
 
     let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType) =
         let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
@@ -78,7 +105,14 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                                 if element.MaxOccurs > 1u then typ.MakeArrayType()
                                 elif element.IsNillable && typ.IsValueType then typedefof<Nullable<_>>.MakeGenericType(typ)
                                 else typ
-                            | _ -> typeof<obj> // TODO: failwith "Not supported!"
+                            | SoapEncArray arrType -> arrType
+                            | RefOrType.Type(typeSpec) ->
+                                let subTy = createType(element.Name + "Type")
+                                providedTy.AddMember(subTy)
+                                buildType(subTy, typeSpec)
+                                if element.MaxOccurs > 1u then subTy.MakeArrayType()
+                                else subTy :> Type
+                            | _ -> failwithf "Not supported: %A!" element.Type
                         let setField =
                             match element.MinOccurs with
                             | 0u -> Some(ProvidedField("s__" + element.Name, typeof<bool>))
