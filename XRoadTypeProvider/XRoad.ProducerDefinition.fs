@@ -76,6 +76,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                             | RefOrType.Name(xname) ->
                                 let typ = getRuntimeType(xname)
                                 if element.MaxOccurs > 1u then typ.MakeArrayType()
+                                elif element.IsNillable && typ.IsValueType then typedefof<Nullable<_>>.MakeGenericType(typ)
                                 else typ
                             | _ -> typeof<obj> // TODO: failwith "Not supported!"
                         let setField =
