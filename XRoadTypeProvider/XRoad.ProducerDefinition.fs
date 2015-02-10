@@ -36,6 +36,15 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             namespaceCache.Add(name, typ)
             typ
 
+    let createWriteTypeAttributeMethod (typeName: XName) =
+        let meth = ProvidedMethod("WriteTypeAttribute", [ProvidedParameter("writer", typeof<XmlWriter>)], typeof<Void>)
+        meth.InvokeCode <- fun args ->
+            let nm, ns = typeName.LocalName, typeName.NamespaceName
+            <@@ (%%args.[1]: XmlWriter).WriteStartAttribute("type", XmlNamespace.Xsi)
+                (%%args.[1]: XmlWriter).WriteQualifiedName(nm, ns)
+                (%%args.[1]: XmlWriter).WriteEndAttribute() @@>
+        meth
+
     let createType name =
         let typ = ProvidedTypeDefinition(name, Some baseTy, IsErased=false)
         typ.SetAttributes(TypeAttributes.Public ||| TypeAttributes.Class)
@@ -84,7 +93,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             | _ -> None
         | _ -> None
 
-    let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType) =
+    let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType, typeName: XName option) =
         let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
         let serializeExpr = List<(Expr list -> Expr)>()
         let handleComplexTypeContentSpec (spec: ComplexTypeContentSpec) =
@@ -109,7 +118,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                             | RefOrType.Type(typeSpec) ->
                                 let subTy = createType(element.Name + "Type")
                                 providedTy.AddMember(subTy)
-                                buildType(subTy, typeSpec)
+                                buildType(subTy, typeSpec, None)
                                 if element.MaxOccurs > 1u then subTy.MakeArrayType()
                                 else subTy :> Type
                             | _ -> failwithf "Not supported: %A!" element.Type
@@ -132,12 +141,12 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
         match typeInfo with
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             ()
-        | ComplexType(spec) ->
+        | ComplexType(ctspec) ->
             let ctor = getConstructor(providedTy)
-            if spec.IsAbstract then
+            if ctspec.IsAbstract then
                 providedTy.SetAttributes(TypeAttributes.Abstract ||| TypeAttributes.Public ||| TypeAttributes.Class)
                 ctor.SetConstructorAttrs(MethodAttributes.Family ||| MethodAttributes.RTSpecialName)
-            match spec.Content with
+            match ctspec.Content with
             | SimpleContent(SimpleContentSpec.Extension(spec)) ->
                 ()
             | SimpleContent(SimpleContentSpec.Restriction(spec)) ->
@@ -150,10 +159,24 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                 serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
                 let baseSerialize = baseTy.GetMethod("Serialize") :?> ProvidedMethod
                 serializeExpr.Add(fun args -> Expr.Call(args.Head, baseSerialize, args.Tail))
+                match typeName with
+                | Some(typeName) ->
+                    if not(ctspec.IsAbstract) then
+                        let attrMeth = createWriteTypeAttributeMethod(typeName)
+                        attrMeth.SetMethodAttrs(MethodAttributes.Family ||| MethodAttributes.Virtual)
+                        providedTy.AddMember(attrMeth)
+                | _ -> ()
                 handleComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
                 ()
             | ComplexTypeContent.Particle(spec) ->
+                match typeName with
+                | Some(typeName) ->
+                    let attrMeth = createWriteTypeAttributeMethod(typeName)
+                    attrMeth.SetMethodAttrs(MethodAttributes.Family ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
+                    if ctspec.IsAbstract then attrMeth.AddMethodAttrs(MethodAttributes.Abstract)
+                    providedTy.AddMember(attrMeth)
+                | _ -> ()
                 handleComplexTypeContentSpec(spec)
         serializeMeth.InvokeCode <-
             match serializeExpr |> List.ofSeq with
@@ -164,7 +187,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
     schema.TypeSchemas
     |> List.iter (fun typeSchema ->
         typeSchema.Types
-        |> Seq.iter (fun kvp -> buildType(getOrCreateType(kvp.Key), kvp.Value)))
+        |> Seq.iter (fun kvp -> buildType(getOrCreateType(kvp.Key), kvp.Value, Some(kvp.Key))))
 
     let serviceTypes =
         schema.Services |> List.map (fun service ->
