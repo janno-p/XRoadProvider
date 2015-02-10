@@ -72,6 +72,11 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
         | Some tp -> tp
         | _ -> getOrCreateType typeName :> Type
 
+    let (|NullableType|_|) (typ: Type) =
+        match Nullable.GetUnderlyingType(typ) with
+        | null -> None
+        | typ -> Some(typ)
+
     let (|SoapEncArray|_|) (elementType: RefOrType) =
         let getArrayType arrayType =
             match arrayType with
@@ -94,6 +99,54 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                 | _ -> None
             | _ -> None
         | _ -> None
+
+    let rec mkSerializeExpr (writer: Expr, fieldExpr: Expr, typ: Type) =
+        match typ with
+        | :? ProvidedTypeDefinition ->
+            let getType = typeof<obj>.GetMethod("GetType")
+            let getTypeExpr = Expr.Call(Expr.Coerce(fieldExpr, typeof<obj>), getType, [])
+            let typeTest = typeof<Type>.GetMethod("IsAssignableFrom")
+            let typeTestExpr = Expr.Call(getTypeExpr, typeTest, [Expr.Value(typ)])
+            Expr.Call(fieldExpr, typ.GetMethod("Serialize"), [writer; typeTestExpr])
+        | NullableType(typ) when typ = typeof<int32> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<int32>).Value) @@>
+        | typ when typ = typeof<int32> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: int32)) @@>
+        | NullableType(typ) when typ = typeof<decimal> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<decimal>).Value) @@>
+        | typ when typ = typeof<decimal> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: decimal)) @@>
+        | NullableType(typ) when typ = typeof<int64> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<int64>).Value) @@>
+        | typ when typ = typeof<int64> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: int64)) @@>
+        | NullableType(typ) when typ = typeof<DateTime> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<DateTime>).Value) @@>
+        | typ when typ = typeof<DateTime> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: DateTime)) @@>
+        | typ when typ = typeof<string> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: string)) @@>
+        | typ when typ.IsArray ->
+            // TODO: item tag name
+            let coerseExpr = Expr.Coerce(fieldExpr, typeof<Array>)
+            let v = Var("i", typeof<int>)
+            let vExpr = Expr.Var(v)
+            let elTyp = typ.GetElementType()
+            let getValExpr = <@@ (%%coerseExpr: Array).GetValue(%%vExpr: int) @@>
+            let itemExpr = mkSerializeExpr(writer, Expr.Coerce(getValExpr, elTyp), elTyp)
+            Expr.ForIntegerRangeLoop(
+                v,
+                <@@ 0 @@>,
+                <@@ ((%%coerseExpr: Array).Length - 1) @@>,
+                Expr.Sequential(
+                    <@@ (%%writer: XmlWriter).WriteStartElement("item") @@>,
+                    Expr.Sequential(itemExpr, <@@ (%%writer: XmlWriter).WriteEndElement() @@>)))
+            (*
+            let propLength = typ.GetProperty("Length")
+            Expr.lo
+            Expr.ForIntegerRangeLoop(v, Expr.Value(0), Expr.PropertyGet(fieldExpr, propLength), Expr.Value(()))
+            *)
+        | typ -> Expr.Value(()) //failwithf "Serialization method for %A is not defined" typ.FullName
 
     let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType, typeName: XName option) =
         let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
@@ -144,15 +197,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                             let fVal = Expr.Coerce(fieldExpr, typeof<obj>)
                             let fieldValue = Expr.Call(objEquals, [fVal; Expr.Value(null)])
                             let testNullExpr =
-                                let serExpr =
-                                    match elementType with
-                                    | :? ProvidedTypeDefinition ->
-                                        let getType = typeof<obj>.GetMethod("GetType")
-                                        let getTypeExpr = Expr.Call(fVal, getType, [])
-                                        let typeTest = typeof<Type>.GetMethod("IsAssignableFrom")
-                                        let typeTestExpr = Expr.Call(getTypeExpr, typeTest, [Expr.Value(elementType)])
-                                        Expr.Call(fieldExpr, elementType.GetMethod("Serialize"), [args.[1]; typeTestExpr])
-                                    | _ -> Expr.Value(())
+                                let serExpr = mkSerializeExpr(args.[1], fieldExpr, elementType)
                                 Expr.IfThenElse(fieldValue,
                                                 (if element.IsNillable then <@@ (%%args.[1]: XmlWriter).WriteAttributeString("nil", XmlNamespace.Xsi, "true") @@> else Expr.Value(())),
                                                 serExpr)
