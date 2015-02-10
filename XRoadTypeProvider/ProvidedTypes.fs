@@ -2163,7 +2163,7 @@ type AssemblyGenerator(assemblyFileName) =
                         match objOpt with 
                         | Some obj when mappedMeth.IsAbstract || mappedMeth.IsVirtual  ->
                             if obj.Type.IsValueType then ilg.Emit(OpCodes.Constrained, convType obj.Type)
-                            if mappedMeth.Attributes.HasFlag(MethodAttributes.VtableLayoutMask) then
+                            if obj.Type :? ProvidedTypeDefinition && mappedMeth.Attributes.HasFlag(MethodAttributes.VtableLayoutMask) && not(mappedMeth.Attributes.HasFlag(MethodAttributes.Abstract)) then
                                 ilg.Emit(OpCodes.Call, mappedMeth)
                             else
                                 ilg.Emit(OpCodes.Callvirt, mappedMeth)

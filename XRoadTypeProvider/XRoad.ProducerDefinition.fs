@@ -138,6 +138,32 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                             | Some(f) -> Expr.Sequential(valueExpr, Expr.FieldSet(args.[0], f, Expr.Value(true)))
                             | _ -> valueExpr
                         providedTy.AddMember(prop)
+                        serializeExpr.Add(fun args ->
+                            let objEquals = typeof<obj>.GetMethod("ReferenceEquals")
+                            let fieldExpr = Expr.FieldGet(args.[0], backingField)
+                            let fVal = Expr.Coerce(fieldExpr, typeof<obj>)
+                            let fieldValue = Expr.Call(objEquals, [fVal; Expr.Value(null)])
+                            let testNullExpr =
+                                let serExpr =
+                                    match elementType with
+                                    | :? ProvidedTypeDefinition ->
+                                        let getType = typeof<obj>.GetMethod("GetType")
+                                        let getTypeExpr = Expr.Call(fVal, getType, [])
+                                        let typeTest = typeof<Type>.GetMethod("IsAssignableFrom")
+                                        let typeTestExpr = Expr.Call(getTypeExpr, typeTest, [Expr.Value(elementType)])
+                                        Expr.Call(fieldExpr, elementType.GetMethod("Serialize"), [args.[1]; typeTestExpr])
+                                    | _ -> Expr.Value(())
+                                Expr.IfThenElse(fieldValue,
+                                                (if element.IsNillable then <@@ (%%args.[1]: XmlWriter).WriteAttributeString("nil", XmlNamespace.Xsi, "true") @@> else Expr.Value(())),
+                                                serExpr)
+                            let expr =
+                                let nm = element.Name
+                                <@@ (%%args.[1]: XmlWriter).WriteStartElement(nm)
+                                    %%testNullExpr
+                                    (%%args.[1]: XmlWriter).WriteEndElement() @@>
+                            match setField with
+                            | Some(field) -> Expr.IfThenElse(Expr.FieldGet(args.[0], field), expr, Expr.Value(()))
+                            | _ -> expr)
                     | SequenceContent.Sequence(sequence) -> failwith "Not supported!")
             | _ -> ()
         match typeInfo with
@@ -184,14 +210,15 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                 match attrMeth with
                 | Some(attrMeth) ->
                     serializeExpr.Add(fun args ->
-                        Expr.IfThenElse(args.[2], Expr.Call(args.[0], attrMeth, [args.[1]]), Expr.Value(())))
+                        if ctspec.IsAbstract then Expr.Call(args.[0], attrMeth, [args.[1]])
+                        else Expr.IfThenElse(args.[2], Expr.Call(args.[0], attrMeth, [args.[1]]), Expr.Value(())))
                 | _ -> ()
                 handleComplexTypeContentSpec(spec)
         serializeMeth.InvokeCode <-
             match serializeExpr |> List.ofSeq with
             | [] -> fun _ -> <@@ () @@>
             | exp::[] -> fun args -> exp(args)
-            | exp::more -> fun args -> List.fold (fun exp e -> Expr.Sequential(exp, e args)) (exp args) more
+            | more -> fun args -> List.foldBack (fun e exp -> Expr.Sequential(e args, exp)) more (Expr.Value(()))
 
     schema.TypeSchemas
     |> List.iter (fun typeSchema ->
