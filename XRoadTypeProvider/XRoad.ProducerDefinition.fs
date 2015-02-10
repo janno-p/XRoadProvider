@@ -50,7 +50,9 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
         typ.SetAttributes(TypeAttributes.Public ||| TypeAttributes.Class)
         let ctor = ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>))
         typ.AddMember(ctor)
-        let serializeMeth = ProvidedMethod("Serialize", [ProvidedParameter("writer", typeof<XmlWriter>)], typeof<System.Void>)
+        let parameters = [ ProvidedParameter("writer", typeof<XmlWriter>)
+                           ProvidedParameter("needsType", typeof<bool>) ]
+        let serializeMeth = ProvidedMethod("Serialize", parameters, typeof<System.Void>)
         serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
         typ.AddMember(serializeMeth)
         typ
@@ -170,12 +172,19 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
                 ()
             | ComplexTypeContent.Particle(spec) ->
-                match typeName with
-                | Some(typeName) ->
-                    let attrMeth = createWriteTypeAttributeMethod(typeName)
-                    attrMeth.SetMethodAttrs(MethodAttributes.Family ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
-                    if ctspec.IsAbstract then attrMeth.AddMethodAttrs(MethodAttributes.Abstract)
-                    providedTy.AddMember(attrMeth)
+                let attrMeth =
+                    match typeName with
+                    | Some(typeName) ->
+                        let attrMeth = createWriteTypeAttributeMethod(typeName)
+                        attrMeth.SetMethodAttrs(MethodAttributes.Family ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
+                        if ctspec.IsAbstract then attrMeth.AddMethodAttrs(MethodAttributes.Abstract)
+                        providedTy.AddMember(attrMeth)
+                        Some(attrMeth)
+                    | _ -> None
+                match attrMeth with
+                | Some(attrMeth) ->
+                    serializeExpr.Add(fun args ->
+                        Expr.IfThenElse(args.[2], Expr.Call(args.[0], attrMeth, [args.[1]]), Expr.Value(())))
                 | _ -> ()
                 handleComplexTypeContentSpec(spec)
         serializeMeth.InvokeCode <-
