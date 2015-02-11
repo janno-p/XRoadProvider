@@ -124,8 +124,14 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<DateTime>).Value) @@>
         | typ when typ = typeof<DateTime> ->
             <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: DateTime)) @@>
+        | NullableType(typ) when typ = typeof<bool> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<bool>).Value) @@>
+        | typ when typ = typeof<bool> ->
+            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: bool)) @@>
         | typ when typ = typeof<string> ->
             <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: string)) @@>
+        | typ when typ = typeof<byte[]> ->
+            <@@ (%%writer: XmlWriter).WriteBase64((%%fieldExpr: byte[]), 0, (%%fieldExpr: byte[]).Length) @@>
         | typ when typ.IsArray ->
             // TODO: item tag name
             let coerseExpr = Expr.Coerce(fieldExpr, typeof<Array>)
@@ -141,12 +147,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                 Expr.Sequential(
                     <@@ (%%writer: XmlWriter).WriteStartElement("item") @@>,
                     Expr.Sequential(itemExpr, <@@ (%%writer: XmlWriter).WriteEndElement() @@>)))
-            (*
-            let propLength = typ.GetProperty("Length")
-            Expr.lo
-            Expr.ForIntegerRangeLoop(v, Expr.Value(0), Expr.PropertyGet(fieldExpr, propLength), Expr.Value(()))
-            *)
-        | typ -> Expr.Value(()) //failwithf "Serialization method for %A is not defined" typ.FullName
+        | typ -> failwithf "Serialization method for %A is not defined" typ.FullName
 
     let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType, typeName: XName option) =
         let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
