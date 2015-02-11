@@ -46,15 +46,15 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
         meth
 
     let createType name =
+        let serializeMeth = ProvidedMethod("Serialize", [ProvidedParameter("writer", typeof<XmlWriter>); ProvidedParameter("needsType", typeof<bool>)], typeof<Void>)
+        serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
+
+        let deserializeMeth = ProvidedMethod("Deserialize", [ProvidedParameter("reader", typeof<XmlReader>)], typeof<Void>)
+        deserializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
+
         let typ = ProvidedTypeDefinition(name, Some baseTy, IsErased=false)
         typ.SetAttributes(TypeAttributes.Public ||| TypeAttributes.Class)
-        let ctor = ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>))
-        typ.AddMember(ctor)
-        let parameters = [ ProvidedParameter("writer", typeof<XmlWriter>)
-                           ProvidedParameter("needsType", typeof<bool>) ]
-        let serializeMeth = ProvidedMethod("Serialize", parameters, typeof<System.Void>)
-        serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
-        typ.AddMember(serializeMeth)
+        typ.AddMembers([ ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>)) :> MemberInfo; upcast serializeMeth; upcast deserializeMeth ])
         typ
 
     let getOrCreateType (name: XName) =
@@ -149,9 +149,23 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                     Expr.Sequential(itemExpr, <@@ (%%writer: XmlWriter).WriteEndElement() @@>)))
         | typ -> failwithf "Serialization method for %A is not defined" typ.FullName
 
+    let addInvokeCode (meth: ProvidedMethod) (exprList: List<(Expr list -> Expr)>) =
+        meth.InvokeCode <-
+            match exprList |> List.ofSeq with
+            | [] -> fun _ -> <@@ () @@>
+            | exp::[] -> fun args -> exp(args)
+            | more -> fun args -> List.foldBack (fun e exp -> Expr.Sequential(e args, exp)) more (Expr.Value(()))
+
     let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType, typeName: XName option) =
         let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
         let serializeExpr = List<(Expr list -> Expr)>()
+
+        let deserializeMeth = providedTy.GetMethod("Deserialize") :?> ProvidedMethod
+        let deserializeExpr = List<(Expr list -> Expr)>()
+
+        let depthVar = Var("depth", typeof<int>)
+        deserializeExpr.Add(fun args -> Expr.Let(depthVar, <@@ (%%args.[1]: XmlReader).Depth @@>, Expr.Value(())))
+
         let handleComplexTypeContentSpec (spec: ComplexTypeContentSpec) =
             if not(List.isEmpty spec.Attributes) then
                 failwithf "TODO: handle complex type content attributes for type %A" providedTy.Name
@@ -212,6 +226,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                             | _ -> expr)
                     | SequenceContent.Sequence(sequence) -> failwith "Not supported!")
             | _ -> ()
+
         match typeInfo with
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             ()
@@ -228,11 +243,18 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                 let baseTy = getOrCreateType(spec.Base)
                 providedTy.SetBaseType(baseTy)
+
                 let baseCtor = getConstructor(baseTy)
                 ctor.BaseConstructorCall <- (fun args -> baseCtor :> ConstructorInfo, args)
+
                 serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
                 let baseSerialize = baseTy.GetMethod("Serialize") :?> ProvidedMethod
                 serializeExpr.Add(fun args -> Expr.Call(args.Head, baseSerialize, args.Tail))
+
+                deserializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
+                let baseDeserialize = baseTy.GetMethod("Deserialize") :?> ProvidedMethod
+                deserializeExpr.Add(fun args -> Expr.Call(args.Head, baseDeserialize, args.Tail))
+
                 match typeName with
                 | Some(typeName) ->
                     if not(ctspec.IsAbstract) then
@@ -240,6 +262,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                         attrMeth.SetMethodAttrs(MethodAttributes.Family ||| MethodAttributes.Virtual)
                         providedTy.AddMember(attrMeth)
                 | _ -> ()
+
                 handleComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
                 ()
@@ -260,11 +283,9 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                         else Expr.IfThenElse(args.[2], Expr.Call(args.[0], attrMeth, [args.[1]]), Expr.Value(())))
                 | _ -> ()
                 handleComplexTypeContentSpec(spec)
-        serializeMeth.InvokeCode <-
-            match serializeExpr |> List.ofSeq with
-            | [] -> fun _ -> <@@ () @@>
-            | exp::[] -> fun args -> exp(args)
-            | more -> fun args -> List.foldBack (fun e exp -> Expr.Sequential(e args, exp)) more (Expr.Value(()))
+
+        addInvokeCode serializeMeth serializeExpr
+        addInvokeCode deserializeMeth deserializeExpr
 
     schema.TypeSchemas
     |> List.iter (fun typeSchema ->
