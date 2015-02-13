@@ -433,6 +433,11 @@ module XsdSchema =
     let private notimplemented (node: XElement) containerName =
         failwithf "Element %A inside %s element is not implemented yet." node.Name containerName
 
+    type AttributeUse =
+        | Optional
+        | Prohibited
+        | Required
+
     type ElementSpec =
       { Name: string
         MinOccurs: uint32
@@ -518,7 +523,9 @@ module XsdSchema =
 
     and AttributeSpec =
       { Name: string option
-        RefOrType: RefOrType }
+        RefOrType: RefOrType
+        Use: AttributeUse
+        ArrayType: (XName * int) option }
 
     and RefOrType =
         | Ref of XName
@@ -680,15 +687,32 @@ module XsdSchema =
           Content = parseChildElements() }
 
     and parseAttribute (node: XElement): AttributeSpec =
+        let arrayType =
+            match node |> attr (XName.Get("arrayType", XmlNamespace.Wsdl)) with
+            | Some value ->
+                let ns, name = match value.Split(':') with
+                                   | [| local |] -> node.GetDefaultNamespace().NamespaceName, local
+                                   | [| prefix; local |] -> node.GetNamespaceOfPrefix(prefix).NamespaceName, local
+                                   | _ -> failwithf "Invalid array type: %A" value
+                match System.Text.RegularExpressions.Regex.Match(name, @"^(\w+)(\[\])+$") with
+                | m when m.Success ->
+                    Some(XName.Get(m.Groups.[1].Value, ns), m.Groups.[2].Captures.Count)
+                | _ -> failwithf "Invalid array type: %A" value
+            | _ -> None
+        let attrUse = match node |> attrOrDefault (XName.Get("use")) "optional" with
+                      | "optional" -> AttributeUse.Optional
+                      | "prohibited" -> AttributeUse.Prohibited
+                      | "required" -> AttributeUse.Required
+                      | x -> failwithf "Invalid attribute use value %s" x
         match node |> attr (XName.Get("ref")) with
         | Some refv ->
             match node |> attr (XName.Get("name")) with
             | Some _ -> failwith "Attribute element name and ref attribute cannot be present at the same time."
-            | _ -> { Name = None; RefOrType = RefOrType.Ref(parseXName node refv) }
+            | _ -> { Name = None; RefOrType = RefOrType.Ref(parseXName node refv); ArrayType = arrayType; Use = attrUse }
         | _ ->
             let name = node |> reqAttr (XName.Get("name"))
             match node |> attr (XName.Get("type")) with
-            | Some value -> { Name = Some(name); RefOrType = RefOrType.Name(parseXName node value) }
+            | Some value -> { Name = Some(name); RefOrType = RefOrType.Name(parseXName node value); ArrayType = arrayType; Use = attrUse }
             | _ ->
                 node.Elements()
                 |> Seq.fold (fun (state, spec) node ->
@@ -698,7 +722,7 @@ module XsdSchema =
                     | _ -> notexpected node "attribute"
                     ) (Begin, None)
                 |> (fun (_, typ) -> match typ with
-                                    | Some(typ) -> { Name = Some(name); RefOrType = RefOrType.Type(SimpleType(typ)) }
+                                    | Some(typ) -> { Name = Some(name); RefOrType = RefOrType.Type(SimpleType(typ)); ArrayType = arrayType; Use = attrUse }
                                     | _ -> failwithf "Attribute element %s type definition is missing." name)
 
     and parseAll (node: XElement): AllSpec =
