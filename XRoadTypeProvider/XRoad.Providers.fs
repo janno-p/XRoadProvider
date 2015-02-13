@@ -1,8 +1,78 @@
 ﻿module XRoad.Providers
 
 open Microsoft.FSharp.Core.CompilerServices
+open Microsoft.FSharp.Quotations
 open ProviderImplementation.ProvidedTypes
+open System
 open System.IO
+open System.Reflection
+
+[<TypeProvider>]
+type XRoadProducerProvider(config: TypeProviderConfig) as this =
+    let invalidation = Event<_,_>()
+
+    let namespaceName = "XRoad.Providers"
+    let theAssembly = typeof<XRoadProducerProvider>.Assembly
+
+    interface ITypeProvider with
+        override __.ApplyStaticArguments(typeWithoutArguments, typeNameWithArguments, staticArguments) =
+            printfn "ITypeProvider.ApplyStaticArguments(%A)" (typeWithoutArguments, typeNameWithArguments, staticArguments)
+            match typeWithoutArguments with
+            | :? ProvidedTypeDefinition as ty ->
+                match staticArguments with
+                | [| :? string as producerUri |] ->
+                    XRoad.ProducerDefinitionCodeDom.makeProducerType typeNameWithArguments producerUri
+                | _ -> failwith "invalid type provider arguments"
+            | _ -> failwith "not implemented"
+
+        override __.GetGeneratedAssemblyContents(assembly) =
+            printfn "ITypeProvider.GetGeneratedAssemblyContents(%A)" assembly
+            printfn "    File.ReadAllBytes(%s)" assembly.ManifestModule.FullyQualifiedName
+            File.ReadAllBytes(assembly.ManifestModule.FullyQualifiedName)
+
+        override __.GetInvokerExpression(syntheticMethodBase, parameters) =
+            printfn "ITypeProvider.GetInvokerExpression(%A)" (syntheticMethodBase, parameters)
+            match syntheticMethodBase with
+            | :? ConstructorInfo as ctor -> Expr.NewObject(ctor, parameters |> List.ofArray)
+            | _ -> failwith "not implemented"
+
+        override __.GetNamespaces() =
+            printfn "ITypeProvider.GetNamespaces()"
+            [| this |]
+
+        override __.GetStaticParameters(typeWithoutArguments) =
+            printfn "ITypeProvider.GetStaticParameters(%A)" typeWithoutArguments
+            match typeWithoutArguments with
+            | :? ProvidedTypeDefinition as ty when ty.Name = typeWithoutArguments.Name ->
+                [| ProvidedStaticParameter("ProducerUri", typeof<string>) |]
+            | _ -> [| |]
+
+        [<CLIEvent>]
+        override __.Invalidate =
+            printfn "ITypeProvider.Invalidate"
+            invalidation.Publish
+
+        override __.Dispose() =
+            printfn "ITypeProvider.Dispose()"
+            ()
+
+    interface IProvidedNamespace with
+        override __.GetNestedNamespaces() =
+            printfn "IProvidedNamespace.GetNestedNamespaces()"
+            [| |]
+
+        override __.GetTypes() =
+            printfn "IProvidedNamespace.GetTypes()"
+            [| ProvidedTypeDefinition(theAssembly, namespaceName, "Test", Some(typeof<obj>), IsErased=false) |]
+
+        override __.ResolveTypeName(typeName) =
+            printfn "IProvidedNamespace.ResolveTypeName(%A)" typeName
+            failwith "not implemented"
+
+        override __.NamespaceName
+            with get() =
+                printfn "IProvidedNamespace.NamespaceName.get()"
+                namespaceName
 
 [<TypeProvider>]
 type XRoadProviders(config: TypeProviderConfig) as this =

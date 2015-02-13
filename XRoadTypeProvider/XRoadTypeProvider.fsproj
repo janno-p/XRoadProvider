@@ -45,6 +45,7 @@
     <Compile Include="XRoadTypeProvider.Runtime.fs" />
     <Compile Include="XRoadTypeProvider.Expressions.fs" />
     <Compile Include="XRoad.ProducerDefinition.fs" />
+    <Compile Include="XRoad.ProducerDefinition.CodeDom.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
     <Compile Include="XRoad.Providers.fs" />
     <Content Include="packages.config" />
