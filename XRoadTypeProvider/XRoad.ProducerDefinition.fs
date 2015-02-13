@@ -210,7 +210,7 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
                             let objEquals = typeof<obj>.GetMethod("ReferenceEquals")
                             let fieldExpr = Expr.FieldGet(args.[0], backingField)
                             let fVal = Expr.Coerce(fieldExpr, typeof<obj>)
-                            let fieldValue = Expr.Call(objEquals, [fVal; Expr.Value(null)])
+                            let fieldValue = <@@ (%%fVal: obj) = null @@> //Expr.Call(objEquals, [fVal; Expr.Value(null)])
                             let testNullExpr =
                                 let serExpr = mkSerializeExpr(args.[1], fieldExpr, elementType)
                                 Expr.IfThenElse(fieldValue,

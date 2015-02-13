@@ -2029,6 +2029,12 @@ type AssemblyGenerator(assemblyFileName) =
 
                         popIfEmptyExpected expectedState
 
+                    | Quotations.DerivedPatterns.SpecificCall <@ (=) @> (None, _, [a1; a2]) ->
+                        emit ExpectedStackState.Value a1
+                        emit ExpectedStackState.Value a2
+                        ilg.Emit(OpCodes.Ceq)
+                        popIfEmptyExpected expectedState
+
                     | Quotations.DerivedPatterns.SpecificCall <@ (/) @> (None, [t1; t2; _], [a1; a2]) ->
                         assert (t1 = t2)
                         emit ExpectedStackState.Value a1
