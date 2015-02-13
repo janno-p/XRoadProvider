@@ -9,6 +9,7 @@ open System.IO
 open System.Reflection
 open System.Text.RegularExpressions
 open System.Xml.Linq
+open System.Xml.Schema
 open System.Xml.Serialization
 open XRoadTypeProvider.Wsdl
 open XRoadTypeProvider.Wsdl.XsdSchema
@@ -39,6 +40,32 @@ let private makeStaticClass(className, attributes) =
 let private makePublicClass name =
     CodeTypeDeclaration(name, IsClass=true, TypeAttributes=TypeAttributes.Public)
 
+let private makeXmlIncludeAttribute (providedTy: CodeTypeDeclaration) =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlIncludeAttribute>))
+    attribute.Arguments.Add(CodeAttributeArgument(CodeTypeOfExpression(providedTy.Name))) |> ignore
+    attribute
+
+let private makeXmlTypeAttribute(typeName: XName) =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlTypeAttribute>))
+    attribute.Arguments.Add(CodeAttributeArgument(CodePrimitiveExpression(typeName.LocalName))) |> ignore
+    attribute.Arguments.Add(CodeAttributeArgument("Namespace", CodePrimitiveExpression(typeName.NamespaceName))) |> ignore
+    attribute
+
+let private makeXmlElementAttribute() =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlElementAttribute>))
+    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
+    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
+    attribute
+
+let private makeXmlAttributeAttribute() =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlAttributeAttribute>))
+    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
+    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
+    attribute
+
+let private makeXmlTextAttribute() =
+    CodeAttributeDeclaration(CodeTypeReference(typeof<XmlTextAttribute>))
+
 let makeProducerType (typeNamePath: string []) producerUri =
     let schema = resolveUri producerUri |> readSchema
     let typeCache = Dictionary<XName,CodeTypeDeclaration>()
@@ -63,6 +90,7 @@ let makeProducerType (typeNamePath: string []) producerUri =
         match typeCache.TryGetValue(name) with
         | false, _ ->
             let typ = makePublicClass(name.LocalName)
+            typ.CustomAttributes.Add(makeXmlTypeAttribute(name)) |> ignore
             let namespaceTy = getOrCreateNamespace(name.Namespace)
             namespaceTy.Members.Add(typ) |> ignore
             typeCache.Add(name, typ)
@@ -124,6 +152,7 @@ let makeProducerType (typeNamePath: string []) producerUri =
                 property.SetStatements.Add(CodeAssignStatement(fieldRef, CodePrimitiveExpression(true))) |> ignore
             | _ -> ()
             providedTy.Members.Add(property) |> ignore
+            property
 
         let getParticleType (particleType, maxOccurs, isNillable, name) =
             match particleType with
@@ -146,14 +175,16 @@ let makeProducerType (typeNamePath: string []) producerUri =
 
         let parseElementSpec(spec: ElementSpec) =
             let elementTy = getParticleType(spec.Type, spec.MaxOccurs, spec.IsNillable, spec.Name)
-            addProperty(spec.Name, elementTy, spec.MinOccurs = 0u)
+            let property = addProperty(spec.Name, elementTy, spec.MinOccurs = 0u)
+            property.CustomAttributes.Add(makeXmlElementAttribute()) |> ignore
 
         let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
             spec.Attributes |> List.iter (fun spec ->
                 match spec.Name with
                 | Some(name) ->
                     let attributeTy = getParticleType(spec.RefOrType, 1u, false, name)
-                    addProperty(name, attributeTy, match spec.Use with Required -> true | _ -> false)
+                    let property = addProperty(name, attributeTy, match spec.Use with Required -> true | _ -> false)
+                    property.CustomAttributes.Add(makeXmlAttributeAttribute()) |> ignore
                 | _ -> failwith "not implemented")
             match spec.Content with
             | Some(ComplexTypeParticle.All(spec)) ->
@@ -184,7 +215,8 @@ let makeProducerType (typeNamePath: string []) producerUri =
             | SimpleContent(SimpleContentSpec.Extension(spec)) ->
                 match getRuntimeType(spec.Base) with
                 | PrimitiveType(typ) as rtyp ->
-                    addProperty("BaseValue", rtyp, false)
+                    let property = addProperty("BaseValue", rtyp, false)
+                    property.CustomAttributes.Add(makeXmlTextAttribute()) |> ignore
                     parseComplexTypeContentSpec(spec.Content)
                 | ProvidedType(_) ->
                     failwith "not implemented"
@@ -193,9 +225,7 @@ let makeProducerType (typeNamePath: string []) producerUri =
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                 let baseTy = getOrCreateType(spec.Base)
                 providedTy.BaseTypes.Add(baseTy.Name) |> ignore
-                let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlIncludeAttribute>))
-                attribute.Arguments.Add(CodeAttributeArgument(CodeTypeOfExpression(providedTy.Name))) |> ignore
-                baseTy.CustomAttributes.Add(attribute) |> ignore
+                baseTy.CustomAttributes.Add(makeXmlIncludeAttribute(providedTy)) |> ignore
                 parseComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
                 failwith "not implemented"
