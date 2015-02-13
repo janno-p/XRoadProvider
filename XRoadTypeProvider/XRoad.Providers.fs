@@ -4,6 +4,7 @@ open Microsoft.FSharp.Core.CompilerServices
 open Microsoft.FSharp.Quotations
 open ProviderImplementation.ProvidedTypes
 open System
+open System.Collections.Generic
 open System.IO
 open System.Reflection
 
@@ -14,6 +15,9 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
     let namespaceName = "XRoad.Providers"
     let theAssembly = typeof<XRoadProducerProvider>.Assembly
 
+    let typeCache = Dictionary<_,_>()
+    let staticParameters: ParameterInfo [] = [| ProvidedStaticParameter("ProducerUri", typeof<string>) |]
+
     interface ITypeProvider with
         override __.ApplyStaticArguments(typeWithoutArguments, typeNameWithArguments, staticArguments) =
             printfn "ITypeProvider.ApplyStaticArguments(%A)" (typeWithoutArguments, typeNameWithArguments, staticArguments)
@@ -21,7 +25,12 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
             | :? ProvidedTypeDefinition as ty ->
                 match staticArguments with
                 | [| :? string as producerUri |] ->
-                    XRoad.ProducerDefinitionCodeDom.makeProducerType typeNameWithArguments producerUri
+                    match typeCache.TryGetValue(producerUri) with
+                    | false, _ ->
+                        let typ = XRoad.ProducerDefinitionCodeDom.makeProducerType typeNameWithArguments producerUri
+                        typeCache.Add(producerUri, typ)
+                        typ
+                    | true, typ -> typ
                 | _ -> failwith "invalid type provider arguments"
             | _ -> failwith "not implemented"
 
@@ -32,8 +41,10 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
 
         override __.GetInvokerExpression(syntheticMethodBase, parameters) =
             printfn "ITypeProvider.GetInvokerExpression(%A)" (syntheticMethodBase, parameters)
+            let parameters = parameters |> List.ofArray
             match syntheticMethodBase with
-            | :? ConstructorInfo as ctor -> Expr.NewObject(ctor, parameters |> List.ofArray)
+            | :? ConstructorInfo as ctor -> Expr.NewObject(ctor, parameters)
+            | :? MethodInfo as mi -> Expr.Call(parameters.Head, mi, parameters.Tail)
             | _ -> failwith "not implemented"
 
         override __.GetNamespaces() =
@@ -43,8 +54,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
         override __.GetStaticParameters(typeWithoutArguments) =
             printfn "ITypeProvider.GetStaticParameters(%A)" typeWithoutArguments
             match typeWithoutArguments with
-            | :? ProvidedTypeDefinition as ty when ty.Name = typeWithoutArguments.Name ->
-                [| ProvidedStaticParameter("ProducerUri", typeof<string>) |]
+            | :? ProvidedTypeDefinition as ty when ty.Name = typeWithoutArguments.Name -> staticParameters
             | _ -> [| |]
 
         [<CLIEvent>]
@@ -63,7 +73,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
 
         override __.GetTypes() =
             printfn "IProvidedNamespace.GetTypes()"
-            [| ProvidedTypeDefinition(theAssembly, namespaceName, "Test", Some(typeof<obj>), IsErased=false) |]
+            [| ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducer", Some(typeof<obj>), IsErased=false) |]
 
         override __.ResolveTypeName(typeName) =
             printfn "IProvidedNamespace.ResolveTypeName(%A)" typeName
@@ -82,23 +92,9 @@ type XRoadProviders(config: TypeProviderConfig) as this =
     let namespaceName = "XRoad.Providers"
     let baseTy = typeof<obj>
 
-    let producerTy = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducer", Some baseTy, IsErased=false)
-    let producerAssembly = ProvidedAssembly(Path.ChangeExtension(Path.GetTempFileName(), "dll"))
-
     let serverTy = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadServer", Some baseTy)
 
     do
-        producerTy.DefineStaticParameters(
-            [ProvidedStaticParameter("ProducerUri", typeof<string>)],
-            fun typeName parameterValues ->
-                let thisTy = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy, IsErased=false)
-                match parameterValues with
-                | [| :? string as producerUri |] ->
-                    thisTy.AddMembers(XRoad.ProducerDefinition.getProducerDefinition(producerUri, theAssembly, namespaceName))
-                    producerAssembly.AddTypes([thisTy])
-                | _ ->  failwith "Unexpected parameter values!"
-                thisTy)
-
         serverTy.DefineStaticParameters(
             [ProvidedStaticParameter("ServerIP", typeof<string>)],
             fun typeName parameterValues ->
@@ -119,4 +115,4 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                 | _ -> failwith "Unexpected parameter values!"
                 thisTy)
 
-    do this.AddNamespace(namespaceName, [producerTy; serverTy])
+    do this.AddNamespace(namespaceName, [serverTy])
