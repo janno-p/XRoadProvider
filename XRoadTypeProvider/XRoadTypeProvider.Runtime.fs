@@ -6,34 +6,18 @@ open System.IO
 open System.Xml
 open XRoadTypeProvider.Wsdl
 
-[<Interface>]
-type IXRoadEntity =
-    abstract member RootName: string with get, set
-    abstract member SetProperty: string * 'T -> unit
-    abstract member GetProperty: string -> 'T
-    abstract member Serialize: XmlWriter -> unit
-
 type XRoadEntity () =
     let data = Dictionary<string, obj>()
 
-    interface IXRoadEntity with
-        override  val RootName = "" with get, set
+    member val TypeName = ("", "") with get, set
+    member val Serializer = (fun (_: XmlWriter) -> ()) with get, set
+    member __.HasProperty (name) = data.ContainsKey(name)
+    member __.SetProperty (name, value) = data.[name] <- box value
 
-        override __.SetProperty (name, value) =
-            data.[name] <- box value
-
-        override __.GetProperty<'T> (name) =
-            if data.ContainsKey name then
-                unbox data.[name]
-            else Unchecked.defaultof<'T>
-
-        override __.Serialize (writer: XmlWriter) =
-            data |> Seq.iter (fun kvp ->
-                writer.WriteStartElement(kvp.Key)
-                match kvp.Value with
-                | :? IXRoadEntity as xre -> xre.Serialize(writer)
-                | x -> writer.WriteValue(x)
-                writer.WriteEndElement())
+    member __.GetProperty<'T> (name) =
+        match data.TryGetValue(name) with
+        | true, value -> unbox value
+        | _ -> Unchecked.defaultof<'T>
 
 type Base64 = string
 
@@ -123,11 +107,6 @@ type IXRoadResponseWithAttachments<'T> =
     abstract member Attachments: Stream [] with get
 
 module XRoadRequest =
-    let takeSettingsArg (args: obj []) =
-        args |> Array.tryFind (fun arg -> arg :? XRoadHeader)
-             |> Option.map (fun o -> o :?> XRoadHeader)
-             |> Option.orDefault (XRoadHeader())
-
     let generateNonce () =
         let nonce = Array.zeroCreate 42
         let rng = System.Security.Cryptography.RNGCryptoServiceProvider.Create()
@@ -150,8 +129,7 @@ module XRoadRequest =
                 if value.IsSome then f(value.Value)
                 writer.WriteEndElement()
 
-    let makeXRoadCall (context: IXRoadContext) (opName, opVersion, opNamespace) args hf bf =
-        let settings = takeSettingsArg args
+    let makeXRoadCall (context: IXRoadContext) (opName, opVersion, opNamespace) (settings: XRoadHeader) hf writeBody =
         let producer = defaultArg settings.Producer context.Producer
         let serviceName =
             match settings.Service with
@@ -172,10 +150,7 @@ module XRoadRequest =
             writer.WriteEndElement()
 
             writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
-            let entities = args |> Array.filter (fun ent -> ent :? IXRoadEntity)
-                                |> Array.map (fun ent -> ent :?> IXRoadEntity)
-                                |> List.ofArray
-            bf(writer, entities)
+            writeBody(writer)
             writer.WriteEndElement()
 
             writer.WriteEndElement()
@@ -189,7 +164,7 @@ module XRoadRequest =
                        "allasutus"; "amet"; "ametniknimi"; "asynkroonne"; "autentija"; "makstud"
                        "salastada"; "salastada_sertifikaadiga" ]
 
-    let makeRpcCall (context: IXRoadContext, opnm, opver, opns, args, xthdr) =
+    let makeRpcCall (context: IXRoadContext, opnm, opver, opns, args, xthdr, writeBody) =
         let writeHeader (writer: XmlWriter, settings: XRoadHeader, producer, serviceName, requestId) =
             let writeXRoadHeader' = writeXRoadHeader XmlNamespace.Xtee writer xthdr
             writer.WriteAttributeString("xmlns", "xtee", null, XmlNamespace.Xtee)
@@ -208,13 +183,11 @@ module XRoadRequest =
             writeXRoadHeader' "makstud" settings.Paid writer.WriteString
             writeXRoadHeader' "salastada" settings.Encrypt writer.WriteString
             writeXRoadHeader' "salastada_sertifikaadiga" settings.EncryptCert writer.WriteString
-        let writeBody (writer: XmlWriter, args: IXRoadEntity list) =
+        let writeBody' (writer: XmlWriter) =
             writer.WriteStartElement(opnm, opns)
-            args |> List.iter (fun arg -> writer.WriteStartElement(arg.RootName)
-                                          arg.Serialize(writer)
-                                          writer.WriteEndElement())
+            writeBody(writer)
             writer.WriteEndElement()
-        makeXRoadCall context (opnm, opver, opns) args writeHeader writeBody
+        makeXRoadCall context (opnm, opver, opns) args writeHeader writeBody'
 
     let docHeaders = [ "consumer"; "producer"; "userId"; "id"; "service"; "issue"; "unit"; "position"
                        "userName"; "async"; "authenticator"; "paid"; "encrypt"; "encryptCert" ]
@@ -237,6 +210,6 @@ module XRoadRequest =
             writeXRoadHeader' "paid" settings.Paid writer.WriteString
             writeXRoadHeader' "encrypt" settings.Encrypt writer.WriteString
             writeXRoadHeader' "encryptCert" settings.EncryptCert writer.WriteString
-        let writeBody (writer: XmlWriter, args: IXRoadEntity list) =
+        let writeBody (writer: XmlWriter) =
             ()
         makeXRoadCall context (opnm, opver, opns) args writeHeader writeBody

@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>XRoadTypeProvider</RootNamespace>
     <AssemblyName>XRoadTypeProvider</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <Name>XRoadTypeProvider</Name>
     <TargetFrameworkProfile />
@@ -43,7 +43,11 @@
     <Compile Include="DebugProvidedTypes.fs" />
     <Compile Include="XRoadTypeProvider.Wsdl.fs" />
     <Compile Include="XRoadTypeProvider.Runtime.fs" />
-    <Compile Include="XRoadTypeProvider.fs" />
+    <Compile Include="XRoadTypeProvider.Expressions.fs" />
+    <Compile Include="XRoad.ProducerDefinition.fs" />
+    <Compile Include="XRoad.ProducerDefinition.CodeDom.fs" />
+    <Compile Include="XRoad.SecurityServer.fs" />
+    <Compile Include="XRoad.Providers.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

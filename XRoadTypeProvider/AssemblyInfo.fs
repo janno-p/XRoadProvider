@@ -1,5 +1,6 @@
 ﻿module XRoadTypeProvider.AssemblyInfo
 
+open Microsoft.FSharp.Core.CompilerServices
 open System.Reflection
 open System.Runtime.CompilerServices
 
@@ -11,5 +12,7 @@ open System.Runtime.CompilerServices
 [<AssemblyCopyright("Janno Põldma")>]
 [<AssemblyTrademark("")>]
 [<AssemblyVersion("1.0.0.0")>]
+
+[<TypeProviderAssembly>]
 
 ()

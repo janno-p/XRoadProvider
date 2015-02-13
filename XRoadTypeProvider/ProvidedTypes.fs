@@ -256,14 +256,20 @@ module internal Misc =
                 
                 // init t generates the equivalent of <@ ref Unchecked.defaultof<t> @>
                 let init (t:Type) =
-                    let (Quotations.Patterns.Call(None, r, [_])) = <@ ref 1 @>
-                    let (Quotations.Patterns.Call(None, d, [])) = <@ Unchecked.defaultof<_> @>
+                    let r = match <@ ref 1 @> with
+                            | Quotations.Patterns.Call(None, r, [_]) -> r
+                            | _ -> failwith "never"
+                    let d = match <@ Unchecked.defaultof<_> @> with
+                            | Quotations.Patterns.Call(None, d, []) -> d
+                            | _ -> failwith "never"
                     Quotations.Expr.Call(r.GetGenericMethodDefinition().MakeGenericMethod(t), [Quotations.Expr.Call(d.GetGenericMethodDefinition().MakeGenericMethod(t),[])])
 
                 // deref v generates the equivalent of <@ !v @>
                 // (so v's type must be ref<something>)
-                let deref (v:Quotations.Var) = 
-                    let (Quotations.Patterns.Call(None, m, [_])) = <@ !(ref 1) @>
+                let deref (v:Quotations.Var) =
+                    let m = match <@ !(ref 1) @> with
+                            | Quotations.Patterns.Call(None, m, [_]) -> m
+                            | _ -> failwith "never"
                     let tyArgs = v.Type.GetGenericArguments()
                     Quotations.Expr.Call(m.GetGenericMethodDefinition().MakeGenericMethod(tyArgs), [Quotations.Expr.Var v])
 
@@ -282,8 +288,10 @@ module internal Misc =
                 let varDict = List.zip vars vars' |> dict
 
                 // given an old variable v and an expression e, returns a quotation like <@ v' := e @> using the corresponding new variable v' of ref type
-                let setRef (v:Quotations.Var) e = 
-                    let (Quotations.Patterns.Call(None, m, [_;_])) = <@ (ref 1) := 2 @>
+                let setRef (v:Quotations.Var) e =
+                    let m = match <@ (ref 1) := 2 @> with
+                            | Quotations.Patterns.Call(None, m, [_;_]) -> m
+                            | _ -> failwith "never"
                     Quotations.Expr.Call(m.GetGenericMethodDefinition().MakeGenericMethod(v.Type), [Quotations.Expr.Var varDict.[v]; e])
 
                 // Something like 
@@ -630,6 +638,8 @@ type ProvidedConstructor(parameters : ProvidedParameter list) =
         | Some f -> Some(fun ctorArgs -> let c,baseCtorArgExprs = f ctorArgs in c, List.map (transExpr isGenerated) baseCtorArgExprs)
         | None -> None
     member this.IsImplicitCtor with get() = isImplicitCtor and set v = isImplicitCtor <- v
+
+    member this.SetConstructorAttrs attrs = ctorAttributes <- attrs
 
     // Implement overloads
     override this.GetParameters() = parameters |> List.toArray 
@@ -1085,13 +1095,14 @@ type ProvidedSymbolType(kind: SymbolKind, args: Type list) =
     override this.GetNestedType(_name, _bindingAttr)                                                 = notRequired "GetNestedType" this.Name
     override this.GetAttributeFlagsImpl()                                                          = notRequired "GetAttributeFlagsImpl" this.Name
     override this.UnderlyingSystemType                                                             = 
-        match kind with 
-        | SymbolKind.SDArray
-        | SymbolKind.Array _
-        | SymbolKind.Pointer
-        | SymbolKind.FSharpTypeAbbreviation _
-        | SymbolKind.ByRef -> notRequired "UnderlyingSystemType" this.Name
-        | SymbolKind.Generic gty -> gty.UnderlyingSystemType      
+        match kind, args with 
+        | SymbolKind.SDArray, [arg] -> arg
+        | SymbolKind.Array _, _
+        | SymbolKind.Pointer, _
+        | SymbolKind.FSharpTypeAbbreviation _, _
+        | SymbolKind.ByRef, _ -> notRequired "UnderlyingSystemType" this.Name
+        | SymbolKind.Generic gty, _ -> gty.UnderlyingSystemType
+        | _ -> failwith "unreachable"
 #if FX_NO_CUSTOMATTRIBUTEDATA
 #else
     override this.GetCustomAttributesData()                                                        =  ([| |] :> IList<_>)
@@ -2018,6 +2029,12 @@ type AssemblyGenerator(assemblyFileName) =
 
                         popIfEmptyExpected expectedState
 
+                    | Quotations.DerivedPatterns.SpecificCall <@ (=) @> (None, _, [a1; a2]) ->
+                        emit ExpectedStackState.Value a1
+                        emit ExpectedStackState.Value a2
+                        ilg.Emit(OpCodes.Ceq)
+                        popIfEmptyExpected expectedState
+
                     | Quotations.DerivedPatterns.SpecificCall <@ (/) @> (None, [t1; t2; _], [a1; a2]) ->
                         assert (t1 = t2)
                         emit ExpectedStackState.Value a1
@@ -2152,7 +2169,10 @@ type AssemblyGenerator(assemblyFileName) =
                         match objOpt with 
                         | Some obj when mappedMeth.IsAbstract || mappedMeth.IsVirtual  ->
                             if obj.Type.IsValueType then ilg.Emit(OpCodes.Constrained, convType obj.Type)
-                            ilg.Emit(OpCodes.Callvirt, mappedMeth)
+                            if obj.Type :? ProvidedTypeDefinition && mappedMeth.Attributes.HasFlag(MethodAttributes.VtableLayoutMask) && not(mappedMeth.Attributes.HasFlag(MethodAttributes.Abstract)) then
+                                ilg.Emit(OpCodes.Call, mappedMeth)
+                            else
+                                ilg.Emit(OpCodes.Callvirt, mappedMeth)
                         | _ ->
                             ilg.Emit(OpCodes.Call, mappedMeth)
 
@@ -2314,6 +2334,10 @@ type AssemblyGenerator(assemblyFileName) =
                 | Some f -> 
                     // argExprs should always include 'this'
                     let (cinfo,argExprs) = f (Array.toList parameters)
+                    let cinfo =
+                        match cinfo with
+                        | :? ProvidedConstructor as pc -> ctorMap.[pc] :> ConstructorInfo
+                        | _ -> cinfo
                     for argExpr in argExprs do 
                         emitExpr (ilg, locals, parameterVars) ExpectedStackState.Value argExpr
                     ilg.Emit(OpCodes.Call,cinfo)
@@ -2392,7 +2416,19 @@ type AssemblyGenerator(assemblyFileName) =
 
 
         // phase 4 - complete types
-        iterateTypes (fun tb _ptd -> tb.CreateType() |> ignore)
+        iterateTypes (fun tb _ptd ->
+            let rec createBaseType (ptd: ProvidedTypeDefinition) =
+                match ptd.BaseType with
+                | :? ProvidedTypeDefinition as ptd ->
+                    let (succ, tb) = typeMap.TryGetValue(ptd)
+                    if succ then
+                        tb.CreateType() |> ignore
+                        createBaseType ptd
+                | _ -> ()
+            match _ptd with
+            | Some ptd -> createBaseType ptd
+            | _ -> ()
+            tb.CreateType() |> ignore)
 
 #if FX_NO_LOCAL_FILESYSTEM
 #else
