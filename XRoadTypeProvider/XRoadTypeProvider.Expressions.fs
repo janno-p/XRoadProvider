@@ -62,6 +62,7 @@ let buildParameters typeCache operation =
            |> List.map (fun p -> ProvidedParameter(p.Name, typeCache |> getType p.Reference))
     yield ProvidedParameter("settings", typeof<XRoadHeader>) ]
 
+(*
 let createXRoadOperationMethod typeCache operation =
     let xrdHeaders = requiredXRoadHeaders(operation)
     let parameters = operation |> buildParameters typeCache
@@ -82,10 +83,8 @@ let createXRoadOperationMethod typeCache operation =
                     let partName = part.Name
                     let index = i
                     let tp = typeCache |> getType part.Reference
-                    let entityExpr = Expr.Coerce(Expr.Coerce(args.[index + 1], tp), typeof<XRoadEntity>)
                     let writerExpr = Expr.Var(writer)
                     <@@ (%%writerExpr: XmlWriter).WriteStartElement(partName)
-                        (%%entityExpr: XRoadEntity).Serializer(%%writerExpr: XmlWriter)
                         (%%writerExpr: XmlWriter).WriteEndElement() @@>)
                 |> execute (Expr.Value(())))
         <@@ XRoadRequest.makeRpcCall((%%args.[0]: XRoadContext) :> IXRoadContext,
@@ -142,5 +141,5 @@ let createXRoadOperationMethod typeCache operation =
                                                 %%pl,
                                                 xrdHeaders |> Array.ofList) @@>)
     meth
-    *)
+    *)*)
 

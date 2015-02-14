@@ -76,9 +76,9 @@ let makeProducerType (typeNamePath: string []) producerUri =
     let getOrCreateNamespace (name: XNamespace) =
         match namespaceCache.TryGetValue(name) with
         | false, _ ->
-            let producerName = 
-                match Regex.Match(name.NamespaceName, @"^http://producers\.\w+\.xtee\.riik\.ee/producer/(\w+)$") with
-                | m when m.Success -> m.Groups.[1].Value
+            let producerName =
+                match Regex.Match(name.NamespaceName, @"^http://(((?<producer>\w+)\.x-road\.ee/producer)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)))$") with
+                | m when m.Success -> m.Groups.["producer"].Value
                 | _ -> failwithf "TODO: Implement normal namespace handling for tns: %A" name
             let typ = CodeTypeDeclaration(producerName, IsClass=true, TypeAttributes=TypeAttributes.Public)
             serviceTypesTy.Members.Add(typ) |> ignore
@@ -278,6 +278,7 @@ let makeProducerType (typeNamePath: string []) producerUri =
     codeNamespace.Types.Add(targetClass) |> ignore
 
     let codeCompileUnit = CodeCompileUnit()
+    codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
     codeCompileUnit.ReferencedAssemblies.Add("System.Xml.dll") |> ignore
     codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
 

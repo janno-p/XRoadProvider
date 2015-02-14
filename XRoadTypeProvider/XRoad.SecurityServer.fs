@@ -13,8 +13,17 @@ type Producer =
 let discoverProducers serverIP =
     let serverUri = sprintf "http://%s/cgi-bin/consumer_proxy" serverIP
 
+    let initRequest(serverUri: string) =
+        let request = System.Net.WebRequest.Create(serverUri)
+        // request.Timeout <- timeout
+        request.Method <- "POST"
+        request.ContentType <- sprintf "text/xml; charset=%s" System.Text.Encoding.UTF8.HeaderName
+        request.Headers.Set("SOAPAction", "")
+        // request.Proxy <- System.Net.WebProxy()
+        request
+
     let doc =
-        let request = XRoadRequest.initRequest(serverUri)
+        let request = initRequest(serverUri)
         (   use stream = request.GetRequestStream() in
             use writer = XmlWriter.Create(stream)
             writer.WriteStartDocument()

@@ -1,29 +1,32 @@
 ﻿#r @"../../XRoadTypeProvider/bin/Debug/XRoadTypeProvider.dll"
 
 open System.IO
-open XRoadTypeProvider
+open XRoad.Providers
 open XRoadTypeProvider.Runtime
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"
 
-type Aktorstest = XRoadTypeProvider<wsdlPath>
-type testPort = Aktorstest.aktorstestService.Test
-type tns = Aktorstest.``http://aktorstest.x-road.ee/producer``
+type Aktorstest = XRoadProducer<wsdlPath>
+type AktorstestDto = Aktorstest.DefinedTypes.aktorstest
 
-printfn "Default port address: %s" testPort.DefaultAddress
-printfn "Default producer name: %s" testPort.DefaultProducer
-printfn "XRoad request format: %A" testPort.RequestFormat
+let port = Aktorstest.aktorstestService.Test()
 
-let service = testPort(Address="http://localhost:8001/")
+printfn "Default port address: %s" port.Address
+printfn "Default producer name: %s" port.Producer
+//printfn "XRoad request format: %A" testPort.RequestFormat
 
-printfn "Using port address: %s" service.Address
-printfn "Using producer name: %s" service.Producer
+port.Address <- "http://localhost:8001/"
+
+printfn "Using port address: %s" port.Address
+printfn "Using producer name: %s" port.Producer
 
 let settings = XRoadHeader(Consumer=Some("10239452"),
                            UserId=Some("EE:PIN:abc4567"))
 
 // File upload with multipart request
+
+AktorstestDto.tookoht().nimi
 
 let fup = tns.``fileUpload'``()
 fup.request <- tns.``fileUpload'``.``request'``()

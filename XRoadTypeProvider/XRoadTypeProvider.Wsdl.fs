@@ -648,11 +648,12 @@ module XsdSchema =
                 | Xsd "all", (Begin | Annotation) ->
                     Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.All(parseAll node)); Attributes = [] }))
                 | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
-                    match spec with
-                    | Some(ComplexTypeContent.Particle(content)) ->
-                        let content = { content with Attributes = content.Attributes @ [parseAttribute node] }
-                        Attribute, Some(ComplexTypeContent.Particle(content))
-                    | _ -> failwith "never"
+                    let attribute = parseAttribute node
+                    let content = match spec with
+                                  | Some(ComplexTypeContent.Particle(content)) -> { content with Attributes = content.Attributes @ [attribute] }
+                                  | None -> { Content = None; Attributes = [attribute] }
+                                  | _ -> notexpected node "complexType"
+                    Attribute, Some(ComplexTypeContent.Particle(content))
                 | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
                     notimplemented node "complexType"
                 | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
