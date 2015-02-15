@@ -271,7 +271,10 @@ let makeProducerType (typeNamePath: string []) producerUri =
             portTy.Members.Add(producerProperty) |> ignore
 
             // TODO: Implement service calls!!
-            port.Operations |> List.map (fun op -> ()) |> ignore)
+            port.Operations |> List.iter (fun op ->
+                let meth = CodeMemberMethod(Name=op.Name.LocalName)
+                meth.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+                portTy.Members.Add(meth) |> ignore))
         targetClass.Members.Add(serviceTy) |> ignore)
 
     let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))
