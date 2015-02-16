@@ -324,7 +324,8 @@ let makeProducerType (typeNamePath: string [], producerUri) =
         serviceMethod.Parameters.Add(headerParam) |> ignore
         serviceMethod.ReturnType <- returnType
 
-        serviceMethod.Statements.Add(CodeMethodReturnStatement(CodePrimitiveExpression(null))) |> ignore
+        if not <| operation.Response.Body.IsEmpty then
+            serviceMethod.Statements.Add(CodeMethodReturnStatement(CodePrimitiveExpression(null))) |> ignore
 
         let requiredHeaders = getRequiredHeaders(operation)
 

@@ -9,6 +9,7 @@ infrastructure.
 * Logging outgoing incoming messages when necessary.
 * Cleaner type hierarchy considering XRoad specific message structure.
 * Separate types for XRoad specific structures: header, non-technical fault etc.
+* Generate special type for return types instead of tuples.
 
 ## Mistakes in XRoad samples
 
