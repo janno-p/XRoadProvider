@@ -1,91 +1,185 @@
-﻿module internal XRoad.ProducerDefinition
+﻿module private XRoad.ProducerDefinition
 
-open Microsoft.FSharp.Quotations
-open ProviderImplementation.ProvidedTypes
-open System.Collections.Generic
-open System.Reflection
-open System.Text.RegularExpressions
+open Microsoft.CSharp
 open System
-open System.Xml
+open System.CodeDom
+open System.CodeDom.Compiler
+open System.Collections.Generic
+open System.IO
+open System.Reflection
+open System.Runtime.InteropServices
+open System.Text.RegularExpressions
 open System.Xml.Linq
-open XRoadTypeProvider.Wsdl
-open XRoadTypeProvider.Wsdl.XsdSchema
+open System.Xml.Schema
+open System.Xml.Serialization
+open XRoad.Parser
+open XRoad.Parser.XsdSchema
 
-let getConstructor (typ: Type) =
-    typ.GetConstructors(BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Static ||| BindingFlags.Instance)
-    |> Array.find (fun c -> c :? ProvidedConstructor) :?> ProvidedConstructor
+type private RuntimeType =
+    | PrimitiveType of Type
+    | ProvidedType of CodeTypeReference
+    member this.AsCodeTypeReference() = match this with
+                                        | PrimitiveType(typ) -> CodeTypeReference(typ)
+                                        | ProvidedType(typ) -> typ
 
-let getProducerDefinition(uri, theAssembly, namespacePrefix) =
-    let schema = resolveUri uri |> readSchema
-    let typeCache = Dictionary<XName,ProvidedTypeDefinition>()
-    let namespaceCache = Dictionary<XNamespace,ProvidedTypeDefinition>()
+let private compileAssembly code =
+    let fileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid() |> sprintf "%A.dll")
+    use codeProvider = new CSharpCodeProvider()
+    let parameters = CompilerParameters(OutputAssembly=fileName, GenerateExecutable=false)
+    //parameters.CompilerOptions <- "/doc:" + Path.ChangeExtension(fileName, "xml")
+    let compilerResults = codeProvider.CompileAssemblyFromDom(parameters, [| code |])
+    printfn "%A" compilerResults.Errors
+    compilerResults.CompiledAssembly
 
-    let baseTy = typeof<obj>
-    let serviceTypesTy = ProvidedTypeDefinition("ServiceTypes", Some baseTy, IsErased=false)
+let private makeStaticClass(className, attributes) =
+    let targetClass = CodeTypeDeclaration(className)
+    targetClass.IsClass <- true
+    targetClass.TypeAttributes <- attributes
+    targetClass.StartDirectives.Add(CodeRegionDirective(CodeRegionMode.Start, sprintf "%s    static" Environment.NewLine)) |> ignore
+    targetClass.EndDirectives.Add(CodeRegionDirective(CodeRegionMode.End, "")) |> ignore
+    targetClass
+
+let private makePublicClass name =
+    CodeTypeDeclaration(name, IsClass=true, TypeAttributes=TypeAttributes.Public)
+
+let private makeXmlIncludeAttribute (providedTy: CodeTypeDeclaration) =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlIncludeAttribute>))
+    attribute.Arguments.Add(CodeAttributeArgument(CodeTypeOfExpression(providedTy.Name))) |> ignore
+    attribute
+
+let private makeXmlTypeAttribute(typeName: XName) =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlTypeAttribute>))
+    attribute.Arguments.Add(CodeAttributeArgument(CodePrimitiveExpression(typeName.LocalName))) |> ignore
+    attribute.Arguments.Add(CodeAttributeArgument("Namespace", CodePrimitiveExpression(typeName.NamespaceName))) |> ignore
+    attribute
+
+let private makeXmlElementAttribute() =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlElementAttribute>))
+    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
+    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
+    attribute
+
+let private makeXmlAttributeAttribute() =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlAttributeAttribute>))
+    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
+    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
+    attribute
+
+let private makeXmlTextAttribute() =
+    CodeAttributeDeclaration(CodeTypeReference(typeof<XmlTextAttribute>))
+
+let private makeXRoadHeaderType() =
+    let headerTy = makePublicClass("XRoadHeader")
+    let addProperty(name, ty: Type, doc) =
+        let backingField = CodeMemberField(ty, name + "__backing")
+        headerTy.Members.Add(backingField) |> ignore
+        let backingFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), backingField.Name)
+        let property = CodeMemberProperty(Name=name, Type=CodeTypeReference(ty))
+        property.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+        property.GetStatements.Add(CodeMethodReturnStatement(backingFieldRef)) |> ignore
+        property.SetStatements.Add(CodeAssignStatement(backingFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
+        property.Comments.Add(CodeCommentStatement("<summary>", true)) |> ignore
+        property.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
+        property.Comments.Add(CodeCommentStatement("</summary>", true)) |> ignore
+        headerTy.Members.Add(property) |> ignore
+    addProperty("Consumer", typeof<string>, "DNS-name of the institution")
+    addProperty("Producer", typeof<string>, "DNS-name of the database")
+    addProperty("UserId", typeof<string>, "ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518")
+    addProperty("Id", typeof<string>, "Service invocation nonce (unique identifier)")
+    addProperty("Service", typeof<string>, "Name of the service to be invoked")
+    addProperty("Issue", typeof<string>, "Name of file or document related to the service invocation")
+    addProperty("Unit", typeof<string>, "Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal)")
+    addProperty("Position", typeof<string>, "Organizational position or role of the person invoking the service")
+    addProperty("UserName", typeof<string>, "Name of the person invoking the service")
+    addProperty("Async", typeof<Nullable<bool>>, "Specifies asynchronous service. If the value is \"true\", then the security server performs the service call asynchronously.")
+    addProperty("Authenticator", typeof<string>, "Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.")
+    addProperty("Paid", typeof<string>, "The amount of money paid for invoking the service")
+    addProperty("Encrypt", typeof<string>, "If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center")
+    addProperty("EncryptCert", typeof<string>, "Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only.")
+    addProperty("Encrypted", typeof<string>, "If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header.")
+    addProperty("EncryptedCert", typeof<string>, "If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header.")
+    headerTy
+
+let private getRequiredHeaders(operation: Operation) =
+    let headers, rest =
+        operation.Request.Header
+        |> List.partition (fun part ->
+            match part with
+            | IsXteeHeader _ when operation.Style = RpcEncoded -> true
+            | IsXRoadHeader _ when operation.Style = DocLiteral -> true
+            | _ -> false)
+    if rest.Length > 0 then
+        failwithf "Unhandled SOAP Header elements detected: %A" rest
+    headers |> List.map (fun part -> part.Name)
+
+let private makeReturnType (types: RuntimeType list) =
+    let rec getReturnTypeTuple (tuple: RuntimeType list, types) =
+        match types with
+        | [] -> CodeTypeReference("System.Tuple", tuple |> List.map (fun x -> x.AsCodeTypeReference()) |> Array.ofList)
+        | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
+        | x::xs -> let inner = getReturnTypeTuple([x], xs)
+                   CodeTypeReference("System.Tuple", ((tuple |> List.map (fun x -> x.AsCodeTypeReference())) @ [inner]) |> Array.ofList)
+    match types with
+    | [] -> CodeTypeReference(typeof<Void>)
+    | tp::[] -> tp.AsCodeTypeReference()
+    | many -> getReturnTypeTuple([], types)
+
+let makeProducerType (typeNamePath: string [], producerUri) =
+    let schema = resolveUri producerUri |> readSchema
+    let typeCache = Dictionary<XName,CodeTypeDeclaration>()
+    let namespaceCache = Dictionary<XNamespace,CodeTypeDeclaration>()
+
+    let headerTy = makeXRoadHeaderType()
+    let serviceTypesTy = makeStaticClass("DefinedTypes", TypeAttributes.Public)
 
     let getOrCreateNamespace (name: XNamespace) =
         match namespaceCache.TryGetValue(name) with
-        | true, typ -> typ
-        | _ ->
-            let producerName = 
-                match Regex.Match(name.NamespaceName, @"^http://producers\.\w+\.xtee\.riik\.ee/producer/(\w+)$") with
-                | m when m.Success -> m.Groups.[1].Value
+        | false, _ ->
+            let producerName =
+                match Regex.Match(name.NamespaceName, @"^http://(((?<producer>\w+)\.x-road\.ee/producer)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)))$") with
+                | m when m.Success -> m.Groups.["producer"].Value
                 | _ -> failwithf "TODO: Implement normal namespace handling for tns: %A" name
-            let typ = ProvidedTypeDefinition(producerName, Some baseTy, IsErased=false)
-            serviceTypesTy.AddMember(typ)
+            let typ = CodeTypeDeclaration(producerName, IsClass=true, TypeAttributes=TypeAttributes.Public)
+            serviceTypesTy.Members.Add(typ) |> ignore
             namespaceCache.Add(name, typ)
             typ
-
-    let createWriteTypeAttributeMethod (typeName: XName) =
-        let meth = ProvidedMethod("WriteTypeAttribute", [ProvidedParameter("writer", typeof<XmlWriter>)], typeof<Void>)
-        meth.InvokeCode <- fun args ->
-            let nm, ns = typeName.LocalName, typeName.NamespaceName
-            <@@ (%%args.[1]: XmlWriter).WriteStartAttribute("type", XmlNamespace.Xsi)
-                (%%args.[1]: XmlWriter).WriteQualifiedName(nm, ns)
-                (%%args.[1]: XmlWriter).WriteEndAttribute() @@>
-        meth
-
-    let createType name =
-        let serializeMeth = ProvidedMethod("Serialize", [ProvidedParameter("writer", typeof<XmlWriter>); ProvidedParameter("needsType", typeof<bool>)], typeof<Void>)
-        serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
-
-        let deserializeMeth = ProvidedMethod("Deserialize", [ProvidedParameter("reader", typeof<XmlReader>)], typeof<Void>)
-        deserializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
-
-        let typ = ProvidedTypeDefinition(name, Some baseTy, IsErased=false)
-        typ.SetAttributes(TypeAttributes.Public ||| TypeAttributes.Class)
-        typ.AddMembers([ ProvidedConstructor([], InvokeCode=(fun _ -> <@@ () @@>)) :> MemberInfo; upcast serializeMeth; upcast deserializeMeth ])
-        typ
+        | true, typ -> typ
 
     let getOrCreateType (name: XName) =
         match typeCache.TryGetValue(name) with
-        | true, typ -> typ
-        | _ ->
-            let typ = createType name.LocalName
-            let namespaceTy = getOrCreateNamespace (name.Namespace)
-            namespaceTy.AddMember(typ)
+        | false, _ ->
+            let typ = makePublicClass(name.LocalName)
+            typ.CustomAttributes.Add(makeXmlTypeAttribute(name)) |> ignore
+            let namespaceTy = getOrCreateNamespace(name.Namespace)
+            namespaceTy.Members.Add(typ) |> ignore
             typeCache.Add(name, typ)
+            typ.UserData.Add("full_name", sprintf "DefinedTypes.%s.%s" namespaceTy.Name typ.Name)
             typ
+        | true, typ -> typ
 
     let getRuntimeType typeName =
         match mapPrimitiveType typeName with
-        | Some tp -> tp
-        | _ -> getOrCreateType typeName :> Type
+        | Some tp -> PrimitiveType(tp)
+        | _ ->
+            let tp = getOrCreateType(typeName)
+            let fullName: string = unbox tp.UserData.["full_name"]
+            ProvidedType(CodeTypeReference(fullName))
 
-    let (|NullableType|_|) (typ: Type) =
-        match Nullable.GetUnderlyingType(typ) with
-        | null -> None
-        | typ -> Some(typ)
+    let makeArrayType(typ, rank) =
+        match typ with
+        | PrimitiveType(typ) ->
+            [1..rank] |> List.fold (fun (aggTyp: Type) _ -> aggTyp.MakeArrayType()) typ |> PrimitiveType
+        | ProvidedType(typ) ->
+            [1..rank] |> List.fold (fun (aggTyp: CodeTypeReference) _ -> CodeTypeReference(aggTyp, 1)) typ |> ProvidedType
 
-    let (|SoapEncArray|_|) (elementType: RefOrType) =
+    let (|SoapEncArray|_|) (typ: SchemaType) =
         let getArrayType arrayType =
             match arrayType with
-            | Some(typeName, rank) ->
-                [1..rank] |> List.fold (fun (aggTyp: Type) _ -> aggTyp.MakeArrayType()) (getRuntimeType(typeName))
+            | Some(typeName, rank) -> makeArrayType(getRuntimeType(typeName), rank)
             | _ -> failwith "Array underlying type specification is missing."
 
-        match elementType with
-        | RefOrType.Type(SchemaType.ComplexType(spec)) ->
+        match typ with
+        | SchemaType.ComplexType(spec) ->
             match spec.Content with
             | ComplexTypeContent.ComplexContent(ComplexContentSpec.Restriction(spec)) ->
                 match spec.Base.LocalName, spec.Base.NamespaceName with
@@ -100,196 +194,191 @@ let getProducerDefinition(uri, theAssembly, namespacePrefix) =
             | _ -> None
         | _ -> None
 
-    let rec mkSerializeExpr (writer: Expr, fieldExpr: Expr, typ: Type) =
-        match typ with
-        | :? ProvidedTypeDefinition ->
-            let getType = typeof<obj>.GetMethod("GetType")
-            let getTypeExpr = Expr.Call(Expr.Coerce(fieldExpr, typeof<obj>), getType, [])
-            let typeTest = typeof<Type>.GetMethod("IsAssignableFrom")
-            let typeTestExpr = Expr.Call(getTypeExpr, typeTest, [Expr.Value(typ)])
-            Expr.Call(fieldExpr, typ.GetMethod("Serialize"), [writer; typeTestExpr])
-        | NullableType(typ) when typ = typeof<int32> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<int32>).Value) @@>
-        | typ when typ = typeof<int32> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: int32)) @@>
-        | NullableType(typ) when typ = typeof<decimal> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<decimal>).Value) @@>
-        | typ when typ = typeof<decimal> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: decimal)) @@>
-        | NullableType(typ) when typ = typeof<int64> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<int64>).Value) @@>
-        | typ when typ = typeof<int64> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: int64)) @@>
-        | NullableType(typ) when typ = typeof<DateTime> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<DateTime>).Value) @@>
-        | typ when typ = typeof<DateTime> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: DateTime)) @@>
-        | NullableType(typ) when typ = typeof<bool> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: Nullable<bool>).Value) @@>
-        | typ when typ = typeof<bool> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: bool)) @@>
-        | typ when typ = typeof<string> ->
-            <@@ (%%writer: XmlWriter).WriteValue((%%fieldExpr: string)) @@>
-        | typ when typ = typeof<byte[]> ->
-            <@@ (%%writer: XmlWriter).WriteBase64((%%fieldExpr: byte[]), 0, (%%fieldExpr: byte[]).Length) @@>
-        | typ when typ.IsArray ->
-            // TODO: item tag name
-            let coerseExpr = Expr.Coerce(fieldExpr, typeof<Array>)
-            let v = Var("i", typeof<int>)
-            let vExpr = Expr.Var(v)
-            let elTyp = typ.GetElementType()
-            let getValExpr = <@@ (%%coerseExpr: Array).GetValue(%%vExpr: int) @@>
-            let itemExpr = mkSerializeExpr(writer, Expr.Coerce(getValExpr, elTyp), elTyp)
-            Expr.ForIntegerRangeLoop(
-                v,
-                <@@ 0 @@>,
-                <@@ ((%%coerseExpr: Array).Length - 1) @@>,
-                Expr.Sequential(
-                    <@@ (%%writer: XmlWriter).WriteStartElement("item") @@>,
-                    Expr.Sequential(itemExpr, <@@ (%%writer: XmlWriter).WriteEndElement() @@>)))
-        | typ -> failwithf "Serialization method for %A is not defined" typ.FullName
-
-    let addInvokeCode (meth: ProvidedMethod) (exprList: List<(Expr list -> Expr)>) =
-        meth.InvokeCode <-
-            match exprList |> List.ofSeq with
-            | [] -> fun _ -> <@@ () @@>
-            | exp::[] -> fun args -> exp(args)
-            | more -> fun args -> List.foldBack (fun e exp -> Expr.Sequential(e args, exp)) more (Expr.Value(()))
-
-    let rec buildType (providedTy: ProvidedTypeDefinition, typeInfo: SchemaType, typeName: XName option) =
-        let serializeMeth = providedTy.GetMethod("Serialize") :?> ProvidedMethod
-        let serializeExpr = List<(Expr list -> Expr)>()
-
-        let deserializeMeth = providedTy.GetMethod("Deserialize") :?> ProvidedMethod
-        let deserializeExpr = List<(Expr list -> Expr)>()
-
-        let depthVar = Var("depth", typeof<int>)
-        deserializeExpr.Add(fun args -> Expr.Let(depthVar, <@@ (%%args.[1]: XmlReader).Depth @@>, Expr.Value(())))
-
-        let handleComplexTypeContentSpec (spec: ComplexTypeContentSpec) =
-            if not(List.isEmpty spec.Attributes) then
-                failwithf "TODO: handle complex type content attributes for type %A" providedTy.Name
-            match spec.Content with
-            | Some(ComplexTypeParticle.All(particle)) -> ()
-            | Some(ComplexTypeParticle.Sequence(sequence)) ->
-                if sequence.MinOccurs <> 1u || sequence.MaxOccurs <> 1u then
-                    failwith "Not supported!"
-                sequence.Content |> List.iter (fun item ->
-                    match item with
-                    | SequenceContent.Element(element) ->
-                        let elementType =
-                            match element.Type with
-                            | RefOrType.Name(xname) ->
-                                let typ = getRuntimeType(xname)
-                                if element.MaxOccurs > 1u then typ.MakeArrayType()
-                                elif element.IsNillable && typ.IsValueType then typedefof<Nullable<_>>.MakeGenericType(typ)
-                                else typ
-                            | SoapEncArray arrType -> arrType
-                            | RefOrType.Type(typeSpec) ->
-                                let subTy = createType(element.Name + "Type")
-                                providedTy.AddMember(subTy)
-                                buildType(subTy, typeSpec, None)
-                                if element.MaxOccurs > 1u then subTy.MakeArrayType()
-                                else subTy :> Type
-                            | _ -> failwithf "Not supported: %A!" element.Type
-                        let setField =
-                            match element.MinOccurs with
-                            | 0u -> Some(ProvidedField("s__" + element.Name, typeof<bool>))
-                            | _ -> None
-                        let backingField = ProvidedField("b__" + element.Name, elementType)
-                        providedTy.AddMembers(setField |> Option.fold (fun d f -> f::d) [backingField])
-                        let prop = ProvidedProperty(element.Name, elementType)
-                        prop.GetterCode <- fun args -> Expr.FieldGet(args.[0], backingField)
-                        prop.SetterCode <- fun args ->
-                            let valueExpr = Expr.FieldSet(args.[0], backingField, args.[1])
-                            match setField with
-                            | Some(f) -> Expr.Sequential(valueExpr, Expr.FieldSet(args.[0], f, Expr.Value(true)))
-                            | _ -> valueExpr
-                        providedTy.AddMember(prop)
-                        serializeExpr.Add(fun args ->
-                            let objEquals = typeof<obj>.GetMethod("ReferenceEquals")
-                            let fieldExpr = Expr.FieldGet(args.[0], backingField)
-                            let fVal = Expr.Coerce(fieldExpr, typeof<obj>)
-                            let fieldValue = <@@ (%%fVal: obj) = null @@> //Expr.Call(objEquals, [fVal; Expr.Value(null)])
-                            let testNullExpr =
-                                let serExpr = mkSerializeExpr(args.[1], fieldExpr, elementType)
-                                Expr.IfThenElse(fieldValue,
-                                                (if element.IsNillable then <@@ (%%args.[1]: XmlWriter).WriteAttributeString("nil", XmlNamespace.Xsi, "true") @@> else Expr.Value(())),
-                                                serExpr)
-                            let expr =
-                                let nm = element.Name
-                                <@@ (%%args.[1]: XmlWriter).WriteStartElement(nm)
-                                    %%testNullExpr
-                                    (%%args.[1]: XmlWriter).WriteEndElement() @@>
-                            match setField with
-                            | Some(field) -> Expr.IfThenElse(Expr.FieldGet(args.[0], field), expr, Expr.Value(()))
-                            | _ -> expr)
-                    | SequenceContent.Sequence(sequence) -> failwith "Not supported!")
+    let rec buildType(providedTy: CodeTypeDeclaration, typeInfo) =
+        let addProperty(name, ty: RuntimeType, isOptional) =
+            let specifiedField =
+                if isOptional then
+                    let f = CodeMemberField(typeof<bool>, name + "__specified")
+                    providedTy.Members.Add(f) |> ignore
+                    Some(f)
+                else None
+            let backingField = CodeMemberField(ty.AsCodeTypeReference(), name + "__backing")
+            providedTy.Members.Add(backingField) |> ignore
+            let backingFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), backingField.Name)
+            let property = CodeMemberProperty(Name=name, Type=ty.AsCodeTypeReference())
+            property.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+            property.GetStatements.Add(CodeMethodReturnStatement(backingFieldRef)) |> ignore
+            property.SetStatements.Add(CodeAssignStatement(backingFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
+            match specifiedField with
+            | Some(field) ->
+                let fieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), field.Name)
+                property.SetStatements.Add(CodeAssignStatement(fieldRef, CodePrimitiveExpression(true))) |> ignore
             | _ -> ()
+            providedTy.Members.Add(property) |> ignore
+            property
+
+        let getParticleType (particleType, maxOccurs, isNillable, name) =
+            match particleType with
+            | RefOrType.Name(xname) ->
+                let typ = getRuntimeType(xname)
+                match typ with
+                | x when maxOccurs > 1u -> makeArrayType(x, 1)
+                | PrimitiveType(x) when isNillable && x.IsValueType -> PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x))
+                | x -> x
+            | RefOrType.Type(SoapEncArray(typ)) ->
+                typ
+            | RefOrType.Type(typeInfo) ->
+                let subTy = makePublicClass(name + "Type")
+                buildType(subTy, typeInfo)
+                providedTy.Members.Add(subTy) |> ignore
+                let subTyRef = ProvidedType(CodeTypeReference(subTy.Name))
+                if maxOccurs > 1u then makeArrayType(subTyRef, 1)
+                else subTyRef
+            | _ -> failwithf "not implemented: %A" name
+
+        let parseElementSpec(spec: ElementSpec) =
+            let elementTy = getParticleType(spec.Type, spec.MaxOccurs, spec.IsNillable, spec.Name)
+            let property = addProperty(spec.Name, elementTy, spec.MinOccurs = 0u)
+            property.CustomAttributes.Add(makeXmlElementAttribute()) |> ignore
+
+        let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
+            spec.Attributes |> List.iter (fun spec ->
+                match spec.Name with
+                | Some(name) ->
+                    let attributeTy = getParticleType(spec.RefOrType, 1u, false, name)
+                    let property = addProperty(name, attributeTy, match spec.Use with Required -> true | _ -> false)
+                    property.CustomAttributes.Add(makeXmlAttributeAttribute()) |> ignore
+                | _ -> failwith "not implemented")
+            match spec.Content with
+            | Some(ComplexTypeParticle.All(spec)) ->
+                if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then
+                    failwith "not implemented"
+                spec.Elements |> List.iter parseElementSpec
+            | Some(ComplexTypeParticle.Sequence(spec)) ->
+                if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then
+                    failwith "not implemented"
+                spec.Content |> List.iter (fun item ->
+                    match item with
+                    | SequenceContent.Element(spec) ->
+                        parseElementSpec(spec)
+                    | SequenceContent.Sequence(spec) ->
+                        failwith "not implemented")
+            | None -> ()
 
         match typeInfo with
-        | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
+        | SoapEncArray _ ->
+            // TODO: Some global types like message responses are actually array-s
             ()
-        | ComplexType(ctspec) ->
-            let ctor = getConstructor(providedTy)
-            if ctspec.IsAbstract then
-                providedTy.SetAttributes(TypeAttributes.Abstract ||| TypeAttributes.Public ||| TypeAttributes.Class)
-                ctor.SetConstructorAttrs(MethodAttributes.Family ||| MethodAttributes.RTSpecialName)
-            match ctspec.Content with
+        | SimpleType(SimpleTypeSpec.Restriction(spec)) -> failwith "not implemented"
+        | ComplexType(spec) ->
+            if spec.IsAbstract then
+                providedTy.TypeAttributes <- providedTy.TypeAttributes ||| TypeAttributes.Abstract
+                providedTy.Members.Add(CodeConstructor(Attributes=MemberAttributes.Family)) |> ignore
+            match spec.Content with
             | SimpleContent(SimpleContentSpec.Extension(spec)) ->
-                ()
+                match getRuntimeType(spec.Base) with
+                | PrimitiveType(typ) as rtyp ->
+                    let property = addProperty("BaseValue", rtyp, false)
+                    property.CustomAttributes.Add(makeXmlTextAttribute()) |> ignore
+                    parseComplexTypeContentSpec(spec.Content)
+                | ProvidedType(_) ->
+                    failwith "not implemented"
             | SimpleContent(SimpleContentSpec.Restriction(spec)) ->
-                ()
+                failwith "not implemented"
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                 let baseTy = getOrCreateType(spec.Base)
-                providedTy.SetBaseType(baseTy)
-
-                let baseCtor = getConstructor(baseTy)
-                ctor.BaseConstructorCall <- (fun args -> baseCtor :> ConstructorInfo, args)
-
-                serializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
-                let baseSerialize = baseTy.GetMethod("Serialize") :?> ProvidedMethod
-                serializeExpr.Add(fun args -> Expr.Call(args.Head, baseSerialize, args.Tail))
-
-                deserializeMeth.SetMethodAttrs(MethodAttributes.Public ||| MethodAttributes.Virtual)
-                let baseDeserialize = baseTy.GetMethod("Deserialize") :?> ProvidedMethod
-                deserializeExpr.Add(fun args -> Expr.Call(args.Head, baseDeserialize, args.Tail))
-
-                match typeName with
-                | Some(typeName) ->
-                    if not(ctspec.IsAbstract) then
-                        let attrMeth = createWriteTypeAttributeMethod(typeName)
-                        attrMeth.SetMethodAttrs(MethodAttributes.Family ||| MethodAttributes.Virtual)
-                        providedTy.AddMember(attrMeth)
-                | _ -> ()
-
-                handleComplexTypeContentSpec(spec.Content)
+                providedTy.BaseTypes.Add(baseTy.Name) |> ignore
+                baseTy.CustomAttributes.Add(makeXmlIncludeAttribute(providedTy)) |> ignore
+                parseComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
-                ()
+                failwith "not implemented"
             | ComplexTypeContent.Particle(spec) ->
-                let attrMeth =
-                    match typeName with
-                    | Some(typeName) ->
-                        let attrMeth = createWriteTypeAttributeMethod(typeName)
-                        attrMeth.SetMethodAttrs(MethodAttributes.Family ||| MethodAttributes.Virtual ||| MethodAttributes.VtableLayoutMask)
-                        if ctspec.IsAbstract then attrMeth.AddMethodAttrs(MethodAttributes.Abstract)
-                        providedTy.AddMember(attrMeth)
-                        Some(attrMeth)
-                    | _ -> None
-                match attrMeth with
-                | Some(attrMeth) ->
-                    serializeExpr.Add(fun args ->
-                        if ctspec.IsAbstract then Expr.Call(args.[0], attrMeth, [args.[1]])
-                        else Expr.IfThenElse(args.[2], Expr.Call(args.[0], attrMeth, [args.[1]]), Expr.Value(())))
-                | _ -> ()
-                handleComplexTypeContentSpec(spec)
+                parseComplexTypeContentSpec(spec)
 
-        addInvokeCode serializeMeth serializeExpr
-        addInvokeCode deserializeMeth deserializeExpr
+    let buildOperationService (operation: Operation) =
+        let serviceMethod = CodeMemberMethod(Name=operation.Name.LocalName)
+        serviceMethod.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+
+        let parameters =
+            operation.Request.Body
+            |> List.map (fun part ->
+                let prtyp =
+                    match part.Reference with
+                    | XmlReference.SchemaElement(elem) -> failwith "Not implemented"
+                    | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
+                let parameter = CodeParameterDeclarationExpression(prtyp.AsCodeTypeReference(), part.Name)
+                serviceMethod.Parameters.Add(parameter) |> ignore
+                parameter)
+
+        let returnType =
+            operation.Response.Body
+            |> List.map (fun part ->
+                match part.Reference with
+                | XmlReference.SchemaElement(_) -> failwith "not implemented"
+                | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName))
+            |> makeReturnType
+
+        let headerParam = CodeParameterDeclarationExpression(headerTy.Name, "settings")
+        let optionalAttribute = CodeAttributeDeclaration(CodeTypeReference(typeof<OptionalAttribute>))
+        headerParam.CustomAttributes.Add(optionalAttribute) |> ignore
+        serviceMethod.Parameters.Add(headerParam) |> ignore
+        serviceMethod.ReturnType <- returnType
+
+        serviceMethod.Statements.Add(CodeMethodReturnStatement(CodePrimitiveExpression(null))) |> ignore
+
+        let requiredHeaders = getRequiredHeaders(operation)
+
+        serviceMethod
 
     schema.TypeSchemas
-    |> List.iter (fun typeSchema ->
-        typeSchema.Types
-        |> Seq.iter (fun kvp -> buildType(getOrCreateType(kvp.Key), kvp.Value, Some(kvp.Key))))
+    |> Seq.collect (fun typeSchema -> typeSchema.Types)
+    |> Seq.map (fun x -> getOrCreateType(x.Key), x.Value)
+    |> Seq.iter buildType
 
-    [serviceTypesTy]
+    let targetClass = makeStaticClass(typeNamePath.[typeNamePath.Length - 1], TypeAttributes.Public)
+    targetClass.Members.Add(headerTy) |> ignore
+    targetClass.Members.Add(serviceTypesTy) |> ignore
+
+    schema.Services |> List.iter (fun service ->
+        let serviceTy = makeStaticClass(service.Name, TypeAttributes.Public)
+        service.Ports |> List.iter (fun port ->
+            let portTy = CodeTypeDeclaration(port.Name, IsClass=true, TypeAttributes=TypeAttributes.Public)
+            serviceTy.Members.Add(portTy) |> ignore
+
+            match port.Documentation.TryGetValue("et") with
+            | true, doc -> portTy.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
+            | _ -> ()
+
+            let addressField = CodeMemberField(typeof<string>, "address", InitExpression=CodePrimitiveExpression(port.Address))
+            let addressFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), addressField.Name)
+            let addressProperty = CodeMemberProperty(Name="Address", Type=CodeTypeReference(typeof<string>))
+            addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+            addressProperty.GetStatements.Add(CodeMethodReturnStatement(addressFieldRef)) |> ignore
+            addressProperty.SetStatements.Add(CodeAssignStatement(addressFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
+
+            portTy.Members.Add(addressField) |> ignore
+            portTy.Members.Add(addressProperty) |> ignore
+
+            let producerField = CodeMemberField(typeof<string>, "producer", InitExpression=CodePrimitiveExpression(port.Producer))
+            let producerFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), producerField.Name)
+            let producerProperty = CodeMemberProperty(Name="Producer", Type=CodeTypeReference(typeof<string>))
+            producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+            producerProperty.GetStatements.Add(CodeMethodReturnStatement(producerFieldRef)) |> ignore
+            producerProperty.SetStatements.Add(CodeAssignStatement(producerFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
+
+            portTy.Members.Add(producerField) |> ignore
+            portTy.Members.Add(producerProperty) |> ignore
+
+            // TODO: Implement service calls!!
+            port.Operations |> List.iter (buildOperationService >> portTy.Members.Add >> ignore))
+        targetClass.Members.Add(serviceTy) |> ignore)
+
+    let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))
+    codeNamespace.Types.Add(targetClass) |> ignore
+
+    let codeCompileUnit = CodeCompileUnit()
+    codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
+    codeCompileUnit.ReferencedAssemblies.Add("System.Xml.dll") |> ignore
+    codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
+
+    compileAssembly(codeCompileUnit).GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)

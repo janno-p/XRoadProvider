@@ -1,38 +1,8 @@
 ﻿module XRoadTypeProvider.Expressions
 
-open Microsoft.FSharp.Quotations
-open Microsoft.FSharp.Reflection
-open ProviderImplementation.ProvidedTypes
-open System
-open System.Collections.Generic
-open System.Reflection
-open System.Xml
-open System.Xml.Linq
-open XRoadTypeProvider.Runtime
-open XRoadTypeProvider.Wsdl
-open XRoadTypeProvider.Wsdl.XsdSchema
+()
 
-type TypeCache = Dictionary<XmlReference,ProvidedTypeDefinition>
-
-let andThen e2 e1 = Expr.Sequential(e1, e2)
-
-let execute defExp exps =
-    match exps with
-    | [] -> defExp
-    | exp::[] -> exp
-    | exp::exps -> exps |> List.fold (fun exp e -> exp |> andThen e) exp
-
-let requiredXRoadHeaders operation =
-    let headers, rest =
-        operation.Request.Header
-        |> List.partition (fun part ->
-            match part with
-            | IsXteeHeader _ when operation.Style = RpcEncoded -> true
-            | IsXRoadHeader _ when operation.Style = DocLiteral -> true
-            | _ -> false)
-    if rest.Length > 0 then
-        failwithf "Unhandled SOAP Header elements detected: %A" rest
-    headers |> List.map (fun part -> part.Name)
+(*
 
 let getType id (cache: TypeCache) =
     match cache.TryGetValue(id) with
@@ -44,32 +14,8 @@ let getRuntimeType typeName cache =
     | Some tp -> tp
     | _ -> cache |> getType (SchemaType(typeName)) :> Type
 
-let buildReturnType typeCache operation =
-    let responseTypes = operation.Response.Body
-                        |> List.map (fun p -> typeCache |> getType p.Reference :> Type)
-    let innerType = match responseTypes with
-                    | [] -> typeof<unit>
-                    | tp::[] -> tp
-                    | many -> many |> Array.ofList |> FSharpType.MakeTupleType
-    // Multipart content will be implemented later
-    //match operation.Response.MultipartContent with
-    //| [] -> innerType
-    //| _ -> typedefof<Runtime.IXRoadResponseWithAttachments<_>>.MakeGenericType(innerType)
-    innerType
-
-let buildParameters typeCache operation =
-  [ yield! operation.Request.Body
-           |> List.map (fun p -> ProvidedParameter(p.Name, typeCache |> getType p.Reference))
-    yield ProvidedParameter("settings", typeof<XRoadHeader>) ]
-
 (*
 let createXRoadOperationMethod typeCache operation =
-    let xrdHeaders = requiredXRoadHeaders(operation)
-    let parameters = operation |> buildParameters typeCache
-    let returnType = operation |> buildReturnType typeCache
-
-    let settingsIndex = 1 + (parameters |> List.findIndex (fun p -> p.ParameterType = typeof<XRoadHeader>))
-
     let providedMethod = ProvidedMethod(operation.Name.LocalName, parameters, returnType)
     providedMethod.InvokeCode <- fun args ->
         let operationName = operation.Name.LocalName
@@ -142,4 +88,4 @@ let createXRoadOperationMethod typeCache operation =
                                                 xrdHeaders |> Array.ofList) @@>)
     meth
     *)*)
-
+*)

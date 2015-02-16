@@ -1,9 +1,8 @@
-﻿module internal XRoad.SecurityServer
+﻿module private XRoad.SecurityServer
 
 open System.Xml
 open System.Xml.Linq
-open XRoadTypeProvider.Runtime
-open XRoadTypeProvider.Wsdl
+open XRoad.Parser
 
 type Producer =
   { Name: string

@@ -1,4 +1,4 @@
-﻿module XRoad.Providers
+﻿module XRoad.Providers.Impl
 
 open Microsoft.FSharp.Core.CompilerServices
 open Microsoft.FSharp.Quotations
@@ -27,7 +27,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
                 | [| :? string as producerUri |] ->
                     match typeCache.TryGetValue(producerUri) with
                     | false, _ ->
-                        let typ = XRoad.ProducerDefinitionCodeDom.makeProducerType typeNameWithArguments producerUri
+                        let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri)
                         typeCache.Add(producerUri, typ)
                         typ
                     | true, typ -> typ

@@ -1,9 +1,14 @@
-﻿module XRoadTypeProvider.Wsdl
+﻿module private XRoad.Parser
 
 open System
 open System.Collections.Generic
 open System.IO
 open System.Xml.Linq
+
+[<AutoOpen>]
+module Option =
+    let orDefault value opt =
+        opt |> Option.fold (fun s t -> t) value
 
 module XmlNamespace =
     let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
@@ -17,10 +22,6 @@ module XmlNamespace =
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
-
-module Option =
-    let orDefault value opt =
-        opt |> Option.fold (fun s t -> t) value
 
 let private mapXrdType = function
     | "faultCode"

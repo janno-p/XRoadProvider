@@ -41,11 +41,9 @@
     <Compile Include="ProvidedTypes.fsi" />
     <Compile Include="ProvidedTypes.fs" />
     <Compile Include="DebugProvidedTypes.fs" />
-    <Compile Include="XRoadTypeProvider.Wsdl.fs" />
-    <Compile Include="XRoadTypeProvider.Runtime.fs" />
+    <Compile Include="XRoad.Parser.fs" />
     <Compile Include="XRoadTypeProvider.Expressions.fs" />
     <Compile Include="XRoad.ProducerDefinition.fs" />
-    <Compile Include="XRoad.ProducerDefinition.CodeDom.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
     <Compile Include="XRoad.Providers.fs" />
     <Content Include="packages.config" />
