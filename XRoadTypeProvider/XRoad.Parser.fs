@@ -120,10 +120,11 @@ type MessagePart =
     Reference: XmlReference }
 
 type OperationMessage =
-  { Body: MessagePart list
+  { Name: XName
+    Body: MessagePart list
     Header: MessagePart list
     MultipartContent: MessagePart list }
-    static member Empty with get() = { Body = []; Header = []; MultipartContent = [] }
+    static member Create(name) = { Name = name; Body = []; Header = []; MultipartContent = [] }
 
 type OperationStyle = RpcEncoded | DocLiteral
 
@@ -231,7 +232,7 @@ let parseSoapHeader (style: OperationStyle) (definitions: XElement) (elem: XElem
     | true, value -> { opmsg with Header = { Name = partName; Reference = value } :: opmsg.Header }
     | _ -> failwithf "Message %s does not contain part %s" messageName.LocalName partName
 
-let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractDef: XElement) =
+let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractDef: XElement) ns =
     let msgName = abstractDef |> reqAttr (XName.Get("name"))
     let definitions = binding.Parent.Parent.Parent
     let abstractParts = abstractDef |> parseAbstractParts msgName
@@ -259,7 +260,7 @@ let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractD
                                 { opmsg with MultipartContent = { Name = partName; Reference = value } :: opmsg.MultipartContent }
                             | _ -> failwithf "Message %s does not contain part %s" msgName partName
                         | _ -> opmsg) opmsg) opmsg
-            | _ -> opmsg) OperationMessage.Empty
+            | _ -> opmsg) (OperationMessage.Create(XName.Get(msgName, ns)))
     abstractParts |> Seq.fold (fun opmsg p -> { opmsg with Body = { Name = p.Key; Reference = p.Value } :: opmsg.Body }) operationMessage
 
 let validateOperationStyle styleValue style =
@@ -291,8 +292,8 @@ let parseOperation (operation: XElement) (portType: XElement) (definitions: XEle
     { Name = XName.Get(name, ns)
       Version = version
       Style = style
-      Request = parseOperationMessage style (operation.Element(XName.Get("input", XmlNamespace.Wsdl))) paramInput
-      Response = parseOperationMessage style (operation.Element(XName.Get("output", XmlNamespace.Wsdl))) paramOutput
+      Request = parseOperationMessage style (operation.Element(XName.Get("input", XmlNamespace.Wsdl))) paramInput ns
+      Response = parseOperationMessage style (operation.Element(XName.Get("output", XmlNamespace.Wsdl))) paramOutput ns
       Documentation = readDocumentation abstractDesc }
 
 let parseBinding (definitions: XElement) (bindingName: XName) (portBinding: PortBinding) =

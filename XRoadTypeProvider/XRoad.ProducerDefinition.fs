@@ -9,6 +9,7 @@ open System.IO
 open System.Reflection
 open System.Runtime.InteropServices
 open System.Text.RegularExpressions
+open System.Xml
 open System.Xml.Linq
 open System.Xml.Schema
 open System.Xml.Serialization
@@ -16,23 +17,28 @@ open XRoad.Parser
 open XRoad.Parser.XsdSchema
 
 let (!~~) x = x :> CodeStatement
+let (!~>) x = CodeExpressionStatement(x)
 
 module private Stat =
     type Assign = CodeAssignStatement
     type IfThenElse = CodeConditionStatement
     type Return = CodeMethodReturnStatement
     type Snip = CodeSnippetStatement
+    type Throw = CodeThrowExceptionStatement
+    type TryCatch = CodeTryCatchFinallyStatement
     type Var = CodeVariableDeclarationStatement
 
     let ofExpr(expr) = CodeExpressionStatement(expr)
 
     let While (testExpression, [<ParamArray>] statements) =
-        CodeIterationStatement(null, testExpression, null, statements)
+        CodeIterationStatement(Snip(), testExpression, Snip(), statements)
 
 module private Expr =
     type Base = CodeBaseReferenceExpression
     type Call = CodeMethodInvokeExpression
     type CallOp = CodeBinaryOperatorExpression
+    type Field = CodeFieldReferenceExpression
+    type Invoke = CodeDelegateInvokeExpression
     type NewArray = CodeArrayCreateExpression
     type NewObject = CodeObjectCreateExpression
     type Op = CodeBinaryOperatorType
@@ -70,8 +76,8 @@ let private compileAssembly code =
     use codeProvider = new CSharpCodeProvider()
     let parameters = CompilerParameters(OutputAssembly=fileName, GenerateExecutable=false)
     //parameters.CompilerOptions <- "/doc:" + Path.ChangeExtension(fileName, "xml")
-    //( use wr = new StreamWriter(File.Open(Path.ChangeExtension(fileName, "cs"), FileMode.Create, FileAccess.Write))
-    //  codeProvider.GenerateCodeFromCompileUnit(code, wr, CodeGeneratorOptions()))
+    ( use wr = new StreamWriter(File.Open(Path.ChangeExtension(fileName, "cs"), FileMode.Create, FileAccess.Write))
+      codeProvider.GenerateCodeFromCompileUnit(code, wr, CodeGeneratorOptions()))
     let compilerResults = codeProvider.CompileAssemblyFromDom(parameters, [| code |])
     printfn "%A" compilerResults.Errors
     compilerResults.CompiledAssembly
@@ -134,11 +140,11 @@ let private makeXRoadHeaderType() =
     let addProperty(name, ty: Type, doc) =
         let backingField = CodeMemberField(ty, name + "__backing")
         headerTy.Members.Add(backingField) |> ignore
-        let backingFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), backingField.Name)
+        let backingFieldRef = Expr.Field(Expr.This(), backingField.Name)
         let property = CodeMemberProperty(Name=name, Type=CodeTypeReference(ty))
         property.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-        property.GetStatements.Add(CodeMethodReturnStatement(backingFieldRef)) |> ignore
-        property.SetStatements.Add(CodeAssignStatement(backingFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
+        property.GetStatements.Add(Stat.Return(backingFieldRef)) |> ignore
+        property.SetStatements.Add(Stat.Assign(backingFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
         property.Comments.Add(CodeCommentStatement("<summary>", true)) |> ignore
         property.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
         property.Comments.Add(CodeCommentStatement("</summary>", true)) |> ignore
@@ -184,7 +190,7 @@ let private makeWriteXRoadRpcHeaderMethod() =
     let meth = CodeMemberMethod(Name="WriteRpcHeader")
     meth.Attributes <- MemberAttributes.Family ||| MemberAttributes.Final
 
-    meth |> Method.addParam (Expr.Param(typeof<Xml.XmlWriter>, "writer"))
+    meth |> Method.addParam (Expr.Param(typeof<XmlWriter>, "writer"))
          |> Method.addParam (Expr.Param("XRoadHeader", "header"))
          |> Method.addParam (Expr.Param(typeof<string>, "serviceName"))
          |> Method.addParam (Expr.Param(typeof<IList<string>>, "requiredHeaders"))
@@ -227,95 +233,104 @@ let private makeServicePortBaseType() =
     portBaseTy.TypeAttributes <- portBaseTy.TypeAttributes ||| TypeAttributes.Abstract
 
     let addressField = CodeMemberField(typeof<string>, "address")
-    let addressFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), addressField.Name)
+    let addressFieldRef = Expr.Field(Expr.This(), addressField.Name)
     let addressProperty = CodeMemberProperty(Name="Address", Type=CodeTypeReference(typeof<string>))
     addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-    addressProperty.GetStatements.Add(CodeMethodReturnStatement(addressFieldRef)) |> ignore
-    addressProperty.SetStatements.Add(CodeAssignStatement(addressFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
+    addressProperty.GetStatements.Add(Stat.Return(addressFieldRef)) |> ignore
+    addressProperty.SetStatements.Add(Stat.Assign(addressFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
 
     let producerField = CodeMemberField(typeof<string>, "producer")
-    let producerFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), producerField.Name)
+    let producerFieldRef = Expr.Field(Expr.This(), producerField.Name)
     let producerProperty = CodeMemberProperty(Name="Producer", Type=CodeTypeReference(typeof<string>))
     producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-    producerProperty.GetStatements.Add(CodeMethodReturnStatement(producerFieldRef)) |> ignore
-    producerProperty.SetStatements.Add(CodeAssignStatement(producerFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
+    producerProperty.GetStatements.Add(Stat.Return(producerFieldRef)) |> ignore
+    producerProperty.SetStatements.Add(Stat.Assign(producerFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
 
     let nonceMeth = makeGenerateNonceMethod()
     let writeRpcHeaderMeth = makeWriteXRoadRpcHeaderMethod()
 
     let ctor = CodeConstructor()
     ctor.Attributes <- MemberAttributes.Family
-    ctor.Parameters.Add(CodeParameterDeclarationExpression(typeof<string>, "address")) |> ignore
-    ctor.Parameters.Add(CodeParameterDeclarationExpression(typeof<string>, "producer")) |> ignore
-    ctor.Statements.Add(CodeAssignStatement(CodeFieldReferenceExpression(CodeThisReferenceExpression(), "address"), CodeVariableReferenceExpression("address"))) |> ignore
-    ctor.Statements.Add(CodeAssignStatement(CodeFieldReferenceExpression(CodeThisReferenceExpression(), "producer"), CodeVariableReferenceExpression("producer"))) |> ignore
+    ctor.Parameters.Add(Expr.Param(typeof<string>, "address")) |> ignore
+    ctor.Parameters.Add(Expr.Param(typeof<string>, "producer")) |> ignore
+    ctor.Statements.Add(Stat.Assign(Expr.Field(Expr.This(), "address"), Expr.Var("address"))) |> ignore
+    ctor.Statements.Add(Stat.Assign(Expr.Field(Expr.This(), "producer"), Expr.Var("producer"))) |> ignore
+
+    let moveToElementMeth = CodeMemberMethod(Name="MoveToElement")
+    moveToElementMeth.Attributes <- MemberAttributes.Family
+    moveToElementMeth |> Method.addParam (Expr.Param(typeof<XmlReader>, "reader"))
+                      |> Method.addParam (Expr.Param(typeof<string>, "name"))
+                      |> Method.addParam (Expr.Param(typeof<string>, "ns"))
+                      |> Method.addParam (Expr.Param(typeof<int>, "depth"))
+                      |> Method.addStat (Stat.While(Expr.CallOp(Expr.Call(Expr.Var("reader"), "Read"), Expr.Op.BooleanAnd, Expr.CallOp(Expr.Prop(Expr.Var("reader"), "Depth"), Expr.Op.GreaterThanOrEqual, Expr.Var("depth"))),
+                                                    [| Stat.IfThenElse(
+                                                            Expr.CallOp(
+                                                                Expr.CallOp(
+                                                                    Expr.CallOp(Expr.Prop(Expr.Var("reader"), "Depth"),
+                                                                                Expr.Op.IdentityEquality,
+                                                                                Expr.Var("depth")),
+                                                                    Expr.Op.BooleanAnd,
+                                                                    Expr.CallOp(Expr.Prop(Expr.Var("reader"), "LocalName"),
+                                                                                Expr.Op.IdentityEquality,
+                                                                                Expr.Var("name"))),
+                                                                Expr.Op.BooleanAnd,
+                                                                Expr.CallOp(Expr.Prop(Expr.Var("reader"), "NamespaceURI"),
+                                                                            Expr.Op.IdentityEquality,
+                                                                            Expr.Var("ns"))),
+                                                            Stat.Return()) |]))
+                      |> Method.addStat (Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Required element was not found in response message."))))
+                      |> ignore
 
     let serviceCallMeth = CodeMemberMethod(Name="MakeServiceCall")
+    serviceCallMeth.TypeParameters.Add("T")
     serviceCallMeth.Attributes <- MemberAttributes.Family ||| MemberAttributes.Final
+    serviceCallMeth.ReturnType <- CodeTypeReference("T")
 
-    serviceCallMeth |> Method.addParam (Expr.Param(typeof<string>, "operationNamespace"))
-                    |> Method.addParam (Expr.Param(typeof<Action<Xml.XmlWriter>>, "writeHeaderAction"))
-                    |> Method.addParam (Expr.Param(typeof<Action<Xml.XmlWriter>>, "writeBody"))
+    let writerStatements = [|
+        !~~ Stat.Assign(Expr.Var("stream"), Expr.Call(Expr.Var("request"), "GetRequestStream"))
+        !~~ Stat.Var(typeof<XmlWriter>, "writer", Expr.Value(null))
+        !~~ Stat.TryCatch(
+                [| Stat.Assign(Expr.Var("writer"), Expr.Call(Expr.Type(typeof<XmlWriter>), "Create", Expr.Var("stream")))
+                   !~> Expr.Call(Expr.Var("writer"), "WriteStartDocument")
+                   !~> Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("soapenv"), Expr.Value("Envelope"), Expr.Value(XmlNamespace.SoapEnvelope))
+                   !~> Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("Header"), Expr.Value(XmlNamespace.SoapEnvelope))
+                   !~> Expr.Invoke(Expr.Var("writeHeaderAction"), Expr.Var("writer"))
+                   !~> Expr.Call(Expr.Var("writer"), "WriteEndElement")
+                   !~> Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("Body"), Expr.Value(XmlNamespace.SoapEnvelope))
+                   !~> Expr.Invoke(Expr.Var("writeBody"), Expr.Var("writer"))
+                   !~> Expr.Call(Expr.Var("writer"), "WriteEndElement")
+                   !~> Expr.Call(Expr.Var("writer"), "WriteEndElement")
+                   !~> Expr.Call(Expr.Var("writer"), "WriteEndDocument") |],
+                [| |],
+                [| Stat.IfThenElse(Expr.CallOp(Expr.Var("writer"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.Var("writer"), "Dispose")) |]) |]
+
+    let readerStatements = [|
+        !~~ Stat.Assign(Expr.Var("response"), Expr.Call(Expr.Var("request"), "GetResponse"))
+        !~~ Stat.Var(typeof<XmlReader>, "reader", Expr.Value(null))
+        !~~ Stat.TryCatch(
+                [| Stat.Assign(Expr.Var("reader"), Expr.Call(Expr.Type(typeof<XmlReader>), "Create", Expr.Call(Expr.Var("response"), "GetResponseStream")))
+                   !~> Expr.Call(Expr.This(), "MoveToElement", Expr.Var("reader"), Expr.Value("Envelope"), Expr.Value(XmlNamespace.SoapEnvelope), Expr.Value(0))
+                   !~> Expr.Call(Expr.This(), "MoveToElement", Expr.Var("reader"), Expr.Value("Body"), Expr.Value(XmlNamespace.SoapEnvelope), Expr.Value(1))
+                   Stat.Return(Expr.Invoke(Expr.Var("readBody"), Expr.Var("reader"))) |],
+                [| |],
+                [| Stat.IfThenElse(Expr.CallOp(Expr.Var("reader"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.Var("reader"), "Dispose")) |]) |]
+
+    serviceCallMeth |> Method.addParam (Expr.Param(typeof<Action<XmlWriter>>, "writeHeaderAction"))
+                    |> Method.addParam (Expr.Param(typeof<Action<XmlWriter>>, "writeBody"))
+                    |> Method.addParam (Expr.Param(CodeTypeReference("System.Func", CodeTypeReference(typeof<XmlReader>), CodeTypeReference("T")), "readBody"))
+                    |> Method.addStat (Stat.Var(typeof<Net.WebRequest>, "request", Expr.Call(Expr.Type(typeof<Net.WebRequest>), "Create", Expr.Var("address"))))
+                    |> Method.addStat (Stat.Assign(Expr.Prop(Expr.Var("request"), "Method"), Expr.Value("POST")))
+                    |> Method.addStat (Stat.Assign(Expr.Prop(Expr.Var("request"), "ContentType"), Expr.Value("text/xml; charset=utf-8")))
+                    |> Method.addExpr (Expr.Call(Expr.Prop(Expr.Var("request"), "Headers"), "Set", Expr.Value("SOAPAction"), Expr.Value("")))
+                    |> Method.addStat (Stat.Var(typeof<IO.Stream>, "stream", Expr.Value(null)))
+                    |> Method.addStat (Stat.TryCatch(writerStatements,
+                                                     [| |],
+                                                     [| Stat.IfThenElse(Expr.CallOp(Expr.Var("stream"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.Var("stream"), "Dispose")) |]))
+                    |> Method.addStat (Stat.Var(typeof<Net.WebResponse>, "response", Expr.Value(null)))
+                    |> Method.addStat (Stat.TryCatch(readerStatements,
+                                                     [| |],
+                                                     [| Stat.IfThenElse(Expr.CallOp(Expr.Var("response"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.Var("response"), "Dispose")) |]))
                     |> ignore
-
-    let addStatement(x: CodeStatement) = serviceCallMeth.Statements.Add(x) |> ignore
-    let addExpression(x: CodeExpression) = serviceCallMeth.Statements.Add(x) |> ignore
-
-    addStatement <| CodeVariableDeclarationStatement(typeof<Net.WebRequest>, "request", CodeMethodInvokeExpression(CodeTypeReferenceExpression(typeof<Net.WebRequest>), "Create", CodeVariableReferenceExpression("address")))
-    let requestRef = CodeVariableReferenceExpression("request")
-
-    addStatement <| CodeAssignStatement(CodePropertyReferenceExpression(requestRef, "Method"), CodePrimitiveExpression("POST"))
-    addStatement <| CodeAssignStatement(CodePropertyReferenceExpression(requestRef, "ContentType"), CodePrimitiveExpression("text/xml; charset=utf-8"))
-    addExpression <| CodeMethodInvokeExpression(CodePropertyReferenceExpression(requestRef, "Headers"), "Set", CodePrimitiveExpression("SOAPAction"), CodePrimitiveExpression(""))
-
-    addStatement <| CodeVariableDeclarationStatement(typeof<IO.Stream>, "stream", CodePrimitiveExpression(null))
-    let streamRef = CodeVariableReferenceExpression("stream")
-
-    let writerRef = Expr.Var("writer")
-
-    let writerStatements: CodeStatement [] = [|
-        CodeAssignStatement(streamRef, CodeMethodInvokeExpression(requestRef, "GetRequestStream"))
-        CodeVariableDeclarationStatement(typeof<Xml.XmlWriter>, "writer", CodePrimitiveExpression(null))
-        CodeTryCatchFinallyStatement(
-            [| CodeAssignStatement(writerRef, CodeMethodInvokeExpression(CodeTypeReferenceExpression(typeof<Xml.XmlWriter>), "Create", streamRef))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteStartDocument"))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteStartElement", CodePrimitiveExpression("soapenv"), CodePrimitiveExpression("Envelope"), CodePrimitiveExpression(XmlNamespace.SoapEnvelope)))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteAttributeString", CodePrimitiveExpression("xmlns"), CodePrimitiveExpression("pns"), CodePrimitiveExpression(null), CodeVariableReferenceExpression("operationNamespace")))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteStartElement", CodePrimitiveExpression("Header"), CodePrimitiveExpression(XmlNamespace.SoapEnvelope)))
-               CodeExpressionStatement(CodeDelegateInvokeExpression(CodeVariableReferenceExpression("writeHeaderAction"), writerRef))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteEndElement"))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteStartElement", CodePrimitiveExpression("Body"), CodePrimitiveExpression(XmlNamespace.SoapEnvelope)))
-               CodeExpressionStatement(CodeDelegateInvokeExpression(CodeVariableReferenceExpression("writeBody"), writerRef))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteEndElement"))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteEndElement"))
-               CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "WriteEndDocument")) |],
-            [| |],
-            [| CodeConditionStatement(CodeBinaryOperatorExpression(writerRef, CodeBinaryOperatorType.IdentityInequality, CodePrimitiveExpression(null)), CodeExpressionStatement(CodeMethodInvokeExpression(writerRef, "Dispose"))) |])
-    |]
-
-    addStatement <| CodeTryCatchFinallyStatement(
-                        writerStatements,
-                        [| |],
-                        [| CodeConditionStatement(CodeBinaryOperatorExpression(streamRef, CodeBinaryOperatorType.IdentityInequality, CodePrimitiveExpression(null)), CodeExpressionStatement(CodeMethodInvokeExpression(streamRef, "Dispose"))) |])
-
-    addStatement <| CodeVariableDeclarationStatement(typeof<Net.WebResponse>, "response", CodePrimitiveExpression(null))
-    let responseRef = CodeVariableReferenceExpression("response")
-
-    let readerRef = CodeVariableReferenceExpression("reader")
-    let readerStatements: CodeStatement [] = [|
-        CodeAssignStatement(responseRef, CodeMethodInvokeExpression(requestRef, "GetResponse"))
-        CodeVariableDeclarationStatement(typeof<IO.StreamReader>, "reader", CodePrimitiveExpression(null))
-        CodeTryCatchFinallyStatement(
-            [| CodeAssignStatement(readerRef, CodeObjectCreateExpression(typeof<IO.StreamReader>, CodeMethodInvokeExpression(responseRef, "GetResponseStream")))
-               CodeExpressionStatement(CodeMethodInvokeExpression(readerRef, "ReadToEnd")) |],
-            [| |],
-            [| CodeConditionStatement(CodeBinaryOperatorExpression(readerRef, CodeBinaryOperatorType.IdentityInequality, CodePrimitiveExpression(null)), CodeExpressionStatement(CodeMethodInvokeExpression(readerRef, "Dispose"))) |])
-    |]
-
-    addStatement <| CodeTryCatchFinallyStatement(
-                        readerStatements,
-                        [| |],
-                        [| CodeConditionStatement(CodeBinaryOperatorExpression(responseRef, CodeBinaryOperatorType.IdentityInequality, CodePrimitiveExpression(null)), CodeExpressionStatement(CodeMethodInvokeExpression(responseRef, "Dispose"))) |])
 
     portBaseTy.Members.Add(ctor) |> ignore
     portBaseTy.Members.Add(addressField) |> ignore
@@ -325,6 +340,7 @@ let private makeServicePortBaseType() =
     portBaseTy.Members.Add(serviceCallMeth) |> ignore
     portBaseTy.Members.Add(writeRpcHeaderMeth) |> ignore
     portBaseTy.Members.Add(nonceMeth) |> ignore
+    portBaseTy.Members.Add(moveToElementMeth) |> ignore
 
     portBaseTy
 
@@ -565,11 +581,11 @@ let makeProducerType (typeNamePath: string [], producerUri) =
 
         // CodeDom doesn't support delegates, so we have to improvise
         serviceMethod |> Method.addStat (Stat.Var(typeof<string[]>, "requiredHeaders", requiredHeadersExpr))
-                      |> Method.addStat (Stat.Var(typeof<Action<Xml.XmlWriter>>, "writeHeader", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
+                      |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeHeader", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
                       |> Method.addExpr (Expr.Call(Expr.Base(), "WriteRpcHeader", Expr.Var("writer"), Expr.Var("settings"), Expr.Value(serviceName), Expr.Var("requiredHeaders")))
                       |> Method.addStat (Stat.Snip("};"))
-                      |> Method.addStat (Stat.Var(typeof<Action<Xml.XmlWriter>>, "writeBody", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
-                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value(operation.Name.LocalName), Expr.Value(operation.Name.NamespaceName)))
+                      |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeBody", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
+                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("pns"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Name.NamespaceName)))
                       |> ignore
 
         operation.Request.Body
@@ -580,17 +596,22 @@ let makeProducerType (typeNamePath: string [], producerUri) =
             let parameter = CodeParameterDeclarationExpression(prtyp.AsCodeTypeReference(), part.Name)
             serviceMethod |> Method.addParam parameter
                           |> ignore
-            serviceMethod |> Method.addStat (Stat.Var(typeof<Xml.Serialization.XmlAttributes>, part.Name + "Attribs", Expr.NewObject(typeof<Xml.Serialization.XmlAttributes>)))
-                          |> Method.addStat (Stat.Assign(Expr.Prop(Expr.Var(part.Name + "Attribs"), "XmlRoot"), Expr.NewObject(typeof<Xml.Serialization.XmlRootAttribute>, Expr.Value("keha"))))
-                          |> Method.addStat (Stat.Var(typeof<Xml.Serialization.XmlAttributeOverrides>, part.Name + "Overrides", Expr.NewObject(typeof<Xml.Serialization.XmlAttributeOverrides>)))
+            serviceMethod |> Method.addStat (Stat.Var(typeof<XmlAttributes>, part.Name + "Attribs", Expr.NewObject(typeof<XmlAttributes>)))
+                          |> Method.addStat (Stat.Assign(Expr.Prop(Expr.Var(part.Name + "Attribs"), "XmlRoot"), Expr.NewObject(typeof<XmlRootAttribute>, Expr.Value("keha"))))
+                          |> Method.addStat (Stat.Var(typeof<XmlAttributeOverrides>, part.Name + "Overrides", Expr.NewObject(typeof<XmlAttributeOverrides>)))
                           |> Method.addExpr (Expr.Call(Expr.Var(part.Name + "Overrides"), "Add", Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.Var(part.Name + "Attribs")))
-                          |> Method.addStat (Stat.Var(typeof<Xml.Serialization.XmlSerializer>, part.Name + "Serializer", Expr.NewObject(typeof<Xml.Serialization.XmlSerializer>, Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.Var(part.Name + "Overrides"))))
+                          |> Method.addStat (Stat.Var(typeof<XmlSerializer>, part.Name + "Serializer", Expr.NewObject(typeof<XmlSerializer>, Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.Var(part.Name + "Overrides"))))
                           |> Method.addExpr (Expr.Call(Expr.Var(part.Name + "Serializer"), "Serialize", Expr.Var("writer"), Expr.Var(part.Name)))
                           |> ignore)
 
+        let methodRef = CodeMethodReferenceExpression(Expr.Base(), "MakeServiceCall", returnType)
+
         serviceMethod |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteEndElement"))
                       |> Method.addStat (Stat.Snip("};"))
-                      |> Method.addExpr (Expr.Call(Expr.Base(), "MakeServiceCall", Expr.Value(operation.Name.NamespaceName), Expr.Var("writeHeader"), Expr.Var("writeBody")))
+                      |> Method.addStat (Stat.Var(CodeTypeReference("System.Func", CodeTypeReference(typeof<XmlReader>), returnType), "readBody", Expr.Snip("delegate(System.Xml.XmlReader reader) { //")))
+                      |> Method.addStat (Stat.Return(Expr.Value(null)))
+                      |> Method.addStat (Stat.Snip("};"))
+                      |> Method.addExpr (Expr.Call(methodRef, Expr.Var("writeHeader"), Expr.Var("writeBody"), Expr.Var("readBody")))
                       |> ignore
 
         let headerParam = CodeParameterDeclarationExpression(headerTy.Name, "settings")
