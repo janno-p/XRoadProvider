@@ -98,10 +98,26 @@ let private makeXmlTypeAttribute(typeName: XName) =
     attribute.Arguments.Add(CodeAttributeArgument("Namespace", CodePrimitiveExpression(typeName.NamespaceName))) |> ignore
     attribute
 
-let private makeXmlElementAttribute() =
+let private makeXmlElementAttribute(isNillable) =
     let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlElementAttribute>))
     let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
     attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
+    if isNillable then attribute.Arguments.Add(CodeAttributeArgument("IsNullable", Expr.Value(true))) |> ignore
+    attribute
+
+let private makeXmlArrayAttribute(isNillable) =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlArrayAttribute>))
+    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
+    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
+    if isNillable then attribute.Arguments.Add(CodeAttributeArgument("IsNullable", Expr.Value(true))) |> ignore
+    attribute
+
+let private makeXmlArrayItemAttribute(name) =
+    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlArrayItemAttribute>))
+    attribute.Arguments.Add(CodeAttributeArgument(Expr.Value(name))) |> ignore
+    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
+    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
+    //if isNillable then attribute.Arguments.Add(CodeAttributeArgument("IsNullable", Expr.Value(true))) |> ignore
     attribute
 
 let private makeXmlAttributeAttribute() =
@@ -391,6 +407,18 @@ let makeProducerType (typeNamePath: string [], producerUri) =
             | Some(typeName, rank) -> makeArrayType(getRuntimeType(typeName), rank)
             | _ -> failwith "Array underlying type specification is missing."
 
+        let getItemName particle =
+            match particle with
+            | Some(ComplexTypeParticle.Sequence(spec)) ->
+                match spec.Content with
+                | [ SequenceContent.Element(e) ] -> Some(e.Name)
+                | _ -> None
+            | Some(ComplexTypeParticle.All(spec)) ->
+                match spec.Elements with
+                | [ e ] -> Some(e.Name)
+                | _ -> None
+            | _ -> None
+
         match typ with
         | SchemaType.ComplexType(spec) ->
             match spec.Content with
@@ -399,9 +427,9 @@ let makeProducerType (typeNamePath: string [], producerUri) =
                 | "Array", XmlNamespace.SoapEncoding ->
                     match spec.Content.Attributes with
                     | [ arrayType ] when arrayType.Name = Some("arrayType") ->
-                        Some(getArrayType(arrayType.ArrayType))
+                        Some(getArrayType(arrayType.ArrayType), getItemName(spec.Content.Content) |> Option.orDefault "item")
                     | [ arrayType ] when arrayType.RefOrType = RefOrType.Ref(XName.Get("arrayType", XmlNamespace.SoapEncoding)) ->
-                        Some(getArrayType(arrayType.ArrayType))
+                        Some(getArrayType(arrayType.ArrayType), getItemName(spec.Content.Content) |> Option.orDefault "item")
                     | _ -> None
                 | _ -> None
             | _ -> None
@@ -435,30 +463,33 @@ let makeProducerType (typeNamePath: string [], producerUri) =
             | RefOrType.Name(xname) ->
                 let typ = getRuntimeType(xname)
                 match typ with
-                | x when maxOccurs > 1u -> makeArrayType(x, 1)
-                | PrimitiveType(x) when isNillable && x.IsValueType -> PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x))
-                | x -> x
-            | RefOrType.Type(SoapEncArray(typ)) ->
-                typ
+                | x when maxOccurs > 1u ->
+                    (makeArrayType(x, 1), [makeXmlElementAttribute(true)])
+                | PrimitiveType(x) when x.IsValueType ->
+                    if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [makeXmlElementAttribute(true)])
+                    else (PrimitiveType(x), [makeXmlElementAttribute(false)])
+                | x -> (x, [makeXmlElementAttribute(true)])
+            | RefOrType.Type(SoapEncArray(typ, itemName)) ->
+                (typ, [makeXmlArrayAttribute(true); makeXmlArrayItemAttribute(itemName)])
             | RefOrType.Type(typeInfo) ->
                 let subTy = makePublicClass(name + "Type")
                 buildType(subTy, typeInfo)
                 providedTy.Members.Add(subTy) |> ignore
                 let subTyRef = ProvidedType(CodeTypeReference(subTy.Name))
-                if maxOccurs > 1u then makeArrayType(subTyRef, 1)
-                else subTyRef
+                if maxOccurs > 1u then (makeArrayType(subTyRef, 1), [makeXmlElementAttribute(true)])
+                else (subTyRef, [makeXmlElementAttribute(true)])
             | _ -> failwithf "not implemented: %A" name
 
         let parseElementSpec(spec: ElementSpec) =
-            let elementTy = getParticleType(spec.Type, spec.MaxOccurs, spec.IsNillable, spec.Name)
+            let elementTy, attrs = getParticleType(spec.Type, spec.MaxOccurs, spec.IsNillable, spec.Name)
             let property = addProperty(spec.Name, elementTy, spec.MinOccurs = 0u)
-            property.CustomAttributes.Add(makeXmlElementAttribute()) |> ignore
+            attrs |> List.iter (property.CustomAttributes.Add >> ignore)
 
         let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
             spec.Attributes |> List.iter (fun spec ->
                 match spec.Name with
                 | Some(name) ->
-                    let attributeTy = getParticleType(spec.RefOrType, 1u, false, name)
+                    let attributeTy, _ = getParticleType(spec.RefOrType, 1u, false, name)
                     let property = addProperty(name, attributeTy, match spec.Use with Required -> true | _ -> false)
                     property.CustomAttributes.Add(makeXmlAttributeAttribute()) |> ignore
                 | _ -> failwith "not implemented")
