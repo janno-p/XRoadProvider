@@ -42,7 +42,6 @@
     <Compile Include="ProvidedTypes.fs" />
     <Compile Include="DebugProvidedTypes.fs" />
     <Compile Include="XRoad.Parser.fs" />
-    <Compile Include="XRoadTypeProvider.Expressions.fs" />
     <Compile Include="XRoad.ProducerDefinition.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
     <Compile Include="XRoad.Providers.fs" />
