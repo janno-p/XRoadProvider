@@ -8,6 +8,10 @@ open System.Collections.Generic
 open System.IO
 open System.Reflection
 
+type private CacheKey =
+  { ProducerUri: string
+    UndescribedFaults: bool }
+
 [<TypeProvider>]
 type XRoadProducerProvider(config: TypeProviderConfig) as this =
     let invalidation = Event<_,_>()
@@ -16,7 +20,8 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
     let theAssembly = typeof<XRoadProducerProvider>.Assembly
 
     let typeCache = Dictionary<_,_>()
-    let staticParameters: ParameterInfo [] = [| ProvidedStaticParameter("ProducerUri", typeof<string>) |]
+    let staticParameters: ParameterInfo [] = [| ProvidedStaticParameter("ProducerUri", typeof<string>)
+                                                ProvidedStaticParameter("UndescribedFaults", typeof<bool>, false) |]
 
     interface ITypeProvider with
         override __.ApplyStaticArguments(typeWithoutArguments, typeNameWithArguments, staticArguments) =
@@ -24,11 +29,12 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
             match typeWithoutArguments with
             | :? ProvidedTypeDefinition as ty ->
                 match staticArguments with
-                | [| :? string as producerUri |] ->
-                    match typeCache.TryGetValue(producerUri) with
+                | [| :? string as producerUri; :? bool as undescribedFaults |] ->
+                    let key = { ProducerUri = producerUri; UndescribedFaults = undescribedFaults }
+                    match typeCache.TryGetValue(key) with
                     | false, _ ->
-                        let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri)
-                        typeCache.Add(producerUri, typ)
+                        let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, undescribedFaults)
+                        typeCache.Add(key, typ)
                         typ
                     | true, typ -> typ
                 | _ -> failwith "invalid type provider arguments"

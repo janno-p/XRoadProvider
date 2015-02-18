@@ -376,7 +376,7 @@ let private makeReturnType (types: RuntimeType list) =
     | (i,tp)::[] -> (tp.AsCodeTypeReference(), Expr.Var(sprintf "v%d" i) :> CodeExpression)
     | many -> getReturnTypeTuple([], many)
 
-let makeProducerType (typeNamePath: string [], producerUri) =
+let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let schema = resolveUri producerUri |> readSchema
     let typeCache = Dictionary<XName,CodeTypeDeclaration>()
     let namespaceCache = Dictionary<XNamespace,CodeTypeDeclaration>()
@@ -628,6 +628,16 @@ let makeProducerType (typeNamePath: string [], producerUri) =
                                                          Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Invalid response message.")))))
                       |> ignore
 
+        if undescribedFaults then
+            serviceMethod |> Method.addStat (Stat.Var(typeof<XDocument>, "doc", Expr.Call(Expr.Type(typeof<XDocument>), "Load", Expr.Call(Expr.Var("reader"), "ReadSubtree"))))
+                          |> Method.addStat (Stat.Var(typeof<XElement>, "firstChild", Expr.Call(Expr.Call(Expr.Prop(Expr.Var("doc"), "Root"), "Elements"), "FirstOrDefault")))
+                          |> Method.addStat (Stat.IfThenElse(Expr.CallOp(
+                                                                Expr.CallOp(Expr.Var("firstChild"), Expr.Op.IdentityInequality, Expr.Value(null)),
+                                                                Expr.Op.BooleanAnd,
+                                                                Expr.CallOp(Expr.Prop(Expr.Prop(Expr.Var("firstChild"), "Name"), "LocalName"), Expr.Op.IdentityEquality, Expr.Value("faultCode"))),
+                                                             Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Call(Expr.Var("doc"), "ToString")))))
+                          |> ignore
+
         operation.Response.Body
         |> List.iteri (fun i part ->
             let prtyp = match part.Reference with
@@ -644,7 +654,10 @@ let makeProducerType (typeNamePath: string [], producerUri) =
 
         let headerParam = CodeParameterDeclarationExpression(headerTy.Name, "settings")
         let optionalAttribute = CodeAttributeDeclaration(CodeTypeReference(typeof<OptionalAttribute>))
+        let defaultValueAttribute = CodeAttributeDeclaration(CodeTypeReference(typeof<System.Runtime.InteropServices.DefaultParameterValueAttribute>))
+        defaultValueAttribute.Arguments.Add(CodeAttributeArgument(Expr.Value(null))) |> ignore
         headerParam.CustomAttributes.Add(optionalAttribute) |> ignore
+        headerParam.CustomAttributes.Add(defaultValueAttribute) |> ignore
         serviceMethod.Parameters.Add(headerParam) |> ignore
 
         if not <| operation.Response.Body.IsEmpty then
@@ -692,6 +705,12 @@ let makeProducerType (typeNamePath: string [], producerUri) =
     codeCompileUnit.ReferencedAssemblies.Add("System.Net.dll") |> ignore
     codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
     codeCompileUnit.ReferencedAssemblies.Add("System.Xml.dll") |> ignore
+
+    if undescribedFaults then
+        codeNamespace.Imports.Add(CodeNamespaceImport("System.Linq"))
+        codeCompileUnit.ReferencedAssemblies.Add("System.Core.dll") |> ignore
+        codeCompileUnit.ReferencedAssemblies.Add("System.Xml.Linq.dll") |> ignore
+
     codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
 
     compileAssembly(codeCompileUnit).GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)
