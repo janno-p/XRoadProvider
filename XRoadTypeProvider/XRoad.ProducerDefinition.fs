@@ -321,11 +321,15 @@ let private makeServicePortBaseType(undescribedFaults) =
 
     let xmlReaderTypRef = if undescribedFaults then CodeTypeReference("XmlBookmarkReader") else CodeTypeReference(typeof<XmlReader>)
 
+    let createReaderExpr =
+        let readerExpr = Expr.Call(Expr.Type(typeof<XmlReader>), "Create", Expr.Call(Expr.Var("response"), "GetResponseStream")) :> CodeExpression
+        if undescribedFaults then Expr.NewObject(xmlReaderTypRef, readerExpr) :> CodeExpression else readerExpr
+
     let readerStatements = [|
         !~~ Stat.Assign(Expr.Var("response"), Expr.Call(Expr.Var("request"), "GetResponse"))
         !~~ Stat.Var(xmlReaderTypRef, "reader", Expr.Value(null))
         !~~ Stat.TryCatch(
-                [| Stat.Assign(Expr.Var("reader"), Expr.NewObject(xmlReaderTypRef, Expr.Call(Expr.Type(typeof<XmlReader>), "Create", Expr.Call(Expr.Var("response"), "GetResponseStream"))))
+                [| Stat.Assign(Expr.Var("reader"), createReaderExpr)
                    Stat.IfThenElse(Expr.Call(Expr.This, "MoveToElement", Expr.Var("reader"), Expr.Value("Envelope"), Expr.Value(XmlNamespace.SoapEnvelope), Expr.Value(0)),
                                    [| |],
                                    [| !~~ Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Soap envelope element was not found in response message."))) |])
