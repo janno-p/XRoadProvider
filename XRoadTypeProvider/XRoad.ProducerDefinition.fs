@@ -19,6 +19,13 @@ open XRoad.Parser.XsdSchema
 let (!~~) x = x :> CodeStatement
 let (!~>) x = !~~ CodeExpressionStatement(x)
 
+let xmlBookmarkReaderSnip =
+    let assembly = typeof<XRoad.Parser.MessagePart>.Assembly
+    let resourceName = "XmlBookmarkReader.cs"
+    use stream = assembly.GetManifestResourceStream(resourceName)
+    use reader = new StreamReader(stream)
+    CodeSnippetTypeMember(reader.ReadToEnd())
+
 module private Stat =
     type Assign = CodeAssignStatement
     type IfThenElse = CodeConditionStatement
@@ -80,8 +87,8 @@ let private compileAssembly code =
     use codeProvider = new CSharpCodeProvider()
     let parameters = CompilerParameters(OutputAssembly=fileName, GenerateExecutable=false)
     //parameters.CompilerOptions <- "/doc:" + Path.ChangeExtension(fileName, "xml")
-    //( use wr = new StreamWriter(File.Open(Path.ChangeExtension(fileName, "cs"), FileMode.Create, FileAccess.Write))
-    //  codeProvider.GenerateCodeFromCompileUnit(code, wr, CodeGeneratorOptions()))
+    ( use wr = new StreamWriter(File.Open(Path.ChangeExtension(fileName, "cs"), FileMode.Create, FileAccess.Write))
+      codeProvider.GenerateCodeFromCompileUnit(code, wr, CodeGeneratorOptions()))
     let compilerResults = codeProvider.CompileAssemblyFromDom(parameters, [| code |])
     if compilerResults.Errors.Count > 0 then
         printfn "%A" compilerResults.Errors
@@ -235,7 +242,7 @@ let private makeWriteXRoadRpcHeaderMethod() =
          |> Method.addStat (writeRpcHeaderStatements("salastada", headerProp("Encrypt"), "WriteString"))
          |> Method.addStat (writeRpcHeaderStatements("salastada_sertifikaadiga", headerProp("EncryptCert"), "WriteString"))
 
-let private makeServicePortBaseType() =
+let private makeServicePortBaseType(undescribedFaults) =
     let portBaseTy = makePublicClass("AbstractServicePort")
     portBaseTy.TypeAttributes <- portBaseTy.TypeAttributes ||| TypeAttributes.Abstract
 
@@ -312,11 +319,13 @@ let private makeServicePortBaseType() =
                 [| |],
                 [| Stat.IfThenElse(Expr.CallOp(Expr.Var("writer"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.Var("writer"), "Dispose")) |]) |]
 
+    let xmlReaderTypRef = if undescribedFaults then CodeTypeReference("XmlBookmarkReader") else CodeTypeReference(typeof<XmlReader>)
+
     let readerStatements = [|
         !~~ Stat.Assign(Expr.Var("response"), Expr.Call(Expr.Var("request"), "GetResponse"))
-        !~~ Stat.Var(typeof<XmlReader>, "reader", Expr.Value(null))
+        !~~ Stat.Var(xmlReaderTypRef, "reader", Expr.Value(null))
         !~~ Stat.TryCatch(
-                [| Stat.Assign(Expr.Var("reader"), Expr.Call(Expr.Type(typeof<XmlReader>), "Create", Expr.Call(Expr.Var("response"), "GetResponseStream")))
+                [| Stat.Assign(Expr.Var("reader"), Expr.NewObject(xmlReaderTypRef, Expr.Call(Expr.Type(typeof<XmlReader>), "Create", Expr.Call(Expr.Var("response"), "GetResponseStream"))))
                    Stat.IfThenElse(Expr.Call(Expr.This, "MoveToElement", Expr.Var("reader"), Expr.Value("Envelope"), Expr.Value(XmlNamespace.SoapEnvelope), Expr.Value(0)),
                                    [| |],
                                    [| !~~ Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Soap envelope element was not found in response message."))) |])
@@ -395,7 +404,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let namespaceCache = Dictionary<XNamespace,CodeTypeDeclaration>()
 
     let headerTy = makeXRoadHeaderType()
-    let portBaseTy = makeServicePortBaseType()
+    let portBaseTy = makeServicePortBaseType(undescribedFaults)
     let serviceTypesTy = makeStaticClass("DefinedTypes", TypeAttributes.Public)
 
     let getOrCreateNamespace (name: XNamespace) =
@@ -610,7 +619,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                       |> Method.addExpr (Expr.Call(Expr.Base, "WriteRpcHeader", Expr.Var("writer"), Expr.Var("settings"), Expr.Value(serviceName), Expr.Var("requiredHeaders")))
                       |> Method.addStat (Stat.Snip("};"))
                       |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeBody", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
-                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("pns"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Name.NamespaceName)))
+                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("producer"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Name.NamespaceName)))
                       |> ignore
 
         operation.Request.Body
@@ -621,11 +630,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let parameter = CodeParameterDeclarationExpression(prtyp.AsCodeTypeReference(), part.Name)
             serviceMethod |> Method.addParam parameter
                           |> ignore
-            serviceMethod |> Method.addStat (Stat.Var(typeof<XmlAttributes>, part.Name + "Attribs", Expr.NewObject(typeof<XmlAttributes>)))
-                          |> Method.addStat (Stat.Assign(Expr.Prop(Expr.Var(part.Name + "Attribs"), "XmlRoot"), Expr.NewObject(typeof<XmlRootAttribute>, Expr.Value(part.Name))))
-                          |> Method.addStat (Stat.Var(typeof<XmlAttributeOverrides>, part.Name + "Overrides", Expr.NewObject(typeof<XmlAttributeOverrides>)))
-                          |> Method.addExpr (Expr.Call(Expr.Var(part.Name + "Overrides"), "Add", Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.Var(part.Name + "Attribs")))
-                          |> Method.addStat (Stat.Var(typeof<XmlSerializer>, part.Name + "Serializer", Expr.NewObject(typeof<XmlSerializer>, Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.Var(part.Name + "Overrides"))))
+            serviceMethod |> Method.addStat (Stat.Var(typeof<XmlSerializer>, part.Name + "Serializer", Expr.NewObject(typeof<XmlSerializer>, Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.NewObject(typeof<XmlRootAttribute>, Expr.Value(part.Name)))))
                           |> Method.addExpr (Expr.Call(Expr.Var(part.Name + "Serializer"), "Serialize", Expr.Var("writer"), Expr.Var(part.Name)))
                           |> ignore)
 
@@ -636,32 +641,30 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                             | XmlReference.SchemaElement(elem) -> failwith "Not implemented"
                             | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
 
-                let faultCheckExpr, readerExpr =
-                    if part.Name = "keha" && undescribedFaults then
-                     [| !~~ Stat.Var(typeof<XDocument>, "doc", Expr.Call(Expr.Type(typeof<XDocument>), "Load", Expr.Call(Expr.Var("reader"), "ReadSubtree")))
-                        !~~ Stat.Var(typeof<XElement>, "firstChild", Expr.Call(Expr.Call(Expr.Prop(Expr.Var("doc"), "Root"), "Elements"), "FirstOrDefault"))
-                        !~~ Stat.IfThenElse(Expr.CallOp(Expr.CallOp(Expr.Var("firstChild"), Expr.Op.IdentityInequality, Expr.Value(null)),
-                                                        Expr.Op.BooleanAnd,
-                                                        Expr.CallOp(Expr.Prop(Expr.Prop(Expr.Var("firstChild"), "Name"), "LocalName"), Expr.Op.IdentityEquality, Expr.Value("faultCode"))),
-                                            Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Call(Expr.Var("doc"), "ToString")))) |],
-                        Expr.Call(Expr.Prop(Expr.Var("doc"), "Root"), "CreateReader") :> CodeExpression
-                    else [| |], Expr.Var("reader") :> CodeExpression
+                let deserializeExpr =
+                    [| !~~ Stat.Var(typeof<XmlSerializer>, part.Name + "Serializer", Expr.NewObject(typeof<XmlSerializer>, Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.NewObject(typeof<XmlRootAttribute>, Expr.Value(part.Name))))
+                       !~~ Stat.Assign(Expr.Var(sprintf "v%d" i), Expr.Cast(prtyp.AsCodeTypeReference(), Expr.Call(Expr.Var(part.Name + "Serializer"), "Deserialize", Expr.Var("reader")))) |]
 
                 let deserializeExpr =
-                 [| !~~ Stat.Var(typeof<XmlAttributes>, part.Name + "Attribs", Expr.NewObject(typeof<XmlAttributes>))
-                    !~~ Stat.Assign(Expr.Prop(Expr.Var(part.Name + "Attribs"), "XmlRoot"), Expr.NewObject(typeof<XmlRootAttribute>, Expr.Value(part.Name)))
-                    !~~ Stat.Var(typeof<XmlAttributeOverrides>, part.Name + "Overrides", Expr.NewObject(typeof<XmlAttributeOverrides>))
-                    !~> Expr.Call(Expr.Var(part.Name + "Overrides"), "Add", Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.Var(part.Name + "Attribs"))
-                    !~~ Stat.Var(typeof<XmlSerializer>, part.Name + "Serializer", Expr.NewObject(typeof<XmlSerializer>, Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.Var(part.Name + "Overrides")))
-                    !~~ Stat.Assign(Expr.Var(sprintf "v%d" i), Expr.Cast(prtyp.AsCodeTypeReference(), Expr.Call(Expr.Var(part.Name + "Serializer"), "Deserialize", readerExpr))) |]
+                    if part.Name = "keha" && undescribedFaults then
+                     [| !~> Expr.Call(Expr.Var("reader"), "SetBookmark", Expr.Value("keha"))
+                        !~~ Stat.IfThenElse(Expr.Call(Expr.This, "MoveToElement", Expr.Var("reader"), Expr.Value("faultCode"), Expr.Value(""), Expr.Value(4)),
+                                            [| !~> Expr.Call(Expr.Var("reader"), "ReturnToAndRemoveBookmark", Expr.Value("keha"))
+                                               !~~ Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Call(Expr.Var("reader"), "ReadInnerXml"))) |],
+                                            Array.concat [
+                                                [| !~> Expr.Call(Expr.Var("reader"), "ReturnToAndRemoveBookmark", Expr.Value("keha")) |]
+                                                deserializeExpr
+                                            ]) |]
+                    else deserializeExpr
 
                 !~~ Stat.IfThenElse(Expr.CallOp(Expr.Prop(Expr.Var("reader"), "LocalName"), Expr.Op.IdentityEquality, Expr.Value(part.Name)),
-                                          Array.concat [faultCheckExpr; deserializeExpr]))
+                                    deserializeExpr))
             |> Array.ofList
 
         serviceMethod |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteEndElement"))
                       |> Method.addStat (Stat.Snip("};"))
-                      |> Method.addStat (Stat.Var(CodeTypeReference("System.Func", CodeTypeReference(typeof<XmlReader>), returnType), "readBody", Expr.Snip("delegate(System.Xml.XmlReader reader) { //")))
+                      |> Method.addStat (Stat.Var(CodeTypeReference("System.Func", CodeTypeReference(typeof<XmlReader>), returnType), "readBody", Expr.Snip("delegate(System.Xml.XmlReader r) { //")))
+                      |> Method.addStat (if undescribedFaults then Stat.Var("XmlBookmarkReader", "reader", Expr.Cast("XmlBookmarkReader", Expr.Var("r"))) else Stat.Var(typeof<XmlReader>, "reader", Expr.Var("r")))
                       |> Method.addStat (Stat.IfThenElse(Expr.CallOp(
                                                             Expr.CallOp(Expr.Prop(Expr.Var("reader"), "LocalName"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Name.LocalName)),
                                                             Expr.Op.BooleanOr,
@@ -704,6 +707,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     |> Seq.iter buildType
 
     let targetClass = makeStaticClass(typeNamePath.[typeNamePath.Length - 1], TypeAttributes.Public)
+
+    if undescribedFaults then
+        targetClass.Members.Add(xmlBookmarkReaderSnip) |> ignore
+
     targetClass.Members.Add(headerTy) |> ignore
     targetClass.Members.Add(portBaseTy) |> ignore
     targetClass.Members.Add(serviceTypesTy) |> ignore
@@ -737,11 +744,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     codeCompileUnit.ReferencedAssemblies.Add("System.Net.dll") |> ignore
     codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
     codeCompileUnit.ReferencedAssemblies.Add("System.Xml.dll") |> ignore
-
-    if undescribedFaults then
-        codeNamespace.Imports.Add(CodeNamespaceImport("System.Linq"))
-        codeCompileUnit.ReferencedAssemblies.Add("System.Core.dll") |> ignore
-        codeCompileUnit.ReferencedAssemblies.Add("System.Xml.Linq.dll") |> ignore
 
     codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
 
