@@ -1,8 +1,8 @@
-﻿#r @"../../XRoadTypeProvider/bin/Debug/XRoadTypeProvider.dll"
+﻿#r @"../../XRoadProvider/bin/Debug/XRoadProvider.dll"
 
 open System.IO
 open XRoad.Providers
-open XRoadTypeProvider.Runtime
+open XRoad.Providers.Runtime
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"

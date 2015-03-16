@@ -1,9 +1,9 @@
-﻿namespace XRoadTypeProvider.Test
+﻿namespace XRoadProvider.Test
 
 open NUnit.Framework
 open Swensen.Unquote
 open System.IO
-open XRoadTypeProvider.Wsdl
+open XRoadProvider.Wsdl
 
 [<TestFixture>]
 module XRoadDocLiteralWrappedV5Test =

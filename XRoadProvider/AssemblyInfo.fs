@@ -1,10 +1,10 @@
-﻿module XRoadTypeProvider.AssemblyInfo
+﻿module XRoadProvider.AssemblyInfo
 
 open Microsoft.FSharp.Core.CompilerServices
 open System.Reflection
 open System.Runtime.CompilerServices
 
-[<AssemblyTitle("XRoadTypeProvider")>]
+[<AssemblyTitle("XRoadProvider")>]
 [<AssemblyDescription("")>]
 [<AssemblyConfiguration("")>]
 [<AssemblyCompany("")>]

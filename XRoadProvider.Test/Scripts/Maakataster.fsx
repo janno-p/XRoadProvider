@@ -1,11 +1,11 @@
-﻿#r @"../../XRoadTypeProvider/bin/Debug/XRoadTypeProvider.dll"
+﻿#r @"../../XRoadProvider/bin/Debug/XRoadProvider.dll"
 
-open XRoadTypeProvider
+open XRoad.Providers
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/Maakataster.wsdl.xml"
 
-type Maakataster = XRoadTypeProvider<wsdlPath>
+type Maakataster = XRoadProvider<wsdlPath>
 type myport = Maakataster.myservice.myport
 
 type XteePäis = Maakataster.ServiceTypes.standardpais

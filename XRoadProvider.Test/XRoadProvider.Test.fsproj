@@ -6,11 +6,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>XRoadTypeProvider.Test</RootNamespace>
-    <AssemblyName>XRoadTypeProvider.Test</AssemblyName>
+    <RootNamespace>XRoadProvider.Test</RootNamespace>
+    <AssemblyName>XRoadProvider.Test</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
-    <Name>XRoadTypeProvider.Test</Name>
+    <Name>XRoadProvider.Test</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -64,9 +64,9 @@
     <Reference Include="Unquote">
       <HintPath>..\packages\Unquote.2.2.2\lib\net40\Unquote.dll</HintPath>
     </Reference>
-    <ProjectReference Include="..\XRoadTypeProvider\XRoadTypeProvider.fsproj">
+    <ProjectReference Include="..\XRoadProvider\XRoadProvider.fsproj">
       <Project>{4E04C5A5-00B9-4D7C-8501-31B4B7389671}</Project>
-      <Name>XRoadTypeProvider</Name>
+      <Name>XRoadProvider</Name>
     </ProjectReference>
     <Reference Include="FSharp.Core, Version=4.3.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>

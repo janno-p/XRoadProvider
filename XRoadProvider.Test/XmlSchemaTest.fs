@@ -1,9 +1,9 @@
-﻿namespace XRoadTypeProvider.Test
+﻿namespace XRoadProvider.Test
 
 open NUnit.Framework
 open Swensen.Unquote
 open System.Xml.Linq
-open XRoadTypeProvider.Wsdl.XsdSchema
+open XRoadProvider.Wsdl.XsdSchema
 
 [<TestFixture>]
 module XmlSchemaTest =

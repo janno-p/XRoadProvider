@@ -1,9 +1,9 @@
-﻿namespace XRoadTypeProvider.Test
+﻿namespace XRoadProvider.Test
 
 open NUnit.Framework
 open Swensen.Unquote
 open System.IO
-open XRoadTypeProvider.Wsdl
+open XRoadProvider.Wsdl
 
 [<TestFixture>]
 module XRoadRpcEncodedV4Test =
@@ -19,7 +19,7 @@ module XRoadRpcEncodedV4Test =
         let definitionsNode = document.Element(System.Xml.Linq.XName.Get("definitions", XmlNamespace.Wsdl))
         let typesNode = definitionsNode.Element(System.Xml.Linq.XName.Get("types", XmlNamespace.Wsdl))
         let schemaNode = typesNode.Element(System.Xml.Linq.XName.Get("schema", XmlNamespace.Xsd))
-        let result = XRoadTypeProvider.Wsdl.XsdSchema.parseSchemaNode(schemaNode)
+        let result = XRoadProvider.Wsdl.XsdSchema.parseSchemaNode(schemaNode)
         printfn "%A" result
         *)
         ()

@@ -1,7 +1,7 @@
-# XRoadTypeProvider
+# XRoadProvider
 
-A F# type provider library to support easy interfacing with service providers over [X-Road](http://x-road.eu)
-infrastructure.
+A collection of F# type provider library to support easy interfacing with service providers over
+[X-Road](http://x-road.eu) infrastructure.
 
 ## TODO
 
