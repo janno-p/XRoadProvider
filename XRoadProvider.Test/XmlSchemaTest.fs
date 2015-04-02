@@ -3,7 +3,7 @@
 open NUnit.Framework
 open Swensen.Unquote
 open System.Xml.Linq
-open XRoadProvider.Wsdl.XsdSchema
+open XRoad.Parser.XsdSchema
 
 [<TestFixture>]
 module XmlSchemaTest =

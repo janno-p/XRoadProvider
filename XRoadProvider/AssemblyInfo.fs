@@ -13,6 +13,8 @@ open System.Runtime.CompilerServices
 [<AssemblyTrademark("")>]
 [<AssemblyVersion("1.0.0.0")>]
 
+[<InternalsVisibleTo("XRoadProvider.Test")>]
+
 [<TypeProviderAssembly>]
 
 ()

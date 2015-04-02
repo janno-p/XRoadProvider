@@ -1,4 +1,4 @@
-﻿module private XRoad.Parser
+﻿module internal XRoad.Parser
 
 open System
 open System.Collections.Generic

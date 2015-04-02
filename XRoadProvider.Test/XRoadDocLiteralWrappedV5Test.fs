@@ -3,7 +3,7 @@
 open NUnit.Framework
 open Swensen.Unquote
 open System.IO
-open XRoadProvider.Wsdl
+open XRoad.Parser
 
 [<TestFixture>]
 module XRoadDocLiteralWrappedV5Test =
