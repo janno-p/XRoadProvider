@@ -31,7 +31,7 @@ Target "CreatePackage" (fun _->
 
     CleanDir packagingDir
 
-    CopyDir libDir (project @@ "bin" @@ "Debug") (fun _ -> true)
+    CopyDir libDir ("bin" @@ "Debug") (fun _ -> true)
 
     NuGet (fun p ->
         { p with
