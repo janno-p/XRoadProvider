@@ -88,6 +88,16 @@ module internal Misc =
             member __.ConstructorArguments = upcast [| |]
             member __.NamedArguments = upcast [| |] }
 
+    let mkAllowNullLiteralCustomAttributeData value =
+#if FX_NO_CUSTOMATTRIBUTEDATA
+        { new IProvidedCustomAttributeData with 
+#else
+        { new CustomAttributeData() with 
+#endif 
+            member __.Constructor = typeof<AllowNullLiteralAttribute>.GetConstructors().[0]
+            member __.ConstructorArguments = upcast [| CustomAttributeTypedArgument(typeof<bool>, value) |]
+            member __.NamedArguments = upcast [| |] }
+
     /// This makes an xml doc attribute w.r.t. an amortized computation of an xml doc string.
     /// It is important that the text of the xml doc only get forced when poking on the ConstructorArguments
     /// for the CustomAttributeData object.
@@ -129,6 +139,7 @@ module internal Misc =
     type CustomAttributesImpl() =
         let customAttributes = ResizeArray<CustomAttributeData>()
         let mutable hideObjectMethods = false
+        let mutable nonNullable = false
         let mutable obsoleteMessage = None
         let mutable xmlDocDelayed = None
         let mutable xmlDocAlwaysRecomputed = None
@@ -144,6 +155,7 @@ module internal Misc =
         let customAttributesOnce = 
             lazy 
                [| if hideObjectMethods then yield mkEditorHideMethodsCustomAttributeData() 
+                  if nonNullable then yield mkAllowNullLiteralCustomAttributeData false
                   match xmlDocDelayed with None -> () | Some _ -> customAttributes.Add(mkXmlDocCustomAttributeDataLazy xmlDocDelayedText) 
                   match obsoleteMessage with None -> () | Some s -> customAttributes.Add(mkObsoleteAttributeCustomAttributeData s) 
                   if hasParamArray then yield mkParamArrayCustomAttributeData()
@@ -156,6 +168,7 @@ module internal Misc =
         member __.AddXmlDocDelayed(xmlDoc : unit -> string) = xmlDocDelayed <- Some xmlDoc
         member this.AddXmlDoc(text:string) =  this.AddXmlDocDelayed (fun () -> text)
         member __.HideObjectMethods with set v = hideObjectMethods <- v
+        member __.NonNullable with set v = nonNullable <- v
         member __.AddCustomAttribute(attribute) = customAttributes.Add(attribute)
         member __.GetCustomAttributesData() = 
             [| yield! customAttributesOnce.Force()
@@ -487,7 +500,7 @@ module internal Misc =
                             else
                             Some (args.[1], args.[1])
                         )
-                        |> Seq.nth (n - 1)
+                        |> Seq.item (n - 1)
 
                     let adaptMethod = getFastFuncType args resultType
                     let adapted = E.Call(adaptMethod, [loop applicable])
@@ -597,7 +610,6 @@ type ProvidedConstructor(parameters : ProvidedParameter list) =
     member this.AddXmlDoc xmlDoc                            = customAttributesImpl.AddXmlDoc xmlDoc
     member this.AddObsoleteAttribute (msg,?isError)         = customAttributesImpl.AddObsolete (msg,defaultArg isError false)
     member this.AddDefinitionLocation(line,column,filePath) = customAttributesImpl.AddDefinitionLocation(line, column, filePath)
-    member this.HideObjectMethods with set v                = customAttributesImpl.HideObjectMethods <- v
     member __.GetCustomAttributesDataImpl() = customAttributesImpl.GetCustomAttributesData()
 #if FX_NO_CUSTOMATTRIBUTEDATA
 #else
@@ -638,8 +650,6 @@ type ProvidedConstructor(parameters : ProvidedParameter list) =
         | Some f -> Some(fun ctorArgs -> let c,baseCtorArgExprs = f ctorArgs in c, List.map (transExpr isGenerated) baseCtorArgExprs)
         | None -> None
     member this.IsImplicitCtor with get() = isImplicitCtor and set v = isImplicitCtor <- v
-
-    member this.SetConstructorAttrs attrs = ctorAttributes <- attrs
 
     // Implement overloads
     override this.GetParameters() = parameters |> List.toArray 
@@ -960,7 +970,8 @@ type ProvidedSymbolType(kind: SymbolKind, args: Type list) =
 
 
     static member convType (parameters: Type list) (ty:Type) = 
-        if ty.IsGenericType then 
+        if ty = null then null
+        elif ty.IsGenericType then
             let args = Array.map (ProvidedSymbolType.convType parameters) (ty.GetGenericArguments())
             ProvidedSymbolType(Generic (ty.GetGenericTypeDefinition()), Array.toList args)  :> Type
         elif ty.HasElementType then 
@@ -1019,7 +1030,7 @@ type ProvidedSymbolType(kind: SymbolKind, args: Type list) =
         | SymbolKind.Array _,[arg] -> arg.Name + "[*]" 
         | SymbolKind.Pointer,[arg] -> arg.Name + "*" 
         | SymbolKind.ByRef,[arg] -> arg.Name + "&"
-        | SymbolKind.Generic gty, args -> gty.FullName + args.ToString()
+        | SymbolKind.Generic gty, args -> gty.Name + (sprintf "%A" args)
         | SymbolKind.FSharpTypeAbbreviation (_,_,path),_ -> path.[path.Length-1]
         | _ -> failwith "unreachable"
 
@@ -1029,7 +1040,9 @@ type ProvidedSymbolType(kind: SymbolKind, args: Type list) =
         | SymbolKind.Array _ -> typeof<System.Array>
         | SymbolKind.Pointer -> typeof<System.ValueType>
         | SymbolKind.ByRef -> typeof<System.ValueType>
-        | SymbolKind.Generic gty  -> ProvidedSymbolType.convType args gty.BaseType
+        | SymbolKind.Generic gty  ->
+            if gty.BaseType = null then null else
+            ProvidedSymbolType.convType args gty.BaseType
         | SymbolKind.FSharpTypeAbbreviation _ -> typeof<obj>
 
     override this.GetArrayRank() = (match kind with SymbolKind.Array n -> n | SymbolKind.SDArray -> 1 | _ -> invalidOp "non-array type")
@@ -1095,14 +1108,13 @@ type ProvidedSymbolType(kind: SymbolKind, args: Type list) =
     override this.GetNestedType(_name, _bindingAttr)                                                 = notRequired "GetNestedType" this.Name
     override this.GetAttributeFlagsImpl()                                                          = notRequired "GetAttributeFlagsImpl" this.Name
     override this.UnderlyingSystemType                                                             = 
-        match kind, args with 
-        | SymbolKind.SDArray, [arg] -> arg
-        | SymbolKind.Array _, _
-        | SymbolKind.Pointer, _
-        | SymbolKind.FSharpTypeAbbreviation _, _
-        | SymbolKind.ByRef, _ -> notRequired "UnderlyingSystemType" this.Name
-        | SymbolKind.Generic gty, _ -> gty.UnderlyingSystemType
-        | _ -> failwith "unreachable"
+        match kind with 
+        | SymbolKind.SDArray
+        | SymbolKind.Array _
+        | SymbolKind.Pointer
+        | SymbolKind.FSharpTypeAbbreviation _
+        | SymbolKind.ByRef -> notRequired "UnderlyingSystemType" this.Name
+        | SymbolKind.Generic gty -> gty.UnderlyingSystemType      
 #if FX_NO_CUSTOMATTRIBUTEDATA
 #else
     override this.GetCustomAttributesData()                                                        =  ([| |] :> IList<_>)
@@ -1330,6 +1342,7 @@ type ProvidedTypeDefinition(container:TypeContainer,className : string, baseType
     member this.AddObsoleteAttribute (msg,?isError)         = customAttributesImpl.AddObsolete (msg,defaultArg isError false)
     member this.AddDefinitionLocation(line,column,filePath) = customAttributesImpl.AddDefinitionLocation(line, column, filePath)
     member this.HideObjectMethods with set v                = customAttributesImpl.HideObjectMethods <- v
+    member this.NonNullable with set v                      = customAttributesImpl.NonNullable <- v
     member __.GetCustomAttributesDataImpl() = customAttributesImpl.GetCustomAttributesData()
     member this.AddCustomAttribute attribute                = customAttributesImpl.AddCustomAttribute attribute
 #if FX_NO_CUSTOMATTRIBUTEDATA
@@ -1516,6 +1529,9 @@ type ProvidedTypeDefinition(container:TypeContainer,className : string, baseType
             | SymbolKind.SDArray, [typ] -> 
                 let (t:Type) = ProvidedTypeDefinition.EraseType typ
                 t.MakeArrayType()
+            | SymbolKind.Generic genericTypeDefinition, _ when not genericTypeDefinition.IsGenericTypeDefinition -> 
+                // Unit of measure parameters can match here, but not really generic types.
+                genericTypeDefinition.UnderlyingSystemType
             | SymbolKind.Generic genericTypeDefinition, typeArgs ->
                 let genericArguments =
                   typeArgs
@@ -2029,12 +2045,6 @@ type AssemblyGenerator(assemblyFileName) =
 
                         popIfEmptyExpected expectedState
 
-                    | Quotations.DerivedPatterns.SpecificCall <@ (=) @> (None, _, [a1; a2]) ->
-                        emit ExpectedStackState.Value a1
-                        emit ExpectedStackState.Value a2
-                        ilg.Emit(OpCodes.Ceq)
-                        popIfEmptyExpected expectedState
-
                     | Quotations.DerivedPatterns.SpecificCall <@ (/) @> (None, [t1; t2; _], [a1; a2]) ->
                         assert (t1 = t2)
                         emit ExpectedStackState.Value a1
@@ -2169,10 +2179,7 @@ type AssemblyGenerator(assemblyFileName) =
                         match objOpt with 
                         | Some obj when mappedMeth.IsAbstract || mappedMeth.IsVirtual  ->
                             if obj.Type.IsValueType then ilg.Emit(OpCodes.Constrained, convType obj.Type)
-                            if obj.Type :? ProvidedTypeDefinition && mappedMeth.Attributes.HasFlag(MethodAttributes.VtableLayoutMask) && not(mappedMeth.Attributes.HasFlag(MethodAttributes.Abstract)) then
-                                ilg.Emit(OpCodes.Call, mappedMeth)
-                            else
-                                ilg.Emit(OpCodes.Callvirt, mappedMeth)
+                            ilg.Emit(OpCodes.Callvirt, mappedMeth)
                         | _ ->
                             ilg.Emit(OpCodes.Call, mappedMeth)
 
@@ -2334,10 +2341,6 @@ type AssemblyGenerator(assemblyFileName) =
                 | Some f -> 
                     // argExprs should always include 'this'
                     let (cinfo,argExprs) = f (Array.toList parameters)
-                    let cinfo =
-                        match cinfo with
-                        | :? ProvidedConstructor as pc -> ctorMap.[pc] :> ConstructorInfo
-                        | _ -> cinfo
                     for argExpr in argExprs do 
                         emitExpr (ilg, locals, parameterVars) ExpectedStackState.Value argExpr
                     ilg.Emit(OpCodes.Call,cinfo)
@@ -2416,19 +2419,7 @@ type AssemblyGenerator(assemblyFileName) =
 
 
         // phase 4 - complete types
-        iterateTypes (fun tb _ptd ->
-            let rec createBaseType (ptd: ProvidedTypeDefinition) =
-                match ptd.BaseType with
-                | :? ProvidedTypeDefinition as ptd ->
-                    let (succ, tb) = typeMap.TryGetValue(ptd)
-                    if succ then
-                        tb.CreateType() |> ignore
-                        createBaseType ptd
-                | _ -> ()
-            match _ptd with
-            | Some ptd -> createBaseType ptd
-            | _ -> ()
-            tb.CreateType() |> ignore)
+        iterateTypes (fun tb _ptd -> tb.CreateType() |> ignore)
 
 #if FX_NO_LOCAL_FILESYSTEM
 #else

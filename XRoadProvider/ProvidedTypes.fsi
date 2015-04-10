@@ -41,9 +41,7 @@ type ProvidedConstructor =
     
     /// Add XML documentation information to this provided constructor, where the documentation is re-computed  every time it is required.
     member AddXmlDocComputed   : xmlDocFunction: (unit -> string) -> unit   
-
-    member SetConstructorAttrs : attributes:MethodAttributes -> unit
-
+    
     /// Set the quotation used to compute the implementation of invocations of this constructor.
     member InvokeCode         : (Quotations.Expr list -> Quotations.Expr) with set
 
@@ -358,6 +356,9 @@ type ProvidedTypeDefinition =
 
     /// Suppress System.Object entries in intellisense menus in instances of this provided type 
     member HideObjectMethods  : bool with set
+
+    /// Disallows the use of the null literal. 
+    member NonNullable : bool with set
 
     /// Get or set a flag indicating if the ProvidedTypeDefinition is erased
     member IsErased : bool  with get,set
