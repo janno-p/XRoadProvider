@@ -83,7 +83,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
 
         override __.ResolveTypeName(typeName) =
             //printfn "IProvidedNamespace.ResolveTypeName(%A)" typeName
-            failwith "not implemented"
+            null
 
         override __.NamespaceName
             with get() =
