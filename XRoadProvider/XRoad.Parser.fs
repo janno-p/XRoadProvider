@@ -536,6 +536,11 @@ module XsdSchema =
         Use: AttributeUse
         ArrayType: (XName * int) option }
 
+    and AttributeGroupSpec =
+      { Annotation: string
+        Attributes: AttributeSpec list
+        AllowAny: bool }
+
     and RefOrType =
         | Ref of XName
         | Name of XName
@@ -560,7 +565,7 @@ module XsdSchema =
         Attributes: IDictionary<XName,RefOrType>
         Elements: IDictionary<XName,RefOrType>
         Types: IDictionary<XName,SchemaType>
-        AttributeGroups: IDictionary<XName,}
+        AttributeGroups: IDictionary<XName,AttributeGroupSpec> }
 
     type ParserState =
         | Begin
@@ -884,15 +889,44 @@ module XsdSchema =
     and parseSimpleContentRestriction (node: XElement): SimpleContentRestrictionSpec =
         notimplemented node "simpleContent"
 
+    and parseAttributeGroup (node: XElement): AttributeGroupSpec =
+        node.Elements()
+        |> Seq.fold (fun (state, spec: AttributeGroupSpec) node ->
+            match node, state with
+            | Xsd "annotation", Begin ->
+                Annotation, spec
+            | Xsd "attribute", (Begin | Attribute) ->
+                let a = parseAttribute(node)
+                Attribute, { spec with Attributes = a::spec.Attributes }
+            | Xsd "attributeGroup", (Begin | Attribute) ->
+                Attribute, notimplemented node "attributeGroup"
+            | Xsd "anyAttribute", (Begin | Attribute | Other) ->
+                Other, notimplemented node "attributeGroup"
+            | _ -> notexpected node "attributeGroup"
+            ) (Begin, { Annotation = ""; Attributes = []; AllowAny = false })
+        |> snd
+
+    let toRefOrName node =
+        match node |> attr(XName.Get("name")), node |> attr(XName.Get("ref")) with
+        | Some(_), Some(_) -> failwithf "Name and ref attributes cannot both be present (%A)" node.Name.LocalName
+        | Some(name), _ -> Some(RefOrType.Name(XName.Get(name)))
+        | _, Some(ref) ->
+            match ref.Split(':') with
+            | [| nm |] -> Some(RefOrType.Ref(XName.Get(nm)))
+            | [| pr; nm |] -> Some(RefOrType.Ref(XName.Get(nm, node.GetNamespaceOfPrefix(pr).NamespaceName)))
+            | _ -> failwith "wrong ref"
+        | _ -> None
+
     let rec parseSchemaNode(node: XElement, schemaLookup: Dictionary<string,SchemaNode>) =
         let snode = { QualifiedAttributes = node |> isQualified (XName.Get("attributeFormDefault"))
                       QualifiedElements = node |> isQualified (XName.Get("elementFormDefault"))
                       TargetNamespace = node |> attrOrDefault (XName.Get("targetNamespace")) "" |> XNamespace.Get
                       Includes = []
                       Imports = []
-                      Attributes = Dictionary<XName,RefOrType>()
-                      Elements = Dictionary<XName,RefOrType>()
-                      Types = Dictionary<XName,SchemaType>() }
+                      Attributes = Dictionary<_,_>()
+                      Elements = Dictionary<_,_>()
+                      Types = Dictionary<_,_>()
+                      AttributeGroups = Dictionary<_,_>() }
         match schemaLookup.TryGetValue(snode.TargetNamespace.NamespaceName) with
         | true, schema -> schema
         | _ ->
@@ -932,13 +966,24 @@ module XsdSchema =
                         snode.Attributes.Add(XName.Get(attribute.Name.Value, snode.TargetNamespace.NamespaceName), attribute.RefOrType)
                         TypeSpec, snode
                     | Xsd "attributeGroup", _ ->
-                        TypeSpec, notimplemented node "schema"
+                        let ag = node |> parseAttributeGroup
+                        match node |> toRefOrName with
+                        | Some(RefOrType.Name(name)) ->
+                            snode.AttributeGroups.Add(XName.Get(name.LocalName, snode.TargetNamespace.NamespaceName), ag)
+                        | Some(RefOrType.Ref(ref)) ->
+                            let ns = match ref.NamespaceName with
+                                     | "" -> snode.TargetNamespace.NamespaceName
+                                     | x -> x
+                            snode.AttributeGroups.Add(XName.Get(ref.LocalName, ns), ag)
+                        | _ -> notimplemented node "schema"
+                        TypeSpec, snode
                     | (Xsd "group" | Xsd "notation"), _ ->
                         notimplemented node "schema"
                     | _ ->
                         notexpected node "schema"
                     ) (Begin, snode)
                 |> snd
+            schemaLookup.Add(snode.TargetNamespace.NamespaceName, schema)
             schema.Imports |> List.iter (fun (ns, uri) ->
                 let document = XDocument.Load(uri |> Option.orDefault(ns.NamespaceName))
                 let schemaNode = document.Element(XName.Get("schema", XmlNamespace.Xsd))
