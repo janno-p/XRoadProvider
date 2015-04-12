@@ -411,6 +411,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let portBaseTy = makeServicePortBaseType(undescribedFaults)
     let serviceTypesTy = makeStaticClass("DefinedTypes", TypeAttributes.Public)
 
+    let elementLookup =
+        schema.TypeSchemas
+        |> Map.toSeq
+        |> Seq.collect (fun (ns, typ) -> typ.Elements |> Seq.map (fun x -> x.Key.ToString(), x.Value))
+        |> Map.ofSeq
+
     let getOrCreateNamespace (name: XNamespace) =
         match namespaceCache.TryGetValue(name) with
         | false, _ ->
@@ -461,11 +467,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             match particle with
             | Some(ComplexTypeParticle.Sequence(spec)) ->
                 match spec.Content with
-                | [ SequenceContent.Element(e) ] -> Some(e.Name)
+                | [ SequenceContent.Element(e) ] -> e.Name
                 | _ -> None
             | Some(ComplexTypeParticle.All(spec)) ->
                 match spec.Elements with
-                | [ e ] -> Some(e.Name)
+                | [ e ] -> e.Name
                 | _ -> None
             | _ -> None
 
@@ -535,8 +541,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | _ -> failwithf "not implemented: %A" name
 
         let parseElementSpec(spec: ElementSpec) =
-            let elementTy, attrs = getParticleType(spec.Type, spec.MaxOccurs, spec.IsNillable, spec.Name)
-            let property = addProperty(spec.Name, elementTy, spec.MinOccurs = 0u)
+            let elementTy, attrs = getParticleType(spec.Type, spec.MaxOccurs, spec.IsNillable, spec.Name.Value)
+            let property = addProperty(spec.Name.Value, elementTy, spec.MinOccurs = 0u)
             attrs |> List.iter (property.CustomAttributes.Add >> ignore)
 
         let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
@@ -601,7 +607,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             operation.Response.Body
             |> List.map (fun part ->
                 match part.Reference with
-                | XmlReference.SchemaElement(_) -> failwith "not implemented"
+                | XmlReference.SchemaElement(elementName) ->
+                    match elementLookup.TryFind <| elementName.ToString() with
+                    | Some(RefOrType.Type(schemaType)) ->
+                        getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
+                    | _ -> failwithf "not implemented (%A)" elementName
                 | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName))
             |> makeReturnType
 
@@ -629,7 +639,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         operation.Request.Body
         |> List.iter (fun part ->
             let prtyp = match part.Reference with
-                        | XmlReference.SchemaElement(elem) -> failwith "Not implemented"
+                        | XmlReference.SchemaElement(elementName) ->
+                            match elementLookup.TryFind <| elementName.ToString() with
+                            | Some(RefOrType.Type(schemaType)) ->
+                                getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
+                            | _ -> failwithf "not implemented (%A)" elementName
                         | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
             let parameter = CodeParameterDeclarationExpression(prtyp.AsCodeTypeReference(), part.Name)
             serviceMethod |> Method.addParam parameter
@@ -642,7 +656,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             operation.Response.Body
             |> List.mapi (fun i part ->
                 let prtyp = match part.Reference with
-                            | XmlReference.SchemaElement(elem) -> failwith "Not implemented"
+                            | XmlReference.SchemaElement(elementName) ->
+                                match elementLookup.TryFind <| elementName.ToString() with
+                                | Some(RefOrType.Type(schemaType)) ->
+                                    getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
+                                | _ -> failwithf "not implemented (%A)" elementName
                             | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
 
                 let deserializeExpr =
@@ -679,7 +697,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         operation.Response.Body
         |> List.iteri (fun i part ->
             let prtyp = match part.Reference with
-                        | XmlReference.SchemaElement(elem) -> failwith "Not implemented"
+                        | XmlReference.SchemaElement(elementName) ->
+                            match elementLookup.TryFind <| elementName.ToString() with
+                            | Some(RefOrType.Type(schemaType)) ->
+                                getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
+                            | _ -> failwithf "not implemented (%A)" elementName
                         | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
             serviceMethod |> Method.addStat (Stat.Var(prtyp.AsCodeTypeReference(), sprintf "v%d" i, Expr.Value(null)))
                           |> ignore)
@@ -706,7 +728,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         serviceMethod
 
     schema.TypeSchemas
-    |> Seq.collect (fun typeSchema -> typeSchema.Types)
+    |> Map.toSeq
+    |> Seq.collect (fun (_, typeSchema) -> typeSchema.Types)
     |> Seq.map (fun x -> getOrCreateType(x.Key), x.Value)
     |> Seq.iter buildType
 

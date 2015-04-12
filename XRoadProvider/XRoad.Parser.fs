@@ -202,18 +202,16 @@ let parseAbstractParts msgName (abstractDef: XElement) =
         | Some el, _ -> name, SchemaElement(parseXName elem el)
         | _, Some tp -> name, SchemaType(parseXName elem tp)
         | _ -> failwithf "Unknown element or type for message %s part %s" msgName name)
-    |> Seq.fold (fun (d: Dictionary<string,XmlReference>) (k, v) -> d.[k] <- v; d) (Dictionary<_,_>())
+    |> Map.ofSeq
 
-let parseSoapBody msgName (abstractParts: IDictionary<string,XmlReference>) (elem: XElement) (opmsg: OperationMessage) =
+let parseSoapBody msgName (abstractParts: Map<string,XmlReference>) (elem: XElement) (opmsg: OperationMessage) =
     match elem |> attr (XName.Get("parts")) with
     | Some value ->
         value.Split(' ')
         |> Array.fold (fun om partName ->
-            match abstractParts.TryGetValue partName with
-            | true, part ->
-                abstractParts.Remove(partName) |> ignore
-                { om with Body = { Name = partName; Reference = part } :: om.Body }
-            | _ -> failwithf "Message %s does not contain part %s" msgName partName
+            match abstractParts.TryFind partName with
+            | Some(part) -> { om with Body = { Name = partName; Reference = part } :: om.Body }
+            | None -> failwithf "Message %s does not contain part %s" msgName partName
             ) opmsg
     | _ -> opmsg
 
@@ -228,9 +226,9 @@ let parseSoapHeader (style: OperationStyle) (definitions: XElement) (elem: XElem
     | _ -> ()
     let message = parseParam definitions messageName
     let parts = message |> parseAbstractParts messageName.LocalName
-    match parts.TryGetValue partName with
-    | true, value -> { opmsg with Header = { Name = partName; Reference = value } :: opmsg.Header }
-    | _ -> failwithf "Message %s does not contain part %s" messageName.LocalName partName
+    match parts.TryFind partName with
+    | Some(value) -> { opmsg with Header = { Name = partName; Reference = value } :: opmsg.Header }
+    | None -> failwithf "Message %s does not contain part %s" messageName.LocalName partName
 
 let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractDef: XElement) ns =
     let msgName = abstractDef |> reqAttr (XName.Get("name"))
@@ -254,14 +252,17 @@ let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractD
                         | XmlNamespace.Soap, "header" -> opmsg |> parseSoapHeader' elem
                         | XmlNamespace.Mime, "content" ->
                             let partName = elem |> reqAttr (XName.Get("part"))
-                            match abstractParts.TryGetValue partName with
-                            | true, value ->
-                                abstractParts.Remove(partName) |> ignore
-                                { opmsg with MultipartContent = { Name = partName; Reference = value } :: opmsg.MultipartContent }
-                            | _ -> failwithf "Message %s does not contain part %s" msgName partName
+                            match abstractParts.TryFind partName with
+                            | Some(value) -> { opmsg with MultipartContent = { Name = partName; Reference = value } :: opmsg.MultipartContent }
+                            | None -> failwithf "Message %s does not contain part %s" msgName partName
                         | _ -> opmsg) opmsg) opmsg
             | _ -> opmsg) (OperationMessage.Create(XName.Get(msgName, ns)))
-    abstractParts |> Seq.fold (fun opmsg p -> { opmsg with Body = { Name = p.Key; Reference = p.Value } :: opmsg.Body }) operationMessage
+    abstractParts
+    |> Seq.fold (fun opmsg p ->
+        if opmsg.Body |> List.exists (fun x -> x.Name = p.Key) then opmsg
+        elif opmsg.MultipartContent |> List.exists (fun x -> x.Name = p.Key) then opmsg
+        else { opmsg with Body = { Name = p.Key; Reference = p.Value } :: opmsg.Body }
+        ) operationMessage
 
 let validateOperationStyle styleValue style =
     match styleValue with
@@ -404,6 +405,7 @@ module XsdSchema =
         | _ -> defValue
 
     let attrBoolValue = attrTypeValue Boolean.Parse
+    let attrIntValue = attrTypeValue Int32.Parse
 
     // XRoad RPC/Encoded spec
     // Kui teenus esitatakse MIME-konteinerina, siis manustena saadetakse parajasti kõik
@@ -441,7 +443,7 @@ module XsdSchema =
         | Required
 
     type ElementSpec =
-      { Name: string
+      { Name: string option
         MinOccurs: uint32
         MaxOccurs: uint32
         IsNillable: bool
@@ -455,11 +457,11 @@ module XsdSchema =
         | TotalDigits
         | FractionDigits
         | Length
-        | MinLength
+        | MinLength of int
         | MaxLength
         | Enumeration
         | WhiteSpace
-        | Pattern
+        | Pattern of string
 
     and SimpleTypeRestrictionSpec =
       { Base: XName
@@ -513,6 +515,7 @@ module XsdSchema =
         Content: ComplexTypeContent }
 
     and SequenceContent =
+        | Any
         | Element of ElementSpec
         //| Group of GroupDefinition
         //| Choice of ChoiceDefinition
@@ -540,6 +543,7 @@ module XsdSchema =
         Elements: ElementSpec list }
 
     and SchemaType =
+        | EmptyType
         | SimpleType of SimpleTypeSpec
         | ComplexType of ComplexTypeSpec
 
@@ -548,7 +552,8 @@ module XsdSchema =
         QualifiedElements: bool
         TargetNamespace: XNamespace
         Includes: Uri list
-        Imports: (XNamespace * Uri option) list
+        Imports: (XNamespace * string option) list
+        Attributes: IDictionary<XName,RefOrType>
         Elements: IDictionary<XName,RefOrType>
         Types: IDictionary<XName,SchemaType> }
 
@@ -579,14 +584,24 @@ module XsdSchema =
                 | _ ->
                     notexpected node "element"
                 ) (Begin, None)
-            |> (fun (_, spec) -> spec |> Option.get)
-        { Name = node |> reqAttr (XName.Get("name"))
-          MinOccurs = node |> getMinOccurs 1u
-          MaxOccurs = node |> getMaxOccurs 1u
-          IsNillable = node |> attrBoolValue "nillable" false
-          Type = match node |> attr (XName.Get("type")) with
-                 | Some value -> RefOrType.Name(parseXName node value)
-                 | _ -> parseChildElements() }
+            |> (fun (_, spec) -> spec |> Option.orDefault(RefOrType.Type(EmptyType)))
+        let elementSpec =
+            { Name = None
+              MinOccurs = node |> getMinOccurs 1u
+              MaxOccurs = node |> getMaxOccurs 1u
+              IsNillable = node |> attrBoolValue "nillable" false
+              Type = RefOrType.Name(XName.Get("x")) }
+        match node |> attr (XName.Get("ref")) with
+        | Some refv ->
+            match node |> attr (XName.Get("name")) with
+            | Some _ -> failwith "Attribute element name and ref attribute cannot be present at the same time."
+            | _ -> { elementSpec with Type = RefOrType.Ref(parseXName node refv) }
+        | _ ->
+            { elementSpec with
+                Name = Some(node |> reqAttr (XName.Get("name")))
+                Type = match node |> attr (XName.Get("type")) with
+                       | Some value -> RefOrType.Name(parseXName node value)
+                       | _ -> parseChildElements() }
 
     and parseSimpleType (node: XElement): SimpleTypeSpec =
         let content =
@@ -597,10 +612,11 @@ module XsdSchema =
                     Annotation, spec
                 | Xsd "restriction", (Begin | Annotation) ->
                     Content, Some(SimpleTypeSpec.Restriction(parseSimpleTypeRestriction node))
-                | (Xsd "list" | Xsd "union"), (Begin | Annotation) ->
-                    notimplemented node "simpleType"
-                | _ ->
-                    notexpected node "simpleType"
+                | Xsd "union", (Begin | Annotation) ->
+                    Content, notimplemented node "simpleType"
+                | Xsd "list", (Begin | Annotation) ->
+                    Content, notimplemented node "simpleType"
+                | _ -> notexpected node "simpleType"
                 ) (Begin, None)
             |> snd
         match content with
@@ -616,9 +632,15 @@ module XsdSchema =
                     state, (typ, content)
                 | Xsd "simpleType", (Begin | Annotation) ->
                     notimplemented node "simpleType restriction"
-                |  Xsd "enumeration", (Begin | Annotation | TypeSpec | Content) ->
+                | Xsd "enumeration", (Begin | Annotation | TypeSpec | Content) ->
                     notimplemented node "simpleType restriction"
-                | (Xsd "minExclusive" | Xsd "minInclusive" | Xsd "maxExclusive" | Xsd "maxInclusive" | Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace" | Xsd "pattern"), (Begin | Annotation | TypeSpec | Content) ->
+                | Xsd "minLength", (Begin | Annotation | TypeSpec | Content) ->
+                    let value = node |> attrIntValue "value" 0
+                    state, (typ, MinLength(value) :: content)
+                | Xsd "pattern", (Begin | Annotation | TypeSpec | Content) ->
+                    let value = node |> reqAttr(XName.Get("value"))
+                    state, (typ, Pattern(value) :: content)
+                | (Xsd "minExclusive" | Xsd "minInclusive" | Xsd "maxExclusive" | Xsd "maxInclusive" | Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace"), (Begin | Annotation | TypeSpec | Content) ->
                     notimplemented node "simpleType restriction"
                 | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | TypeSpec | Content | Attribute) ->
                     notimplemented node "simpleType restriction"
@@ -675,7 +697,9 @@ module XsdSchema =
                 match node, state with
                 | Xsd "annotation", Begin ->
                     Annotation, spec
-                | (Xsd "group" | Xsd "choice" | Xsd "any"), (Begin | Annotation | Content) ->
+                | Xsd "any", (Begin | Annotation | Content) ->
+                    Content, SequenceContent.Any::spec
+                | (Xsd "group" | Xsd "choice"), (Begin | Annotation | Content) ->
                     notimplemented node "sequence"
                 | Xsd "sequence", (Begin | Annotation | Content) ->
                     Content, (SequenceContent.Sequence(parseSequence(node)))::spec
@@ -831,59 +855,76 @@ module XsdSchema =
     and parseSimpleContentRestriction (node: XElement): SimpleContentRestrictionSpec =
         notimplemented node "simpleContent"
 
-    let parseSchemaNode (node: XElement) =
+    let rec parseSchemaNode(node: XElement, schemaLookup: Dictionary<string,SchemaNode>) =
         let snode = { QualifiedAttributes = node |> isQualified (XName.Get("attributeFormDefault"))
                       QualifiedElements = node |> isQualified (XName.Get("elementFormDefault"))
                       TargetNamespace = node |> attrOrDefault (XName.Get("targetNamespace")) "" |> XNamespace.Get
                       Includes = []
                       Imports = []
+                      Attributes = Dictionary<XName,RefOrType>()
                       Elements = Dictionary<XName,RefOrType>()
                       Types = Dictionary<XName,SchemaType>() }
-        node.Elements()
-        |> Seq.fold (fun (state, snode) node ->
-            match node, state with
-            | Xsd "annotation", _ ->
-                state, snode
-            | Xsd "include", (Begin | Header) ->
-                let schloc = node |> reqAttr (XName.Get("schemaLocation"))
-                Header, { snode with Includes = Uri(schloc)::snode.Includes }
-            | Xsd "import", (Begin | Header) ->
-                let ns = node |> attrOrDefault (XName.Get("namespace")) ""
-                let schloc = node |> attr (XName.Get("schemaLocation")) |> Option.map (fun x -> Uri(x))
-                Header, { snode with Imports = (XNamespace.Get(ns), schloc)::snode.Imports }
-            | Xsd "redefine", (Begin | Header) ->
-                notimplemented node "schema"
-            | Xsd "complexType", _ ->
-                let name = node |> reqAttr (XName.Get("name"))
-                let typ = SchemaType.ComplexType(parseComplexType node)
-                snode.Types.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), typ)
-                TypeSpec, snode
-            | Xsd "element", _ ->
-                let element = parseElement node
-                snode.Elements.Add(XName.Get(element.Name, snode.TargetNamespace.NamespaceName), element.Type)
-                TypeSpec, snode
-            | Xsd "simpleType", _ ->
-                let name = node |> reqAttr (XName.Get("name"))
-                let typ = SchemaType.SimpleType(parseSimpleType node)
-                snode.Types.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), typ)
-                TypeSpec, snode
-            | (Xsd "group" | Xsd "attributeGroup" | Xsd "attribute" | Xsd "notation"), _ ->
-                notimplemented node "schema"
-            | _ ->
-                notexpected node "schema"
-            ) (Begin, snode)
-        |> snd
+        match schemaLookup.TryGetValue(snode.TargetNamespace.NamespaceName) with
+        | true, schema -> schema
+        | _ ->
+            let schema =
+                node.Elements()
+                |> Seq.fold (fun (state, snode) node ->
+                    match node, state with
+                    | Xsd "annotation", _ ->
+                        state, snode
+                    | Xsd "include", (Begin | Header) ->
+                        let schloc = node |> reqAttr (XName.Get("schemaLocation"))
+                        Header, { snode with Includes = Uri(schloc)::snode.Includes }
+                    | Xsd "import", (Begin | Header) ->
+                        let ns = node |> attrOrDefault (XName.Get("namespace")) ""
+                        let schloc = node |> attr (XName.Get("schemaLocation"))
+                        Header, { snode with Imports = (XNamespace.Get(ns), schloc)::snode.Imports }
+                    | Xsd "redefine", (Begin | Header) ->
+                        notimplemented node "schema"
+                    | Xsd "complexType", _ ->
+                        let name = node |> reqAttr (XName.Get("name"))
+                        let typ = SchemaType.ComplexType(parseComplexType node)
+                        snode.Types.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), typ)
+                        TypeSpec, snode
+                    | Xsd "element", _ ->
+                        let element = parseElement node
+                        match element.Name with
+                        | None -> failwith "`name` attribute is required if the parent element is the schema element"
+                        | Some(name) -> snode.Elements.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), element.Type)
+                        TypeSpec, snode
+                    | Xsd "simpleType", _ ->
+                        let name = node |> reqAttr (XName.Get("name"))
+                        let typ = SchemaType.SimpleType(parseSimpleType node)
+                        snode.Types.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), typ)
+                        TypeSpec, snode
+                    | Xsd "attribute", _ ->
+                        let attribute = parseAttribute(node)
+                        snode.Attributes.Add(XName.Get(attribute.Name.Value, snode.TargetNamespace.NamespaceName), attribute.RefOrType)
+                        Attribute, snode
+                    | (Xsd "group" | Xsd "attributeGroup" | Xsd "notation"), _ ->
+                        notimplemented node "schema"
+                    | _ ->
+                        notexpected node "schema"
+                    ) (Begin, snode)
+                |> snd
+            schema.Imports |> List.iter (fun (ns, uri) ->
+                let document = XDocument.Load(uri |> Option.orDefault(ns.NamespaceName))
+                let schemaNode = document.Element(XName.Get("schema", XmlNamespace.Xsd))
+                parseSchemaNode(schemaNode, schemaLookup) |> ignore)
+            schema
 
     let parseSchema (definitions: XElement) =
         match definitions.Element(XName.Get("types", XmlNamespace.Wsdl)) with
-        | null -> []
+        | null -> Map.empty
         | typesNode ->
-            typesNode.Elements(XName.Get("schema", XmlNamespace.Xsd))
-            |> Seq.map parseSchemaNode
-            |> List.ofSeq
+            let schemaLookup = Dictionary<_,_>()
+            let parseSchemaNode' n = parseSchemaNode(n, schemaLookup) |> ignore
+            typesNode.Elements(XName.Get("schema", XmlNamespace.Xsd)) |> Seq.iter parseSchemaNode'
+            schemaLookup |> Seq.map (fun kvp -> kvp.Key, kvp.Value) |> Map.ofSeq
 
 type Schema =
-  { TypeSchemas: XsdSchema.SchemaNode list
+  { TypeSchemas: Map<string,XsdSchema.SchemaNode>
     Services: Service list }
 
 let readSchema (uri: string) =
