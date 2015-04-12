@@ -459,7 +459,7 @@ module XsdSchema =
         | Length
         | MinLength of int
         | MaxLength
-        | Enumeration
+        | Enumeration of string
         | WhiteSpace
         | Pattern of string
 
@@ -468,10 +468,14 @@ module XsdSchema =
         SimpleType: SimpleTypeSpec option
         Content: RestrictionContent list }
 
+    and UnionSpec =
+      { MemberTypeNames: XName list
+        MemberTypes: SimpleTypeSpec list }
+
     and SimpleTypeSpec =
         | Restriction of SimpleTypeRestrictionSpec
         //| List
-        //| Union
+        | Union of UnionSpec
 
     and ComplexTypeParticle =
         //| Group
@@ -555,7 +559,8 @@ module XsdSchema =
         Imports: (XNamespace * string option) list
         Attributes: IDictionary<XName,RefOrType>
         Elements: IDictionary<XName,RefOrType>
-        Types: IDictionary<XName,SchemaType> }
+        Types: IDictionary<XName,SchemaType>
+        AttributeGroups: IDictionary<XName,}
 
     type ParserState =
         | Begin
@@ -603,6 +608,30 @@ module XsdSchema =
                        | Some value -> RefOrType.Name(parseXName node value)
                        | _ -> parseChildElements() }
 
+    and parseUnion (node: XElement): UnionSpec =
+        { MemberTypeNames =
+            match node |> attr(XName.Get("memberTypes")) with
+            | Some(str) ->
+                str.Split(' ')
+                |> Array.map (fun x ->
+                    match x.Split(':') with
+                    | [| name |] -> XName.Get(name)
+                    | [| ns; name |] -> XName.Get(name, node.GetNamespaceOfPrefix(ns).NamespaceName)
+                    | _ -> failwithf "Invalid member type name %s" x)
+                |> List.ofArray
+            | None -> []
+          MemberTypes =
+            node.Elements()
+            |> Seq.fold (fun (state, spec) node ->
+                match node, state with
+                | Xsd "annotation", Begin ->
+                    Annotation, spec
+                | Xsd "simpleType", (Begin | Annotation) ->
+                    Content, parseSimpleType(node)::spec
+                | _ -> notexpected node "union"
+                ) (Begin, [])
+            |> snd }
+
     and parseSimpleType (node: XElement): SimpleTypeSpec =
         let content =
             node.Elements()
@@ -613,7 +642,7 @@ module XsdSchema =
                 | Xsd "restriction", (Begin | Annotation) ->
                     Content, Some(SimpleTypeSpec.Restriction(parseSimpleTypeRestriction node))
                 | Xsd "union", (Begin | Annotation) ->
-                    Content, notimplemented node "simpleType"
+                    Content, Some(SimpleTypeSpec.Union(parseUnion node))
                 | Xsd "list", (Begin | Annotation) ->
                     Content, notimplemented node "simpleType"
                 | _ -> notexpected node "simpleType"
@@ -631,23 +660,23 @@ module XsdSchema =
                 | Xsd "annotation", Begin ->
                     state, (typ, content)
                 | Xsd "simpleType", (Begin | Annotation) ->
-                    notimplemented node "simpleType restriction"
+                    TypeSpec, notimplemented node "simpleType restriction"
                 | Xsd "enumeration", (Begin | Annotation | TypeSpec | Content) ->
-                    notimplemented node "simpleType restriction"
+                    let value = node |> reqAttr(XName.Get("value"))
+                    Content, (typ, Enumeration(value) :: content)
                 | Xsd "minLength", (Begin | Annotation | TypeSpec | Content) ->
                     let value = node |> attrIntValue "value" 0
-                    state, (typ, MinLength(value) :: content)
+                    Content, (typ, MinLength(value) :: content)
                 | Xsd "pattern", (Begin | Annotation | TypeSpec | Content) ->
                     let value = node |> reqAttr(XName.Get("value"))
-                    state, (typ, Pattern(value) :: content)
+                    Content, (typ, Pattern(value) :: content)
                 | (Xsd "minExclusive" | Xsd "minInclusive" | Xsd "maxExclusive" | Xsd "maxInclusive" | Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace"), (Begin | Annotation | TypeSpec | Content) ->
-                    notimplemented node "simpleType restriction"
+                    Content, notimplemented node "simpleType restriction"
                 | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | TypeSpec | Content | Attribute) ->
-                    notimplemented node "simpleType restriction"
+                    Attribute, notimplemented node "simpleType restriction"
                 | Xsd "anyAttribute", (Begin | Annotation | TypeSpec | Content | Attribute) ->
-                    notimplemented node "simpleType restriction"
-                | _ ->
-                    notexpected node "simpleType restriction"
+                    Other, notimplemented node "simpleType restriction"
+                | _ -> notexpected node "simpleType restriction"
                 ) (Begin, (None, []))
             |> snd
         { Base = node |> reqAttr (XName.Get("base")) |> parseXName node
@@ -901,8 +930,10 @@ module XsdSchema =
                     | Xsd "attribute", _ ->
                         let attribute = parseAttribute(node)
                         snode.Attributes.Add(XName.Get(attribute.Name.Value, snode.TargetNamespace.NamespaceName), attribute.RefOrType)
-                        Attribute, snode
-                    | (Xsd "group" | Xsd "attributeGroup" | Xsd "notation"), _ ->
+                        TypeSpec, snode
+                    | Xsd "attributeGroup", _ ->
+                        TypeSpec, notimplemented node "schema"
+                    | (Xsd "group" | Xsd "notation"), _ ->
                         notimplemented node "schema"
                     | _ ->
                         notexpected node "schema"
