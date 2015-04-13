@@ -23,85 +23,6 @@ module XmlNamespace =
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
-let private mapXrdType = function
-    | "faultCode"
-    | "faultString" -> typeof<string>
-    | n             -> failwithf "Unmapped XRD type %s" n
-
-let private mapXrdElementType = function
-    | "async" -> typeof<bool>
-    | "address"
-    | "authenticator"
-    | "consumer"
-    | "encode"
-    | "id"
-    | "issue"
-    | "nocontent"
-    | "notes"
-    | "position"
-    | "producer"
-    | "ref"
-    | "requirecontent"
-    | "service"
-    | "technotes"
-    | "title"
-    | "unit"
-    | "userId"
-    | "userName"
-    | "version"
-    | "wildcard" -> typeof<string>
-    | "listMethods"
-    | "listMethodsResponse"
-    | "testSystem"
-    | "testSystemResponse"
-    | "loadClassification"
-    | "loadClassificationResponse"
-    | "userAllowedMethods"
-    | "userAllowedMethodsResponse" -> typeof<obj>
-    // HACK: these are really complexTypes
-    | "unitRepresent"
-    | "unitRepresentResponse"
-    | "unitValid"
-    | "unitValidResponse" -> typeof<obj>
-    | n -> failwithf "Unmapped XRD element type %s" n
-
-let mapXteeElementType = function
-    | "asynkroonne" -> typeof<bool>
-    | "allasutus"
-    | "amet"
-    | "ametnik"
-    | "ametniknimi"
-    | "andmekogu"
-    | "asutus"
-    | "autentija"
-    | "id"
-    | "isikukood"
-    | "nimi"
-    | "nocontent"
-    | "notes"
-    | "ref"
-    | "requirecontent"
-    | "title"
-    | "technotes"
-    | "toimik"
-    | "version"
-    | "wildcard" -> typeof<string>
-    | "address"
-    | "complex" -> typeof<obj>
-    | x -> failwithf "Unmapped XRD element type %s" x
-
-let resolveType (name: XName) =
-    match name.NamespaceName with
-    | XmlNamespace.XRoad -> mapXrdType name.LocalName
-    | _ -> failwithf "Unmapped type name %O" name
-
-let resolveElementType (name: XName) tns =
-    match name.NamespaceName with
-    | XmlNamespace.XRoad -> mapXrdElementType name.LocalName
-    | XmlNamespace.Xtee -> mapXteeElementType name.LocalName
-    | ns when ns = tns -> typeof<obj>
-    | _ -> failwithf "Unmapped element name %O" name
-
 let resolveUri uri =
     match Uri.IsWellFormedUriString(uri, UriKind.Absolute) with
     | true -> uri
@@ -210,7 +131,9 @@ let parseSoapBody msgName (abstractParts: Map<string,XmlReference>) (elem: XElem
         value.Split(' ')
         |> Array.fold (fun om partName ->
             match abstractParts.TryFind partName with
-            | Some(part) -> { om with Body = { Name = partName; Reference = part } :: om.Body }
+            | Some(part) ->
+                if om.Body |> List.exists (fun x -> x.Name = partName) then om
+                else { om with Body = { Name = partName; Reference = part } :: om.Body }
             | None -> failwithf "Message %s does not contain part %s" msgName partName
             ) opmsg
     | _ -> opmsg
@@ -366,12 +289,12 @@ module XsdSchema =
         | XmlNamespace.Xsd -> Some name.LocalName
         | _ -> None
 
-    let (|XrdType|_|) (name: XName) =
+    let (|XrdName|_|) (name: XName) =
         match name.NamespaceName with
         | XmlNamespace.XRoad -> Some name.LocalName
         | _ -> None
 
-    let (|XteeType|_|) (name: XName) =
+    let (|XteeName|_|) (name: XName) =
         match name.NamespaceName with
         | XmlNamespace.Xtee -> Some name.LocalName
         | _ -> None
@@ -413,6 +336,8 @@ module XsdSchema =
     // xsd:hexBinary.
 
     let mapPrimitiveType = function
+        | XsdType "anyURI" -> Some typeof<string>
+        | XsdType "hexBinary" -> Some typeof<byte[]>
         | XsdType "base64Binary" -> Some typeof<byte[]>
         | XsdType "boolean" -> Some typeof<bool>
         | XsdType "dateTime" -> Some typeof<DateTime>
@@ -422,11 +347,6 @@ module XsdSchema =
         | XsdType "long" -> Some typeof<int64>
         | XsdType "string" -> Some typeof<string>
         | XsdType name -> failwithf "Unmapped XSD type %s" name
-        | XrdType "faultCode"
-        | XrdType "faultString" -> Some typeof<string>
-        | XrdType "jpg" -> Some typeof<byte[]>
-        | XrdType "maakond" -> Some typeof<string>
-        | XrdType name -> failwithf "Unmapped XRD type %s" name
         | SoapEncType "base64Binary" -> Some typeof<byte[]>
         | SoapEncType name -> failwithf "Unmapped SOAP-ENC type %s" name
         | _ -> None
@@ -442,12 +362,17 @@ module XsdSchema =
         | Prohibited
         | Required
 
+    type SchemaObject<'T> =
+        | Name of XName
+        | Reference of XName
+        | Definition of 'T
+
     type ElementSpec =
       { Name: string option
         MinOccurs: uint32
         MaxOccurs: uint32
         IsNillable: bool
-        Type: RefOrType }
+        Type: SchemaObject<SchemaType> }
 
     and RestrictionContent =
         | MinExclusive
@@ -532,7 +457,7 @@ module XsdSchema =
 
     and AttributeSpec =
       { Name: string option
-        RefOrType: RefOrType
+        RefOrType: SchemaObject<SimpleTypeSpec>
         Use: AttributeUse
         ArrayType: (XName * int) option }
 
@@ -540,11 +465,6 @@ module XsdSchema =
       { Annotation: string
         Attributes: AttributeSpec list
         AllowAny: bool }
-
-    and RefOrType =
-        | Ref of XName
-        | Name of XName
-        | Type of SchemaType
 
     and AllSpec =
       { MinOccurs: uint32
@@ -562,10 +482,10 @@ module XsdSchema =
         TargetNamespace: XNamespace
         Includes: Uri list
         Imports: (XNamespace * string option) list
-        Attributes: IDictionary<XName,RefOrType>
-        Elements: IDictionary<XName,RefOrType>
+        Attributes: IDictionary<XName,AttributeSpec>
+        Elements: IDictionary<XName,ElementSpec>
         Types: IDictionary<XName,SchemaType>
-        AttributeGroups: IDictionary<XName,AttributeGroupSpec> }
+        AttributeGroups: IDictionary<XName,SchemaObject<AttributeGroupSpec>> }
 
     type ParserState =
         | Begin
@@ -581,36 +501,36 @@ module XsdSchema =
     let rec parseElement (node: XElement): ElementSpec =
         let parseChildElements () =
             node.Elements()
-            |> Seq.fold (fun (state, spec: RefOrType option) node ->
+            |> Seq.fold (fun (state, spec: SchemaObject<_> option) node ->
                 match node, state with
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "simpleType", (Begin | Annotation) ->
-                    TypeSpec, Some(RefOrType.Type(SimpleType(parseSimpleType node)))
+                    TypeSpec, Some(Definition(SimpleType(parseSimpleType node)))
                 | Xsd "complexType", (Begin | Annotation) ->
-                    TypeSpec, Some(RefOrType.Type(ComplexType(parseComplexType node)))
+                    TypeSpec, Some(Definition(ComplexType(parseComplexType node)))
                 | (Xsd "unique" | Xsd "key" | Xsd "keyref"), (Begin | Annotation | TypeSpec | Other) ->
                     notimplemented node "element"
                 | _ ->
                     notexpected node "element"
                 ) (Begin, None)
-            |> (fun (_, spec) -> spec |> Option.orDefault(RefOrType.Type(EmptyType)))
+            |> (fun (_, spec) -> spec |> Option.orDefault(Definition(EmptyType)))
         let elementSpec =
             { Name = None
               MinOccurs = node |> getMinOccurs 1u
               MaxOccurs = node |> getMaxOccurs 1u
               IsNillable = node |> attrBoolValue "nillable" false
-              Type = RefOrType.Name(XName.Get("x")) }
+              Type = Name(XName.Get("x")) }
         match node |> attr (XName.Get("ref")) with
         | Some refv ->
             match node |> attr (XName.Get("name")) with
             | Some _ -> failwith "Attribute element name and ref attribute cannot be present at the same time."
-            | _ -> { elementSpec with Type = RefOrType.Ref(parseXName node refv) }
+            | _ -> { elementSpec with Type = Reference(parseXName node refv) }
         | _ ->
             { elementSpec with
                 Name = Some(node |> reqAttr (XName.Get("name")))
                 Type = match node |> attr (XName.Get("type")) with
-                       | Some value -> RefOrType.Name(parseXName node value)
+                       | Some value -> Name(parseXName node value)
                        | _ -> parseChildElements() }
 
     and parseUnion (node: XElement): UnionSpec =
@@ -769,11 +689,11 @@ module XsdSchema =
         | Some refv ->
             match node |> attr (XName.Get("name")) with
             | Some _ -> failwith "Attribute element name and ref attribute cannot be present at the same time."
-            | _ -> { Name = None; RefOrType = RefOrType.Ref(parseXName node refv); ArrayType = arrayType; Use = attrUse }
+            | _ -> { Name = None; RefOrType = Reference(parseXName node refv); ArrayType = arrayType; Use = attrUse }
         | _ ->
             let name = node |> reqAttr (XName.Get("name"))
             match node |> attr (XName.Get("type")) with
-            | Some value -> { Name = Some(name); RefOrType = RefOrType.Name(parseXName node value); ArrayType = arrayType; Use = attrUse }
+            | Some value -> { Name = Some(name); RefOrType = Name(parseXName node value); ArrayType = arrayType; Use = attrUse }
             | _ ->
                 node.Elements()
                 |> Seq.fold (fun (state, spec) node ->
@@ -783,7 +703,7 @@ module XsdSchema =
                     | _ -> notexpected node "attribute"
                     ) (Begin, None)
                 |> (fun (_, typ) -> match typ with
-                                    | Some(typ) -> { Name = Some(name); RefOrType = RefOrType.Type(SimpleType(typ)); ArrayType = arrayType; Use = attrUse }
+                                    | Some(typ) -> { Name = Some(name); RefOrType = Definition(typ); ArrayType = arrayType; Use = attrUse }
                                     | _ -> failwithf "Attribute element %s type definition is missing." name)
 
     and parseAll (node: XElement): AllSpec =
@@ -909,11 +829,11 @@ module XsdSchema =
     let toRefOrName node =
         match node |> attr(XName.Get("name")), node |> attr(XName.Get("ref")) with
         | Some(_), Some(_) -> failwithf "Name and ref attributes cannot both be present (%A)" node.Name.LocalName
-        | Some(name), _ -> Some(RefOrType.Name(XName.Get(name)))
+        | Some(name), _ -> Some(Name(XName.Get(name)))
         | _, Some(ref) ->
             match ref.Split(':') with
-            | [| nm |] -> Some(RefOrType.Ref(XName.Get(nm)))
-            | [| pr; nm |] -> Some(RefOrType.Ref(XName.Get(nm, node.GetNamespaceOfPrefix(pr).NamespaceName)))
+            | [| nm |] -> Some(Reference(XName.Get(nm)))
+            | [| pr; nm |] -> Some(Reference(XName.Get(nm, node.GetNamespaceOfPrefix(pr).NamespaceName)))
             | _ -> failwith "wrong ref"
         | _ -> None
 
@@ -954,7 +874,7 @@ module XsdSchema =
                         let element = parseElement node
                         match element.Name with
                         | None -> failwith "`name` attribute is required if the parent element is the schema element"
-                        | Some(name) -> snode.Elements.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), element.Type)
+                        | Some(name) -> snode.Elements.Add(XName.Get(name, snode.TargetNamespace.NamespaceName), element)
                         TypeSpec, snode
                     | Xsd "simpleType", _ ->
                         let name = node |> reqAttr (XName.Get("name"))
@@ -963,18 +883,18 @@ module XsdSchema =
                         TypeSpec, snode
                     | Xsd "attribute", _ ->
                         let attribute = parseAttribute(node)
-                        snode.Attributes.Add(XName.Get(attribute.Name.Value, snode.TargetNamespace.NamespaceName), attribute.RefOrType)
+                        snode.Attributes.Add(XName.Get(attribute.Name.Value, snode.TargetNamespace.NamespaceName), attribute)
                         TypeSpec, snode
                     | Xsd "attributeGroup", _ ->
                         let ag = node |> parseAttributeGroup
                         match node |> toRefOrName with
-                        | Some(RefOrType.Name(name)) ->
-                            snode.AttributeGroups.Add(XName.Get(name.LocalName, snode.TargetNamespace.NamespaceName), ag)
-                        | Some(RefOrType.Ref(ref)) ->
+                        | Some(Name(name)) ->
+                            snode.AttributeGroups.Add(XName.Get(name.LocalName, snode.TargetNamespace.NamespaceName), Definition(ag))
+                        | Some(Reference(ref)) ->
                             let ns = match ref.NamespaceName with
                                      | "" -> snode.TargetNamespace.NamespaceName
                                      | x -> x
-                            snode.AttributeGroups.Add(XName.Get(ref.LocalName, ns), ag)
+                            snode.AttributeGroups.Add(XName.Get(ref.LocalName, ns), Definition(ag))
                         | _ -> notimplemented node "schema"
                         TypeSpec, snode
                     | (Xsd "group" | Xsd "notation"), _ ->
@@ -1012,44 +932,44 @@ let readSchema (uri: string) =
 let (|IsXteeHeader|_|) (part: MessagePart) =
     match part.Reference with
     | SchemaElement name -> match name with
-                            | XsdSchema.XteeType "asutus"
-                            | XsdSchema.XteeType "andmekogu"
-                            | XsdSchema.XteeType "isikukood"
-                            | XsdSchema.XteeType "ametnik"
-                            | XsdSchema.XteeType "id"
-                            | XsdSchema.XteeType "nimi"
-                            | XsdSchema.XteeType "toimik"
-                            | XsdSchema.XteeType "allasutus"
-                            | XsdSchema.XteeType "amet"
-                            | XsdSchema.XteeType "ametniknimi"
-                            | XsdSchema.XteeType "asynkroonne"
-                            | XsdSchema.XteeType "autentija"
-                            | XsdSchema.XteeType "makstud"
-                            | XsdSchema.XteeType "salastada"
-                            | XsdSchema.XteeType "salastada_sertifikaadiga"
-                            | XsdSchema.XteeType "salastatud"
-                            | XsdSchema.XteeType "salastatud_sertifikaadiga" -> Some(name)
+                            | XsdSchema.XteeName "asutus"
+                            | XsdSchema.XteeName "andmekogu"
+                            | XsdSchema.XteeName "isikukood"
+                            | XsdSchema.XteeName "ametnik"
+                            | XsdSchema.XteeName "id"
+                            | XsdSchema.XteeName "nimi"
+                            | XsdSchema.XteeName "toimik"
+                            | XsdSchema.XteeName "allasutus"
+                            | XsdSchema.XteeName "amet"
+                            | XsdSchema.XteeName "ametniknimi"
+                            | XsdSchema.XteeName "asynkroonne"
+                            | XsdSchema.XteeName "autentija"
+                            | XsdSchema.XteeName "makstud"
+                            | XsdSchema.XteeName "salastada"
+                            | XsdSchema.XteeName "salastada_sertifikaadiga"
+                            | XsdSchema.XteeName "salastatud"
+                            | XsdSchema.XteeName "salastatud_sertifikaadiga" -> Some(name)
                             | _ -> None
     | _ -> None
 
 let (|IsXRoadHeader|_|) (part: MessagePart) =
     match part.Reference with
     | SchemaElement name -> match name with
-                            | XsdSchema.XrdType "consumer"
-                            | XsdSchema.XrdType "producer"
-                            | XsdSchema.XrdType "userId"
-                            | XsdSchema.XrdType "id"
-                            | XsdSchema.XrdType "service"
-                            | XsdSchema.XrdType "issue"
-                            | XsdSchema.XrdType "unit"
-                            | XsdSchema.XrdType "position"
-                            | XsdSchema.XrdType "userName"
-                            | XsdSchema.XrdType "async"
-                            | XsdSchema.XrdType "authenticator"
-                            | XsdSchema.XrdType "paid"
-                            | XsdSchema.XrdType "encrypt"
-                            | XsdSchema.XrdType "encryptCert"
-                            | XsdSchema.XrdType "encrypted"
-                            | XsdSchema.XrdType "encryptedCert" -> Some(name)
+                            | XsdSchema.XrdName "consumer"
+                            | XsdSchema.XrdName "producer"
+                            | XsdSchema.XrdName "userId"
+                            | XsdSchema.XrdName "id"
+                            | XsdSchema.XrdName "service"
+                            | XsdSchema.XrdName "issue"
+                            | XsdSchema.XrdName "unit"
+                            | XsdSchema.XrdName "position"
+                            | XsdSchema.XrdName "userName"
+                            | XsdSchema.XrdName "async"
+                            | XsdSchema.XrdName "authenticator"
+                            | XsdSchema.XrdName "paid"
+                            | XsdSchema.XrdName "encrypt"
+                            | XsdSchema.XrdName "encryptCert"
+                            | XsdSchema.XrdName "encrypted"
+                            | XsdSchema.XrdName "encryptedCert" -> Some(name)
                             | _ -> None
     | _ -> None

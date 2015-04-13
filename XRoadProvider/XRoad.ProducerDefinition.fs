@@ -96,7 +96,7 @@ type String with
             str.Split('/')
             |> Array.map (fun p ->
                 p.Split('.')
-                |> Array.map (fun x -> CultureInfo.InvariantCulture.TextInfo.ToTitleCase(x.ToLower()))
+                |> Array.map (fun x -> CultureInfo.InvariantCulture.TextInfo.ToTitleCase(x.ToLower()).Replace("-", ""))
                 |> String.join "")
             |> String.join "_"
         if not <| CodeGenerator.IsValidLanguageIndependentIdentifier(className)
@@ -432,6 +432,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let portBaseTy = makeServicePortBaseType(undescribedFaults)
     let serviceTypesTy = makeStaticClass("DefinedTypes", TypeAttributes.Public)
 
+    let attributeLookup =
+        schema.TypeSchemas
+        |> Map.toSeq
+        |> Seq.collect (fun (ns, typ) -> typ.Attributes |> Seq.map (fun x -> x.Key.ToString(), x.Value))
+        |> Map.ofSeq
+
     let elementLookup =
         schema.TypeSchemas
         |> Map.toSeq
@@ -505,7 +511,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     match spec.Content.Attributes with
                     | [ arrayType ] when arrayType.Name = Some("arrayType") ->
                         Some(getArrayType(arrayType.ArrayType), getItemName(spec.Content.Content) |> Option.orDefault "item")
-                    | [ arrayType ] when arrayType.RefOrType = RefOrType.Ref(XName.Get("arrayType", XmlNamespace.SoapEncoding)) ->
+                    | [ arrayType ] when arrayType.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)) ->
                         Some(getArrayType(arrayType.ArrayType), getItemName(spec.Content.Content) |> Option.orDefault "item")
                     | _ -> None
                 | _ -> None
@@ -541,7 +547,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         let getParticleType (particleType, maxOccurs, isNillable, name) =
             match particleType with
-            | RefOrType.Name(xname) ->
+            | Name(xname) ->
                 let typ = getRuntimeType(xname)
                 match typ with
                 | x when maxOccurs > 1u ->
@@ -550,9 +556,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [makeXmlElementAttribute(true)])
                     else (PrimitiveType(x), [makeXmlElementAttribute(false)])
                 | x -> (x, [makeXmlElementAttribute(true)])
-            | RefOrType.Type(SoapEncArray(typ, itemName)) ->
+            | Definition(SoapEncArray(typ, itemName)) ->
                 (typ, [makeXmlArrayAttribute(true); makeXmlArrayItemAttribute(itemName)])
-            | RefOrType.Type(typeInfo) ->
+            | Definition(typeInfo) ->
                 let subTy = makePublicClass(name + "Type")
                 buildType(subTy, typeInfo)
                 providedTy.Members.Add(subTy) |> ignore
@@ -561,19 +567,48 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 else (subTyRef, [makeXmlElementAttribute(true)])
             | _ -> failwithf "not implemented: %A" name
 
+        let getAttributeType (schemaObject, name) =
+            let convertedObject =
+                match schemaObject with
+                | Definition(simpleTypeSpec) -> Definition(SimpleType(simpleTypeSpec))
+                | Name(name) -> Name(name)
+                | Reference(ref) -> Reference(ref)
+            getParticleType(convertedObject, 1u, false, name)
+
+        let rec findElementDefinition (spec: ElementSpec) =
+            match spec.Type with
+            | Reference(ref) ->
+                match elementLookup.TryFind(ref.ToString()) with
+                | Some(spec) -> findElementDefinition(spec)
+                | None -> failwithf "Missing referenced attribute %A." ref
+            | _ ->
+                match spec.Name with
+                | Some(name) -> name, spec.Type
+                | None -> failwithf "Attribute has no name."
+
         let parseElementSpec(spec: ElementSpec) =
-            let elementTy, attrs = getParticleType(spec.Type, spec.MaxOccurs, spec.IsNillable, spec.Name.Value)
-            let property = addProperty(spec.Name.Value, elementTy, spec.MinOccurs = 0u)
+            let elemName, elemType = findElementDefinition(spec)
+            let elementTy, attrs = getParticleType(elemType, spec.MaxOccurs, spec.IsNillable, elemName)
+            let property = addProperty(elemName, elementTy, spec.MinOccurs = 0u)
             attrs |> List.iter (property.CustomAttributes.Add >> ignore)
+
+        let rec findAttributeDefinition (spec: AttributeSpec) =
+            match spec.RefOrType with
+            | Reference(ref) ->
+                match attributeLookup.TryFind(ref.ToString()) with
+                | Some(spec) -> findAttributeDefinition(spec)
+                | None -> failwithf "Missing referenced attribute %A." ref
+            | _ ->
+                match spec.Name with
+                | Some(name) -> name, spec.RefOrType
+                | None -> failwithf "Attribute has no name."
 
         let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
             spec.Attributes |> List.iter (fun spec ->
-                match spec.Name with
-                | Some(name) ->
-                    let attributeTy, _ = getParticleType(spec.RefOrType, 1u, false, name)
-                    let property = addProperty(name, attributeTy, match spec.Use with Required -> true | _ -> false)
-                    property.CustomAttributes.Add(makeXmlAttributeAttribute()) |> ignore
-                | _ -> failwith "not implemented")
+                let attrName, attrTypeDef = findAttributeDefinition(spec)
+                let attributeTy, _ = getAttributeType(attrTypeDef, attrName)
+                let property = addProperty(attrName, attributeTy, match spec.Use with Required -> true | _ -> false)
+                property.CustomAttributes.Add(makeXmlAttributeAttribute()) |> ignore)
             match spec.Content with
             | Some(ComplexTypeParticle.All(spec)) ->
                 if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then
@@ -594,7 +629,13 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         | SoapEncArray _ ->
             // TODO: Some global types like message responses are actually array-s
             ()
-        | SimpleType(SimpleTypeSpec.Restriction(spec)) -> failwith "not implemented"
+        | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
+            match getRuntimeType(spec.Base) with
+            | PrimitiveType(typ) as rtyp ->
+                let property = addProperty("BaseValue", rtyp, false)
+                property.CustomAttributes.Add(makeXmlTextAttribute()) |> ignore
+                // TODO: Apply constraints?
+            | ProvidedType(_) -> failwith "not implemented"
         | ComplexType(spec) ->
             if spec.IsAbstract then
                 providedTy.TypeAttributes <- providedTy.TypeAttributes ||| TypeAttributes.Abstract
@@ -630,8 +671,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 match part.Reference with
                 | XmlReference.SchemaElement(elementName) ->
                     match elementLookup.TryFind <| elementName.ToString() with
-                    | Some(RefOrType.Type(schemaType)) ->
-                        getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
+                    | Some(schemaType) -> getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
                     | _ -> failwithf "not implemented (%A)" elementName
                 | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName))
             |> makeReturnType
@@ -662,8 +702,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let prtyp = match part.Reference with
                         | XmlReference.SchemaElement(elementName) ->
                             match elementLookup.TryFind <| elementName.ToString() with
-                            | Some(RefOrType.Type(schemaType)) ->
-                                getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
+                            | Some(schemaType) -> getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
                             | _ -> failwithf "not implemented (%A)" elementName
                         | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
             let parameter = CodeParameterDeclarationExpression(prtyp.AsCodeTypeReference(), part.Name)
@@ -679,8 +718,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 let prtyp = match part.Reference with
                             | XmlReference.SchemaElement(elementName) ->
                                 match elementLookup.TryFind <| elementName.ToString() with
-                                | Some(RefOrType.Type(schemaType)) ->
-                                    getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
+                                | Some(schemaType) -> getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
                                 | _ -> failwithf "not implemented (%A)" elementName
                             | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
 
@@ -720,8 +758,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let prtyp = match part.Reference with
                         | XmlReference.SchemaElement(elementName) ->
                             match elementLookup.TryFind <| elementName.ToString() with
-                            | Some(RefOrType.Type(schemaType)) ->
-                                getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
+                            | Some(schemaType) -> getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
                             | _ -> failwithf "not implemented (%A)" elementName
                         | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
             serviceMethod |> Method.addStat (Stat.Var(prtyp.AsCodeTypeReference(), sprintf "v%d" i, Expr.Value(null)))
