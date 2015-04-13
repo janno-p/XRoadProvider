@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{B5BC653F-B0DB-4C0D-AB47-A15B4469215A}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		Build.cmd = Build.cmd
 		Build.fsx = Build.fsx
 		LICENSE.md = LICENSE.md
 		paket.dependencies = paket.dependencies
