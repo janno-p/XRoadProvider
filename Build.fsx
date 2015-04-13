@@ -12,7 +12,7 @@ let description = "Type providers for generating types and service interfaces fo
 let authors = [ "Janno Põldma" ]
 let tags = "F# fsharp x-road xroad typeproviders x-tee xtee"
 
-let buildDir = "build"
+let buildDir = "bin"
 let packagingDir = "release"
 let releaseNotes = parseReleaseNotes (File.ReadAllLines "RELEASENOTES.md")
 
