@@ -31,7 +31,7 @@ Target "CreatePackage" (fun _->
 
     CleanDir packagingDir
 
-    CopyDir libDir ("bin" @@ "Debug") (fun _ -> true)
+    CopyDir libDir buildDir (fun _ -> true)
 
     NuGet (fun p ->
         { p with
@@ -46,7 +46,8 @@ Target "CreatePackage" (fun _->
             AccessKey = getBuildParamOrDefault "nugetkey" ""
             Publish = hasBuildParam "nugetkey"
             Tags = tags
-            Dependencies = [] })
+            Dependencies = []
+            ToolPath = "packages" @@ "NuGet.CommandLine" @@ "tools" @@ "NuGet.exe" })
         (project + ".nuspec")
     )
 
