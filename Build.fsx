@@ -1,4 +1,4 @@
-﻿#I "packages/FAKE.3.26.7/tools"
+﻿#I "packages/FAKE/tools"
 
 #r "FakeLib"
 
