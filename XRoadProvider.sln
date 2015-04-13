@@ -10,14 +10,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 		.gitignore = .gitignore
 		Build.fsx = Build.fsx
 		LICENSE.md = LICENSE.md
+		paket.dependencies = paket.dependencies
 		README.md = README.md
 		RELEASENOTES.md = RELEASENOTES.md
 		XRoadProvider.nuspec = XRoadProvider.nuspec
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{D2F59029-8A60-4D3E-B434-19AFE38E0484}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{0592FF8F-3C1F-4B0F-A16C-5478C1CC5228}"
 	ProjectSection(SolutionItems) = preProject
-		.nuget\packages.config = .nuget\packages.config
+		.paket\paket.bootstrapper.exe = .paket\paket.bootstrapper.exe
 	EndProjectSection
 EndProject
 Global

@@ -52,7 +52,7 @@
     <Compile Include="XRoad.ProducerDefinition.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
     <Compile Include="XRoad.Providers.fs" />
-    <Content Include="packages.config" />
+    <None Include="paket.references" />
     <EmbeddedResource Include="XmlBookmarkReader.cs" />
   </ItemGroup>
   <ItemGroup>
