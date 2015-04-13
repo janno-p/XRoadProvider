@@ -5,6 +5,7 @@ open System
 open System.CodeDom
 open System.CodeDom.Compiler
 open System.Collections.Generic
+open System.Globalization
 open System.IO
 open System.Reflection
 open System.Runtime.InteropServices
@@ -81,6 +82,26 @@ type private RuntimeType =
     member this.AsCodeTypeReference() = match this with
                                         | PrimitiveType(typ) -> CodeTypeReference(typ)
                                         | ProvidedType(typ) -> typ
+
+module String =
+    let join (sep: string) (arr: seq<'T>) = System.String.Join(sep, arr)
+
+type String with
+    member this.toClassName() =
+        let str =
+            match this.StartsWith("http://") with
+            | true -> this.Substring(7)
+            | _ -> this
+        let className =
+            str.Split('/')
+            |> Array.map (fun p ->
+                p.Split('.')
+                |> Array.map (fun x -> CultureInfo.InvariantCulture.TextInfo.ToTitleCase(x.ToLower()))
+                |> String.join "")
+            |> String.join "_"
+        if not <| CodeGenerator.IsValidLanguageIndependentIdentifier(className)
+        then failwithf "invalid name %s" className
+        className
 
 let private compileAssembly code =
     let fileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid() |> sprintf "%A.dll")
@@ -423,7 +444,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let producerName =
                 match Regex.Match(name.NamespaceName, @"^http://(((?<producer>\w+)\.x-road\.ee/producer)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)))$") with
                 | m when m.Success -> m.Groups.["producer"].Value
-                | _ -> failwithf "TODO: Implement normal namespace handling for tns: %A" name
+                | _ -> name.NamespaceName.toClassName()
             let typ = CodeTypeDeclaration(producerName, IsClass=true, TypeAttributes=TypeAttributes.Public)
             serviceTypesTy.Members.Add(typ) |> ignore
             namespaceCache.Add(name, typ)
