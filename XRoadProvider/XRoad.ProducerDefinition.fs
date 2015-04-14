@@ -513,6 +513,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                         Some(getArrayType(arrayType.ArrayType), getItemName(spec.Content.Content) |> Option.orDefault "item")
                     | [ arrayType ] when arrayType.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)) ->
                         Some(getArrayType(arrayType.ArrayType), getItemName(spec.Content.Content) |> Option.orDefault "item")
+                    | [] ->
+                        // TODO: Build real type
+                        Some(RuntimeType.PrimitiveType(typeof<obj>), getItemName(spec.Content.Content) |> Option.orDefault "item")
                     | _ -> None
                 | _ -> None
             | _ -> None
@@ -619,10 +622,15 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     failwith "not implemented"
                 spec.Content |> List.iter (fun item ->
                     match item with
+                    | SequenceContent.Choice(spec) ->
+                        // TODO: Create choice type
+                        ()
                     | SequenceContent.Element(spec) ->
                         parseElementSpec(spec)
-                    | SequenceContent.Sequence(spec) ->
-                        failwith "not implemented")
+                    | _ -> failwith "not implemented")
+            | Some(ComplexTypeParticle.Choice(spec)) ->
+                // TODO: Create choice type
+                ()
             | None -> ()
 
         match typeInfo with
@@ -636,6 +644,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 property.CustomAttributes.Add(makeXmlTextAttribute()) |> ignore
                 // TODO: Apply constraints?
             | ProvidedType(_) -> failwith "not implemented"
+        | SimpleType(Union(spec)) ->
+            failwith "not implemented"
         | ComplexType(spec) ->
             if spec.IsAbstract then
                 providedTy.TypeAttributes <- providedTy.TypeAttributes ||| TypeAttributes.Abstract
@@ -660,6 +670,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 failwith "not implemented"
             | ComplexTypeContent.Particle(spec) ->
                 parseComplexTypeContentSpec(spec)
+        | EmptyType -> failwith "not implemented"
 
     let buildOperationService (operation: Operation) =
         let serviceMethod = CodeMemberMethod(Name=operation.Name.LocalName)

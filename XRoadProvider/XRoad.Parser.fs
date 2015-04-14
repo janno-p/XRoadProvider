@@ -22,6 +22,7 @@ module XmlNamespace =
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
+    let predefined = [ Http; Mime; Soap; SoapEncoding; SoapEnvelope; Wsdl; Xml; Xsd; Xsi ]
 
 let resolveUri uri =
     match Uri.IsWellFormedUriString(uri, UriKind.Absolute) with
@@ -405,7 +406,7 @@ module XsdSchema =
     and ComplexTypeParticle =
         //| Group
         | All of AllSpec
-        //| Choice
+        | Choice of ChoiceSpec
         | Sequence of SequenceSpec
 
     and SimpleContentRestrictionSpec =
@@ -443,11 +444,24 @@ module XsdSchema =
       { IsAbstract: bool
         Content: ComplexTypeContent }
 
+    and ChoiceContent =
+        | Any
+        | Choice of ChoiceSpec
+        | Element of ElementSpec
+        //| Group of GroupSpec
+        | Sequence of SequenceSpec
+
+    and ChoiceSpec =
+      { Annotation: string option
+        MaxOccurs: uint32
+        MinOccurs: uint32
+        Content: ChoiceContent list }
+
     and SequenceContent =
         | Any
         | Element of ElementSpec
         //| Group of GroupDefinition
-        //| Choice of ChoiceDefinition
+        | Choice of ChoiceSpec
         | Sequence of SequenceSpec
 
     and SequenceSpec =
@@ -619,7 +633,9 @@ module XsdSchema =
                     Content, Some(ComplexTypeContent.SimpleContent(parseSimpleContent node))
                 | Xsd "complexContent", (Begin | Annotation) ->
                     Content, Some(ComplexTypeContent.ComplexContent(parseComplexContent node))
-                | (Xsd "group" | Xsd "choice"), (Begin | Annotation) ->
+                | Xsd "choice", (Begin | Annotation) ->
+                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Choice(parseChoice(node))); Attributes = [] }))
+                | Xsd "group", (Begin | Annotation) ->
                     notimplemented node "complexType"
                 | Xsd "sequence", (Begin | Annotation) ->
                     Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Sequence(parseSequence node)); Attributes = [] }))
@@ -644,6 +660,36 @@ module XsdSchema =
         { IsAbstract = node |> attrBoolValue "abstract" false
           Content = parseChildElements() }
 
+    and parseChoice (node: XElement): ChoiceSpec =
+        let content = List<_>()
+        let annotation =
+            node.Elements()
+            |> Seq.fold (fun (state, notes) node ->
+                match node, state with
+                | Xsd "annotation", Begin ->
+                    Annotation, Some(node.Value)
+                | Xsd "any", _ ->
+                    content.Add(ChoiceContent.Any)
+                    Content, notes
+                | Xsd "choice", _ ->
+                    content.Add(ChoiceContent.Choice(parseChoice(node)))
+                    Content, notes
+                | Xsd "element", _ ->
+                    content.Add(ChoiceContent.Element(parseElement(node)))
+                    Content, notes
+                | Xsd "group", _ ->
+                    Content, notimplemented node "choice"
+                | Xsd "sequence", _ ->
+                    content.Add(ChoiceContent.Sequence(parseSequence(node)))
+                    Content, notes
+                | _ -> notexpected node "choice"
+                ) (Begin, None)
+            |> snd
+        { Annotation = annotation
+          MinOccurs = node |> getMinOccurs 1u
+          MaxOccurs = node |> getMaxOccurs 1u
+          Content = content |> List.ofSeq }
+
     and parseSequence (node: XElement): SequenceSpec =
         let parseChildElements () =
             (Begin, [])
@@ -653,8 +699,10 @@ module XsdSchema =
                     Annotation, spec
                 | Xsd "any", (Begin | Annotation | Content) ->
                     Content, SequenceContent.Any::spec
-                | (Xsd "group" | Xsd "choice"), (Begin | Annotation | Content) ->
-                    notimplemented node "sequence"
+                | Xsd "choice", (Begin | Annotation | Content) ->
+                    Content, SequenceContent.Choice(parseChoice(node))::spec
+                | Xsd "group", (Begin | Annotation | Content) ->
+                    Content, notimplemented node "sequence"
                 | Xsd "sequence", (Begin | Annotation | Content) ->
                     Content, (SequenceContent.Sequence(parseSequence(node)))::spec
                 | Xsd "element", (Begin | Annotation | Content) ->
@@ -904,7 +952,9 @@ module XsdSchema =
                     ) (Begin, snode)
                 |> snd
             schemaLookup.Add(snode.TargetNamespace.NamespaceName, schema)
-            schema.Imports |> List.iter (fun (ns, uri) ->
+            schema.Imports
+            |> List.filter (fun (ns, _) -> XmlNamespace.predefined |> List.exists (fun pdns -> ns.NamespaceName = pdns) |> not)
+            |> List.iter (fun (ns, uri) ->
                 let document = XDocument.Load(uri |> Option.orDefault(ns.NamespaceName))
                 let schemaNode = document.Element(XName.Get("schema", XmlNamespace.Xsd))
                 parseSchemaNode(schemaNode, schemaLookup) |> ignore)
