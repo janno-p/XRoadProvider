@@ -55,6 +55,7 @@
       <Paket>True</Paket>
     </Compile>
     <Compile Include="XRoad.Parser.fs" />
+    <Compile Include="XRoad.CodeDom.fs" />
     <Compile Include="XRoad.ProducerDefinition.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
     <Compile Include="XRoad.Providers.fs" />

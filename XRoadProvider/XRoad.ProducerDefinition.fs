@@ -14,6 +14,7 @@ open System.Xml
 open System.Xml.Linq
 open System.Xml.Schema
 open System.Xml.Serialization
+open XRoad.CodeDom
 open XRoad.Parser
 open XRoad.Parser.XsdSchema
 
@@ -172,6 +173,7 @@ let private makeXRoadHeaderType() =
     let headerTy = makePublicClass("XRoadHeader")
     let addProperty(name, ty: Type, doc) =
         let backingField = CodeMemberField(ty, name + "__backing")
+        backingField.CustomAttributes.Add(Attributes.debuggerBrowsable()) |> ignore
         headerTy.Members.Add(backingField) |> ignore
         let backingFieldRef = Expr.Field(Expr.This, backingField.Name)
         let property = CodeMemberProperty(Name=name, Type=CodeTypeReference(ty))
@@ -255,7 +257,7 @@ let private makeWriteXRoadRpcHeaderMethod() =
          |> Method.addStat (writeRpcHeaderStatements("nimi", Expr.Var("fullServiceName"), "WriteString"))
          |> Method.addStat (writeRpcHeaderStatements("toimik", headerProp("Issue"), "WriteString"))
          |> Method.addStat (writeRpcHeaderStatements("allasutus", headerProp("Unit"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("amet", headerProp("Position"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("amet", headerProp("Position"), "WriteRaw"))
          |> Method.addStat (writeRpcHeaderStatements("ametniknimi", headerProp("UserName"), "WriteString"))
          |> Method.addStat (writeRpcHeaderStatements("asynkroonne", headerProp("Async"), "WriteValue"))
          |> Method.addStat (writeRpcHeaderStatements("autentija", headerProp("Authenticator"), "WriteString"))
@@ -526,6 +528,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let specifiedField =
                 if isOptional then
                     let f = CodeMemberField(typeof<bool>, name + "__specified")
+                    f.CustomAttributes.Add(Attributes.debuggerBrowsable()) |> ignore
                     providedTy.Members.Add(f) |> ignore
                     let p = CodeMemberProperty(Name=name + "Specified", Type=CodeTypeReference(typeof<bool>))
                     p.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
@@ -534,6 +537,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     Some(f)
                 else None
             let backingField = CodeMemberField(ty.AsCodeTypeReference(), name + "__backing")
+            backingField.CustomAttributes.Add(Attributes.debuggerBrowsable()) |> ignore
             providedTy.Members.Add(backingField) |> ignore
             let backingFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), backingField.Name)
             let property = CodeMemberProperty(Name=name, Type=ty.AsCodeTypeReference())
