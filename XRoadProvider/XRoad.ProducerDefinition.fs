@@ -446,13 +446,24 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         |> Seq.collect (fun (ns, typ) -> typ.Elements |> Seq.map (fun x -> x.Key.ToString(), x.Value))
         |> Map.ofSeq
 
+    let (|Producer|_|) ns =
+        match Regex.Match(ns, @"^http://(((?<producer>\w+)\.x-road\.ee/producer(/(?<path>.*))?)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)(/(?<path>.*))?))$") with
+        | m when m.Success ->
+            let suffix =
+                if m.Groups.["path"].Success then sprintf "_%s" <| m.Groups.["path"].Value.toClassName()
+                else ""
+            Some(sprintf "%s%s" m.Groups.["producer"].Value suffix)
+        | _ -> None
+
     let getOrCreateNamespace (name: XNamespace) =
         match namespaceCache.TryGetValue(name) with
         | false, _ ->
             let producerName =
-                match Regex.Match(name.NamespaceName, @"^http://(((?<producer>\w+)\.x-road\.ee/producer)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)))$") with
-                | m when m.Success -> m.Groups.["producer"].Value
-                | _ -> name.NamespaceName.toClassName()
+                match name.NamespaceName with
+                | Producer(producerName) -> producerName
+                | XmlNamespace.Xtee -> "xtee"
+                | XmlNamespace.XRoad -> "xroad"
+                | ns -> ns.toClassName()
             let typ = CodeTypeDeclaration(producerName, IsClass=true, TypeAttributes=TypeAttributes.Public)
             serviceTypesTy.Members.Add(typ) |> ignore
             namespaceCache.Add(name, typ)
