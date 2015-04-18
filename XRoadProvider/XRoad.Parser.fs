@@ -41,12 +41,16 @@ type MessagePart =
   { Name: string
     Reference: XmlReference }
 
+type OperationBody =
+  { Namespace: string
+    Parts: MessagePart list }
+
 type OperationMessage =
   { Name: XName
-    Body: MessagePart list
+    Body: OperationBody
     Header: MessagePart list
     MultipartContent: MessagePart list }
-    static member Create(name) = { Name = name; Body = []; Header = []; MultipartContent = [] }
+    static member Create(name) = { Name = name; Body = { Namespace = ""; Parts = [] }; Header = []; MultipartContent = [] }
 
 type OperationStyle = RpcEncoded | DocLiteral
 
@@ -126,8 +130,14 @@ let parseAbstractParts msgName (abstractDef: XElement) =
         | _ -> failwithf "Unknown element or type for message %s part %s" msgName name)
     |> Map.ofSeq
 
-let parseSoapBody msgName ns (abstractParts: Map<string,XmlReference>) (elem: XElement) (opmsg: OperationMessage) =
-    let ns = elem |> reqAttr(XName.Get("namespace"))
+let parseSoapBody msgName ns (style: OperationStyle) (abstractParts: Map<string,XmlReference>) (elem: XElement) (opmsg: OperationMessage) =
+    let ns =
+        match elem |> reqAttr(XName.Get("use")), style with
+        | "literal", RpcEncoded -> failwith "Invalid use value 'literal' for RPC style, only 'encoded' is allowed."
+        | "literal", DocLiteral -> ns
+        | "encoded", DocLiteral -> failwith "Invalid use value 'encoded' for RPC style, only 'literal' is allowed."
+        | "encoded", RpcEncoded -> elem |> reqAttr(XName.Get("namespace"))
+        | u, _ -> failwithf "Unexpected use/style combination: %A/%A" u style
     let opmsg =
         match elem |> attr (XName.Get("parts")) with
         | Some value ->
@@ -135,12 +145,14 @@ let parseSoapBody msgName ns (abstractParts: Map<string,XmlReference>) (elem: XE
             |> Array.fold (fun om partName ->
                 match abstractParts.TryFind partName with
                 | Some(part) ->
-                    if om.Body |> List.exists (fun x -> x.Name = partName) then om
-                    else { om with Body = { Name = partName; Reference = part } :: om.Body }
+                    { om with
+                        Body =
+                            if om.Body.Parts |> List.exists (fun x -> x.Name = partName) then om.Body
+                            else { om.Body with Parts = { Name = partName; Reference = part } :: om.Body.Parts } }
                 | None -> failwithf "Message %s does not contain part %s" msgName partName
                 ) opmsg
         | _ -> opmsg
-    { opmsg with Name = XName.Get(opmsg.Name.LocalName, ns) }
+    { opmsg with Body = { opmsg.Body with Namespace = ns } }
 
 let parseSoapHeader (style: OperationStyle) (definitions: XElement) (elem: XElement) (opmsg: OperationMessage) =
     let messageName = elem |> reqAttr (XName.Get("message")) |> parseXName elem
@@ -161,7 +173,7 @@ let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractD
     let msgName = abstractDef |> reqAttr (XName.Get("name"))
     let definitions = binding.Parent.Parent.Parent
     let abstractParts = abstractDef |> parseAbstractParts msgName
-    let parseSoapBody' = parseSoapBody msgName ns abstractParts
+    let parseSoapBody' = parseSoapBody msgName ns style abstractParts
     let parseSoapHeader' = parseSoapHeader style definitions
     let operationMessage =
         binding.Elements()
@@ -186,9 +198,9 @@ let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractD
             | _ -> opmsg) (OperationMessage.Create(XName.Get(msgName, ns)))
     abstractParts
     |> Seq.fold (fun opmsg p ->
-        if opmsg.Body |> List.exists (fun x -> x.Name = p.Key) then opmsg
+        if opmsg.Body.Parts |> List.exists (fun x -> x.Name = p.Key) then opmsg
         elif opmsg.MultipartContent |> List.exists (fun x -> x.Name = p.Key) then opmsg
-        else { opmsg with Body = { Name = p.Key; Reference = p.Value } :: opmsg.Body }
+        else { opmsg with Body = { opmsg.Body with Parts = { Name = p.Key; Reference = p.Value } :: opmsg.Body.Parts } }
         ) operationMessage
 
 let validateOperationStyle styleValue style =

@@ -644,7 +644,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         serviceMethod.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
 
         let returnType, returnExpr =
-            operation.Response.Body
+            operation.Response.Body.Parts
             |> List.map (fun part ->
                 match part.Reference with
                 | XmlReference.SchemaElement(elementName) ->
@@ -672,10 +672,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                       |> Method.addExpr (Expr.Call(Expr.Base, "WriteRpcHeader", Expr.Var("writer"), Expr.Var("settings"), Expr.Value(serviceName), Expr.Var("requiredHeaders")))
                       |> Method.addStat (Stat.Snip("};"))
                       |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeBody", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
-                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("producer"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Name.NamespaceName)))
+                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("producer"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace)))
                       |> ignore
 
-        operation.Request.Body
+        operation.Request.Body.Parts
         |> List.iter (fun part ->
             let prtyp = match part.Reference with
                         | XmlReference.SchemaElement(elementName) ->
@@ -691,7 +691,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                           |> ignore)
 
         let deserializePartsExpr =
-            operation.Response.Body
+            operation.Response.Body.Parts
             |> List.mapi (fun i part ->
                 let prtyp = match part.Reference with
                             | XmlReference.SchemaElement(elementName) ->
@@ -727,11 +727,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                       |> Method.addStat (Stat.IfThenElse(Expr.CallOp(
                                                             Expr.CallOp(Expr.Prop(Expr.Var("reader"), "LocalName"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Name.LocalName)),
                                                             Expr.Op.BooleanOr,
-                                                            Expr.CallOp(Expr.Prop(Expr.Var("reader"), "NamespaceURI"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Name.NamespaceName))),
+                                                            Expr.CallOp(Expr.Prop(Expr.Var("reader"), "NamespaceURI"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Body.Namespace))),
                                                          Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Invalid response message.")))))
                       |> ignore
 
-        operation.Response.Body
+        operation.Response.Body.Parts
         |> List.iteri (fun i part ->
             let prtyp = match part.Reference with
                         | XmlReference.SchemaElement(elementName) ->
@@ -761,7 +761,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         headerParam.CustomAttributes.Add(defaultValueAttribute) |> ignore
         serviceMethod.Parameters.Add(headerParam) |> ignore
 
-        if not <| operation.Response.Body.IsEmpty then
+        if not <| operation.Response.Body.Parts.IsEmpty then
             serviceMethod |> Method.addStat (Stat.Return(methodCall)) |> ignore
         else serviceMethod |> Method.addExpr methodCall |> ignore
 
