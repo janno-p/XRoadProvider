@@ -126,18 +126,21 @@ let parseAbstractParts msgName (abstractDef: XElement) =
         | _ -> failwithf "Unknown element or type for message %s part %s" msgName name)
     |> Map.ofSeq
 
-let parseSoapBody msgName (abstractParts: Map<string,XmlReference>) (elem: XElement) (opmsg: OperationMessage) =
-    match elem |> attr (XName.Get("parts")) with
-    | Some value ->
-        value.Split(' ')
-        |> Array.fold (fun om partName ->
-            match abstractParts.TryFind partName with
-            | Some(part) ->
-                if om.Body |> List.exists (fun x -> x.Name = partName) then om
-                else { om with Body = { Name = partName; Reference = part } :: om.Body }
-            | None -> failwithf "Message %s does not contain part %s" msgName partName
-            ) opmsg
-    | _ -> opmsg
+let parseSoapBody msgName ns (abstractParts: Map<string,XmlReference>) (elem: XElement) (opmsg: OperationMessage) =
+    let ns = elem |> reqAttr(XName.Get("namespace"))
+    let opmsg =
+        match elem |> attr (XName.Get("parts")) with
+        | Some value ->
+            value.Split(' ')
+            |> Array.fold (fun om partName ->
+                match abstractParts.TryFind partName with
+                | Some(part) ->
+                    if om.Body |> List.exists (fun x -> x.Name = partName) then om
+                    else { om with Body = { Name = partName; Reference = part } :: om.Body }
+                | None -> failwithf "Message %s does not contain part %s" msgName partName
+                ) opmsg
+        | _ -> opmsg
+    { opmsg with Name = XName.Get(opmsg.Name.LocalName, ns) }
 
 let parseSoapHeader (style: OperationStyle) (definitions: XElement) (elem: XElement) (opmsg: OperationMessage) =
     let messageName = elem |> reqAttr (XName.Get("message")) |> parseXName elem
@@ -158,7 +161,7 @@ let parseOperationMessage (style: OperationStyle) (binding: XElement) (abstractD
     let msgName = abstractDef |> reqAttr (XName.Get("name"))
     let definitions = binding.Parent.Parent.Parent
     let abstractParts = abstractDef |> parseAbstractParts msgName
-    let parseSoapBody' = parseSoapBody msgName abstractParts
+    let parseSoapBody' = parseSoapBody msgName ns abstractParts
     let parseSoapHeader' = parseSoapHeader style definitions
     let operationMessage =
         binding.Elements()

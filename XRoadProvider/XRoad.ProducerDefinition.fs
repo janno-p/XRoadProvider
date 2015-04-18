@@ -747,6 +747,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                       |> Method.addStat (Stat.Snip("};"))
                       |> ignore
 
+        match operation.Documentation.TryGetValue("et") with
+        | true, doc -> serviceMethod.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
+        | _ -> ()
+
         let methodCall = Expr.Call(CodeMethodReferenceExpression(Expr.Base, "MakeServiceCall", returnType), Expr.Var("writeHeader"), Expr.Var("writeBody"), Expr.Var("readBody"))
 
         let headerParam = CodeParameterDeclarationExpression(headerTy.Name, "settings")
