@@ -1,6 +1,7 @@
 ﻿module private XRoad.ProducerDefinition
 
 open Microsoft.CSharp
+
 open System
 open System.CodeDom
 open System.CodeDom.Compiler
@@ -12,21 +13,14 @@ open System.Runtime.InteropServices
 open System.Text.RegularExpressions
 open System.Xml
 open System.Xml.Linq
-open System.Xml.Schema
 open System.Xml.Serialization
+
 open XRoad.CodeDom
 open XRoad.Parser
 open XRoad.Parser.XsdSchema
 
 let (!~~) x = x :> CodeStatement
 let (!~>) x = !~~ CodeExpressionStatement(x)
-
-let xmlBookmarkReaderSnip =
-    let assembly = typeof<XRoad.Parser.MessagePart>.Assembly
-    let resourceName = "XmlBookmarkReader.cs"
-    use stream = assembly.GetManifestResourceStream(resourceName)
-    use reader = new StreamReader(stream)
-    CodeSnippetTypeMember(reader.ReadToEnd())
 
 module private Stat =
     type Assign = CodeAssignStatement
@@ -127,53 +121,11 @@ let private makeStaticClass(className, attributes) =
 let private makePublicClass name =
     CodeTypeDeclaration(name, IsClass=true, TypeAttributes=TypeAttributes.Public)
 
-let private makeXmlIncludeAttribute (providedTy: CodeTypeDeclaration) =
-    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlIncludeAttribute>))
-    attribute.Arguments.Add(CodeAttributeArgument(CodeTypeOfExpression(providedTy.Name))) |> ignore
-    attribute
-
-let private makeXmlTypeAttribute(typeName: XName) =
-    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlTypeAttribute>))
-    attribute.Arguments.Add(CodeAttributeArgument(CodePrimitiveExpression(typeName.LocalName))) |> ignore
-    attribute.Arguments.Add(CodeAttributeArgument("Namespace", CodePrimitiveExpression(typeName.NamespaceName))) |> ignore
-    attribute
-
-let private makeXmlElementAttribute(isNillable) =
-    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlElementAttribute>))
-    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
-    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
-    if isNillable then attribute.Arguments.Add(CodeAttributeArgument("IsNullable", Expr.Value(true))) |> ignore
-    attribute
-
-let private makeXmlArrayAttribute(isNillable) =
-    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlArrayAttribute>))
-    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
-    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
-    if isNillable then attribute.Arguments.Add(CodeAttributeArgument("IsNullable", Expr.Value(true))) |> ignore
-    attribute
-
-let private makeXmlArrayItemAttribute(name) =
-    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlArrayItemAttribute>))
-    attribute.Arguments.Add(CodeAttributeArgument(Expr.Value(name))) |> ignore
-    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
-    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
-    //if isNillable then attribute.Arguments.Add(CodeAttributeArgument("IsNullable", Expr.Value(true))) |> ignore
-    attribute
-
-let private makeXmlAttributeAttribute() =
-    let attribute = CodeAttributeDeclaration(CodeTypeReference(typeof<XmlAttributeAttribute>))
-    let formExpr = CodePropertyReferenceExpression(CodeTypeReferenceExpression(typeof<XmlSchemaForm>), "Unqualified")
-    attribute.Arguments.Add(CodeAttributeArgument("Form", formExpr)) |> ignore
-    attribute
-
-let private makeXmlTextAttribute() =
-    CodeAttributeDeclaration(CodeTypeReference(typeof<XmlTextAttribute>))
-
 let private makeXRoadHeaderType() =
     let headerTy = makePublicClass("XRoadHeader")
     let addProperty(name, ty: Type, doc) =
         let backingField = CodeMemberField(ty, name + "__backing")
-        backingField.CustomAttributes.Add(Attributes.debuggerBrowsable()) |> ignore
+        backingField.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
         headerTy.Members.Add(backingField) |> ignore
         let backingFieldRef = Expr.Field(Expr.This, backingField.Name)
         let property = CodeMemberProperty(Name=name, Type=CodeTypeReference(ty))
@@ -474,7 +426,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         match typeCache.TryGetValue(name) with
         | false, _ ->
             let typ = makePublicClass(name.LocalName)
-            typ.CustomAttributes.Add(makeXmlTypeAttribute(name)) |> ignore
+            typ.CustomAttributes.Add(Attributes.XmlType(name)) |> ignore
             let namespaceTy = getOrCreateNamespace(name.Namespace)
             namespaceTy.Members.Add(typ) |> ignore
             typeCache.Add(name, typ)
@@ -539,7 +491,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let specifiedField =
                 if isOptional then
                     let f = CodeMemberField(typeof<bool>, name + "__specified")
-                    f.CustomAttributes.Add(Attributes.debuggerBrowsable()) |> ignore
+                    f.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
                     providedTy.Members.Add(f) |> ignore
                     let p = CodeMemberProperty(Name=name + "Specified", Type=CodeTypeReference(typeof<bool>))
                     p.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
@@ -548,7 +500,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     Some(f)
                 else None
             let backingField = CodeMemberField(ty.AsCodeTypeReference(), name + "__backing")
-            backingField.CustomAttributes.Add(Attributes.debuggerBrowsable()) |> ignore
+            backingField.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
             providedTy.Members.Add(backingField) |> ignore
             let backingFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), backingField.Name)
             let property = CodeMemberProperty(Name=name, Type=ty.AsCodeTypeReference())
@@ -569,20 +521,20 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 let typ = getRuntimeType(xname)
                 match typ with
                 | x when maxOccurs > 1u ->
-                    (makeArrayType(x, 1), [makeXmlElementAttribute(true)])
+                    (makeArrayType(x, 1), [Attributes.XmlElement(true)])
                 | PrimitiveType(x) when x.IsValueType ->
-                    if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [makeXmlElementAttribute(true)])
-                    else (PrimitiveType(x), [makeXmlElementAttribute(false)])
-                | x -> (x, [makeXmlElementAttribute(true)])
+                    if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [Attributes.XmlElement(true)])
+                    else (PrimitiveType(x), [Attributes.XmlElement(false)])
+                | x -> (x, [Attributes.XmlElement(true)])
             | Definition(SoapEncArray(typ, itemName)) ->
-                (typ, [makeXmlArrayAttribute(true); makeXmlArrayItemAttribute(itemName)])
+                (typ, [Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName)])
             | Definition(typeInfo) ->
                 let subTy = makePublicClass(name + "Type")
                 buildType(subTy, typeInfo)
                 providedTy.Members.Add(subTy) |> ignore
                 let subTyRef = ProvidedType(CodeTypeReference(subTy.Name))
-                if maxOccurs > 1u then (makeArrayType(subTyRef, 1), [makeXmlElementAttribute(true)])
-                else (subTyRef, [makeXmlElementAttribute(true)])
+                if maxOccurs > 1u then (makeArrayType(subTyRef, 1), [Attributes.XmlElement(true)])
+                else (subTyRef, [Attributes.XmlElement(true)])
             | _ -> failwithf "not implemented: %A" name
 
         let getAttributeType (schemaObject, name) =
@@ -626,7 +578,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 let attrName, attrTypeDef = findAttributeDefinition(spec)
                 let attributeTy, _ = getAttributeType(attrTypeDef, attrName)
                 let property = addProperty(attrName, attributeTy, match spec.Use with Required -> true | _ -> false)
-                property.CustomAttributes.Add(makeXmlAttributeAttribute()) |> ignore)
+                property.CustomAttributes.Add(Attributes.XmlAttribute) |> ignore)
             match spec.Content with
             | Some(ComplexTypeParticle.All(spec)) ->
                 if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then
@@ -656,7 +608,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             match getRuntimeType(spec.Base) with
             | PrimitiveType(typ) as rtyp ->
                 let property = addProperty("BaseValue", rtyp, false)
-                property.CustomAttributes.Add(makeXmlTextAttribute()) |> ignore
+                property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                 // TODO: Apply constraints?
             | ProvidedType(_) -> failwith "not implemented"
         | SimpleType(Union(spec)) ->
@@ -670,7 +622,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 match getRuntimeType(spec.Base) with
                 | PrimitiveType(typ) as rtyp ->
                     let property = addProperty("BaseValue", rtyp, false)
-                    property.CustomAttributes.Add(makeXmlTextAttribute()) |> ignore
+                    property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                     parseComplexTypeContentSpec(spec.Content)
                 | ProvidedType(_) ->
                     failwith "not implemented"
@@ -679,7 +631,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                 let baseTy = getOrCreateType(spec.Base)
                 providedTy.BaseTypes.Add(baseTy.Name) |> ignore
-                baseTy.CustomAttributes.Add(makeXmlIncludeAttribute(providedTy)) |> ignore
+                baseTy.CustomAttributes.Add(Attributes.XmlInclude(providedTy)) |> ignore
                 parseComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
                 failwith "not implemented"
@@ -820,7 +772,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let targetClass = makeStaticClass(typeNamePath.[typeNamePath.Length - 1], TypeAttributes.Public)
 
     if undescribedFaults then
-        targetClass.Members.Add(xmlBookmarkReaderSnip) |> ignore
+        targetClass.Members.Add(createXmlBookmarkReaderType()) |> ignore
 
     targetClass.Members.Add(headerTy) |> ignore
     targetClass.Members.Add(portBaseTy) |> ignore
