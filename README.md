@@ -3,6 +3,23 @@
 A collection of F# type provider library to support easy interfacing with service providers over
 [X-Road](http://x-road.eu) infrastructure.
 
+## Usage
+
+```F#
+open XRoad.Providers
+
+type Maakataster = XRoadProducer<"H:\\Work\\Maakataster.wsdl">
+
+let myport = new Maakataster.myservice.myport()
+myport.Address <- "http://localhost/maakataster/adapter.asmx"
+myport.Producer <- "maakataster"
+
+let paring = new Maakataster.DefinedTypes.maakataster.ky_paring()
+paring.katastritunnus <- "test"
+
+let vastus, _ = myport.ky(paring)
+```
+
 ## TODO
 
 * Overrideable service settings (producer, soap address, doc language).
