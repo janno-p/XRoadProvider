@@ -121,39 +121,6 @@ let private makeStaticClass(className, attributes) =
 let private makePublicClass name =
     CodeTypeDeclaration(name, IsClass=true, TypeAttributes=TypeAttributes.Public)
 
-let private makeXRoadHeaderType() =
-    let headerTy = makePublicClass("XRoadHeader")
-    let addProperty(name, ty: Type, doc) =
-        let backingField = CodeMemberField(ty, name + "__backing")
-        backingField.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
-        headerTy.Members.Add(backingField) |> ignore
-        let backingFieldRef = Expr.Field(Expr.This, backingField.Name)
-        let property = CodeMemberProperty(Name=name, Type=CodeTypeReference(ty))
-        property.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-        property.GetStatements.Add(Stat.Return(backingFieldRef)) |> ignore
-        property.SetStatements.Add(Stat.Assign(backingFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
-        property.Comments.Add(CodeCommentStatement("<summary>", true)) |> ignore
-        property.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
-        property.Comments.Add(CodeCommentStatement("</summary>", true)) |> ignore
-        headerTy.Members.Add(property) |> ignore
-    addProperty("Consumer", typeof<string>, "DNS-name of the institution")
-    addProperty("Producer", typeof<string>, "DNS-name of the database")
-    addProperty("UserId", typeof<string>, "ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518")
-    addProperty("Id", typeof<string>, "Service invocation nonce (unique identifier)")
-    addProperty("Service", typeof<string>, "Name of the service to be invoked")
-    addProperty("Issue", typeof<string>, "Name of file or document related to the service invocation")
-    addProperty("Unit", typeof<string>, "Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal)")
-    addProperty("Position", typeof<string>, "Organizational position or role of the person invoking the service")
-    addProperty("UserName", typeof<string>, "Name of the person invoking the service")
-    addProperty("Async", typeof<Nullable<bool>>, "Specifies asynchronous service. If the value is \"true\", then the security server performs the service call asynchronously.")
-    addProperty("Authenticator", typeof<string>, "Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.")
-    addProperty("Paid", typeof<string>, "The amount of money paid for invoking the service")
-    addProperty("Encrypt", typeof<string>, "If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center")
-    addProperty("EncryptCert", typeof<string>, "Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only.")
-    addProperty("Encrypted", typeof<string>, "If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header.")
-    addProperty("EncryptedCert", typeof<string>, "If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header.")
-    headerTy
-
 let private makeGenerateNonceMethod() =
     let meth = CodeMemberMethod(Name="GenerateNonce")
     meth.Attributes <- MemberAttributes.Private
@@ -178,46 +145,44 @@ let private makeWriteXRoadRpcHeaderMethod() =
     meth.Attributes <- MemberAttributes.Family ||| MemberAttributes.Final
 
     meth |> Method.addParam (Expr.Param(typeof<XmlWriter>, "writer"))
-         |> Method.addParam (Expr.Param("XRoadHeader", "header"))
          |> Method.addParam (Expr.Param(typeof<string>, "serviceName"))
          |> Method.addParam (Expr.Param(typeof<IList<string>>, "requiredHeaders"))
          |> ignore
 
     let writerRef = Expr.Var("writer")
-    let headerProp propName = Expr.Prop(Expr.Var("header"), propName)
+    let headerProp propName = Expr.Prop(Expr.This, propName)
     let writeRpcHeaderStatements = writeHeaderStatements XmlNamespace.Xtee
 
-    meth |> Method.addStat (Stat.IfThenElse(Expr.CallOp(Expr.Var("header"), Expr.Op.IdentityEquality, Expr.Value(null)),
-                                            Stat.Assign(Expr.Var("header"), Expr.NewObject("XRoadHeader"))))
-         |> Method.addExpr (Expr.Call(writerRef, "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("xtee"), Expr.Value(null), Expr.Value(XmlNamespace.Xtee)))
+    meth |> Method.addExpr (Expr.Call(writerRef, "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("xtee"), Expr.Value(null), Expr.Value(XmlNamespace.Xtee)))
          |> Method.addStat (Stat.Var(typeof<string>, "producerValue"))
-         |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Producer"), Expr.Op.IdentityEquality, Expr.Value(null)),
+         |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Andmekogu"), Expr.Op.IdentityEquality, Expr.Value(null)),
                                       [| !~~ Stat.Assign(Expr.Var("producerValue"), Expr.Var("producer")) |],
-                                      [| !~~ Stat.Assign(Expr.Var("producerValue"), headerProp("Producer")) |]))
+                                      [| !~~ Stat.Assign(Expr.Var("producerValue"), headerProp("Andmekogu")) |]))
          |> Method.addStat (Stat.Var(typeof<string>, "requestId"))
          |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Id"), Expr.Op.IdentityEquality, Expr.Value(null)),
                                       [| !~~ Stat.Assign(Expr.Var("requestId"), Expr.Call(Expr.This, "GenerateNonce")) |],
                                       [| !~~ Stat.Assign(Expr.Var("requestId"), headerProp("Id")) |]))
          |> Method.addStat (Stat.Var(typeof<string>, "fullServiceName"))
-         |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Service"), Expr.Op.IdentityEquality, Expr.Value(null)),
+         |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Nimi"), Expr.Op.IdentityEquality, Expr.Value(null)),
                                       [| !~~ Stat.Assign(Expr.Var("fullServiceName"), Expr.Call(Expr.Type(typeof<string>), "Format", Expr.Value("{0}.{1}"), Expr.Var("producerValue"), Expr.Var("serviceName"))) |],
-                                      [| !~~ Stat.Assign(Expr.Var("fullServiceName"), headerProp("Service")) |]))
-         |> Method.addStat (writeRpcHeaderStatements("asutus", headerProp("Consumer") :> CodeExpression, "WriteString"))
+                                      [| !~~ Stat.Assign(Expr.Var("fullServiceName"), headerProp("Nimi")) |]))
+         |> Method.addStat (writeRpcHeaderStatements("asutus", headerProp("Asutus") :> CodeExpression, "WriteString"))
          |> Method.addStat (writeRpcHeaderStatements("andmekogu", Expr.Var("producerValue"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("isikukood", headerProp("UserId"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("isikukood", headerProp("Isikukood"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("ametnik", headerProp("Ametnik"), "WriteString"))
          |> Method.addStat (writeRpcHeaderStatements("id", Expr.Var("requestId"), "WriteString"))
          |> Method.addStat (writeRpcHeaderStatements("nimi", Expr.Var("fullServiceName"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("toimik", headerProp("Issue"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("allasutus", headerProp("Unit"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("amet", headerProp("Position"), "WriteRaw"))
-         |> Method.addStat (writeRpcHeaderStatements("ametniknimi", headerProp("UserName"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("asynkroonne", headerProp("Async"), "WriteValue"))
-         |> Method.addStat (writeRpcHeaderStatements("autentija", headerProp("Authenticator"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("makstud", headerProp("Paid"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("salastada", headerProp("Encrypt"), "WriteString"))
-         |> Method.addStat (writeRpcHeaderStatements("salastada_sertifikaadiga", headerProp("EncryptCert"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("toimik", headerProp("Toimik"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("allasutus", headerProp("Allasutus"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("amet", headerProp("Amet"), "WriteRaw"))
+         |> Method.addStat (writeRpcHeaderStatements("ametniknimi", headerProp("Ametniknimi"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("asynkroonne", headerProp("Asynkroonne"), "WriteValue"))
+         |> Method.addStat (writeRpcHeaderStatements("autentija", headerProp("Autentija"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("makstud", headerProp("Makstud"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("salastada", headerProp("Salastada"), "WriteString"))
+         |> Method.addStat (writeRpcHeaderStatements("salastada_sertifikaadiga", headerProp("SalastadaSertifikaadiga"), "WriteString"))
 
-let private makeServicePortBaseType(undescribedFaults) =
+let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     let portBaseTy = makePublicClass("AbstractServicePort")
     portBaseTy.TypeAttributes <- portBaseTy.TypeAttributes ||| TypeAttributes.Abstract
 
@@ -349,7 +314,42 @@ let private makeServicePortBaseType(undescribedFaults) =
     portBaseTy.Members.Add(nonceMeth) |> ignore
     portBaseTy.Members.Add(moveToElementMeth) |> ignore
 
-    portBaseTy
+    match style with
+    | RpcEncoded ->
+        portBaseTy |> createProperty<string>         "Asutus"                   "Asutuse DNS-nimi."
+                   |> createProperty<string>         "Andmekogu"                "Andmekogu DNS-nimi."
+                   |> createProperty<string>         "Isikukood"                "Teenuse kasutaja isikukood, millele eelneb kahekohaline maa kood. Näiteks EE37702026518."
+                   |> createProperty<string>         "Ametnik"                  "Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0)."
+                   |> createProperty<string>         "Id"                       "Teenuse väljakutse nonss (unikaalne identifikaator)."
+                   |> createProperty<string>         "Nimi"                     "Kutsutava teenuse nimi."
+                   |> createProperty<string>         "Toimik"                   "Teenuse väljakutsega seonduva toimiku number (mittekohustuslik)."
+                   |> createProperty<string>         "Allasutus"                "Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis)."
+                   |> createProperty<string>         "Amet"                     "Teenuse kasutaja ametikoht."
+                   |> createProperty<string>         "Ametniknimi"              "Teenuse kasutaja nimi."
+                   |> createProperty<Nullable<bool>> "Asynkroonne"              "Teenuse kasutamise asünkroonsus. Kui väärtus on 'true', siis sooritab turvaserver päringu asünkroonselt."
+                   |> createProperty<string>         "Autentija"                "Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis)."
+                   |> createProperty<string>         "Makstud"                  "Teenuse kasutamise eest makstud summa."
+                   |> createProperty<string>         "Salastada"                "Kui asutusele on X-tee keskuse poolt antud päringute salastamise õigus ja andmekogu on nõus päringut salastama, siis selle elemendi olemasolul päringu päises andmekogu turvaserver krüpteerib päringu logi, kasutades selleks X-tee keskuse salastusvõtit."
+                   |> createProperty<string>         "SalastadaSertifikaadiga"  "Päringu sooritaja ID-kaardi autentimissertifikaat DERkujul base64 kodeerituna. Selle elemendi olemasolu päringu päises väljendab soovi päringu logi salastamiseks asutuse turvaserveris päringu sooritaja ID-kaardi autentimisvõtmega. Seda välja kasutatakse ainult kodaniku päringute portaalis."
+                   |> createProperty<string>         "Salastatud"               "Kui päringu välja päises oli element salastada ja päringulogi salastamine õnnestus, siis vastuse päisesse lisatakse tühi element salastatud."
+                   |> createProperty<string>         "SalastatudSertifikaadiga" "Kui päringu päises oli element salastada_sertifikaadiga ja päringulogi salastamine õnnestus, siis vastuse päisesesse lisatakse tühi element salastatud_sertifikaadiga."
+    | DocLiteral ->
+        portBaseTy |> createProperty<string>         "Consumer"                 "DNS-name of the institution"
+                   |> createProperty<string>         "Producer"                 "DNS-name of the database"
+                   |> createProperty<string>         "UserId"                   "ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518"
+                   |> createProperty<string>         "Id"                       "Service invocation nonce (unique identifier)"
+                   |> createProperty<string>         "Service"                  "Name of the service to be invoked"
+                   |> createProperty<string>         "Issue"                    "Name of file or document related to the service invocation"
+                   |> createProperty<string>         "Unit"                     "Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal)"
+                   |> createProperty<string>         "Position"                 "Organizational position or role of the person invoking the service"
+                   |> createProperty<string>         "UserName"                 "Name of the person invoking the service"
+                   |> createProperty<Nullable<bool>> "Async"                    "Specifies asynchronous service. If the value is \"true\", then the security server performs the service call asynchronously."
+                   |> createProperty<string>         "Authenticator"            "Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method."
+                   |> createProperty<string>         "Paid"                     "The amount of money paid for invoking the service"
+                   |> createProperty<string>         "Encrypt"                  "If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center"
+                   |> createProperty<string>         "EncryptCert"              "Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only."
+                   |> createProperty<string>         "Encrypted"                "If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header."
+                   |> createProperty<string>         "EncryptedCert"            "If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header."
 
 let private getRequiredHeaders(operation: Operation) =
     let headers, rest =
@@ -382,8 +382,16 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let typeCache = Dictionary<XName,CodeTypeDeclaration>()
     let namespaceCache = Dictionary<XNamespace,CodeTypeDeclaration>()
 
-    let headerTy = makeXRoadHeaderType()
-    let portBaseTy = makeServicePortBaseType(undescribedFaults)
+    let style =
+        let reduceStyle s1 s2 =
+            if s1 <> s2
+            then failwith "Mixing different style services is not allowed!"
+            s1
+        schema.Services
+        |> List.map (fun svc -> svc.Ports |> List.map (fun p -> p.Style) |> List.reduce reduceStyle)
+        |> List.reduce reduceStyle
+
+    let portBaseTy = makeServicePortBaseType(undescribedFaults, style)
     let serviceTypesTy = makeStaticClass("DefinedTypes", TypeAttributes.Public)
 
     let attributeLookup =
@@ -669,7 +677,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         // CodeDom doesn't support delegates, so we have to improvise
         serviceMethod |> Method.addStat (Stat.Var(typeof<string[]>, "requiredHeaders", requiredHeadersExpr))
                       |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeHeader", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
-                      |> Method.addExpr (Expr.Call(Expr.Base, "WriteRpcHeader", Expr.Var("writer"), Expr.Var("settings"), Expr.Value(serviceName), Expr.Var("requiredHeaders")))
+                      |> Method.addExpr (Expr.Call(Expr.Base, "WriteRpcHeader", Expr.Var("writer"), Expr.Value(serviceName), Expr.Var("requiredHeaders")))
                       |> Method.addStat (Stat.Snip("};"))
                       |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeBody", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
                       |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("producer"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace)))
@@ -753,16 +761,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         let methodCall = Expr.Call(CodeMethodReferenceExpression(Expr.Base, "MakeServiceCall", returnType), Expr.Var("writeHeader"), Expr.Var("writeBody"), Expr.Var("readBody"))
 
-        let headerParam = CodeParameterDeclarationExpression(headerTy.Name, "settings")
-        let optionalAttribute = CodeAttributeDeclaration(CodeTypeReference(typeof<OptionalAttribute>))
-        let defaultValueAttribute = CodeAttributeDeclaration(CodeTypeReference(typeof<System.Runtime.InteropServices.DefaultParameterValueAttribute>))
-        defaultValueAttribute.Arguments.Add(CodeAttributeArgument(Expr.Value(null))) |> ignore
-        headerParam.CustomAttributes.Add(optionalAttribute) |> ignore
-        headerParam.CustomAttributes.Add(defaultValueAttribute) |> ignore
-        serviceMethod.Parameters.Add(headerParam) |> ignore
-
-        if not <| operation.Response.Body.Parts.IsEmpty then
-            serviceMethod |> Method.addStat (Stat.Return(methodCall)) |> ignore
+        if not <| operation.Response.Body.Parts.IsEmpty
+        then serviceMethod |> Method.addStat (Stat.Return(methodCall)) |> ignore
         else serviceMethod |> Method.addExpr methodCall |> ignore
 
         serviceMethod
@@ -778,7 +778,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     if undescribedFaults then
         targetClass.Members.Add(createXmlBookmarkReaderType()) |> ignore
 
-    targetClass.Members.Add(headerTy) |> ignore
     targetClass.Members.Add(portBaseTy) |> ignore
     targetClass.Members.Add(serviceTypesTy) |> ignore
 
