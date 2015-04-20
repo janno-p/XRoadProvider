@@ -457,44 +457,52 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         | ProvidedType(typ) ->
             [1..rank] |> List.fold (fun (aggTyp: CodeTypeReference) _ -> CodeTypeReference(aggTyp, 1)) typ |> ProvidedType
 
-    let (|SoapEncArray|_|) (typ: SchemaType) =
-        let getArrayType arrayType =
-            match arrayType with
-            | Some(typeName, rank) -> makeArrayType(getRuntimeType(typeName), rank)
-            | _ -> failwith "Array underlying type specification is missing."
+    let (|ArrayType|_|) (attributes: AttributeSpec list) =
+        attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)))
 
-        let getItemName particle =
-            match particle with
-            | Some(ComplexTypeParticle.Sequence(spec)) ->
-                match spec.Content with
-                | [ SequenceContent.Element(e) ] -> e.Name
-                | _ -> None
-            | Some(ComplexTypeParticle.All(spec)) ->
-                match spec.Elements with
-                | [ e ] -> e.Name
-                | _ -> None
-            | _ -> None
+    let (|SoapEncArray|_|) (def: SchemaType) =
+        match def with SchemaType.ComplexType(x) -> Some(x) | _ -> None
+        |> Option.bind (fun x ->
+            match x.Content with
+            | ComplexTypeContent.ComplexContent(Restriction(c))
+                when c.Base.LocalName = "Array" && c.Base.NamespaceName = XmlNamespace.SoapEncoding -> Some(c.Content)
+            | _ -> None)
 
-        match typ with
-        | SchemaType.ComplexType(spec) ->
+    let getArrayItemElement particle =
+        match particle with
+        | Some(ComplexTypeParticle.Sequence(spec)) ->
             match spec.Content with
-            | ComplexTypeContent.ComplexContent(ComplexContentSpec.Restriction(spec)) ->
-                match spec.Base.LocalName, spec.Base.NamespaceName with
-                | "Array", XmlNamespace.SoapEncoding ->
-                    match spec.Content.Attributes with
-                    | [ arrayType ] when arrayType.Name = Some("arrayType") ->
-                        Some(getArrayType(arrayType.ArrayType), getItemName(spec.Content.Content) |> Option.orDefault "item")
-                    | [ arrayType ] when arrayType.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)) ->
-                        Some(getArrayType(arrayType.ArrayType), getItemName(spec.Content.Content) |> Option.orDefault "item")
-                    | [] ->
-                        // TODO: Build real type
-                        Some(RuntimeType.PrimitiveType(typeof<obj>), getItemName(spec.Content.Content) |> Option.orDefault "item")
-                    | _ -> None
-                | _ -> None
+            | [ SequenceContent.Element(e) ] -> Some(e)
+            | _ -> None
+        | Some(ComplexTypeParticle.All(spec)) ->
+            match spec.Elements with
+            | [ e ] -> Some(e)
             | _ -> None
         | _ -> None
 
     let rec buildType(providedTy: CodeTypeDeclaration, typeInfo) =
+        let rec findAttributeDefinition (spec: AttributeSpec) =
+            match spec.RefOrType with
+            | Reference(ref) ->
+                match attributeLookup.TryFind(ref.ToString()) with
+                | Some(spec) -> findAttributeDefinition(spec)
+                | None -> failwithf "Missing referenced attribute %A." ref
+            | _ ->
+                match spec.Name with
+                | Some(name) -> name, spec.RefOrType
+                | None -> failwithf "Attribute has no name."
+
+        let rec findElementDefinition (spec: ElementSpec) =
+            match spec.Type with
+            | Reference(ref) ->
+                match elementLookup.TryFind(ref.ToString()) with
+                | Some(spec) -> findElementDefinition(spec)
+                | None -> failwithf "Missing referenced attribute %A." ref
+            | _ ->
+                match spec.Name with
+                | Some(name) -> name, spec.Type
+                | None -> failwithf "Attribute has no name."
+
         let addProperty(name, ty: RuntimeType, isOptional) =
             let specifiedField =
                 if isOptional then
@@ -523,7 +531,65 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             providedTy.Members.Add(property) |> ignore
             property
 
-        let getParticleType (particleType, maxOccurs, isNillable, name) =
+        let buildProperty(name, ty: RuntimeType, isOptional): CodeTypeMember list =
+            [
+                let specifiedField =
+                    if isOptional then
+                        let f = CodeMemberField(typeof<bool>, name + "__specified")
+                        f.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
+                        let p = CodeMemberProperty(Name=name + "Specified", Type=CodeTypeReference(typeof<bool>))
+                        p.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+                        p.GetStatements.Add(Stat.Return(Expr.Field(Expr.This, f.Name))) |> ignore
+                        Some(f, p)
+                    else None
+                let backingField = CodeMemberField(ty.AsCodeTypeReference(), name + "__backing")
+                backingField.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
+                let backingFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), backingField.Name)
+                let property = CodeMemberProperty(Name=name, Type=ty.AsCodeTypeReference())
+                property.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+                property.GetStatements.Add(CodeMethodReturnStatement(backingFieldRef)) |> ignore
+                property.SetStatements.Add(CodeAssignStatement(backingFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
+
+                yield upcast property
+                yield upcast backingField
+
+                match specifiedField with
+                | Some(field, prop) ->
+                    let fieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), field.Name)
+                    property.SetStatements.Add(CodeAssignStatement(fieldRef, CodePrimitiveExpression(true))) |> ignore
+                    yield upcast field
+                    yield upcast prop
+                | _ -> ()
+            ]
+
+        let rec getAttributeType (schemaObject, name) =
+            let convertedObject =
+                match schemaObject with
+                | Definition(simpleTypeSpec) -> Definition(SimpleType(simpleTypeSpec))
+                | Name(name) -> Name(name)
+                | Reference(ref) -> Reference(ref)
+            getParticleType(convertedObject, 1u, false, name)
+
+        and getArrayType (contentSpec: ComplexTypeContentSpec) =
+            match contentSpec.Attributes with
+            | ArrayType(attrSpec) ->
+                match attrSpec.ArrayType with
+                | Some(typeName, rank) ->
+                    let typ = makeArrayType(getRuntimeType(typeName), rank)
+                    let itemName = getArrayItemElement(contentSpec.Content) |> Option.bind (fun x -> x.Name) |> Option.orDefault "item"
+                    typ, [ Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName) ]
+                | _ -> failwith "Array underlying type specification is missing."
+            | _ ->
+                match getArrayItemElement(contentSpec.Content) with
+                | Some(elementSpec) ->
+                    let elemName, elemType = findElementDefinition(elementSpec)
+                    let subTyName = providedTy.Name + "ArrayItem"
+                    let elementTy, attrs = getParticleType(elemType, elementSpec.MaxOccurs, elementSpec.IsNillable, subTyName)
+                    let typ = makeArrayType(ProvidedType(CodeTypeReference(subTyName + "Type")), 1)
+                    typ, [ Attributes.XmlArray(true); Attributes.XmlArrayItem(elemName) ]
+                | None -> failwith "Unsupported SOAP encoding array definition."
+
+        and getParticleType (particleType, maxOccurs, isNillable, name) =
             match particleType with
             | Name(xname) ->
                 let typ = getRuntimeType(xname)
@@ -534,8 +600,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [Attributes.XmlElement(true)])
                     else (PrimitiveType(x), [Attributes.XmlElement(false)])
                 | x -> (x, [Attributes.XmlElement(true)])
-            | Definition(SoapEncArray(typ, itemName)) ->
-                (typ, [Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName)])
+            | Definition(SoapEncArray(contentSpec)) ->
+                getArrayType(contentSpec)
             | Definition(typeInfo) ->
                 let subTy = makePublicClass(name + "Type")
                 buildType(subTy, typeInfo)
@@ -545,41 +611,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 else (subTyRef, [Attributes.XmlElement(true)])
             | _ -> failwithf "not implemented: %A" name
 
-        let getAttributeType (schemaObject, name) =
-            let convertedObject =
-                match schemaObject with
-                | Definition(simpleTypeSpec) -> Definition(SimpleType(simpleTypeSpec))
-                | Name(name) -> Name(name)
-                | Reference(ref) -> Reference(ref)
-            getParticleType(convertedObject, 1u, false, name)
-
-        let rec findElementDefinition (spec: ElementSpec) =
-            match spec.Type with
-            | Reference(ref) ->
-                match elementLookup.TryFind(ref.ToString()) with
-                | Some(spec) -> findElementDefinition(spec)
-                | None -> failwithf "Missing referenced attribute %A." ref
-            | _ ->
-                match spec.Name with
-                | Some(name) -> name, spec.Type
-                | None -> failwithf "Attribute has no name."
-
-        let parseElementSpec(spec: ElementSpec) =
+        and parseElementSpec(spec: ElementSpec) =
             let elemName, elemType = findElementDefinition(spec)
             let elementTy, attrs = getParticleType(elemType, spec.MaxOccurs, spec.IsNillable, elemName)
             let property = addProperty(elemName, elementTy, spec.MinOccurs = 0u)
             attrs |> List.iter (property.CustomAttributes.Add >> ignore)
-
-        let rec findAttributeDefinition (spec: AttributeSpec) =
-            match spec.RefOrType with
-            | Reference(ref) ->
-                match attributeLookup.TryFind(ref.ToString()) with
-                | Some(spec) -> findAttributeDefinition(spec)
-                | None -> failwithf "Missing referenced attribute %A." ref
-            | _ ->
-                match spec.Name with
-                | Some(name) -> name, spec.RefOrType
-                | None -> failwithf "Attribute has no name."
 
         let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
             spec.Attributes |> List.iter (fun spec ->
@@ -609,9 +645,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | None -> ()
 
         match typeInfo with
-        | SoapEncArray _ ->
-            // TODO: Some global types like message responses are actually array-s
-            ()
+        | SoapEncArray(contentSpec) ->
+            let typ, attrs = getArrayType(contentSpec)
+            let property = addProperty("Array", typ, false)
+            attrs |> List.iter (fun attr -> property.CustomAttributes.Add(attr) |> ignore)
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             match getRuntimeType(spec.Base) with
             | PrimitiveType(typ) as rtyp ->
