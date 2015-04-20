@@ -2,8 +2,6 @@ source https://nuget.org/api/v2
 
 nuget FAKE
 nuget NuGet.CommandLine
-
 nuget FSharp.TypeProviders.StarterPack
-
 nuget NUnit
 nuget Unquote
