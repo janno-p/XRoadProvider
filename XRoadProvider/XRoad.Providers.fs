@@ -9,7 +9,8 @@ open System.IO
 open System.Reflection
 
 type private CacheKey =
-  { ProducerUri: string
+  { TypeName: string
+    ProducerUri: string
     UndescribedFaults: bool }
 
 [<TypeProvider>]
@@ -30,7 +31,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
             | :? ProvidedTypeDefinition as ty ->
                 match staticArguments with
                 | [| :? string as producerUri; :? bool as undescribedFaults |] ->
-                    let key = { ProducerUri = producerUri; UndescribedFaults = undescribedFaults }
+                    let key = { TypeName = String.Join(".", typeNameWithArguments); ProducerUri = producerUri; UndescribedFaults = undescribedFaults }
                     match typeCache.TryGetValue(key) with
                     | false, _ ->
                         let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, undescribedFaults)

@@ -140,6 +140,47 @@ let private writeHeaderStatements xrdns (name, prop, methodName) =
                                     Expr.Call(writerRef, methodName, prop) |> Stat.ofExpr),
                     Expr.Call(writerRef, "WriteEndElement") |> Stat.ofExpr)
 
+let private makeWriteXRoadDocHeaderMethod() =
+    let meth = CodeMemberMethod(Name="WriteDocHeader")
+    meth.Attributes <- MemberAttributes.Family ||| MemberAttributes.Final
+
+    meth |> Method.addParam (Expr.Param(typeof<XmlWriter>, "writer"))
+         |> Method.addParam (Expr.Param(typeof<string>, "serviceName"))
+         |> Method.addParam (Expr.Param(typeof<IList<string>>, "requiredHeaders"))
+         |> ignore
+
+    let writerRef = Expr.Var("writer")
+    let headerProp propName = Expr.Prop(Expr.This, propName)
+    let writeHeaderStatements' = writeHeaderStatements XmlNamespace.XRoad
+
+    meth |> Method.addExpr (Expr.Call(writerRef, "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("xrd"), Expr.Value(null), Expr.Value(XmlNamespace.XRoad)))
+         |> Method.addStat (Stat.Var(typeof<string>, "producerValue"))
+         |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Producer"), Expr.Op.IdentityEquality, Expr.Value(null)),
+                                      [| !~~ Stat.Assign(Expr.Var("producerValue"), Expr.Var("producerName")) |],
+                                      [| !~~ Stat.Assign(Expr.Var("producerValue"), headerProp("Producer")) |]))
+         |> Method.addStat (Stat.Var(typeof<string>, "requestId"))
+         |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Id"), Expr.Op.IdentityEquality, Expr.Value(null)),
+                                      [| !~~ Stat.Assign(Expr.Var("requestId"), Expr.Call(Expr.This, "GenerateNonce")) |],
+                                      [| !~~ Stat.Assign(Expr.Var("requestId"), headerProp("Id")) |]))
+         |> Method.addStat (Stat.Var(typeof<string>, "fullServiceName"))
+         |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Service"), Expr.Op.IdentityEquality, Expr.Value(null)),
+                                      [| !~~ Stat.Assign(Expr.Var("fullServiceName"), Expr.Call(Expr.Type(typeof<string>), "Format", Expr.Value("{0}.{1}"), Expr.Var("producerValue"), Expr.Var("serviceName"))) |],
+                                      [| !~~ Stat.Assign(Expr.Var("fullServiceName"), headerProp("Service")) |]))
+         |> Method.addStat (writeHeaderStatements'("consumer", headerProp("Consumer") :> CodeExpression, "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("producer", Expr.Var("producerValue"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("userId", headerProp("UserId"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("id", Expr.Var("requestId"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("service", Expr.Var("fullServiceName"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("issue", headerProp("Issue"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("unit", headerProp("Unit"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("position", headerProp("Position"), "WriteRaw"))
+         |> Method.addStat (writeHeaderStatements'("userName", headerProp("UserName"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("async", headerProp("Async"), "WriteValue"))
+         |> Method.addStat (writeHeaderStatements'("authenticator", headerProp("Authenticator"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("paid", headerProp("Paid"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("encrypt", headerProp("Encrypt"), "WriteString"))
+         |> Method.addStat (writeHeaderStatements'("encryptCert", headerProp("EncryptCert"), "WriteString"))
+
 let private makeWriteXRoadRpcHeaderMethod() =
     let meth = CodeMemberMethod(Name="WriteRpcHeader")
     meth.Attributes <- MemberAttributes.Family ||| MemberAttributes.Final
@@ -201,7 +242,10 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     producerProperty.SetStatements.Add(Stat.Assign(producerFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
 
     let nonceMeth = makeGenerateNonceMethod()
-    let writeRpcHeaderMeth = makeWriteXRoadRpcHeaderMethod()
+    let writeRpcHeaderMeth =
+        match style with
+        | DocLiteral -> makeWriteXRoadDocHeaderMethod()
+        | RpcEncoded -> makeWriteXRoadRpcHeaderMethod()
 
     let ctor = CodeConstructor()
     ctor.Attributes <- MemberAttributes.Family
@@ -717,10 +761,15 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         // CodeDom doesn't support delegates, so we have to improvise
         serviceMethod |> Method.addStat (Stat.Var(typeof<string[]>, "requiredHeaders", requiredHeadersExpr))
                       |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeHeader", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
-                      |> Method.addExpr (Expr.Call(Expr.Base, "WriteRpcHeader", Expr.Var("writer"), Expr.Value(serviceName), Expr.Var("requiredHeaders")))
-                      |> Method.addStat (Stat.Snip("};"))
+                      |> ignore
+
+        match operation.Style with
+        | DocLiteral -> serviceMethod |> Method.addExpr (Expr.Call(Expr.Base, "WriteDocHeader", Expr.Var("writer"), Expr.Value(serviceName), Expr.Var("requiredHeaders"))) |> ignore
+        | RpcEncoded -> serviceMethod |> Method.addExpr (Expr.Call(Expr.Base, "WriteRpcHeader", Expr.Var("writer"), Expr.Value(serviceName), Expr.Var("requiredHeaders"))) |> ignore
+
+        serviceMethod |> Method.addStat (Stat.Snip("};"))
                       |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeBody", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
-                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("producerName"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace)))
+                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("producer"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace)))
                       |> ignore
 
         operation.Request.Body.Parts
