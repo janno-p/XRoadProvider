@@ -20,6 +20,7 @@ module Expr =
     let value x = CodePrimitiveExpression(x) :> CodeExpression
     let fldref (f: CodeMemberField) e = CodeFieldReferenceExpression(e, f.Name) :> CodeExpression
     let this = CodeThisReferenceExpression() :> CodeExpression
+    let typeOf (t: CodeTypeReference) = CodeTypeOfExpression(t) :> CodeExpression
 
 module Attr =
     let create<'T> = CodeAttributeDeclaration(typeRef<'T>)
@@ -45,6 +46,7 @@ module Attributes =
 
     let XmlInclude(providedTy: CodeTypeDeclaration) = Attr.create<XmlIncludeAttribute> |> Attr.addArg (typeCodeExpr providedTy)
     let XmlElement(isNillable) = Attr.create<XmlElementAttribute> |> addUnqualifiedForm |> addNullable isNillable
+    let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
     let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable
     let XmlArrayItem(name) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm //|> addNullable isNillable
 

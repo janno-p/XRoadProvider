@@ -575,9 +575,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | ArrayType(attrSpec) ->
                 match attrSpec.ArrayType with
                 | Some(typeName, rank) ->
-                    let typ = makeArrayType(getRuntimeType(typeName), rank)
+                    let itemType = getRuntimeType(typeName)
+                    let typ = makeArrayType(itemType, rank)
                     let itemName = getArrayItemElement(contentSpec.Content) |> Option.bind (fun x -> x.Name) |> Option.orDefault "item"
-                    typ, [ Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName) ]
+                    typ, itemName, itemType
                 | _ -> failwith "Array underlying type specification is missing."
             | _ ->
                 match getArrayItemElement(contentSpec.Content) with
@@ -585,8 +586,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     let elemName, elemType = findElementDefinition(elementSpec)
                     let subTyName = providedTy.Name + "ArrayItem"
                     let elementTy, attrs = getParticleType(elemType, elementSpec.MaxOccurs, elementSpec.IsNillable, subTyName)
-                    let typ = makeArrayType(ProvidedType(CodeTypeReference(subTyName + "Type")), 1)
-                    typ, [ Attributes.XmlArray(true); Attributes.XmlArrayItem(elemName) ]
+                    let itemType = ProvidedType(CodeTypeReference(subTyName + "Type"))
+                    let typ = makeArrayType(itemType, 1)
+                    typ, elemName, itemType
                 | None -> failwith "Unsupported SOAP encoding array definition."
 
         and getParticleType (particleType, maxOccurs, isNillable, name) =
@@ -601,7 +603,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     else (PrimitiveType(x), [Attributes.XmlElement(false)])
                 | x -> (x, [Attributes.XmlElement(true)])
             | Definition(SoapEncArray(contentSpec)) ->
-                getArrayType(contentSpec)
+                let typ, itemName, _ = getArrayType(contentSpec)
+                typ, [ Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName) ]
             | Definition(typeInfo) ->
                 let subTy = makePublicClass(name + "Type")
                 buildType(subTy, typeInfo)
@@ -646,9 +649,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         match typeInfo with
         | SoapEncArray(contentSpec) ->
-            let typ, attrs = getArrayType(contentSpec)
+            let typ, itemName, itemType = getArrayType(contentSpec)
             let property = addProperty("Array", typ, false)
-            attrs |> List.iter (fun attr -> property.CustomAttributes.Add(attr) |> ignore)
+            property.CustomAttributes.Add(Attributes.XmlElement2(itemName, itemType.AsCodeTypeReference())) |> ignore
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             match getRuntimeType(spec.Base) with
             | PrimitiveType(typ) as rtyp ->
