@@ -156,7 +156,7 @@ let private makeWriteXRoadRpcHeaderMethod() =
     meth |> Method.addExpr (Expr.Call(writerRef, "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("xtee"), Expr.Value(null), Expr.Value(XmlNamespace.Xtee)))
          |> Method.addStat (Stat.Var(typeof<string>, "producerValue"))
          |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Andmekogu"), Expr.Op.IdentityEquality, Expr.Value(null)),
-                                      [| !~~ Stat.Assign(Expr.Var("producerValue"), Expr.Var("producer")) |],
+                                      [| !~~ Stat.Assign(Expr.Var("producerValue"), Expr.Var("producerName")) |],
                                       [| !~~ Stat.Assign(Expr.Var("producerValue"), headerProp("Andmekogu")) |]))
          |> Method.addStat (Stat.Var(typeof<string>, "requestId"))
          |> Method.addStat (Stat.IfThenElse(Expr.CallOp(headerProp("Id"), Expr.Op.IdentityEquality, Expr.Value(null)),
@@ -186,16 +186,16 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     let portBaseTy = makePublicClass("AbstractServicePort")
     portBaseTy.TypeAttributes <- portBaseTy.TypeAttributes ||| TypeAttributes.Abstract
 
-    let addressField = CodeMemberField(typeof<string>, "address")
+    let addressField = CodeMemberField(typeof<string>, "producerUri")
     let addressFieldRef = Expr.Field(Expr.This, addressField.Name)
-    let addressProperty = CodeMemberProperty(Name="Address", Type=CodeTypeReference(typeof<string>))
+    let addressProperty = CodeMemberProperty(Name="ProducerUri", Type=CodeTypeReference(typeof<string>))
     addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
     addressProperty.GetStatements.Add(Stat.Return(addressFieldRef)) |> ignore
     addressProperty.SetStatements.Add(Stat.Assign(addressFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
 
-    let producerField = CodeMemberField(typeof<string>, "producer")
+    let producerField = CodeMemberField(typeof<string>, "producerName")
     let producerFieldRef = Expr.Field(Expr.This, producerField.Name)
-    let producerProperty = CodeMemberProperty(Name="Producer", Type=CodeTypeReference(typeof<string>))
+    let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
     producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
     producerProperty.GetStatements.Add(Stat.Return(producerFieldRef)) |> ignore
     producerProperty.SetStatements.Add(Stat.Assign(producerFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
@@ -205,10 +205,10 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
 
     let ctor = CodeConstructor()
     ctor.Attributes <- MemberAttributes.Family
-    ctor.Parameters.Add(Expr.Param(typeof<string>, "address")) |> ignore
-    ctor.Parameters.Add(Expr.Param(typeof<string>, "producer")) |> ignore
-    ctor.Statements.Add(Stat.Assign(Expr.Field(Expr.This, "address"), Expr.Var("address"))) |> ignore
-    ctor.Statements.Add(Stat.Assign(Expr.Field(Expr.This, "producer"), Expr.Var("producer"))) |> ignore
+    ctor.Parameters.Add(Expr.Param(typeof<string>, "producerUri")) |> ignore
+    ctor.Parameters.Add(Expr.Param(typeof<string>, "producerName")) |> ignore
+    ctor.Statements.Add(Stat.Assign(Expr.Field(Expr.This, "producerUri"), Expr.Var("producerUri"))) |> ignore
+    ctor.Statements.Add(Stat.Assign(Expr.Field(Expr.This, "producerName"), Expr.Var("producerName"))) |> ignore
 
     let moveToElementMeth = CodeMemberMethod(Name="MoveToElement")
     moveToElementMeth.Attributes <- MemberAttributes.Family
@@ -290,7 +290,7 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     serviceCallMeth |> Method.addParam (Expr.Param(typeof<Action<XmlWriter>>, "writeHeaderAction"))
                     |> Method.addParam (Expr.Param(typeof<Action<XmlWriter>>, "writeBody"))
                     |> Method.addParam (Expr.Param(CodeTypeReference("System.Func", CodeTypeReference(typeof<XmlReader>), CodeTypeReference("T")), "readBody"))
-                    |> Method.addStat (Stat.Var(typeof<Net.WebRequest>, "request", Expr.Call(Expr.Type(typeof<Net.WebRequest>), "Create", Expr.Var("address"))))
+                    |> Method.addStat (Stat.Var(typeof<Net.WebRequest>, "request", Expr.Call(Expr.Type(typeof<Net.WebRequest>), "Create", Expr.Var("producerUri"))))
                     |> Method.addStat (Stat.Assign(Expr.Prop(Expr.Var("request"), "Method"), Expr.Value("POST")))
                     |> Method.addStat (Stat.Assign(Expr.Prop(Expr.Var("request"), "ContentType"), Expr.Value("text/xml; charset=utf-8")))
                     |> Method.addExpr (Expr.Call(Expr.Prop(Expr.Var("request"), "Headers"), "Set", Expr.Value("SOAPAction"), Expr.Value("")))
@@ -698,7 +698,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 | XmlReference.SchemaElement(elementName) ->
                     match elementLookup.TryFind <| elementName.ToString() with
                     | Some(schemaType) -> getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
-                    | _ -> failwithf "not implemented (%A)" elementName
+                    | _ -> failwithf "Missing global element definition (%A)" elementName
                 | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName))
             |> makeReturnType
 
@@ -720,7 +720,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                       |> Method.addExpr (Expr.Call(Expr.Base, "WriteRpcHeader", Expr.Var("writer"), Expr.Value(serviceName), Expr.Var("requiredHeaders")))
                       |> Method.addStat (Stat.Snip("};"))
                       |> Method.addStat (Stat.Var(typeof<Action<XmlWriter>>, "writeBody", Expr.Snip("delegate(System.Xml.XmlWriter writer) { //")))
-                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("producer"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace)))
+                      |> Method.addExpr (Expr.Call(Expr.Var("writer"), "WriteStartElement", Expr.Value("producerName"), Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace)))
                       |> ignore
 
         operation.Request.Body.Parts
