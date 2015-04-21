@@ -168,6 +168,7 @@ let private headerMapping = function
 
 let fst3 (x, _, _) = x
 let snd3 (_, x, _) = x
+let trd3 (_, _, x) = x
 
 let private writeXRoadHeaderMethod (style) =
     let hdrns, hdrName, propName, nsprefix =
@@ -182,24 +183,20 @@ let private writeXRoadHeaderMethod (style) =
                     [ Stmt.ofExpr ((writerVar @-> "WriteStartElement") [Expr.value name; Expr.value hdrns])
                       Stmt.condIf propNotNullExpr [ Stmt.ofExpr ((writerVar @-> methodName) [propVar]) ]
                       Stmt.ofExpr ((writerVar @-> "WriteEndElement") []) ]
+    let declareWithDefaultValue name xtname defExpr (m: CodeMemberMethod) =
+        m |> Meth.addStmt (Stmt.declVar<string> name)
+          |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @~> (propName xtname)))
+                                           [Stmt.assign (Expr.var name) defExpr]
+                                           [Stmt.assign (Expr.var name) (Expr.this @~> (propName xtname))])
     Meth.create "WriteHeader"
     |> Meth.setAttr (MemberAttributes.Family ||| MemberAttributes.Final)
     |> Meth.addParam<XmlWriter> "writer"
     |> Meth.addParam<string> "serviceName"
     |> Meth.addParam<IList<string>> "requiredHeaders"
     |> Meth.addExpr ((writerVar @-> "WriteAttributeString") [Expr.value "xmlns"; Expr.value nsprefix; Expr.value null; Expr.value hdrns])
-    |> Meth.addStmt (Stmt.declVar<string> "producerValue")
-    |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @~> (propName "andmekogu")))
-                                        [Stmt.assign (Expr.var "producerValue") (Expr.var "producerName")]
-                                        [Stmt.assign (Expr.var "producerValue") (Expr.this @~> (propName "andmekogu"))])
-    |> Meth.addStmt (Stmt.declVar<string> "requestId")
-    |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @~> (propName "id")))
-                                        [Stmt.assign (Expr.var "requestId") ((Expr.this @-> "GenerateNonce") [])]
-                                        [Stmt.assign (Expr.var "requestId") (Expr.this @~> (propName "id"))])
-    |> Meth.addStmt (Stmt.declVar<string> "fullServiceName")
-    |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @~> (propName "nimi")))
-                                        [Stmt.assign (Expr.var "fullServiceName") ((typeRefExpr<string> @-> "Format") [Expr.value "{0}.{1}"; Expr.var "producerValue"; Expr.var "serviceName"])]
-                                        [Stmt.assign (Expr.var "fullServiceName") (Expr.this @~> (propName "nimi"))])
+    |> declareWithDefaultValue "producerValue" "andmekogu" (Expr.var "producerName")
+    |> declareWithDefaultValue "requestId" "id" ((Expr.this @-> "GenerateNonce") [])
+    |> declareWithDefaultValue "fullServiceName" "nimi" ((typeRefExpr<string> @-> "Format") [Expr.value "{0}.{1}"; Expr.var "producerValue"; Expr.var "serviceName"])
     |> Meth.addStmt (writeHeaderElement (hdrName "asutus") (Expr.this @~> (propName "asutus")) "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "andmekogu") (Expr.var "producerValue") "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "isikukood") (Expr.this @~> (propName "isikukood")) "WriteString")
@@ -347,42 +344,14 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     portBaseTy.Members.Add(nonceMeth) |> ignore
     portBaseTy.Members.Add(moveToElementMeth) |> ignore
 
-    match style with
-    | RpcEncoded ->
-        portBaseTy |> createProperty<string>         "Asutus"                   "Asutuse DNS-nimi."
-                   |> createProperty<string>         "Andmekogu"                "Andmekogu DNS-nimi."
-                   |> createProperty<string>         "Isikukood"                "Teenuse kasutaja isikukood, millele eelneb kahekohaline maa kood. Näiteks EE37702026518."
-                   |> createProperty<string>         "Ametnik"                  "Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0)."
-                   |> createProperty<string>         "Id"                       "Teenuse väljakutse nonss (unikaalne identifikaator)."
-                   |> createProperty<string>         "Nimi"                     "Kutsutava teenuse nimi."
-                   |> createProperty<string>         "Toimik"                   "Teenuse väljakutsega seonduva toimiku number (mittekohustuslik)."
-                   |> createProperty<string>         "Allasutus"                "Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis)."
-                   |> createProperty<string>         "Amet"                     "Teenuse kasutaja ametikoht."
-                   |> createProperty<string>         "Ametniknimi"              "Teenuse kasutaja nimi."
-                   |> createProperty<Nullable<bool>> "Asynkroonne"              "Teenuse kasutamise asünkroonsus. Kui väärtus on 'true', siis sooritab turvaserver päringu asünkroonselt."
-                   |> createProperty<string>         "Autentija"                "Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis)."
-                   |> createProperty<string>         "Makstud"                  "Teenuse kasutamise eest makstud summa."
-                   |> createProperty<string>         "Salastada"                "Kui asutusele on X-tee keskuse poolt antud päringute salastamise õigus ja andmekogu on nõus päringut salastama, siis selle elemendi olemasolul päringu päises andmekogu turvaserver krüpteerib päringu logi, kasutades selleks X-tee keskuse salastusvõtit."
-                   |> createProperty<string>         "SalastadaSertifikaadiga"  "Päringu sooritaja ID-kaardi autentimissertifikaat DERkujul base64 kodeerituna. Selle elemendi olemasolu päringu päises väljendab soovi päringu logi salastamiseks asutuse turvaserveris päringu sooritaja ID-kaardi autentimisvõtmega. Seda välja kasutatakse ainult kodaniku päringute portaalis."
-                   |> createProperty<string>         "Salastatud"               "Kui päringu välja päises oli element salastada ja päringulogi salastamine õnnestus, siis vastuse päisesse lisatakse tühi element salastatud."
-                   |> createProperty<string>         "SalastatudSertifikaadiga" "Kui päringu päises oli element salastada_sertifikaadiga ja päringulogi salastamine õnnestus, siis vastuse päisesesse lisatakse tühi element salastatud_sertifikaadiga."
-    | DocLiteral ->
-        portBaseTy |> createProperty<string>         "Consumer"                 "DNS-name of the institution"
-                   |> createProperty<string>         "Producer"                 "DNS-name of the database"
-                   |> createProperty<string>         "UserId"                   "ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518"
-                   |> createProperty<string>         "Id"                       "Service invocation nonce (unique identifier)"
-                   |> createProperty<string>         "Service"                  "Name of the service to be invoked"
-                   |> createProperty<string>         "Issue"                    "Name of file or document related to the service invocation"
-                   |> createProperty<string>         "Unit"                     "Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal)"
-                   |> createProperty<string>         "Position"                 "Organizational position or role of the person invoking the service"
-                   |> createProperty<string>         "UserName"                 "Name of the person invoking the service"
-                   |> createProperty<Nullable<bool>> "Async"                    "Specifies asynchronous service. If the value is \"true\", then the security server performs the service call asynchronously."
-                   |> createProperty<string>         "Authenticator"            "Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method."
-                   |> createProperty<string>         "Paid"                     "The amount of money paid for invoking the service"
-                   |> createProperty<string>         "Encrypt"                  "If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center"
-                   |> createProperty<string>         "EncryptCert"              "Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only."
-                   |> createProperty<string>         "Encrypted"                "If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header."
-                   |> createProperty<string>         "EncryptedCert"            "If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header."
+    let choose = headerMapping >> (match style with RpcEncoded -> fst | DocLiteral -> snd)
+    let propName = choose >> snd3
+    let docValue = choose >> trd3
+
+    [ "asutus"; "andmekogu"; "isikukood"; "id"; "nimi"; "toimik"; "allasutus"; "amet"; "ametniknimi"; "autentija"; "makstud"; "salastada"; "salastada_sertifikaadiga"; "salastatud"; "salastatud_sertifikaadiga" ]
+    |> List.fold (fun typ hdr -> typ |> createProperty<string> (propName hdr) (docValue hdr)) portBaseTy
+    |> iif (style = RpcEncoded) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
+    |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
 
 let private getRequiredHeaders(operation: Operation) =
     let headers, rest =
