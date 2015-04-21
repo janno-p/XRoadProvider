@@ -6,7 +6,7 @@ open System.Diagnostics
 open System.IO
 
 let private typeRef<'T> = CodeTypeReference(typeof<'T>)
-let private typeRefExpr<'T> = CodeTypeReferenceExpression(typeRef<'T>)
+let typeRefExpr<'T> = CodeTypeReferenceExpression(typeRef<'T>)
 let private typeCodeExpr (t: CodeTypeMember) = CodeTypeReferenceExpression(t.Name)
 
 let private attrArg expr = CodeAttributeArgument(expr)
@@ -14,13 +14,18 @@ let private attrDecl<'T> = CodeAttributeDeclaration(typeRef<'T>)
 
 let private enumExpr<'T> valueName = CodePropertyReferenceExpression(typeRefExpr<'T>, valueName)
 
-let private iif condition f x = if condition then x |> f else x
+let iif condition f x = if condition then x |> f else x
 
 module Expr =
     let value x = CodePrimitiveExpression(x) :> CodeExpression
     let fldref (f: CodeMemberField) e = CodeFieldReferenceExpression(e, f.Name) :> CodeExpression
     let this = CodeThisReferenceExpression() :> CodeExpression
     let typeOf (t: CodeTypeReference) = CodeTypeOfExpression(t) :> CodeExpression
+    let var name = CodeVariableReferenceExpression(name) :> CodeExpression
+    let empty = CodeSnippetExpression() :> CodeExpression
+
+let (@->) (target: CodeExpression) (memberName: string) (args: CodeExpression list) = CodeMethodInvokeExpression(target, memberName, args |> Array.ofList) :> CodeExpression
+let (@~>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression
 
 module Attr =
     let create<'T> = CodeAttributeDeclaration(typeRef<'T>)
@@ -68,6 +73,27 @@ module Prop =
 module Stmt =
     let ret e = CodeMethodReturnStatement(e) :> CodeStatement
     let assign le re = CodeAssignStatement(le, re) :> CodeStatement
+    let condIf cond (args: CodeStatement list) = CodeConditionStatement(cond, args |> Array.ofList) :> CodeStatement
+
+    let condIfElse cond (argsIf: CodeStatement list) (argsElse: CodeStatement list) =
+        CodeConditionStatement(cond, argsIf |> Array.ofList, argsElse |> Array.ofList) :> CodeStatement
+
+    let ofExpr e = CodeExpressionStatement(e) :> CodeStatement
+    let declVar<'T> name = CodeVariableDeclarationStatement(typeof<'T>, name) :> CodeStatement
+
+module Meth =
+    let create name = CodeMemberMethod(Name=name)
+    let setAttr a (m: CodeMemberMethod) = m.Attributes <- a; m
+    let addParam<'T> name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; m
+    let addExpr (e: CodeExpression) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
+    let addStmt (e: CodeStatement) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
+
+module Op =
+    let equals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityEquality, rhs) :> CodeExpression
+    let notEquals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityInequality, rhs) :> CodeExpression
+    let boolOr lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.BooleanOr, rhs) :> CodeExpression
+    let isNull e = equals e (Expr.value null)
+    let isNotNull e = notEquals e (Expr.value null)
 
 let makeChoiceType() =
     ()
