@@ -462,29 +462,29 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | _ -> None
         | _ -> None
 
+    let rec findAttributeDefinition (spec: AttributeSpec) =
+        match spec.RefOrType with
+        | Reference(ref) ->
+            match attributeLookup.TryFind(ref.ToString()) with
+            | Some(spec) -> findAttributeDefinition(spec)
+            | None -> failwithf "Missing referenced attribute %A." ref
+        | _ ->
+            match spec.Name with
+            | Some(name) -> name, spec.RefOrType
+            | None -> failwithf "Attribute has no name."
+
+    let rec findElementDefinition (spec: ElementSpec) =
+        match spec.Type with
+        | Reference(ref) ->
+            match elementLookup.TryFind(ref.ToString()) with
+            | Some(spec) -> findElementDefinition(spec)
+            | None -> failwithf "Missing referenced attribute %A." ref
+        | _ ->
+            match spec.Name with
+            | Some(name) -> name, spec.Type
+            | None -> failwithf "Attribute has no name."
+
     let rec buildType(providedTy: CodeTypeDeclaration, typeInfo) =
-        let rec findAttributeDefinition (spec: AttributeSpec) =
-            match spec.RefOrType with
-            | Reference(ref) ->
-                match attributeLookup.TryFind(ref.ToString()) with
-                | Some(spec) -> findAttributeDefinition(spec)
-                | None -> failwithf "Missing referenced attribute %A." ref
-            | _ ->
-                match spec.Name with
-                | Some(name) -> name, spec.RefOrType
-                | None -> failwithf "Attribute has no name."
-
-        let rec findElementDefinition (spec: ElementSpec) =
-            match spec.Type with
-            | Reference(ref) ->
-                match elementLookup.TryFind(ref.ToString()) with
-                | Some(spec) -> findElementDefinition(spec)
-                | None -> failwithf "Missing referenced attribute %A." ref
-            | _ ->
-                match spec.Name with
-                | Some(name) -> name, spec.Type
-                | None -> failwithf "Attribute has no name."
-
         let addProperty(name, ty: RuntimeType, isOptional) =
             let specifiedField =
                 if isOptional then
@@ -669,6 +669,17 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 parseComplexTypeContentSpec(spec)
         | EmptyType -> failwith "not implemented"
 
+    let buildRootElementType (xname: XName) =
+        match elementLookup.TryFind <| xname.ToString() with
+        | Some(spec) ->
+            match mapPrimitiveType xname with
+            | Some tp -> PrimitiveType(tp)
+            | _ ->
+                let tp = getOrCreateType(xname)
+                let fullName: string = unbox tp.UserData.["full_name"]
+                ProvidedType(CodeTypeReference(fullName))
+        | _ -> failwithf "Missing global element definition: (%A)" xname
+
     let buildOperationService (operation: Operation) =
         let serviceMethod = CodeMemberMethod(Name=operation.Name.LocalName)
         serviceMethod.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
@@ -709,16 +720,22 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         operation.Request.Body.Parts
         |> List.iter (fun part ->
-            let prtyp = match part.Reference with
-                        | XmlReference.SchemaElement(elementName) ->
-                            match elementLookup.TryFind <| elementName.ToString() with
-                            | Some(schemaType) -> getRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
-                            | _ -> failwithf "not implemented (%A)" elementName
-                        | XmlReference.SchemaType(typeName) -> getRuntimeType(typeName)
-            serviceMethod |> Meth.addParamRef (prtyp.AsCodeTypeReference()) part.Name
-                          |> Meth.addStmt (Stmt.declVar<XmlSerializer> (part.Name + "Serializer") <| Some(Expr.NewObject(typeof<XmlSerializer>, Expr.TypeOf(prtyp.AsCodeTypeReference()), Expr.NewObject(typeof<XmlRootAttribute>, Expr.Value(part.Name))) :> CodeExpression))
-                          |> Meth.addExpr (Expr.Call(Expr.var(part.Name + "Serializer"), "Serialize", Expr.var("writer"), Expr.var(part.Name)))
-                          |> ignore)
+            let prtyp, attrover =
+                match operation.Style, part.Reference with
+                | DocLiteral, SchemaType(t) ->
+                    failwithf "Document/Literal style operation '%s' should use global element as message part, but type '%s' is used instead" operation.Name.LocalName t.LocalName
+                | DocLiteral, SchemaElement(elementName) ->
+                    buildRootElementType(elementName), []
+                | RpcEncoded, SchemaElement(e) ->
+                    failwithf "RPC/Encoded style operation '%s' should use global type as message part, but element '%s' is used instead" operation.Name.LocalName e.LocalName
+                | RpcEncoded, SchemaType(typeName) ->
+                    getRuntimeType(typeName), [Expr.inst<XmlRootAttribute> [Expr.value part.Name]]
+            let serializerName = part.Name + "Serializer"
+            serviceMethod
+            |> Meth.addParamRef (prtyp.AsCodeTypeReference()) part.Name
+            |> Meth.addStmt (Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> (Expr.typeOf(prtyp.AsCodeTypeReference()) :: attrover))))
+            |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") [Expr.var "writer"; Expr.var part.Name])
+            |> ignore)
 
         let deserializePartsExpr =
             operation.Response.Body.Parts
