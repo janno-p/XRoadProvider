@@ -5,7 +5,7 @@ open System.Collections
 open System.Diagnostics
 open System.IO
 
-let private typeRef<'T> = CodeTypeReference(typeof<'T>)
+let typeRef<'T> = CodeTypeReference(typeof<'T>)
 let typeRefExpr<'T> = CodeTypeReferenceExpression(typeRef<'T>)
 let private typeCodeExpr (t: CodeTypeMember) = CodeTypeReferenceExpression(t.Name)
 
@@ -23,6 +23,8 @@ module Expr =
     let typeOf (t: CodeTypeReference) = CodeTypeOfExpression(t) :> CodeExpression
     let var name = CodeVariableReferenceExpression(name) :> CodeExpression
     let empty = CodeSnippetExpression() :> CodeExpression
+    let parent = CodeBaseReferenceExpression() :> CodeExpression
+    let nil = CodePrimitiveExpression(null) :> CodeExpression
 
 let (@->) (target: CodeExpression) (memberName: string) (args: CodeExpression list) = CodeMethodInvokeExpression(target, memberName, args |> Array.ofList) :> CodeExpression
 let (@~>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression
@@ -79,12 +81,22 @@ module Stmt =
         CodeConditionStatement(cond, argsIf |> Array.ofList, argsElse |> Array.ofList) :> CodeStatement
 
     let ofExpr e = CodeExpressionStatement(e) :> CodeStatement
-    let declVar<'T> name = CodeVariableDeclarationStatement(typeof<'T>, name) :> CodeStatement
+
+    let declVar<'T> name (exp: CodeExpression option) =
+        match exp with
+        | Some(e) -> CodeVariableDeclarationStatement(typeof<'T>, name, e) :> CodeStatement
+        | None -> CodeVariableDeclarationStatement(typeof<'T>, name) :> CodeStatement
+
+    let declVarRef (typ: CodeTypeReference) name (exp: CodeExpression option) =
+        match exp with
+        | Some(e) -> CodeVariableDeclarationStatement(typ, name, e) :> CodeStatement
+        | None -> CodeVariableDeclarationStatement(typ, name) :> CodeStatement
 
 module Meth =
     let create name = CodeMemberMethod(Name=name)
     let setAttr a (m: CodeMemberMethod) = m.Attributes <- a; m
     let addParam<'T> name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; m
+    let addParamRef (typ: CodeTypeReference) name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typ, name)) |> ignore; m
     let addExpr (e: CodeExpression) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let addStmt (e: CodeStatement) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
 
