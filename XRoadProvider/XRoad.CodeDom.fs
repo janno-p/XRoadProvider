@@ -30,6 +30,8 @@ module Expr =
     let typeRef (t: CodeTypeMember) = CodeTypeReferenceExpression(t.Name) :> CodeExpression
     let enumValue<'T> valueName = CodePropertyReferenceExpression(typeRefOf<'T>, valueName)
     let cast (t: CodeTypeReference) e = CodeCastExpression(t, e) :> CodeExpression
+    let code text = CodeSnippetExpression(text) :> CodeExpression
+    let propRef e name = CodePropertyReferenceExpression(e, name) :> CodeExpression
 
 let (@->) (target: CodeExpression) (memberName: string) (args: CodeExpression list) = CodeMethodInvokeExpression(target, memberName, args |> Array.ofList) :> CodeExpression
 let (@~>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression

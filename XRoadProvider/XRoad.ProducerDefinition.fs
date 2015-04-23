@@ -220,7 +220,6 @@ module private Expr =
     type Op = CodeBinaryOperatorType
     type Param = CodeParameterDeclarationExpression
     type Prop = CodePropertyReferenceExpression
-    type Snip = CodeSnippetExpression
     type Value = CodePrimitiveExpression
     type Type = CodeTypeReferenceExpression
 
@@ -437,13 +436,24 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
     | RpcEncoded, SchemaElement(e) ->
         failwithf "RPC/Encoded style message part '%s' should reference global type as message part, but element '%s' is used instead" part.Name e.LocalName
     | DocLiteral, SchemaElement(elementName) ->
-        let name, typeDefinition = context.GetElementDefinition(context.GetElementSpec(elementName))
-        let typeDeclaration = Cls.create(elementName.LocalName) |> Cls.setAttr TypeAttributes.Public
-        let ns = context.GetOrCreateNamespace(elementName.Namespace)
-        typeDeclaration.CustomAttributes.Add(Attributes.XmlRoot elementName.LocalName elementName.NamespaceName))
-        ProvidedType(typeDeclaration, "Test"), []
+        let elemName, elemType = context.GetElementDefinition(context.GetElementSpec(elementName))
+        match elemType with
+        | Name(name) ->
+            context.GetRuntimeType(name), (fun varName ->
+                [ Stmt.declVar<XmlRootAttribute> varName (Some(Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName]))
+                  Stmt.assign (Expr.propRef (Expr.var varName) "Namespace") (Expr.value elementName.NamespaceName) ])
+        | Reference(_) ->
+            failwith "not implemented"
+        | Definition(_) ->
+            let typ = Cls.create(elementName.LocalName) |> Cls.setAttr TypeAttributes.Public
+            let ns = context.GetOrCreateNamespace(elementName.Namespace)
+            ns.Members.Add(typ) |> ignore
+            typ.CustomAttributes.Add(Attributes.XmlRoot elementName.LocalName elementName.NamespaceName) |> ignore
+            ProvidedType(typ, providedTypeFullName ns.Name typ.Name), (fun varName ->
+                [ Stmt.declVar<XmlRootAttribute> varName (Some Expr.nil) ])
     | RpcEncoded, SchemaType(typeName) ->
-        context.GetRuntimeType(typeName), [Expr.inst<XmlRootAttribute> [Expr.value part.Name]]
+        context.GetRuntimeType(typeName), (fun varName ->
+            [ Stmt.declVar<XmlRootAttribute> varName (Some(Expr.inst<XmlRootAttribute> [Expr.value part.Name])) ])
 
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let schema = resolveUri producerUri |> readSchema
@@ -657,14 +667,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 parseComplexTypeContentSpec(spec)
         | EmptyType -> failwith "not implemented"
 
-    let buildRootElementType (xname: XName) =
-        match context.Elements.TryFind <| xname.ToString() with
-        | Some(spec) ->
-            match mapPrimitiveType xname with
-            | Some tp -> PrimitiveType(tp)
-            | _ -> ProvidedType(context.GetOrCreateType(xname))
-        | _ -> failwithf "Missing global element definition: (%A)" xname
-
     let buildOperationService (operation: Operation) =
         let serviceMethod = Meth.create operation.Name.LocalName |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
         let requestParameters = operation.Request.Body.Parts |> List.map (fun p -> p |> buildParameterType context, p.Name)
@@ -685,34 +687,38 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         // CodeDom doesn't support delegates, so we have to improvise
         serviceMethod |> Meth.addStmt (Stmt.declVar<string[]> "requiredHeaders" (Some requiredHeadersExpr))
-                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeHeader" <| Some(Expr.Snip("delegate(System.Xml.XmlWriter writer) { //") :> CodeExpression))
+                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeHeader" <| Some(Expr.code "delegate(System.Xml.XmlWriter writer) { //"))
                       |> Meth.addExpr (Expr.Call(Expr.parent, "WriteHeader", Expr.var("writer"), Expr.Value(serviceName), Expr.var("requiredHeaders")))
                       |> Meth.addStmt (Stat.Snip("};"))
-                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeBody" <| Some(Expr.Snip("delegate(System.Xml.XmlWriter writer) { //") :> CodeExpression))
+                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeBody" <| Some(Expr.code "delegate(System.Xml.XmlWriter writer) { //"))
                       |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("svc"), Expr.Value(null), Expr.Value(operation.Name.NamespaceName)))
                       |> iif (operation.Request.Body.Namespace <> operation.Name.NamespaceName) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("svcns"), Expr.Value(null), Expr.Value(operation.Request.Body.Namespace))))
                       |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteStartElement", Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace))))
                       |> ignore
 
         requestParameters
-        |> List.iter (fun ((runtimeType, attributeOverrides), partName) ->
+        |> List.iter (fun ((runtimeType, overrideFunc), partName) ->
             let serializerName = partName + "Serializer"
+            let varName = partName + "Overrides"
             let typ = runtimeType.AsCodeTypeReference()
+            serviceMethod |> Meth.addParamRef typ partName |> ignore
+            varName |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
             serviceMethod
-            |> Meth.addParamRef typ partName
-            |> Meth.addStmt (Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> ((Expr.typeOf typ) :: attributeOverrides))))
+            |> Meth.addStmt (Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName])))
             |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") [Expr.var "writer"; Expr.var partName])
             |> ignore)
 
         let deserializePartsExpr =
             responseParameters
-            |> List.mapi (fun i ((runtimeType, attributeOverrides), partName) ->
+            |> List.mapi (fun i ((runtimeType, overrideFunc), partName) ->
                 let serializerName = partName + "Serializer"
+                let varName = partName + "Overrides"
                 let typ = runtimeType.AsCodeTypeReference()
 
                 let deserializeExpr =
-                    [| Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> ((Expr.typeOf typ) :: attributeOverrides)))
-                       Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") [Expr.var "reader"])) |]
+                    (overrideFunc varName) @
+                        [ Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName]))
+                          Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") [Expr.var "reader"])) ]
 
                 let deserializeExpr =
                     if partName = "keha" && undescribedFaults then
@@ -722,9 +728,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                                                !~~ Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Call(Expr.var("reader"), "ReadInnerXml"))) |],
                                             Array.concat [
                                                 [| !~> Expr.Call(Expr.var("reader"), "ReturnToAndRemoveBookmark", Expr.Value("keha")) |]
-                                                deserializeExpr
+                                                deserializeExpr |> Array.ofList
                                             ]) |]
-                    else deserializeExpr
+                    else deserializeExpr |> Array.ofList
 
                 !~~ Stat.IfThenElse(Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityEquality, Expr.Value(partName)),
                                     deserializeExpr))
@@ -732,7 +738,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         serviceMethod |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteEndElement")))
                       |> Meth.addStmt (Stat.Snip("};"))
-                      |> Meth.addStmt (Stmt.declVarRef (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" <| Some(Expr.Snip("delegate(System.Xml.XmlReader r) { //") :> CodeExpression))
+                      |> Meth.addStmt (Stmt.declVarRef (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" <| Some(Expr.code "delegate(System.Xml.XmlReader r) { //"))
                       |> Meth.addStmt (if undescribedFaults then Stmt.declVarRef (CodeTypeReference("XmlBookmarkReader")) "reader" <| Some(Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r")) else Stmt.declVar<XmlReader> "reader" <| Some(Expr.var "r"))
                       |> Meth.addStmt (Stat.IfThenElse(Expr.CallOp(
                                                           Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Name.LocalName)),
