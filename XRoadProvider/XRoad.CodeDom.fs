@@ -9,6 +9,7 @@ open System.Diagnostics
 open System.IO
 
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
+let typeRefName name = CodeTypeReference(name: string)
 
 let private attrArg expr = CodeAttributeArgument(expr)
 let private attrDecl<'T> = CodeAttributeDeclaration(typeRef<'T>)
@@ -28,6 +29,7 @@ module Expr =
     let typeRefOf<'T> = CodeTypeReferenceExpression(typeRef<'T>) :> CodeExpression
     let typeRef (t: CodeTypeMember) = CodeTypeReferenceExpression(t.Name) :> CodeExpression
     let enumValue<'T> valueName = CodePropertyReferenceExpression(typeRefOf<'T>, valueName)
+    let cast (t: CodeTypeReference) e = CodeCastExpression(t, e) :> CodeExpression
 
 let (@->) (target: CodeExpression) (memberName: string) (args: CodeExpression list) = CodeMethodInvokeExpression(target, memberName, args |> Array.ofList) :> CodeExpression
 let (@~>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression

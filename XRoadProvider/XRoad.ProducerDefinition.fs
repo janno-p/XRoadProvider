@@ -38,7 +38,7 @@ module String =
             then failwithf "invalid name %s" className
             className
 
-type private RuntimeType =
+type RuntimeType =
     | PrimitiveType of Type
     | ProvidedType of CodeTypeDeclaration * string
     | CollectionType of RuntimeType * string
@@ -47,7 +47,7 @@ type private RuntimeType =
                                         | ProvidedType(_,name) -> CodeTypeReference(name)
                                         | CollectionType(typ,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
 
-type private TypeBuilderContext =
+type TypeBuilderContext =
     { CachedTypes: Dictionary<XName,CodeTypeDeclaration*string>
       CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
       Attributes: Map<string,AttributeSpec>
@@ -89,6 +89,10 @@ type private TypeBuilderContext =
             match mapPrimitiveType name with
             | Some typ -> PrimitiveType(typ)
             | None -> ProvidedType(this.GetOrCreateType(name))
+        member this.GetElementSpec(name: XName) =
+            match this.Elements.TryFind(name.ToString()) with
+            | Some(elementSpec) -> elementSpec
+            | None -> failwithf "Invalid reference: global element %A was not found in current context." name
         member this.GetAttributeDefinition(spec) =
             let rec findAttributeDefinition (spec: AttributeSpec) =
                 match spec.RefOrType with
@@ -216,7 +220,6 @@ module private Expr =
     type Snip = CodeSnippetExpression
     type Value = CodePrimitiveExpression
     type Type = CodeTypeReferenceExpression
-    type Cast = CodeCastExpression
 
 let private writeXRoadHeaderMethod (style) =
     let hdrns, hdrName, propName, nsprefix =
@@ -410,7 +413,7 @@ let private getRequiredHeaders(operation: Operation) =
         failwithf "Unhandled SOAP Header elements detected: %A" rest
     headers |> List.map (fun part -> part.Name)
 
-let private makeReturnType (types: RuntimeType list) =
+let makeReturnType (types: RuntimeType list) =
     let rec getReturnTypeTuple (tuple: (int * RuntimeType) list, types) =
         match types with
         | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference()) |> Array.ofList)
@@ -423,6 +426,19 @@ let private makeReturnType (types: RuntimeType list) =
     | [] -> (CodeTypeReference(typeof<Void>), Expr.var("???"))
     | (i,tp)::[] -> (tp.AsCodeTypeReference(), Expr.var(sprintf "v%d" i))
     | many -> getReturnTypeTuple([], many)
+
+let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
+    match context.Style, part.Reference with
+    | DocLiteral, SchemaType(t) ->
+        failwithf "Document/Literal style message part '%s' should reference global element as message part, but type '%s' is used instead" part.Name t.LocalName
+    | RpcEncoded, SchemaElement(e) ->
+        failwithf "RPC/Encoded style message part '%s' should reference global type as message part, but element '%s' is used instead" part.Name e.LocalName
+    | DocLiteral, SchemaElement(elementName) ->
+        let elementName, typeDefinition = context.GetElementDefinition(context.GetElementSpec(elementName))
+        let typeDeclaration = Cls.create("Test") |> Cls.setAttr TypeAttributes.Public
+        ProvidedType(typeDeclaration, "Test"), []
+    | RpcEncoded, SchemaType(typeName) ->
+        context.GetRuntimeType(typeName), [Expr.inst<XmlRootAttribute> [Expr.value part.Name]]
 
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let schema = resolveUri producerUri |> readSchema
@@ -645,19 +661,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         | _ -> failwithf "Missing global element definition: (%A)" xname
 
     let buildOperationService (operation: Operation) =
-        let serviceMethod = CodeMemberMethod(Name=operation.Name.LocalName)
-        serviceMethod.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-
-        let returnType, returnExpr =
-            operation.Response.Body.Parts
-            |> List.map (fun part ->
-                match part.Reference with
-                | XmlReference.SchemaElement(elementName) ->
-                    match context.Elements.TryFind <| elementName.ToString() with
-                    | Some(schemaType) -> context.GetRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
-                    | _ -> failwithf "Missing global element definition (%A)" elementName
-                | XmlReference.SchemaType(typeName) -> context.GetRuntimeType(typeName))
-            |> makeReturnType
+        let serviceMethod = Meth.create operation.Name.LocalName |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+        let requestParameters = operation.Request.Body.Parts |> List.map (fun p -> p |> buildParameterType context, p.Name)
+        let responseParameters = operation.Response.Body.Parts |> List.map (fun p -> p |> buildParameterType context, p.Name)
+        let returnType, returnExpr = responseParameters |> List.map (fst >> fst) |> makeReturnType
 
         serviceMethod.ReturnType <- returnType
 
@@ -682,41 +689,28 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                       |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteStartElement", Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace))))
                       |> ignore
 
-        operation.Request.Body.Parts
-        |> List.iter (fun part ->
-            let prtyp, attrover =
-                match operation.Style, part.Reference with
-                | DocLiteral, SchemaType(t) ->
-                    failwithf "Document/Literal style operation '%s' should use global element as message part, but type '%s' is used instead" operation.Name.LocalName t.LocalName
-                | DocLiteral, SchemaElement(elementName) ->
-                    buildRootElementType(elementName), []
-                | RpcEncoded, SchemaElement(e) ->
-                    failwithf "RPC/Encoded style operation '%s' should use global type as message part, but element '%s' is used instead" operation.Name.LocalName e.LocalName
-                | RpcEncoded, SchemaType(typeName) ->
-                    context.GetRuntimeType(typeName), [Expr.inst<XmlRootAttribute> [Expr.value part.Name]]
-            let serializerName = part.Name + "Serializer"
+        requestParameters
+        |> List.iter (fun ((runtimeType, attributeOverrides), partName) ->
+            let serializerName = partName + "Serializer"
+            let typ = runtimeType.AsCodeTypeReference()
             serviceMethod
-            |> Meth.addParamRef (prtyp.AsCodeTypeReference()) part.Name
-            |> Meth.addStmt (Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> (Expr.typeOf(prtyp.AsCodeTypeReference()) :: attrover))))
-            |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") [Expr.var "writer"; Expr.var part.Name])
+            |> Meth.addParamRef typ partName
+            |> Meth.addStmt (Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> ((Expr.typeOf typ) :: attributeOverrides))))
+            |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") [Expr.var "writer"; Expr.var partName])
             |> ignore)
 
         let deserializePartsExpr =
-            operation.Response.Body.Parts
-            |> List.mapi (fun i part ->
-                let prtyp = match part.Reference with
-                            | XmlReference.SchemaElement(elementName) ->
-                                match context.Elements.TryFind <| elementName.ToString() with
-                                | Some(schemaType) -> context.GetRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
-                                | _ -> failwithf "not implemented (%A)" elementName
-                            | XmlReference.SchemaType(typeName) -> context.GetRuntimeType(typeName)
+            responseParameters
+            |> List.mapi (fun i ((runtimeType, attributeOverrides), partName) ->
+                let serializerName = partName + "Serializer"
+                let typ = runtimeType.AsCodeTypeReference()
 
                 let deserializeExpr =
-                    [| Stmt.declVar<XmlSerializer> (part.Name + "Serializer") <| Some(Expr.NewObject(typeof<XmlSerializer>, Expr.typeOf(prtyp.AsCodeTypeReference()), Expr.NewObject(typeof<XmlRootAttribute>, Expr.Value(part.Name))) :> CodeExpression)
-                       Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.Cast(prtyp.AsCodeTypeReference(), Expr.Call(Expr.var(part.Name + "Serializer"), "Deserialize", Expr.var("reader")))) |]
+                    [| Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> ((Expr.typeOf typ) :: attributeOverrides)))
+                       Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") [Expr.var "reader"])) |]
 
                 let deserializeExpr =
-                    if part.Name = "keha" && undescribedFaults then
+                    if partName = "keha" && undescribedFaults then
                      [| !~> Expr.Call(Expr.var("reader"), "SetBookmark", Expr.Value("keha"))
                         !~~ Stat.IfThenElse(Expr.Call(Expr.this, "MoveToElement", Expr.var("reader"), Expr.Value("faultCode"), Expr.Value(""), Expr.Value(4)),
                                             [| !~> Expr.Call(Expr.var("reader"), "ReturnToAndRemoveBookmark", Expr.Value("keha"))
@@ -727,14 +721,14 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                                             ]) |]
                     else deserializeExpr
 
-                !~~ Stat.IfThenElse(Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityEquality, Expr.Value(part.Name)),
+                !~~ Stat.IfThenElse(Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityEquality, Expr.Value(partName)),
                                     deserializeExpr))
             |> Array.ofList
 
         serviceMethod |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteEndElement")))
                       |> Meth.addStmt (Stat.Snip("};"))
                       |> Meth.addStmt (Stmt.declVarRef (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" <| Some(Expr.Snip("delegate(System.Xml.XmlReader r) { //") :> CodeExpression))
-                      |> Meth.addStmt (if undescribedFaults then Stmt.declVarRef (CodeTypeReference("XmlBookmarkReader")) "reader" <| Some(Expr.Cast("XmlBookmarkReader", Expr.var("r")) :> CodeExpression) else Stmt.declVar<XmlReader> "reader" <| Some(Expr.var("r")))
+                      |> Meth.addStmt (if undescribedFaults then Stmt.declVarRef (CodeTypeReference("XmlBookmarkReader")) "reader" <| Some(Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r")) else Stmt.declVar<XmlReader> "reader" <| Some(Expr.var "r"))
                       |> Meth.addStmt (Stat.IfThenElse(Expr.CallOp(
                                                           Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Name.LocalName)),
                                                           Expr.Op.BooleanOr,
@@ -742,16 +736,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                                                        Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Invalid response message.")))))
                       |> ignore
 
-        operation.Response.Body.Parts
-        |> List.iteri (fun i part ->
-            let prtyp = match part.Reference with
-                        | XmlReference.SchemaElement(elementName) ->
-                            match context.Elements.TryFind(elementName.ToString()) with
-                            | Some(schemaType) -> context.GetRuntimeType(XName.Get(elementName.LocalName + "Type", elementName.NamespaceName))
-                            | _ -> failwithf "not implemented (%A)" elementName
-                        | XmlReference.SchemaType(typeName) -> context.GetRuntimeType(typeName)
-            serviceMethod |> Meth.addStmt (Stmt.declVarRef (prtyp.AsCodeTypeReference()) (sprintf "v%d" i) (Some Expr.nil))
-                          |> ignore)
+        responseParameters
+        |> List.iteri (fun i ((runtimeType, attributeOverrides), partName) ->
+            let typ = runtimeType.AsCodeTypeReference()
+            serviceMethod |> Meth.addStmt (Stmt.declVarRef typ (sprintf "v%d" i) (Some Expr.nil)) |> ignore)
 
         serviceMethod |> Meth.addStmt (Stat.While(Expr.Call(Expr.this, "MoveToElement", Expr.var("reader"), Expr.Value(null), Expr.Value(null), Expr.Value(3)), deserializePartsExpr))
                       |> Meth.addStmt (Stat.Return(returnExpr))
@@ -764,9 +752,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         let methodCall = Expr.Call(CodeMethodReferenceExpression(Expr.parent, "MakeServiceCall", returnType), Expr.var("writeHeader"), Expr.var("writeBody"), Expr.var("readBody"))
 
-        if not <| operation.Response.Body.Parts.IsEmpty
-        then serviceMethod |> Meth.addStmt (Stat.Return(methodCall)) |> ignore
-        else serviceMethod |> Meth.addExpr methodCall |> ignore
+        if responseParameters.IsEmpty then serviceMethod |> Meth.addExpr methodCall |> ignore
+        else serviceMethod |> Meth.addStmt (Stat.Return(methodCall)) |> ignore 
 
         serviceMethod
 
