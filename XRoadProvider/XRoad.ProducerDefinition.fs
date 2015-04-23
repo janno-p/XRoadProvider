@@ -19,7 +19,7 @@ open XRoad.Parser.XsdSchema
 
 [<AutoOpen>]
 module String =
-    let join (sep: string) (arr: seq<'T>) = System.String.Join(sep, arr)
+    let join (sep: string) (arr: seq<'T>) = String.Join(sep, arr)
 
     type String with
         member this.toClassName() =
@@ -46,6 +46,9 @@ type RuntimeType =
                                         | PrimitiveType(typ) -> CodeTypeReference(typ)
                                         | ProvidedType(_,name) -> CodeTypeReference(name)
                                         | CollectionType(typ,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
+
+let providedTypeFullName nsname name =
+    sprintf "DefinedTypes.%s.%s" nsname name
 
 type TypeBuilderContext =
     { CachedTypes: Dictionary<XName,CodeTypeDeclaration*string>
@@ -81,7 +84,7 @@ type TypeBuilderContext =
                 let typ = Cls.create(name.LocalName) |> Cls.addAttr TypeAttributes.Public
                 let nstyp = this.GetOrCreateNamespace(name.Namespace)
                 nstyp.Members.Add(typ) |> ignore
-                let info = typ, (sprintf "DefinedTypes.%s.%s" nstyp.Name typ.Name)
+                let info = typ, (providedTypeFullName nstyp.Name typ.Name)
                 this.CachedTypes.Add(name, info)
                 info
             | true, info -> info
@@ -434,8 +437,10 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
     | RpcEncoded, SchemaElement(e) ->
         failwithf "RPC/Encoded style message part '%s' should reference global type as message part, but element '%s' is used instead" part.Name e.LocalName
     | DocLiteral, SchemaElement(elementName) ->
-        let elementName, typeDefinition = context.GetElementDefinition(context.GetElementSpec(elementName))
-        let typeDeclaration = Cls.create("Test") |> Cls.setAttr TypeAttributes.Public
+        let name, typeDefinition = context.GetElementDefinition(context.GetElementSpec(elementName))
+        let typeDeclaration = Cls.create(elementName.LocalName) |> Cls.setAttr TypeAttributes.Public
+        let ns = context.GetOrCreateNamespace(elementName.Namespace)
+        typeDeclaration.CustomAttributes.Add(Attributes.XmlRoot elementName.LocalName elementName.NamespaceName))
         ProvidedType(typeDeclaration, "Test"), []
     | RpcEncoded, SchemaType(typeName) ->
         context.GetRuntimeType(typeName), [Expr.inst<XmlRootAttribute> [Expr.value part.Name]]
