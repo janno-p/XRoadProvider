@@ -127,6 +127,7 @@ module Cls =
         c
 
 module Arr =
+    let createOfSize<'T> (size: int) = CodeArrayCreateExpression(typeRef<'T>, size) :> CodeExpression
     let create<'T> (args: CodeExpression list) = CodeArrayCreateExpression(typeRef<'T>, args |> Array.ofList) :> CodeExpression
 
 module Compiler =

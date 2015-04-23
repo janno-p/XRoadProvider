@@ -192,7 +192,7 @@ let private defaultNonceMethod =
     Meth.create "GenerateNonce"
     |> Meth.setAttr MemberAttributes.Private
     |> Meth.returns<string>
-    |> Meth.addStmt (Stmt.declVar<byte[]> "nonce" (Some (Arr.create<byte> [Expr.value 42])))
+    |> Meth.addStmt (Stmt.declVar<byte[]> "nonce" (Some (Arr.createOfSize<byte> 42)))
     |> Meth.addStmt (Stmt.declVar<Security.Cryptography.RandomNumberGenerator> "rng" <| Some((Expr.typeRefOf<Security.Cryptography.RNGCryptoServiceProvider> @-> "Create") []))
     |> Meth.addExpr ((Expr.var "rng" @-> "GetNonZeroBytes") [Expr.var("nonce")])
     |> Meth.addStmt (Stmt.ret ((Expr.typeRefOf<Convert> @-> "ToBase64String") [Expr.var "nonce"]))
@@ -203,12 +203,11 @@ let (!~>) x = !~~ CodeExpressionStatement(x)
 module private Stat =
     type IfThenElse = CodeConditionStatement
     type Return = CodeMethodReturnStatement
-    type Snip = CodeSnippetStatement
     type Throw = CodeThrowExceptionStatement
     type TryCatch = CodeTryCatchFinallyStatement
 
     let While (testExpression, [<ParamArray>] statements) =
-        CodeIterationStatement(Snip(), testExpression, Snip(), statements)
+        CodeIterationStatement(CodeSnippetStatement(), testExpression, CodeSnippetStatement(), statements)
 
 module private Expr =
     type Call = CodeMethodInvokeExpression
@@ -687,10 +686,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         // CodeDom doesn't support delegates, so we have to improvise
         serviceMethod |> Meth.addStmt (Stmt.declVar<string[]> "requiredHeaders" (Some requiredHeadersExpr))
-                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeHeader" <| Some(Expr.code "delegate(System.Xml.XmlWriter writer) { //"))
+                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeHeader" <| Some(Expr.code "(writer) => { //"))
                       |> Meth.addExpr (Expr.Call(Expr.parent, "WriteHeader", Expr.var("writer"), Expr.Value(serviceName), Expr.var("requiredHeaders")))
-                      |> Meth.addStmt (Stat.Snip("};"))
-                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeBody" <| Some(Expr.code "delegate(System.Xml.XmlWriter writer) { //"))
+                      |> Meth.addExpr (Expr.code "}")
+                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeBody" <| Some(Expr.code "(writer) => { //"))
                       |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("svc"), Expr.Value(null), Expr.Value(operation.Name.NamespaceName)))
                       |> iif (operation.Request.Body.Namespace <> operation.Name.NamespaceName) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("svcns"), Expr.Value(null), Expr.Value(operation.Request.Body.Namespace))))
                       |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteStartElement", Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace))))
@@ -737,8 +736,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             |> Array.ofList
 
         serviceMethod |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteEndElement")))
-                      |> Meth.addStmt (Stat.Snip("};"))
-                      |> Meth.addStmt (Stmt.declVarRef (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" <| Some(Expr.code "delegate(System.Xml.XmlReader r) { //"))
+                      |> Meth.addExpr (Expr.code "}")
+                      |> Meth.addStmt (Stmt.declVarRef (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" <| Some(Expr.code "(r) => { //"))
                       |> Meth.addStmt (if undescribedFaults then Stmt.declVarRef (CodeTypeReference("XmlBookmarkReader")) "reader" <| Some(Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r")) else Stmt.declVar<XmlReader> "reader" <| Some(Expr.var "r"))
                       |> Meth.addStmt (Stat.IfThenElse(Expr.CallOp(
                                                           Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Name.LocalName)),
@@ -754,7 +753,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         serviceMethod |> Meth.addStmt (Stat.While(Expr.Call(Expr.this, "MoveToElement", Expr.var("reader"), Expr.Value(null), Expr.Value(null), Expr.Value(3)), deserializePartsExpr))
                       |> Meth.addStmt (Stat.Return(returnExpr))
-                      |> Meth.addStmt (Stat.Snip("};"))
+                      |> Meth.addExpr (Expr.code "}")
                       |> ignore
 
         match operation.Documentation.TryGetValue("et") with
