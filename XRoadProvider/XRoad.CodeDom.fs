@@ -26,6 +26,7 @@ module Expr =
     let parent = CodeBaseReferenceExpression() :> CodeExpression
     let nil = CodePrimitiveExpression(null) :> CodeExpression
     let inst<'T> (args: CodeExpression list) = CodeObjectCreateExpression(typeof<'T>, args |> Array.ofList) :> CodeExpression
+    let instOf (t: CodeTypeReference) (args: CodeExpression list) = CodeObjectCreateExpression(t, args |> Array.ofList) :> CodeExpression
     let typeRefOf<'T> = CodeTypeReferenceExpression(typeRef<'T>) :> CodeExpression
     let typeRef (t: CodeTypeMember) = CodeTypeReferenceExpression(t.Name) :> CodeExpression
     let enumValue<'T> valueName = CodePropertyReferenceExpression(typeRefOf<'T>, valueName)
@@ -33,8 +34,13 @@ module Expr =
     let code text = CodeSnippetExpression(text) :> CodeExpression
     let propRef e name = CodePropertyReferenceExpression(e, name) :> CodeExpression
 
-let (@->) (target: CodeExpression) (memberName: string) (args: CodeExpression list) = CodeMethodInvokeExpression(target, memberName, args |> Array.ofList) :> CodeExpression
-let (@~>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression
+let (@=>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression
+
+let (@->) (target: CodeExpression) (memberName: string) = CodeMethodReferenceExpression(target, memberName)
+let (@<>) (mie: CodeMethodReferenceExpression) (args: CodeTypeReference list) = args |> List.iter (mie.TypeArguments.Add >> ignore); mie
+let (@%) (mie: CodeMethodReferenceExpression) (args: CodeExpression list) = CodeMethodInvokeExpression(mie, args |> Array.ofList) :> CodeExpression
+
+let (@%%) target args = CodeDelegateInvokeExpression(target, args |> Array.ofList) :> CodeExpression
 
 module Attr =
     let create<'T> = CodeAttributeDeclaration(typeRef<'T>)
@@ -100,6 +106,10 @@ module Stmt =
         | Some(e) -> CodeVariableDeclarationStatement(typ, name, e) :> CodeStatement
         | None -> CodeVariableDeclarationStatement(typ, name) :> CodeStatement
 
+    let throw<'T> (args: CodeExpression list) = CodeThrowExceptionStatement(Expr.inst<'T> args) :> CodeStatement
+    let whl testExpression statements = CodeIterationStatement(CodeSnippetStatement(), testExpression, CodeSnippetStatement(), statements |> Array.ofList) :> CodeStatement
+    let tryFinally tryStmts finallyStmts = CodeTryCatchFinallyStatement(tryStmts |> Array.ofList, [| |], finallyStmts |> Array.ofList) :> CodeStatement
+
 module Meth =
     let create name = CodeMemberMethod(Name=name)
     let setAttr a (m: CodeMemberMethod) = m.Attributes <- a; m
@@ -109,12 +119,20 @@ module Meth =
     let addStmt (e: CodeStatement) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let returns<'T> (m: CodeMemberMethod) = m.ReturnType <- typeRef<'T>; m
 
+module Ctor =
+    let create () = CodeConstructor()
+    let setAttr a (c: CodeConstructor) = c.Attributes <- a; c
+    let addParam<'T> name (c: CodeConstructor) = c.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; c
+    let addStmt (e: CodeStatement) (c: CodeConstructor) = c.Statements.Add(e) |> ignore; c
+
 module Op =
     let equals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityEquality, rhs) :> CodeExpression
     let notEquals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityInequality, rhs) :> CodeExpression
     let boolOr lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.BooleanOr, rhs) :> CodeExpression
+    let boolAnd lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.BooleanAnd, rhs) :> CodeExpression
     let isNull e = equals e (Expr.value null)
     let isNotNull e = notEquals e (Expr.value null)
+    let ge lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThanOrEqual, rhs) :> CodeExpression
 
 module Cls =
     let create name = CodeTypeDeclaration(name, IsClass=true)

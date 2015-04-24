@@ -188,106 +188,83 @@ let trd3 (_, _, x) = x
 
 // Description of method which generates random nonce value.
 // Nonce value is sent in X-Road <id /> header element, when user has not given its own value.
-let private defaultNonceMethod =
+let defaultNonceMethod =
     Meth.create "GenerateNonce"
     |> Meth.setAttr MemberAttributes.Private
     |> Meth.returns<string>
     |> Meth.addStmt (Stmt.declVar<byte[]> "nonce" (Some (Arr.createOfSize<byte> 42)))
-    |> Meth.addStmt (Stmt.declVar<Security.Cryptography.RandomNumberGenerator> "rng" <| Some((Expr.typeRefOf<Security.Cryptography.RNGCryptoServiceProvider> @-> "Create") []))
-    |> Meth.addExpr ((Expr.var "rng" @-> "GetNonZeroBytes") [Expr.var("nonce")])
-    |> Meth.addStmt (Stmt.ret ((Expr.typeRefOf<Convert> @-> "ToBase64String") [Expr.var "nonce"]))
+    |> Meth.addStmt (Stmt.declVar<Security.Cryptography.RandomNumberGenerator> "rng" <| Some((Expr.typeRefOf<Security.Cryptography.RNGCryptoServiceProvider> @-> "Create") @% []))
+    |> Meth.addExpr ((Expr.var "rng" @-> "GetNonZeroBytes") @% [Expr.var("nonce")])
+    |> Meth.addStmt (Stmt.ret ((Expr.typeRefOf<Convert> @-> "ToBase64String") @% [Expr.var "nonce"]))
 
-let (!~~) x = x :> CodeStatement
-let (!~>) x = !~~ CodeExpressionStatement(x)
-
-module private Stat =
-    type IfThenElse = CodeConditionStatement
-    type Return = CodeMethodReturnStatement
-    type Throw = CodeThrowExceptionStatement
-    type TryCatch = CodeTryCatchFinallyStatement
-
-    let While (testExpression, [<ParamArray>] statements) =
-        CodeIterationStatement(CodeSnippetStatement(), testExpression, CodeSnippetStatement(), statements)
-
-module private Expr =
-    type Call = CodeMethodInvokeExpression
-    type CallOp = CodeBinaryOperatorExpression
-    type Field = CodeFieldReferenceExpression
-    type Invoke = CodeDelegateInvokeExpression
-    type NewArray = CodeArrayCreateExpression
-    type NewObject = CodeObjectCreateExpression
-    type Op = CodeBinaryOperatorType
-    type Param = CodeParameterDeclarationExpression
-    type Prop = CodePropertyReferenceExpression
-    type Value = CodePrimitiveExpression
-    type Type = CodeTypeReferenceExpression
-
-let private writeXRoadHeaderMethod (style) =
+let writeXRoadHeaderMethod (style) =
     let hdrns, hdrName, propName, nsprefix =
         match style with
         | DocLiteral -> XmlNamespace.XRoad, headerMapping >> snd >> fst3, headerMapping >> snd >> snd3, "xrd"
         | RpcEncoded -> XmlNamespace.Xtee, headerMapping >> fst >> fst3, headerMapping >> fst >> snd3, "xtee"
     let writerVar = Expr.var "writer"
     let writeHeaderElement name propVar methodName =
-        let reqHeaderContainsNameExpr = ((Expr.var "requiredHeaders") @-> "Contains") [Expr.value name]
+        let reqHeaderContainsNameExpr = ((Expr.var "requiredHeaders") @-> "Contains") @% [Expr.value name]
         let propNotNullExpr = Op.isNotNull propVar
-        Stmt.condIf (propNotNullExpr |> Op.boolOr reqHeaderContainsNameExpr)
-                    [ Stmt.ofExpr ((writerVar @-> "WriteStartElement") [Expr.value name; Expr.value hdrns])
-                      Stmt.condIf propNotNullExpr [ Stmt.ofExpr ((writerVar @-> methodName) [propVar]) ]
-                      Stmt.ofExpr ((writerVar @-> "WriteEndElement") []) ]
+        Stmt.condIf (Op.boolOr reqHeaderContainsNameExpr
+                               propNotNullExpr)
+                    [ Stmt.ofExpr ((writerVar @-> "WriteStartElement") @% [Expr.value name; Expr.value hdrns])
+                      Stmt.condIf propNotNullExpr [ Stmt.ofExpr ((writerVar @-> methodName) @% [propVar]) ]
+                      Stmt.ofExpr ((writerVar @-> "WriteEndElement") @% []) ]
     let declareWithDefaultValue name xtname defExpr (m: CodeMemberMethod) =
         m |> Meth.addStmt (Stmt.declVar<string> name None)
-          |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @~> (propName xtname)))
+          |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @=> (propName xtname)))
                                            [Stmt.assign (Expr.var name) defExpr]
-                                           [Stmt.assign (Expr.var name) (Expr.this @~> (propName xtname))])
+                                           [Stmt.assign (Expr.var name) (Expr.this @=> (propName xtname))])
     Meth.create "WriteHeader"
     |> Meth.setAttr (MemberAttributes.Family ||| MemberAttributes.Final)
     |> Meth.addParam<XmlWriter> "writer"
     |> Meth.addParam<string> "serviceName"
     |> Meth.addParam<IList<string>> "requiredHeaders"
-    |> Meth.addExpr ((writerVar @-> "WriteAttributeString") [Expr.value "xmlns"; Expr.value nsprefix; Expr.value null; Expr.value hdrns])
+    |> Meth.addExpr ((writerVar @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value nsprefix; Expr.value null; Expr.value hdrns])
     |> declareWithDefaultValue "producerValue" "andmekogu" (Expr.var "producerName")
-    |> declareWithDefaultValue "requestId" "id" ((Expr.this @-> "GenerateNonce") [])
-    |> declareWithDefaultValue "fullServiceName" "nimi" ((Expr.typeRefOf<string> @-> "Format") [Expr.value "{0}.{1}"; Expr.var "producerValue"; Expr.var "serviceName"])
-    |> Meth.addStmt (writeHeaderElement (hdrName "asutus") (Expr.this @~> (propName "asutus")) "WriteString")
+    |> declareWithDefaultValue "requestId" "id" ((Expr.this @-> "GenerateNonce") @% [])
+    |> declareWithDefaultValue "fullServiceName" "nimi" ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "{0}.{1}"; Expr.var "producerValue"; Expr.var "serviceName"])
+    |> Meth.addStmt (writeHeaderElement (hdrName "asutus") (Expr.this @=> (propName "asutus")) "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "andmekogu") (Expr.var "producerValue") "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "isikukood") (Expr.this @~> (propName "isikukood")) "WriteString")
-    |> iif (style = RpcEncoded) (fun m -> m |> Meth.addStmt (writeHeaderElement (hdrName "ametnik") (Expr.this @~> (propName "ametnik")) "WriteString"))
+    |> Meth.addStmt (writeHeaderElement (hdrName "isikukood") (Expr.this @=> (propName "isikukood")) "WriteString")
+    |> iif (style = RpcEncoded) (fun m -> m |> Meth.addStmt (writeHeaderElement (hdrName "ametnik") (Expr.this @=> (propName "ametnik")) "WriteString"))
     |> Meth.addStmt (writeHeaderElement (hdrName "id") (Expr.var "requestId") "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "nimi") (Expr.var "fullServiceName") "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "toimik") (Expr.this @~> (propName "toimik")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "allasutus") (Expr.this @~> (propName "allasutus")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "amet") (Expr.this @~> (propName "amet")) "WriteRaw")
-    |> Meth.addStmt (writeHeaderElement (hdrName "ametniknimi") (Expr.this @~> (propName "ametniknimi")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "asynkroonne") (Expr.this @~> (propName "asynkroonne")) "WriteValue")
-    |> Meth.addStmt (writeHeaderElement (hdrName "autentija") (Expr.this @~> (propName "autentija")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "makstud") (Expr.this @~> (propName "makstud")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "salastada") (Expr.this @~> (propName "salastada")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "salastada_sertifikaadiga") (Expr.this @~> (propName "salastada_sertifikaadiga")) "WriteString")
+    |> Meth.addStmt (writeHeaderElement (hdrName "toimik") (Expr.this @=> (propName "toimik")) "WriteString")
+    |> Meth.addStmt (writeHeaderElement (hdrName "allasutus") (Expr.this @=> (propName "allasutus")) "WriteString")
+    |> Meth.addStmt (writeHeaderElement (hdrName "amet") (Expr.this @=> (propName "amet")) "WriteRaw")
+    |> Meth.addStmt (writeHeaderElement (hdrName "ametniknimi") (Expr.this @=> (propName "ametniknimi")) "WriteString")
+    |> Meth.addStmt (writeHeaderElement (hdrName "asynkroonne") (Expr.this @=> (propName "asynkroonne")) "WriteValue")
+    |> Meth.addStmt (writeHeaderElement (hdrName "autentija") (Expr.this @=> (propName "autentija")) "WriteString")
+    |> Meth.addStmt (writeHeaderElement (hdrName "makstud") (Expr.this @=> (propName "makstud")) "WriteString")
+    |> Meth.addStmt (writeHeaderElement (hdrName "salastada") (Expr.this @=> (propName "salastada")) "WriteString")
+    |> Meth.addStmt (writeHeaderElement (hdrName "salastada_sertifikaadiga") (Expr.this @=> (propName "salastada_sertifikaadiga")) "WriteString")
 
 let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     let portBaseTy = Cls.create "AbstractServicePort" |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Abstract)
 
     let addressField = CodeMemberField(typeof<string>, "producerUri")
-    let addressFieldRef = Expr.Field(Expr.this, addressField.Name)
+    let addressFieldRef = Expr.this @=> addressField.Name
     let addressProperty = CodeMemberProperty(Name="ProducerUri", Type=CodeTypeReference(typeof<string>))
     addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-    addressProperty.GetStatements.Add(Stat.Return(addressFieldRef)) |> ignore
+    addressProperty.GetStatements.Add(Stmt.ret addressFieldRef) |> ignore
     addressProperty.SetStatements.Add(Stmt.assign addressFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
 
     let producerField = CodeMemberField(typeof<string>, "producerName")
-    let producerFieldRef = Expr.Field(Expr.this, producerField.Name)
+    let producerFieldRef = Expr.this @=> producerField.Name
     let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
     producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-    producerProperty.GetStatements.Add(Stat.Return(producerFieldRef)) |> ignore
+    producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
     producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
 
-    let ctor = CodeConstructor()
-    ctor.Attributes <- MemberAttributes.Family
-    ctor.Parameters.Add(Expr.Param(typeof<string>, "producerUri")) |> ignore
-    ctor.Parameters.Add(Expr.Param(typeof<string>, "producerName")) |> ignore
-    ctor.Statements.Add(Stmt.assign (Expr.Field(Expr.this, "producerUri")) (Expr.var("producerUri"))) |> ignore
-    ctor.Statements.Add(Stmt.assign (Expr.Field(Expr.this, "producerName")) (Expr.var("producerName"))) |> ignore
+    let ctor =
+        Ctor.create()
+        |> Ctor.setAttr MemberAttributes.Family
+        |> Ctor.addParam<string> "producerUri"
+        |> Ctor.addParam<string> "producerName"
+        |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerUri") (Expr.var("producerUri")))
+        |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (Expr.var("producerName")))
 
     let moveToElementMeth = CodeMemberMethod(Name="MoveToElement")
     moveToElementMeth.Attributes <- MemberAttributes.Family
@@ -296,23 +273,23 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
                       |> Meth.addParam<string> "name"
                       |> Meth.addParam<string> "ns"
                       |> Meth.addParam<int> "depth"
-                      |> Meth.addStmt (Stat.While(Expr.Value(true) :> CodeExpression,
-                                                   [| !~~ Stat.IfThenElse(Expr.CallOp(Expr.CallOp(Expr.Prop(Expr.var("reader"), "Depth"), Expr.Op.IdentityEquality, Expr.var("depth")),
-                                                                                      Expr.Op.BooleanAnd,
-                                                                                      Expr.CallOp(Expr.CallOp(Expr.Prop(Expr.var("reader"), "NodeType"), Expr.Op.IdentityEquality, Expr.Prop(Expr.Type(typeof<XmlNodeType>), "Element")),
-                                                                                                  Expr.Op.BooleanAnd,
-                                                                                                  Expr.CallOp(Expr.CallOp(Expr.var("name"), Expr.Op.IdentityEquality, Expr.Value(null)),
-                                                                                                              Expr.Op.BooleanOr,
-                                                                                                              Expr.CallOp(Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityEquality, Expr.var("name")),
-                                                                                                                          Expr.Op.BooleanAnd,
-                                                                                                                          Expr.CallOp(Expr.Prop(Expr.var("reader"), "NamespaceURI"), Expr.Op.IdentityEquality, Expr.var("ns")))))),
-                                                                          Stat.Return(Expr.Value(true)))
-                                                      !~~ Stat.IfThenElse(Expr.CallOp(Expr.Call(Expr.var("reader"), "Read"),
-                                                                                      Expr.Op.BooleanAnd,
-                                                                                      Expr.CallOp(Expr.Prop(Expr.var("reader"), "Depth"), Expr.Op.GreaterThanOrEqual, Expr.var("depth"))),
-                                                                          [| |],
-                                                                          [| !~~ Stat.Return(Expr.Value(false)) |]) |]))
-                      |> Meth.addStmt (Stat.Return(Expr.Value(false)))
+                      |> Meth.addStmt (Stmt.whl (Expr.value true)
+                                                [ Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "Depth")
+                                                                                     (Expr.var "depth"))
+                                                                          (Op.boolAnd (Op.equals (Expr.var "reader" @=> "NodeType")
+                                                                                                 (Expr.typeRefOf<XmlNodeType> @=> "Element"))
+                                                                                      (Op.boolOr (Op.isNull (Expr.var "name"))
+                                                                                                 (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
+                                                                                                                        (Expr.var "name"))
+                                                                                                             (Op.equals (Expr.var "reader" @=> "NamespaceURI")
+                                                                                                                        (Expr.var "ns"))))))
+                                                              [Expr.value true |> Stmt.ret]
+                                                  Stmt.condIfElse (Op.boolAnd ((Expr.var "reader" @-> "Read") @% [])
+                                                                              (Op.ge (Expr.var "reader" @=> "Depth")
+                                                                                     (Expr.var "depth")))
+                                                                  []
+                                                                  [Expr.value false |> Stmt.ret] ])
+                      |> Meth.addStmt (Expr.value false |> Stmt.ret)
                       |> ignore
 
     let serviceCallMeth = CodeMemberMethod(Name="MakeServiceCall")
@@ -320,67 +297,68 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     serviceCallMeth.Attributes <- MemberAttributes.Family ||| MemberAttributes.Final
     serviceCallMeth.ReturnType <- CodeTypeReference("T")
 
-    let writerStatements = [|
-        Stmt.assign (Expr.var("stream")) (Expr.Call(Expr.var("request"), "GetRequestStream"))
+    let writerStatements = [
+        Stmt.assign (Expr.var("stream")) ((Expr.var "request" @-> "GetRequestStream") @% [])
         Stmt.declVar<XmlWriter> "writer" (Some Expr.nil)
-        !~~ Stat.TryCatch(
-                [| Stmt.assign (Expr.var("writer")) (Expr.Call(Expr.Type(typeof<XmlWriter>), "Create", Expr.var("stream")))
-                   !~> Expr.Call(Expr.var("writer"), "WriteStartDocument")
-                   !~> Expr.Call(Expr.var("writer"), "WriteStartElement", Expr.Value("soapenv"), Expr.Value("Envelope"), Expr.Value(XmlNamespace.SoapEnvelope))
-                   !~> Expr.Call(Expr.var("writer"), "WriteStartElement", Expr.Value("Header"), Expr.Value(XmlNamespace.SoapEnvelope))
-                   !~> Expr.Invoke(Expr.var("writeHeaderAction"), Expr.var("writer"))
-                   !~> Expr.Call(Expr.var("writer"), "WriteEndElement")
-                   !~> Expr.Call(Expr.var("writer"), "WriteStartElement", Expr.Value("Body"), Expr.Value(XmlNamespace.SoapEnvelope))
-                   !~> Expr.Invoke(Expr.var("writeBody"), Expr.var("writer"))
-                   !~> Expr.Call(Expr.var("writer"), "WriteEndElement")
-                   !~> Expr.Call(Expr.var("writer"), "WriteEndElement")
-                   !~> Expr.Call(Expr.var("writer"), "WriteEndDocument") |],
-                [| |],
-                [| Stat.IfThenElse(Expr.CallOp(Expr.var("writer"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.var("writer"), "Dispose")) |]) |]
+        Stmt.tryFinally
+            [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "stream"])
+              (Expr.var "writer" @-> "WriteStartDocument") @% [] |> Stmt.ofExpr
+              (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
+              (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
+              (Expr.var "writeHeaderAction") @%% [Expr.var "writer"] |> Stmt.ofExpr
+              (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
+              (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
+              (Expr.var "writeBody") @%% [Expr.var "writer"] |> Stmt.ofExpr
+              (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
+              (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
+              (Expr.var "writer" @-> "WriteEndDocument") @% [] |> Stmt.ofExpr ]
+            [ Stmt.condIf (Op.isNotNull (Expr.var "writer"))
+                          [(Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr] ]
+        ]
 
     let xmlReaderTypRef = if undescribedFaults then CodeTypeReference("XmlBookmarkReader") else CodeTypeReference(typeof<XmlReader>)
 
     let createReaderExpr =
-        let readerExpr = Expr.Call(Expr.Type(typeof<XmlReader>), "Create", Expr.Call(Expr.var("response"), "GetResponseStream")) :> CodeExpression
-        if undescribedFaults then Expr.NewObject(xmlReaderTypRef, readerExpr) :> CodeExpression else readerExpr
+        let readerExpr = (Expr.typeRefOf<XmlReader> @-> "Create") @% [(Expr.var "response" @-> "GetResponseStream") @% []]
+        if undescribedFaults then Expr.instOf xmlReaderTypRef [readerExpr] else readerExpr
 
-    let readerStatements = [|
-        Stmt.assign (Expr.var("response")) (Expr.Call(Expr.var("request"), "GetResponse"))
+    let readerStatements = [
+        Stmt.assign (Expr.var("response")) ((Expr.var "request" @-> "GetResponse") @% [])
         Stmt.declVarRef xmlReaderTypRef "reader" (Some Expr.nil)
-        !~~ Stat.TryCatch(
-                [| Stmt.assign (Expr.var("reader")) createReaderExpr
-                   Stat.IfThenElse(Expr.Call(Expr.this, "MoveToElement", Expr.var("reader"), Expr.Value("Envelope"), Expr.Value(XmlNamespace.SoapEnvelope), Expr.Value(0)),
-                                   [| |],
-                                   [| !~~ Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Soap envelope element was not found in response message."))) |])
-                   Stat.IfThenElse(Expr.Call(Expr.this, "MoveToElement", Expr.var("reader"), Expr.Value("Body"), Expr.Value(XmlNamespace.SoapEnvelope), Expr.Value(1)),
-                                   [| |],
-                                   [| !~~ Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Soap body element was not found in response message."))) |])
-                   !~> Expr.Call(Expr.this, "MoveToElement", Expr.var("reader"), Expr.Value(null), Expr.Value(null), Expr.Value(2))
-                   Stat.IfThenElse(
-                        Expr.CallOp(
-                            Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityEquality, Expr.Value("Fault")),
-                            Expr.Op.BooleanAnd,
-                            Expr.CallOp(Expr.Prop(Expr.var("reader"), "NamespaceURI"), Expr.Op.IdentityEquality, Expr.Value(XmlNamespace.SoapEnvelope))),
-                        Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Call(Expr.var("reader"), "ReadInnerXml"))))
-                   Stat.Return(Expr.Invoke(Expr.var("readBody"), Expr.var("reader"))) |],
-                [| |],
-                [| Stat.IfThenElse(Expr.CallOp(Expr.var("reader"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.var("reader"), "Dispose")) |]) |]
+        Stmt.tryFinally
+            [ Stmt.assign (Expr.var("reader")) createReaderExpr
+              Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope; Expr.value 0])
+                               []
+                               [ Stmt.throw<Exception> [Expr.value "Soap envelope element was not found in response message."] ]
+              Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope; Expr.value 1])
+                               []
+                               [ Stmt.throw<Exception> [Expr.value "Soap body element was not found in response message."] ]
+              (Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 2] |> Stmt.ofExpr
+              Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
+                                                 (Expr.value "Fault"))
+                                      (Op.equals (Expr.var "reader" @=> "NamespaceURI")
+                                                 (Expr.value XmlNamespace.SoapEnvelope)))
+                           [Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []]]
+              Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"]) ]
+            [ Stmt.condIf (Op.isNotNull (Expr.var "reader"))
+                          [(Expr.var "reader" @-> "Dispose") @% [] |> Stmt.ofExpr] ]
+        ]
 
     serviceCallMeth |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
                     |> Meth.addParam<Action<XmlWriter>> "writeBody"
                     |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, CodeTypeReference("T"))) "readBody"
-                    |> Meth.addStmt (Stmt.declVar<Net.WebRequest> "request" <| Some(Expr.Call(Expr.Type(typeof<Net.WebRequest>), "Create", Expr.var("producerUri")) :> CodeExpression))
-                    |> Meth.addStmt (Stmt.assign (Expr.Prop(Expr.var("request"), "Method")) (Expr.Value("POST")))
-                    |> Meth.addStmt (Stmt.assign (Expr.Prop(Expr.var("request"), "ContentType")) (Expr.Value("text/xml; charset=utf-8")))
-                    |> Meth.addExpr (Expr.Call(Expr.Prop(Expr.var("request"), "Headers"), "Set", Expr.Value("SOAPAction"), Expr.Value("")))
+                    |> Meth.addStmt (Stmt.declVar<Net.WebRequest> "request" <| Some((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))
+                    |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "Method") (Expr.value "POST"))
+                    |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "ContentType") (Expr.value "text/xml; charset=utf-8"))
+                    |> Meth.addExpr (((Expr.var "request" @=> "Headers") @-> "Set") @% [Expr.value "SOAPAction"; Expr.value ""])
                     |> Meth.addStmt (Stmt.declVar<IO.Stream> "stream" (Some Expr.nil))
-                    |> Meth.addStmt (Stat.TryCatch(writerStatements,
-                                                   [| |],
-                                                   [| Stat.IfThenElse(Expr.CallOp(Expr.var("stream"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.var("stream"), "Dispose")) |]))
+                    |> Meth.addStmt (Stmt.tryFinally writerStatements
+                                                     [ Stmt.condIf (Op.isNotNull (Expr.var "stream"))
+                                                                   [(Expr.var "stream" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
                     |> Meth.addStmt (Stmt.declVar<Net.WebResponse> "response" (Some Expr.nil))
-                    |> Meth.addStmt (Stat.TryCatch(readerStatements,
-                                                   [| |],
-                                                   [| Stat.IfThenElse(Expr.CallOp(Expr.var("response"), Expr.Op.IdentityInequality, Expr.Value(null)), !~> Expr.Call(Expr.var("response"), "Dispose")) |]))
+                    |> Meth.addStmt (Stmt.tryFinally readerStatements
+                                                     [ Stmt.condIf (Op.isNotNull (Expr.var "response"))
+                                                                   [(Expr.var "response" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
                     |> ignore
 
     portBaseTy.Members.Add(ctor) |> ignore
@@ -418,11 +396,11 @@ let makeReturnType (types: RuntimeType list) =
     let rec getReturnTypeTuple (tuple: (int * RuntimeType) list, types) =
         match types with
         | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference()) |> Array.ofList)
-                (typ, Expr.NewObject(typ, tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i)) |> Array.ofList) :> CodeExpression)
+                (typ, Expr.instOf typ (tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))))
         | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
         | x::xs -> let inner = getReturnTypeTuple([x], xs)
                    let typ = CodeTypeReference("System.Tuple", ((tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference())) @ [fst inner]) |> Array.ofList)
-                   (typ, Expr.NewObject(typ, ((tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))) @ [snd inner]) |> Array.ofList) :> CodeExpression)
+                   (typ, Expr.instOf typ ((tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))) @ [snd inner]))
     match types |> List.mapi (fun i x -> (i, x)) with
     | [] -> (CodeTypeReference(typeof<Void>), Expr.var("???"))
     | (i,tp)::[] -> (tp.AsCodeTypeReference(), Expr.var(sprintf "v%d" i))
@@ -493,7 +471,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     providedTy.Members.Add(f) |> ignore
                     let p = CodeMemberProperty(Name=name + "Specified", Type=CodeTypeReference(typeof<bool>))
                     p.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-                    p.GetStatements.Add(Stat.Return(Expr.Field(Expr.this, f.Name))) |> ignore
+                    p.GetStatements.Add(Expr.this @=> f.Name |> Stmt.ret) |> ignore
                     providedTy.Members.Add(p) |> ignore
                     Some(f)
                 else None
@@ -521,7 +499,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                         f.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
                         let p = CodeMemberProperty(Name=name + "Specified", Type=CodeTypeReference(typeof<bool>))
                         p.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-                        p.GetStatements.Add(Stat.Return(Expr.Field(Expr.this, f.Name))) |> ignore
+                        p.GetStatements.Add(Expr.this @=> f.Name |> Stmt.ret) |> ignore
                         Some(f, p)
                     else None
                 let backingField = CodeMemberField(ty.AsCodeTypeReference(), name + "__backing")
@@ -675,10 +653,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         serviceMethod.ReturnType <- returnType
 
         let requiredHeadersExpr =
-            Expr.NewArray(typeof<string>,
-                          getRequiredHeaders(operation)
-                            |> List.map(fun x -> Expr.Value(x) :> CodeExpression)
-                            |> Array.ofList) :> CodeExpression
+            getRequiredHeaders(operation)
+            |> List.map Expr.value
+            |> Arr.create<string>
 
         let serviceName = match operation.Version with
                           | Some v -> sprintf "%s.%s" operation.Name.LocalName v
@@ -687,12 +664,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         // CodeDom doesn't support delegates, so we have to improvise
         serviceMethod |> Meth.addStmt (Stmt.declVar<string[]> "requiredHeaders" (Some requiredHeadersExpr))
                       |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeHeader" <| Some(Expr.code "(writer) => { //"))
-                      |> Meth.addExpr (Expr.Call(Expr.parent, "WriteHeader", Expr.var("writer"), Expr.Value(serviceName), Expr.var("requiredHeaders")))
+                      |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
                       |> Meth.addExpr (Expr.code "}")
                       |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeBody" <| Some(Expr.code "(writer) => { //"))
-                      |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("svc"), Expr.Value(null), Expr.Value(operation.Name.NamespaceName)))
-                      |> iif (operation.Request.Body.Namespace <> operation.Name.NamespaceName) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteAttributeString", Expr.Value("xmlns"), Expr.Value("svcns"), Expr.Value(null), Expr.Value(operation.Request.Body.Namespace))))
-                      |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteStartElement", Expr.Value(operation.Request.Name.LocalName), Expr.Value(operation.Request.Body.Namespace))))
+                      |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svc"; Expr.nil; Expr.value operation.Name.NamespaceName])
+                      |> iif (operation.Request.Body.Namespace <> operation.Name.NamespaceName) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svcns"; Expr.nil; Expr.value operation.Request.Body.Namespace]))
+                      |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value operation.Request.Name.LocalName; Expr.value operation.Request.Body.Namespace]))
                       |> ignore
 
         requestParameters
@@ -704,7 +681,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             varName |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
             serviceMethod
             |> Meth.addStmt (Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName])))
-            |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") [Expr.var "writer"; Expr.var partName])
+            |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var partName])
             |> ignore)
 
         let deserializePartsExpr =
@@ -717,33 +694,30 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 let deserializeExpr =
                     (overrideFunc varName) @
                         [ Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName]))
-                          Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") [Expr.var "reader"])) ]
+                          Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
 
                 let deserializeExpr =
                     if partName = "keha" && undescribedFaults then
-                     [| !~> Expr.Call(Expr.var("reader"), "SetBookmark", Expr.Value("keha"))
-                        !~~ Stat.IfThenElse(Expr.Call(Expr.this, "MoveToElement", Expr.var("reader"), Expr.Value("faultCode"), Expr.Value(""), Expr.Value(4)),
-                                            [| !~> Expr.Call(Expr.var("reader"), "ReturnToAndRemoveBookmark", Expr.Value("keha"))
-                                               !~~ Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Call(Expr.var("reader"), "ReadInnerXml"))) |],
-                                            Array.concat [
-                                                [| !~> Expr.Call(Expr.var("reader"), "ReturnToAndRemoveBookmark", Expr.Value("keha")) |]
-                                                deserializeExpr |> Array.ofList
-                                            ]) |]
-                    else deserializeExpr |> Array.ofList
+                      [ (Expr.var "reader" @-> "SetBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
+                        Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "faultCode"; Expr.value ""; Expr.value 4])
+                                        [ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
+                                          Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []] ]
+                                        ([ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr ] @ deserializeExpr) ]
+                    else deserializeExpr
 
-                !~~ Stat.IfThenElse(Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityEquality, Expr.Value(partName)),
-                                    deserializeExpr))
-            |> Array.ofList
+                Stmt.condIf (Op.equals (Expr.var "reader" @=> "LocalName")
+                                       (Expr.value partName))
+                            deserializeExpr)
 
-        serviceMethod |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr (Expr.Call(Expr.var("writer"), "WriteEndElement")))
+        serviceMethod |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
                       |> Meth.addExpr (Expr.code "}")
                       |> Meth.addStmt (Stmt.declVarRef (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" <| Some(Expr.code "(r) => { //"))
                       |> Meth.addStmt (if undescribedFaults then Stmt.declVarRef (CodeTypeReference("XmlBookmarkReader")) "reader" <| Some(Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r")) else Stmt.declVar<XmlReader> "reader" <| Some(Expr.var "r"))
-                      |> Meth.addStmt (Stat.IfThenElse(Expr.CallOp(
-                                                          Expr.CallOp(Expr.Prop(Expr.var("reader"), "LocalName"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Name.LocalName)),
-                                                          Expr.Op.BooleanOr,
-                                                          Expr.CallOp(Expr.Prop(Expr.var("reader"), "NamespaceURI"), Expr.Op.IdentityInequality, Expr.Value(operation.Response.Body.Namespace))),
-                                                       Stat.Throw(Expr.NewObject(typeof<Exception>, Expr.Value("Invalid response message.")))))
+                      |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
+                                                                            (Expr.value operation.Response.Name.LocalName))
+                                                              (Op.notEquals (Expr.var "reader" @=> "NamespaceURI")
+                                                                            (Expr.value operation.Response.Body.Namespace)))
+                                                   [Stmt.throw<Exception> [Expr.value "Invalid response message."]])
                       |> ignore
 
         responseParameters
@@ -751,8 +725,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let typ = runtimeType.AsCodeTypeReference()
             serviceMethod |> Meth.addStmt (Stmt.declVarRef typ (sprintf "v%d" i) (Some Expr.nil)) |> ignore)
 
-        serviceMethod |> Meth.addStmt (Stat.While(Expr.Call(Expr.this, "MoveToElement", Expr.var("reader"), Expr.Value(null), Expr.Value(null), Expr.Value(3)), deserializePartsExpr))
-                      |> Meth.addStmt (Stat.Return(returnExpr))
+        serviceMethod |> Meth.addStmt (Stmt.whl ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
+                      |> Meth.addStmt (Stmt.ret returnExpr)
                       |> Meth.addExpr (Expr.code "}")
                       |> ignore
 
@@ -760,10 +734,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         | true, doc -> serviceMethod.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
         | _ -> ()
 
-        let methodCall = Expr.Call(CodeMethodReferenceExpression(Expr.parent, "MakeServiceCall", returnType), Expr.var("writeHeader"), Expr.var("writeBody"), Expr.var("readBody"))
+        let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
 
         if responseParameters.IsEmpty then serviceMethod |> Meth.addExpr methodCall |> ignore
-        else serviceMethod |> Meth.addStmt (Stat.Return(methodCall)) |> ignore 
+        else serviceMethod |> Meth.addStmt (Stmt.ret methodCall) |> ignore 
 
         serviceMethod
 
