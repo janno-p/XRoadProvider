@@ -64,6 +64,9 @@ type TypeBuilderContext =
                 nstyp.Members.Add(typ) |> ignore
                 let info = typ, (providedTypeFullName nstyp.Name typ.Name)
                 this.CachedTypes.Add(name, info)
+                match name with
+                | SchemaElement(_) -> typ.CustomAttributes.Add(Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName) |> ignore
+                | _ -> ()
                 info
             | true, info -> info
         member this.GetRuntimeType(name: XmlReference) =
@@ -80,7 +83,10 @@ type TypeBuilderContext =
                 | Reference(ref) ->
                     match this.Attributes.TryFind(ref.ToString()) with
                     | Some(spec) -> findAttributeDefinition(spec)
-                    | None -> failwithf "Missing referenced attribute %A." ref
+                    | None ->
+                        match ref with
+                        | XmlName "lang" -> "lang", Name(XName.Get("string", XmlNamespace.Xsd))
+                        | _ -> failwithf "Missing referenced attribute %A." ref
                 | _ ->
                     match spec.Name with
                     | Some(name) -> name, spec.RefOrType
@@ -401,12 +407,8 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
         | Reference(_) ->
             failwith "not implemented"
         | Definition(_) ->
-            let typ = Cls.create(elementName.LocalName) |> Cls.setAttr TypeAttributes.Public
-            let ns = context.GetOrCreateNamespace(elementName.Namespace)
-            ns.Members.Add(typ) |> ignore
-            typ.CustomAttributes.Add(Attributes.XmlRoot elementName.LocalName elementName.NamespaceName) |> ignore
-            ProvidedType(typ, providedTypeFullName ns.Name typ.Name), (fun varName ->
-                [ Stmt.declVarWith<XmlRootAttribute> varName Expr.nil ])
+            ProvidedType(context.GetOrCreateType(SchemaElement(elementName))),
+            fun varName -> [ Stmt.declVarWith<XmlRootAttribute> varName Expr.nil ]
     | RpcEncoded, SchemaType(typeName) ->
         context.GetRuntimeType(SchemaType(typeName)), 
         fun varName -> [ Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value part.Name]) ]
@@ -571,11 +573,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     failwith "not implemented"
                 spec.Content |> List.iter (fun item ->
                     match item with
-                    | SequenceContent.Choice(spec) ->
-                        // TODO: Create choice type
-                        ()
-                    | SequenceContent.Element(spec) ->
-                        parseElementSpec(spec)
+                    | SequenceContent.Choice(spec) -> printfn "TODO: Choice not implemented."
+                    | SequenceContent.Element(spec) -> parseElementSpec(spec)
+                    | SequenceContent.Any -> printfn "TODO: Any not implemented."
                     | _ -> failwith "not implemented")
             | Some(ComplexTypeParticle.Choice(spec)) ->
                 // TODO: Create choice type
@@ -621,7 +621,13 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 failwith "not implemented"
             | ComplexTypeContent.Particle(spec) ->
                 parseComplexTypeContentSpec(spec)
-        | EmptyType -> failwith "not implemented"
+        | EmptyType -> ()
+
+    let buildElementType (typ: CodeTypeDeclaration, spec: ElementSpec) =
+        match spec.Type with
+        | Definition(def) -> buildType(typ, def)
+        | Reference(_) -> failwith "not implemented"
+        | Name(_) -> ()
 
     let buildOperationService (operation: Operation) =
         let serviceMethod = Meth.create operation.Name.LocalName |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
@@ -728,6 +734,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     |> Seq.collect (fun (_, typeSchema) -> typeSchema.Types)
     |> Seq.map (fun x -> context.GetOrCreateType(SchemaType(x.Key)) |> fst, x.Value)
     |> Seq.iter buildType
+
+    schema.TypeSchemas
+    |> Map.toSeq
+    |> Seq.collect (fun (_, typeSchema) -> typeSchema.Elements)
+    |> Seq.map (fun x -> context.GetOrCreateType(SchemaElement(x.Key)) |> fst, x.Value)
+    |> Seq.iter buildElementType
 
     let targetClass = Cls.create typeNamePath.[typeNamePath.Length - 1] |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
 
