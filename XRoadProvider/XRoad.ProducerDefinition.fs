@@ -2,12 +2,11 @@
 
 open System
 open System.CodeDom
-open System.CodeDom.Compiler
 open System.Collections.Generic
-open System.Globalization
 open System.IO
+open System.Net
 open System.Reflection
-open System.Runtime.InteropServices
+open System.Security.Cryptography
 open System.Text.RegularExpressions
 open System.Xml
 open System.Xml.Linq
@@ -16,27 +15,6 @@ open System.Xml.Serialization
 open XRoad.CodeDom
 open XRoad.Parser
 open XRoad.Parser.XsdSchema
-
-[<AutoOpen>]
-module String =
-    let join (sep: string) (arr: seq<'T>) = String.Join(sep, arr)
-
-    type String with
-        member this.toClassName() =
-            let str =
-                match this.StartsWith("http://") with
-                | true -> this.Substring(7)
-                | _ -> this
-            let className =
-                str.Split('/')
-                |> Array.map (fun p ->
-                    p.Split('.')
-                    |> Array.map (fun x -> CultureInfo.InvariantCulture.TextInfo.ToTitleCase(x.ToLower()).Replace("-", ""))
-                    |> join "")
-                |> join "_"
-            if not <| CodeGenerator.IsValidLanguageIndependentIdentifier(className)
-            then failwithf "invalid name %s" className
-            className
 
 type RuntimeType =
     | PrimitiveType of Type
@@ -192,8 +170,8 @@ let defaultNonceMethod =
     Meth.create "GenerateNonce"
     |> Meth.setAttr MemberAttributes.Private
     |> Meth.returns<string>
-    |> Meth.addStmt (Stmt.declVar<byte[]> "nonce" (Some (Arr.createOfSize<byte> 42)))
-    |> Meth.addStmt (Stmt.declVar<Security.Cryptography.RandomNumberGenerator> "rng" <| Some((Expr.typeRefOf<Security.Cryptography.RNGCryptoServiceProvider> @-> "Create") @% []))
+    |> Meth.addStmt (Stmt.declVarWith<byte[]> "nonce" (Arr.createOfSize<byte> 42))
+    |> Meth.addStmt (Stmt.declVarWith<RandomNumberGenerator> "rng" ((Expr.typeRefOf<RNGCryptoServiceProvider> @-> "Create") @% []))
     |> Meth.addExpr ((Expr.var "rng" @-> "GetNonZeroBytes") @% [Expr.var("nonce")])
     |> Meth.addStmt (Stmt.ret ((Expr.typeRefOf<Convert> @-> "ToBase64String") @% [Expr.var "nonce"]))
 
@@ -212,7 +190,7 @@ let writeXRoadHeaderMethod (style) =
                       Stmt.condIf propNotNullExpr [ Stmt.ofExpr ((writerVar @-> methodName) @% [propVar]) ]
                       Stmt.ofExpr ((writerVar @-> "WriteEndElement") @% []) ]
     let declareWithDefaultValue name xtname defExpr (m: CodeMemberMethod) =
-        m |> Meth.addStmt (Stmt.declVar<string> name None)
+        m |> Meth.addStmt (Stmt.declVar<string> name)
           |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @=> (propName xtname)))
                                            [Stmt.assign (Expr.var name) defExpr]
                                            [Stmt.assign (Expr.var name) (Expr.this @=> (propName xtname))])
@@ -299,7 +277,7 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
 
     let writerStatements = [
         Stmt.assign (Expr.var("stream")) ((Expr.var "request" @-> "GetRequestStream") @% [])
-        Stmt.declVar<XmlWriter> "writer" (Some Expr.nil)
+        Stmt.declVarWith<XmlWriter> "writer" Expr.nil
         Stmt.tryFinally
             [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "stream"])
               (Expr.var "writer" @-> "WriteStartDocument") @% [] |> Stmt.ofExpr
@@ -324,7 +302,7 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
 
     let readerStatements = [
         Stmt.assign (Expr.var("response")) ((Expr.var "request" @-> "GetResponse") @% [])
-        Stmt.declVarRef xmlReaderTypRef "reader" (Some Expr.nil)
+        Stmt.declVarRefWith xmlReaderTypRef "reader" Expr.nil
         Stmt.tryFinally
             [ Stmt.assign (Expr.var("reader")) createReaderExpr
               Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope; Expr.value 0])
@@ -347,15 +325,15 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     serviceCallMeth |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
                     |> Meth.addParam<Action<XmlWriter>> "writeBody"
                     |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, CodeTypeReference("T"))) "readBody"
-                    |> Meth.addStmt (Stmt.declVar<Net.WebRequest> "request" <| Some((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))
+                    |> Meth.addStmt (Stmt.declVarWith<WebRequest> "request" ((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))
                     |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "Method") (Expr.value "POST"))
                     |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "ContentType") (Expr.value "text/xml; charset=utf-8"))
                     |> Meth.addExpr (((Expr.var "request" @=> "Headers") @-> "Set") @% [Expr.value "SOAPAction"; Expr.value ""])
-                    |> Meth.addStmt (Stmt.declVar<IO.Stream> "stream" (Some Expr.nil))
+                    |> Meth.addStmt (Stmt.declVarWith<Stream> "stream" Expr.nil)
                     |> Meth.addStmt (Stmt.tryFinally writerStatements
                                                      [ Stmt.condIf (Op.isNotNull (Expr.var "stream"))
                                                                    [(Expr.var "stream" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
-                    |> Meth.addStmt (Stmt.declVar<Net.WebResponse> "response" (Some Expr.nil))
+                    |> Meth.addStmt (Stmt.declVarWith<WebResponse> "response" Expr.nil)
                     |> Meth.addStmt (Stmt.tryFinally readerStatements
                                                      [ Stmt.condIf (Op.isNotNull (Expr.var "response"))
                                                                    [(Expr.var "response" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
@@ -417,8 +395,8 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
         match elemType with
         | Name(name) ->
             context.GetRuntimeType(name), (fun varName ->
-                [ Stmt.declVar<XmlRootAttribute> varName (Some(Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName]))
-                  Stmt.assign (Expr.propRef (Expr.var varName) "Namespace") (Expr.value elementName.NamespaceName) ])
+                [ Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName])
+                  Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value elementName.NamespaceName) ])
         | Reference(_) ->
             failwith "not implemented"
         | Definition(_) ->
@@ -427,10 +405,10 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
             ns.Members.Add(typ) |> ignore
             typ.CustomAttributes.Add(Attributes.XmlRoot elementName.LocalName elementName.NamespaceName) |> ignore
             ProvidedType(typ, providedTypeFullName ns.Name typ.Name), (fun varName ->
-                [ Stmt.declVar<XmlRootAttribute> varName (Some Expr.nil) ])
+                [ Stmt.declVarWith<XmlRootAttribute> varName Expr.nil ])
     | RpcEncoded, SchemaType(typeName) ->
         context.GetRuntimeType(typeName), (fun varName ->
-            [ Stmt.declVar<XmlRootAttribute> varName (Some(Expr.inst<XmlRootAttribute> [Expr.value part.Name])) ])
+            [ Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value part.Name]) ])
 
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let schema = resolveUri producerUri |> readSchema
@@ -662,11 +640,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                           | _ -> operation.Name.LocalName
 
         // CodeDom doesn't support delegates, so we have to improvise
-        serviceMethod |> Meth.addStmt (Stmt.declVar<string[]> "requiredHeaders" (Some requiredHeadersExpr))
-                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeHeader" <| Some(Expr.code "(writer) => { //"))
+        serviceMethod |> Meth.addStmt (Stmt.declVarWith<string[]> "requiredHeaders" requiredHeadersExpr)
+                      |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeHeader" (Expr.code "(writer) => { //"))
                       |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
                       |> Meth.addExpr (Expr.code "}")
-                      |> Meth.addStmt (Stmt.declVar<Action<XmlWriter>> "writeBody" <| Some(Expr.code "(writer) => { //"))
+                      |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeBody" (Expr.code "(writer) => { //"))
                       |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svc"; Expr.nil; Expr.value operation.Name.NamespaceName])
                       |> iif (operation.Request.Body.Namespace <> operation.Name.NamespaceName) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svcns"; Expr.nil; Expr.value operation.Request.Body.Namespace]))
                       |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value operation.Request.Name.LocalName; Expr.value operation.Request.Body.Namespace]))
@@ -680,7 +658,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             serviceMethod |> Meth.addParamRef typ partName |> ignore
             varName |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
             serviceMethod
-            |> Meth.addStmt (Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName])))
+            |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName]))
             |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var partName])
             |> ignore)
 
@@ -693,7 +671,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
                 let deserializeExpr =
                     (overrideFunc varName) @
-                        [ Stmt.declVar<XmlSerializer> serializerName (Some(Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName]))
+                        [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName])
                           Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
 
                 let deserializeExpr =
@@ -711,8 +689,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         serviceMethod |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
                       |> Meth.addExpr (Expr.code "}")
-                      |> Meth.addStmt (Stmt.declVarRef (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" <| Some(Expr.code "(r) => { //"))
-                      |> Meth.addStmt (if undescribedFaults then Stmt.declVarRef (CodeTypeReference("XmlBookmarkReader")) "reader" <| Some(Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r")) else Stmt.declVar<XmlReader> "reader" <| Some(Expr.var "r"))
+                      |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
+                      |> Meth.addStmt (if undescribedFaults
+                                       then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
+                                       else Stmt.declVarWith<XmlReader> "reader" (Expr.var "r"))
                       |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
                                                                             (Expr.value operation.Response.Name.LocalName))
                                                               (Op.notEquals (Expr.var "reader" @=> "NamespaceURI")
@@ -723,7 +703,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         responseParameters
         |> List.iteri (fun i ((runtimeType, attributeOverrides), partName) ->
             let typ = runtimeType.AsCodeTypeReference()
-            serviceMethod |> Meth.addStmt (Stmt.declVarRef typ (sprintf "v%d" i) (Some Expr.nil)) |> ignore)
+            serviceMethod |> Meth.addStmt (Stmt.declVarRefWith typ (sprintf "v%d" i) Expr.nil) |> ignore)
 
         serviceMethod |> Meth.addStmt (Stmt.whl ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
                       |> Meth.addStmt (Stmt.ret returnExpr)

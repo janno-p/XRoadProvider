@@ -6,6 +6,7 @@ open System.CodeDom
 open System.CodeDom.Compiler
 open System.Collections
 open System.Diagnostics
+open System.Globalization
 open System.IO
 
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
@@ -32,7 +33,6 @@ module Expr =
     let enumValue<'T> valueName = CodePropertyReferenceExpression(typeRefOf<'T>, valueName)
     let cast (t: CodeTypeReference) e = CodeCastExpression(t, e) :> CodeExpression
     let code text = CodeSnippetExpression(text) :> CodeExpression
-    let propRef e name = CodePropertyReferenceExpression(e, name) :> CodeExpression
 
 let (@=>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression
 
@@ -95,17 +95,10 @@ module Stmt =
         CodeConditionStatement(cond, argsIf |> Array.ofList, argsElse |> Array.ofList) :> CodeStatement
 
     let ofExpr e = CodeExpressionStatement(e) :> CodeStatement
-
-    let declVar<'T> name (exp: CodeExpression option) =
-        match exp with
-        | Some(e) -> CodeVariableDeclarationStatement(typeof<'T>, name, e) :> CodeStatement
-        | None -> CodeVariableDeclarationStatement(typeof<'T>, name) :> CodeStatement
-
-    let declVarRef (typ: CodeTypeReference) name (exp: CodeExpression option) =
-        match exp with
-        | Some(e) -> CodeVariableDeclarationStatement(typ, name, e) :> CodeStatement
-        | None -> CodeVariableDeclarationStatement(typ, name) :> CodeStatement
-
+    let declVar<'T> name = CodeVariableDeclarationStatement(typeof<'T>, name) :> CodeStatement
+    let declVarWith<'T> name e = CodeVariableDeclarationStatement(typeof<'T>, name, e) :> CodeStatement
+    let declVarRef (typ: CodeTypeReference) name = CodeVariableDeclarationStatement(typ, name) :> CodeStatement
+    let declVarRefWith (typ: CodeTypeReference) name e = CodeVariableDeclarationStatement(typ, name, e) :> CodeStatement
     let throw<'T> (args: CodeExpression list) = CodeThrowExceptionStatement(Expr.inst<'T> args) :> CodeStatement
     let whl testExpression statements = CodeIterationStatement(CodeSnippetStatement(), testExpression, CodeSnippetStatement(), statements |> Array.ofList) :> CodeStatement
     let tryFinally tryStmts finallyStmts = CodeTryCatchFinallyStatement(tryStmts |> Array.ofList, [| |], finallyStmts |> Array.ofList) :> CodeStatement
@@ -166,6 +159,27 @@ module Compiler =
         if compilerResults.Errors.Count > 0 then
             printfn "%A" compilerResults.Errors
         compilerResults.CompiledAssembly
+
+[<AutoOpen>]
+module String =
+    let join (sep: string) (arr: seq<'T>) = String.Join(sep, arr)
+
+    type String with
+        member this.toClassName() =
+            let str =
+                match this.StartsWith("http://") with
+                | true -> this.Substring(7)
+                | _ -> this
+            let className =
+                str.Split('/')
+                |> Array.map (fun p ->
+                    p.Split('.')
+                    |> Array.map (fun x -> CultureInfo.InvariantCulture.TextInfo.ToTitleCase(x.ToLower()).Replace("-", ""))
+                    |> join "")
+                |> join "_"
+            if not <| CodeGenerator.IsValidLanguageIndependentIdentifier(className)
+            then failwithf "invalid name %s" className
+            className
 
 let makeChoiceType() =
     ()
