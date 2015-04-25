@@ -36,6 +36,7 @@ let resolveUri uri =
 type XmlReference =
     | SchemaElement of XName
     | SchemaType of XName
+    with member this.XName with get() = match this with SchemaElement(name) | SchemaType(name) -> name
 
 type MessagePart =
   { Name: string

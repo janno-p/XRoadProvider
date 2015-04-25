@@ -29,7 +29,7 @@ let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
 
 type TypeBuilderContext =
-    { CachedTypes: Dictionary<XName,CodeTypeDeclaration*string>
+    { CachedTypes: Dictionary<XmlReference,CodeTypeDeclaration*string>
       CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
       Attributes: Map<string,AttributeSpec>
       Elements: Map<string,ElementSpec>
@@ -56,18 +56,18 @@ type TypeBuilderContext =
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
             | true, typ -> typ
-        member this.GetOrCreateType(name: XName) =
+        member this.GetOrCreateType(name: XmlReference) =
             match this.CachedTypes.TryGetValue(name) with
             | false, _ ->
-                let typ = Cls.create(name.LocalName) |> Cls.addAttr TypeAttributes.Public
-                let nstyp = this.GetOrCreateNamespace(name.Namespace)
+                let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public
+                let nstyp = this.GetOrCreateNamespace(name.XName.Namespace)
                 nstyp.Members.Add(typ) |> ignore
                 let info = typ, (providedTypeFullName nstyp.Name typ.Name)
                 this.CachedTypes.Add(name, info)
                 info
             | true, info -> info
-        member this.GetRuntimeType(name: XName) =
-            match mapPrimitiveType name with
+        member this.GetRuntimeType(name: XmlReference) =
+            match mapPrimitiveType name.XName with
             | Some typ -> PrimitiveType(typ)
             | None -> ProvidedType(this.GetOrCreateType(name))
         member this.GetElementSpec(name: XName) =
@@ -394,9 +394,10 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
         let elemName, elemType = context.GetElementDefinition(context.GetElementSpec(elementName))
         match elemType with
         | Name(name) ->
-            context.GetRuntimeType(name), (fun varName ->
+            context.GetRuntimeType(SchemaType(name)),
+            fun varName ->
                 [ Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName])
-                  Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value elementName.NamespaceName) ])
+                  Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value elementName.NamespaceName) ]
         | Reference(_) ->
             failwith "not implemented"
         | Definition(_) ->
@@ -407,8 +408,8 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
             ProvidedType(typ, providedTypeFullName ns.Name typ.Name), (fun varName ->
                 [ Stmt.declVarWith<XmlRootAttribute> varName Expr.nil ])
     | RpcEncoded, SchemaType(typeName) ->
-        context.GetRuntimeType(typeName), (fun varName ->
-            [ Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value part.Name]) ])
+        context.GetRuntimeType(SchemaType(typeName)), 
+        fun varName -> [ Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value part.Name]) ]
 
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let schema = resolveUri producerUri |> readSchema
@@ -514,7 +515,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 match attrSpec.ArrayType with
                 | Some(typeName, rank) ->
                     let itemName = getArrayItemElement(contentSpec.Content) |> Option.bind (fun x -> x.Name) |> Option.orDefault "item"
-                    [1..rank] |> List.fold (fun aggType _ -> CollectionType(aggType, itemName)) (context.GetRuntimeType(typeName))
+                    [1..rank] |> List.fold (fun aggType _ -> CollectionType(aggType, itemName)) (context.GetRuntimeType(SchemaType(typeName)))
                 | _ -> failwith "Array underlying type specification is missing."
             | _ ->
                 match getArrayItemElement(contentSpec.Content) with
@@ -528,7 +529,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         and getParticleType (particleType, maxOccurs, isNillable, name) =
             match particleType with
             | Name(xname) ->
-                let typ = context.GetRuntimeType(xname)
+                let typ = context.GetRuntimeType(SchemaType(xname))
                 match typ with
                 | x when maxOccurs > 1u ->
                     CollectionType(x, name), [Attributes.XmlElement(true)]
@@ -589,7 +590,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 property.CustomAttributes.Add(Attributes.XmlElement2(itemName, elementType.AsCodeTypeReference())) |> ignore
             | _ -> failwith "not implemented"
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
-            match context.GetRuntimeType(spec.Base) with
+            match context.GetRuntimeType(SchemaType(spec.Base)) with
             | PrimitiveType(typ) as rtyp ->
                 let property = addProperty("BaseValue", rtyp, false)
                 property.CustomAttributes.Add(Attributes.XmlText) |> ignore
@@ -603,7 +604,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 providedTy.Members.Add(CodeConstructor(Attributes=MemberAttributes.Family)) |> ignore
             match spec.Content with
             | SimpleContent(SimpleContentSpec.Extension(spec)) ->
-                match context.GetRuntimeType(spec.Base) with
+                match context.GetRuntimeType(SchemaType(spec.Base)) with
                 | PrimitiveType(typ) as rtyp ->
                     let property = addProperty("BaseValue", rtyp, false)
                     property.CustomAttributes.Add(Attributes.XmlText) |> ignore
@@ -612,7 +613,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | SimpleContent(SimpleContentSpec.Restriction(spec)) ->
                 failwith "not implemented"
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
-                let baseTy, name = context.GetOrCreateType(spec.Base)
+                let baseTy, name = context.GetOrCreateType(SchemaType(spec.Base))
                 providedTy.BaseTypes.Add(name) |> ignore
                 baseTy.CustomAttributes.Add(Attributes.XmlInclude(providedTy)) |> ignore
                 parseComplexTypeContentSpec(spec.Content)
@@ -635,20 +636,19 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             |> List.map Expr.value
             |> Arr.create<string>
 
-        let serviceName = match operation.Version with
-                          | Some v -> sprintf "%s.%s" operation.Name.LocalName v
-                          | _ -> operation.Name.LocalName
+        let serviceName = match operation.Version with Some v -> sprintf "%s.%s" operation.Name.LocalName v | _ -> operation.Name.LocalName
 
         // CodeDom doesn't support delegates, so we have to improvise
-        serviceMethod |> Meth.addStmt (Stmt.declVarWith<string[]> "requiredHeaders" requiredHeadersExpr)
-                      |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeHeader" (Expr.code "(writer) => { //"))
-                      |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
-                      |> Meth.addExpr (Expr.code "}")
-                      |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeBody" (Expr.code "(writer) => { //"))
-                      |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svc"; Expr.nil; Expr.value operation.Name.NamespaceName])
-                      |> iif (operation.Request.Body.Namespace <> operation.Name.NamespaceName) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svcns"; Expr.nil; Expr.value operation.Request.Body.Namespace]))
-                      |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value operation.Request.Name.LocalName; Expr.value operation.Request.Body.Namespace]))
-                      |> ignore
+        serviceMethod
+        |> Meth.addStmt (Stmt.declVarWith<string[]> "requiredHeaders" requiredHeadersExpr)
+        |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeHeader" (Expr.code "(writer) => { //"))
+        |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
+        |> Meth.addExpr (Expr.code "}")
+        |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeBody" (Expr.code "(writer) => { //"))
+        |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svc"; Expr.nil; Expr.value operation.Name.NamespaceName])
+        |> iif (operation.Request.Body.Namespace <> operation.Name.NamespaceName) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svcns"; Expr.nil; Expr.value operation.Request.Body.Namespace]))
+        |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value operation.Request.Name.LocalName; Expr.value operation.Request.Body.Namespace]))
+        |> ignore
 
         requestParameters
         |> List.iter (fun ((runtimeType, overrideFunc), partName) ->
@@ -687,28 +687,30 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                                        (Expr.value partName))
                             deserializeExpr)
 
-        serviceMethod |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
-                      |> Meth.addExpr (Expr.code "}")
-                      |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
-                      |> Meth.addStmt (if undescribedFaults
-                                       then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
-                                       else Stmt.declVarWith<XmlReader> "reader" (Expr.var "r"))
-                      |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
-                                                                            (Expr.value operation.Response.Name.LocalName))
-                                                              (Op.notEquals (Expr.var "reader" @=> "NamespaceURI")
-                                                                            (Expr.value operation.Response.Body.Namespace)))
-                                                   [Stmt.throw<Exception> [Expr.value "Invalid response message."]])
-                      |> ignore
+        serviceMethod
+        |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
+        |> Meth.addExpr (Expr.code "}")
+        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
+        |> Meth.addStmt (if undescribedFaults
+                         then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
+                         else Stmt.declVarWith<XmlReader> "reader" (Expr.var "r"))
+        |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
+                                                              (Expr.value operation.Response.Name.LocalName))
+                                                (Op.notEquals (Expr.var "reader" @=> "NamespaceURI")
+                                                              (Expr.value operation.Response.Body.Namespace)))
+                                     [Stmt.throw<Exception> [Expr.value "Invalid response message."]])
+        |> ignore
 
         responseParameters
         |> List.iteri (fun i ((runtimeType, attributeOverrides), partName) ->
             let typ = runtimeType.AsCodeTypeReference()
             serviceMethod |> Meth.addStmt (Stmt.declVarRefWith typ (sprintf "v%d" i) Expr.nil) |> ignore)
 
-        serviceMethod |> Meth.addStmt (Stmt.whl ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
-                      |> Meth.addStmt (Stmt.ret returnExpr)
-                      |> Meth.addExpr (Expr.code "}")
-                      |> ignore
+        serviceMethod
+        |> Meth.addStmt (Stmt.whl ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
+        |> Meth.addStmt (Stmt.ret returnExpr)
+        |> Meth.addExpr (Expr.code "}")
+        |> ignore
 
         match operation.Documentation.TryGetValue("et") with
         | true, doc -> serviceMethod.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
@@ -724,7 +726,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     schema.TypeSchemas
     |> Map.toSeq
     |> Seq.collect (fun (_, typeSchema) -> typeSchema.Types)
-    |> Seq.map (fun x -> context.GetOrCreateType(x.Key) |> fst, x.Value)
+    |> Seq.map (fun x -> context.GetOrCreateType(SchemaType(x.Key)) |> fst, x.Value)
     |> Seq.iter buildType
 
     let targetClass = Cls.create typeNamePath.[typeNamePath.Length - 1] |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
