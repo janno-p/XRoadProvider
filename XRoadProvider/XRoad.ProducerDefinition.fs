@@ -626,7 +626,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let buildElementType (typ: CodeTypeDeclaration, spec: ElementSpec) =
         match spec.Type with
         | Definition(def) -> buildType(typ, def)
-        | Reference(_) -> failwith "not implemented"
+        | Reference(_) -> failwith "Root level element references are not allowed."
         | Name(_) -> ()
 
     let buildOperationService (operation: Operation) =
@@ -738,7 +738,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     schema.TypeSchemas
     |> Map.toSeq
     |> Seq.collect (fun (_, typeSchema) -> typeSchema.Elements)
-    |> Seq.map (fun x -> context.GetOrCreateType(SchemaElement(x.Key)) |> fst, x.Value)
+    |> Seq.choose (fun x ->
+        match x.Value.Type with
+        | Definition(_) -> Some(context.GetOrCreateType(SchemaElement(x.Key)) |> fst, x.Value)
+        | _ -> None)
     |> Seq.iter buildElementType
 
     let targetClass = Cls.create typeNamePath.[typeNamePath.Length - 1] |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
