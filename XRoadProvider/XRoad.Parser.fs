@@ -36,6 +36,7 @@ let resolveUri uri =
 type XmlReference =
     | SchemaElement of XName
     | SchemaType of XName
+    with member this.XName with get() = match this with SchemaElement(name) | SchemaType(name) -> name
 
 type MessagePart =
   { Name: string
@@ -300,6 +301,11 @@ module XsdSchema =
         | XmlNamespace.Xsd -> Some element.Name.LocalName
         | _ -> None
 
+    let (|XmlName|_|) (name: XName) =
+        match name.NamespaceName with
+        | XmlNamespace.Xml -> Some name.LocalName
+        | _ -> None
+
     let (|XsdType|_|) (name: XName) =
         match name.NamespaceName with
         | XmlNamespace.Xsd -> Some name.LocalName
@@ -356,6 +362,7 @@ module XsdSchema =
         | XsdType "hexBinary" -> Some typeof<byte[]>
         | XsdType "base64Binary" -> Some typeof<byte[]>
         | XsdType "boolean" -> Some typeof<bool>
+        | XsdType "date" -> Some typeof<DateTime>
         | XsdType "dateTime" -> Some typeof<DateTime>
         | XsdType "decimal" -> Some typeof<decimal>
         | XsdType "int" -> Some typeof<int>
