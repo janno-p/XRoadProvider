@@ -488,6 +488,10 @@
           </element>
         </all>
       </complexType>
+      <element name="unitValid" type="xrd:unitValid" />
+      <element name="unitValidResponse" type="xrd:unitValidResponse" />
+      <element name="unitRepresent" type="xrd:unitRepresent" />
+      <element name="unitRepresentResponse" type="xrd:unitRepresentResponse" />
     </schema>
   </types>
   <message name="fileUploadResponse">
@@ -497,10 +501,10 @@
     <part name="body" element="tns:fileUploadMTOMResponse"/>
   </message>
   <message name="unitValid">
-    <part name="body" element="xrd:unitValid"/>
+    <part name="body" element="tns:unitValid"/>
   </message>
   <message name="unitRepresentResponse">
-    <part name="body" element="xrd:unitRepresentResponse"/>
+    <part name="body" element="tns:unitRepresentResponse"/>
   </message>
   <message name="isikuteListResponse">
     <part name="body" element="tns:isikuteListResponse"/>
@@ -531,7 +535,7 @@
     <part name="body" element="xrd:loadClassification"/>
   </message>
   <message name="unitRepresent">
-    <part name="body" element="xrd:unitRepresent"/>
+    <part name="body" element="tns:unitRepresent"/>
   </message>
   <message name="fileDownload">
     <part name="body" element="tns:fileDownload"/>
@@ -550,7 +554,7 @@
     <part name="body" element="tns:fileUploadMTOM"/>
   </message>
   <message name="unitValidResponse">
-    <part name="body" element="xrd:unitValidResponse"/>
+    <part name="body" element="tns:unitValidResponse"/>
   </message>
   <message name="fileDownloadResponse">
     <part name="body" element="tns:fileDownloadResponse"/>

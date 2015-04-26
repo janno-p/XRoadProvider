@@ -1,8 +1,7 @@
-﻿#r @"../../XRoadProvider/bin/Debug/XRoadProvider.dll"
+﻿#r @"../../bin/XRoadProvider.dll"
 
 open System.IO
 open XRoad.Providers
-open XRoad.Providers.Runtime
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"
@@ -12,58 +11,58 @@ type AktorstestDto = Aktorstest.DefinedTypes.aktorstest
 
 let port = Aktorstest.aktorstestService.Test()
 
-printfn "Default port address: %s" port.Address
-printfn "Default producer name: %s" port.Producer
+printfn "Default port address: %s" port.ProducerUri
+printfn "Default producer name: %s" port.ProducerName
 //printfn "XRoad request format: %A" testPort.RequestFormat
 
-port.Address <- "http://localhost:8001/"
+port.ProducerUri <- "http://localhost:8001/"
 
-printfn "Using port address: %s" port.Address
-printfn "Using producer name: %s" port.Producer
+printfn "Using port address: %s" port.ProducerUri
+printfn "Using producer name: %s" port.ProducerName
 
-let settings = XRoadHeader(Consumer=Some("10239452"),
-                           UserId=Some("EE:PIN:abc4567"))
+port.Consumer <- "10239452"
+port.UserId <- "EE:PIN:abc4567"
 
 // File upload with multipart request
 
-AktorstestDto.tookoht().nimi
-
-let fup = tns.``fileUpload'``()
-fup.request <- tns.``fileUpload'``.``request'``()
+let fup = AktorstestDto.fileUpload()
+fup.request <- AktorstestDto.fileUpload.requestType()
 fup.request.fileName <- "test.txt"
 
-let fupResponse = service.fileUpload(fup, settings, None)
+let fupr = port.fileUpload(fup)
 
-printfn "%s" fupResponse.response.faultCode
-printfn "%s" fupResponse.response.faultString
+printfn "%s" fupr.response.faultCode.BaseValue
+printfn "%s" fupr.response.faultString.BaseValue
 
 // Change address service
 
-let cad = tns.``changeAddress'``()
-cad.request <- tns.``changeAddress'``.``request'``()
-cad.request.aadress <- tns.aadress()
+let cad = AktorstestDto.changeAddress()
+cad.request <- AktorstestDto.changeAddress.requestType()
+cad.request.aadress <- AktorstestDto.aadress()
 cad.request.aadress.korteriNr <- 13I
 cad.request.aadress.linnvald <- "Tallinn"
-cad.request.aadress.maakond <- "Harju"
+cad.request.aadress.maakond <- Aktorstest.DefinedTypes.xroad.maakond(BaseValue="Harju")
 cad.request.aadress.majaNr <- "25A"
 cad.request.aadress.tanav <- "Paldiski mnt."
 cad.request.isikukood <- "30101010001"
 
-let cadResponse = service.changeAddress(cad, settings)
+let cadr = port.changeAddress(cad)
 
-printfn "%s" cadResponse.response.faultCode
-printfn "%s" cadResponse.response.faultString
+printfn "%s" cadr.response.faultCode.BaseValue
+printfn "%s" cadr.response.faultString.BaseValue
 
 // List methods service
 
-let methods = service.listMethods(obj(), settings)
+let methods = port.listMethods(Aktorstest.DefinedTypes.xroad.listMethods())
+methods.response.item |> Array.iter (printfn "%s")
 
 // File download with multipart response
 
-let fdInput = tns.``fileDownload'``()
-fdInput.request <- tns.``fileDownload'``.``request'``()
-fdInput.request.fileName <- "document.pdf"
+let fd = AktorstestDto.fileDownload()
+fd.request <- AktorstestDto.fileDownload.requestType()
+fd.request.fileName <- "document.pdf"
 
-let resp = service.fileDownload(fdInput, settings)
+let fdr = port.fileDownload(fd)
+fdr.response.file.href
 let stream = resp.Attachments.[0]
 let result = resp.Result
