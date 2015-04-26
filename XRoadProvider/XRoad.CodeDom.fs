@@ -137,6 +137,8 @@ module Cls =
         c.EndDirectives.Add(CodeRegionDirective(CodeRegionMode.End, "")) |> ignore
         c
 
+    let addMember m (c: CodeTypeDeclaration) = c.Members.Add(m) |> ignore; c
+
 module Arr =
     let createOfSize<'T> (size: int) = CodeArrayCreateExpression(typeRef<'T>, size) :> CodeExpression
     let create<'T> (args: CodeExpression list) = CodeArrayCreateExpression(typeRef<'T>, args |> Array.ofList) :> CodeExpression

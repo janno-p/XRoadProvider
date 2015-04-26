@@ -225,10 +225,30 @@ let writeXRoadHeaderMethod (style) =
     |> Meth.addStmt (writeHeaderElement (hdrName "salastada") (Expr.this @=> (propName "salastada")) "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "salastada_sertifikaadiga") (Expr.this @=> (propName "salastada_sertifikaadiga")) "WriteString")
 
+let createBinaryContentType () =
+    let contentField = Fld.create<byte[]> "content__backing"
+    let contentProp =
+        Prop.create<byte[]> "Content"
+        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+        |> Prop.addGetStmt (Stmt.ret (Expr.this @=> contentField.Name))
+        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> contentField.Name) Prop.setValue)
+    let idField = Fld.create<string> "id__backing"
+    let idProp =
+        Prop.create<string> "Id"
+        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+        |> Prop.addGetStmt (Expr.this @=> idField.Name |> Stmt.ret)
+        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> idField.Name) Prop.setValue)
+    Cls.create "BinaryContent"
+    |> Cls.setAttr TypeAttributes.Public
+    |> Cls.addMember (contentField)
+    |> Cls.addMember (contentProp)
+    |> Cls.addMember (idField)
+    |> Cls.addMember (idProp)
+
 let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     let portBaseTy = Cls.create "AbstractServicePort" |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Abstract)
 
-    let addressField = CodeMemberField(typeof<string>, "producerUri")
+    let addressField = Fld.create<string> "producerUri"
     let addressFieldRef = Expr.this @=> addressField.Name
     let addressProperty = CodeMemberProperty(Name="ProducerUri", Type=CodeTypeReference(typeof<string>))
     addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
@@ -751,6 +771,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
     targetClass.Members.Add(portBaseTy) |> ignore
     targetClass.Members.Add(serviceTypesTy) |> ignore
+    targetClass.Members.Add(createBinaryContentType()) |> ignore
 
     schema.Services |> List.iter (fun service ->
         let serviceTy = Cls.create service.Name |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
