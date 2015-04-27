@@ -14,7 +14,7 @@ type private CacheKey =
     UndescribedFaults: bool }
 
 [<TypeProvider>]
-type XRoadProducerProvider(config: TypeProviderConfig) as this =
+type XRoadProducerProvider() as this =
     let invalidation = Event<_,_>()
 
     let namespaceName = "XRoad.Providers"
@@ -28,7 +28,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
         override __.ApplyStaticArguments(typeWithoutArguments, typeNameWithArguments, staticArguments) =
             //printfn "ITypeProvider.ApplyStaticArguments(%A)" (typeWithoutArguments, typeNameWithArguments, staticArguments)
             match typeWithoutArguments with
-            | :? ProvidedTypeDefinition as ty ->
+            | :? ProvidedTypeDefinition ->
                 match staticArguments with
                 | [| :? string as producerUri; :? bool as undescribedFaults |] ->
                     let key = { TypeName = String.Join(".", typeNameWithArguments); ProducerUri = producerUri; UndescribedFaults = undescribedFaults }
@@ -82,7 +82,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
             //printfn "IProvidedNamespace.GetTypes()"
             [| ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducer", Some(typeof<obj>), IsErased=false) |]
 
-        override __.ResolveTypeName(typeName) =
+        override __.ResolveTypeName(_) =
             //printfn "IProvidedNamespace.ResolveTypeName(%A)" typeName
             null
 
@@ -92,7 +92,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
                 namespaceName
 
 [<TypeProvider>]
-type XRoadProviders(config: TypeProviderConfig) as this =
+type XRoadProviders() as this =
     inherit TypeProviderForNamespaces()
 
     let theAssembly = typeof<XRoadProviders>.Assembly

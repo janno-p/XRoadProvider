@@ -8,7 +8,7 @@ open System.Xml.Linq
 [<AutoOpen>]
 module Option =
     let orDefault value opt =
-        opt |> Option.fold (fun s t -> t) value
+        opt |> Option.fold (fun _ t -> t) value
 
 module XmlNamespace =
     let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"

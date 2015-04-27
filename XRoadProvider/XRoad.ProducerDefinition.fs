@@ -117,12 +117,12 @@ type TypeBuilderContext =
               Attributes =
                   schema.TypeSchemas
                   |> Map.toSeq
-                  |> Seq.collect (fun (ns, typ) -> typ.Attributes |> Seq.map (fun x -> x.Key.ToString(), x.Value))
+                  |> Seq.collect (fun (_,typ) -> typ.Attributes |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
               Elements =
                   schema.TypeSchemas
                   |> Map.toSeq
-                  |> Seq.collect (fun (ns, typ) -> typ.Elements |> Seq.map (fun x -> x.Key.ToString(), x.Value))
+                  |> Seq.collect (fun (_,typ) -> typ.Elements |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
               Style = style }
 
@@ -417,7 +417,7 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
     | RpcEncoded, SchemaElement(e) ->
         failwithf "RPC/Encoded style message part '%s' should reference global type as message part, but element '%s' is used instead" part.Name e.LocalName
     | DocLiteral, SchemaElement(elementName) ->
-        let elemName, elemType = context.GetElementDefinition(context.GetElementSpec(elementName))
+        let elemType = snd <| context.GetElementDefinition(context.GetElementSpec(elementName))
         match elemType with
         | Name(name) ->
             context.GetRuntimeType(SchemaType(name)),
@@ -492,37 +492,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             providedTy.Members.Add(property) |> ignore
             property
 
-        let buildProperty(name, ty: RuntimeType, isOptional): CodeTypeMember list =
-            [
-                let specifiedField =
-                    if isOptional then
-                        let f = CodeMemberField(typeof<bool>, name + "__specified")
-                        f.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
-                        let p = CodeMemberProperty(Name=name + "Specified", Type=CodeTypeReference(typeof<bool>))
-                        p.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-                        p.GetStatements.Add(Expr.this @=> f.Name |> Stmt.ret) |> ignore
-                        Some(f, p)
-                    else None
-                let backingField = CodeMemberField(ty.AsCodeTypeReference(), name + "__backing")
-                backingField.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
-                let backingFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), backingField.Name)
-                let property = CodeMemberProperty(Name=name, Type=ty.AsCodeTypeReference())
-                property.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-                property.GetStatements.Add(CodeMethodReturnStatement(backingFieldRef)) |> ignore
-                property.SetStatements.Add(CodeAssignStatement(backingFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
-
-                yield upcast property
-                yield upcast backingField
-
-                match specifiedField with
-                | Some(field, prop) ->
-                    let fieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), field.Name)
-                    property.SetStatements.Add(CodeAssignStatement(fieldRef, CodePrimitiveExpression(true))) |> ignore
-                    yield upcast field
-                    yield upcast prop
-                | _ -> ()
-            ]
-
         let rec getAttributeType (schemaObject, name) =
             let convertedObject =
                 match schemaObject with
@@ -544,7 +513,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 | Some(elementSpec) ->
                     let elemName, elemType = context.GetElementDefinition(elementSpec)
                     let subTyName = providedTy.Name + "ArrayItem"
-                    let elementTy, attrs = getParticleType(elemType, elementSpec.MaxOccurs, elementSpec.IsNillable, subTyName)
+                    let elementTy = fst <| getParticleType(elemType, elementSpec.MaxOccurs, elementSpec.IsNillable, subTyName)
                     CollectionType(elementTy, elemName)
                 | None -> failwith "Unsupported SOAP encoding array definition."
 
@@ -593,11 +562,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     failwith "not implemented"
                 spec.Content |> List.iter (fun item ->
                     match item with
-                    | SequenceContent.Choice(spec) -> printfn "TODO: Choice not implemented."
+                    | SequenceContent.Choice(_) -> printfn "TODO: Choice not implemented."
                     | SequenceContent.Element(spec) -> parseElementSpec(spec)
                     | SequenceContent.Any -> printfn "TODO: Any not implemented."
                     | _ -> failwith "not implemented")
-            | Some(ComplexTypeParticle.Choice(spec)) ->
+            | Some(ComplexTypeParticle.Choice(_)) ->
                 // TODO: Create choice type
                 ()
             | None -> ()
@@ -611,12 +580,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | _ -> failwith "not implemented"
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             match context.GetRuntimeType(SchemaType(spec.Base)) with
-            | PrimitiveType(typ) as rtyp ->
+            | PrimitiveType(_) as rtyp ->
                 let property = addProperty("BaseValue", rtyp, false)
                 property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                 // TODO: Apply constraints?
             | _ -> failwith "not implemented"
-        | SimpleType(Union(spec)) ->
+        | SimpleType(Union(_)) ->
             failwith "not implemented"
         | ComplexType(spec) ->
             if spec.IsAbstract then
@@ -625,19 +594,19 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             match spec.Content with
             | SimpleContent(SimpleContentSpec.Extension(spec)) ->
                 match context.GetRuntimeType(SchemaType(spec.Base)) with
-                | PrimitiveType(typ) as rtyp ->
+                | PrimitiveType(_) as rtyp ->
                     let property = addProperty("BaseValue", rtyp, false)
                     property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                     parseComplexTypeContentSpec(spec.Content)
                 | _ -> failwith "not implemented"
-            | SimpleContent(SimpleContentSpec.Restriction(spec)) ->
+            | SimpleContent(SimpleContentSpec.Restriction(_)) ->
                 failwith "not implemented"
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                 let baseTy, name = context.GetOrCreateType(SchemaType(spec.Base))
                 providedTy.BaseTypes.Add(name) |> ignore
                 baseTy.CustomAttributes.Add(Attributes.XmlInclude(providedTy)) |> ignore
                 parseComplexTypeContentSpec(spec.Content)
-            | ComplexContent(ComplexContentSpec.Restriction(spec)) ->
+            | ComplexContent(ComplexContentSpec.Restriction(_)) ->
                 failwith "not implemented"
             | ComplexTypeContent.Particle(spec) ->
                 parseComplexTypeContentSpec(spec)
@@ -728,7 +697,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         |> ignore
 
         responseParameters
-        |> List.iteri (fun i ((runtimeType, attributeOverrides), partName) ->
+        |> List.iteri (fun i ((runtimeType,_),_) ->
             let typ = runtimeType.AsCodeTypeReference()
             serviceMethod |> Meth.addStmt (Stmt.declVarRefWith typ (sprintf "v%d" i) Expr.nil) |> ignore)
 

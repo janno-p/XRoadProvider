@@ -39,11 +39,6 @@ let discoverProducers serverIP =
         use reader = new System.IO.StreamReader(resp.GetResponseStream())
         XDocument.Load(reader)
 
-    let wsdlPrefix =
-        match serverUri.EndsWith("/consumer_proxy") with
-        | true -> serverUri.Substring(0, serverUri.LastIndexOf("consumer_proxy")) + "uriproxy?producer="
-        | _ -> failwith "Invalid XRoad security server uri!"
-
     let envelope = doc.Elements(XName.Get("Envelope", XmlNamespace.SoapEnvelope)) |> Seq.exactlyOne
     let body = envelope.Elements(XName.Get("Body", XmlNamespace.SoapEnvelope)) |> Seq.exactlyOne
     let message = body.Elements(XName.Get("listProducersResponse", XmlNamespace.XRoad)) |> Seq.exactlyOne
