@@ -66,9 +66,11 @@ type TypeBuilderContext =
                 nstyp.Members.Add(typ) |> ignore
                 let info = typ, (providedTypeFullName nstyp.Name typ.Name)
                 this.CachedTypes.Add(name, info)
-                match name with
-                | SchemaElement(_) -> typ.CustomAttributes.Add(Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName) |> ignore
-                | _ -> ()
+                typ.CustomAttributes.Add(
+                    match name with
+                    | SchemaElement(_) -> Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName
+                    | SchemaType(_) -> Attributes.XmlType name.XName
+                    ) |> ignore
                 info
             | true, info -> info
         member this.GetRuntimeType(name: XmlReference) =
@@ -233,24 +235,48 @@ let writeXRoadHeaderMethod (style) =
     |> Meth.addStmt (writeHeaderElement (hdrName "salastada_sertifikaadiga") (Expr.this @=> (propName "salastada_sertifikaadiga")) "WriteString")
 
 let createBinaryContentType () =
-    let contentField = Fld.create<byte[]> "content__backing"
+    let contentField = Fld.create<Stream> "content__backing"
     let contentProp =
-        Prop.create<byte[]> "Content"
+        Prop.create<Stream> "Content"
         |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
         |> Prop.addGetStmt (Stmt.ret (Expr.this @=> contentField.Name))
         |> Prop.addSetStmt (Stmt.assign (Expr.this @=> contentField.Name) Prop.setValue)
+    contentProp.CustomAttributes.Add(Attributes.XmlIgnore) |> ignore
     let idField = Fld.create<string> "id__backing"
     let idProp =
         Prop.create<string> "Id"
         |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
         |> Prop.addGetStmt (Expr.this @=> idField.Name |> Stmt.ret)
         |> Prop.addSetStmt (Stmt.assign (Expr.this @=> idField.Name) Prop.setValue)
+    idProp.CustomAttributes.Add(Attributes.XmlAttributeWithName "href") |> ignore
+    let valueProp =
+        Prop.create<byte[]> "Value"
+        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+        |> Prop.addGetStmt (Stmt.declVarWith<MemoryStream> "temp" Expr.nil)
+        |> Prop.addGetStmt (Stmt.tryFinally
+                                [ Stmt.assign (Expr.var "temp") (Expr.inst<MemoryStream> [])
+                                  Stmt.assign (Expr.var contentField.Name @=> "Position") (Expr.value 0)
+                                  Stmt.ofExpr ((Expr.var contentField.Name @-> "CopyTo") @% [Expr.var "temp"])
+                                  Stmt.ret ((Expr.var "temp" @-> "ToArray") @% []) ]
+                                [ Stmt.ofExpr ((Expr.var "temp" @-> "Dispose") @% []) ])
+        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> contentField.Name) (Expr.inst<MemoryStream> [Prop.setValue]))
+    valueProp.CustomAttributes.Add(Attributes.XmlText) |> ignore
+    let ctor =
+        Ctor.create()
+        |> Ctor.setAttr MemberAttributes.Public
+        |> Ctor.addParam<IDictionary<string,Stream>> "attachments"
+        |> Ctor.addParam<string> "id"
+        |> Ctor.addStmt (Stmt.assign (Expr.this @=> idField.Name) ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "cid:{0}"; Expr.var "id"]))
+        |> Ctor.addStmt (Stmt.assign (Expr.this @=> contentField.Name) (CodeArrayIndexerExpression(Expr.var "attachments", Expr.var "id")))
     Cls.create "BinaryContent"
     |> Cls.setAttr TypeAttributes.Public
     |> Cls.addMember (contentField)
     |> Cls.addMember (contentProp)
     |> Cls.addMember (idField)
     |> Cls.addMember (idProp)
+    |> Cls.addMember (valueProp)
+    |> Cls.addMember (ctor)
+    |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Public)
 
 let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
     let portBaseTy = Cls.create "AbstractServicePort" |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Abstract)
@@ -284,47 +310,87 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
                       |> Meth.addParam<string> "name"
                       |> Meth.addParam<string> "ns"
                       |> Meth.addParam<int> "depth"
-                      |> Meth.addStmt (Stmt.whl (Expr.value true)
-                                                [ Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "Depth")
-                                                                                     (Expr.var "depth"))
-                                                                          (Op.boolAnd (Op.equals (Expr.var "reader" @=> "NodeType")
-                                                                                                 (Expr.typeRefOf<XmlNodeType> @=> "Element"))
-                                                                                      (Op.boolOr (Op.isNull (Expr.var "name"))
-                                                                                                 (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
-                                                                                                                        (Expr.var "name"))
-                                                                                                             (Op.equals (Expr.var "reader" @=> "NamespaceURI")
-                                                                                                                        (Expr.var "ns"))))))
-                                                              [Expr.value true |> Stmt.ret]
-                                                  Stmt.condIfElse (Op.boolAnd ((Expr.var "reader" @-> "Read") @% [])
-                                                                              (Op.ge (Expr.var "reader" @=> "Depth")
-                                                                                     (Expr.var "depth")))
-                                                                  []
-                                                                  [Expr.value false |> Stmt.ret] ])
+                      |> Meth.addStmt (Stmt.whileLoop (Expr.value true)
+                                                      [ Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "Depth")
+                                                                                           (Expr.var "depth"))
+                                                                                (Op.boolAnd (Op.equals (Expr.var "reader" @=> "NodeType")
+                                                                                                       (Expr.typeRefOf<XmlNodeType> @=> "Element"))
+                                                                                            (Op.boolOr (Op.isNull (Expr.var "name"))
+                                                                                                       (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
+                                                                                                                              (Expr.var "name"))
+                                                                                                                   (Op.equals (Expr.var "reader" @=> "NamespaceURI")
+                                                                                                                              (Expr.var "ns"))))))
+                                                                    [Expr.value true |> Stmt.ret]
+                                                        Stmt.condIfElse (Op.boolAnd ((Expr.var "reader" @-> "Read") @% [])
+                                                                                    (Op.ge (Expr.var "reader" @=> "Depth")
+                                                                                           (Expr.var "depth")))
+                                                                        []
+                                                                        [Expr.value false |> Stmt.ret] ])
                       |> Meth.addStmt (Expr.value false |> Stmt.ret)
                       |> ignore
 
-    let serviceCallMeth = CodeMemberMethod(Name="MakeServiceCall")
-    serviceCallMeth.TypeParameters.Add("T")
-    serviceCallMeth.Attributes <- MemberAttributes.Family ||| MemberAttributes.Final
-    serviceCallMeth.ReturnType <- CodeTypeReference("T")
+    let serviceCallMeth =
+        Meth.create "MakeServiceCall"
+        |> Meth.setAttr (MemberAttributes.Family ||| MemberAttributes.Final)
+        |> Meth.addParam<IDictionary<string,Stream>> "attachments"
+        |> Meth.typeParam "T"
+        |> Meth.returnsOf (CodeTypeReference("T"))
 
     let writerStatements = [
         Stmt.assign (Expr.var("stream")) ((Expr.var "request" @-> "GetRequestStream") @% [])
-        Stmt.declVarWith<XmlWriter> "writer" Expr.nil
+
+        Stmt.declVarWith<StreamWriter> "sw" Expr.nil
         Stmt.tryFinally
-            [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "stream"])
-              (Expr.var "writer" @-> "WriteStartDocument") @% [] |> Stmt.ofExpr
-              (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
-              (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
-              (Expr.var "writeHeaderAction") @%% [Expr.var "writer"] |> Stmt.ofExpr
-              (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
-              (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
-              (Expr.var "writeBody") @%% [Expr.var "writer"] |> Stmt.ofExpr
-              (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
-              (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
-              (Expr.var "writer" @-> "WriteEndDocument") @% [] |> Stmt.ofExpr ]
-            [ Stmt.condIf (Op.isNotNull (Expr.var "writer"))
-                          [(Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr] ]
+            [ Stmt.assign (Expr.var "sw") (Expr.inst<StreamWriter> [Expr.var "stream"])
+              Stmt.declVarWith<string> "boundaryMarker" Expr.nil
+              Stmt.condIf (Op.boolAnd (Op.notEquals (Expr.var "attachments") Expr.nil)
+                                      (Op.greater (Expr.var "attachments" @=> "Count") (Expr.value 0)))
+                          [ Stmt.assign (Expr.var "boundaryMarker") ((((Expr.typeRefOf<Guid> @-> "NewGuid") @% []) @-> "ToString") @% [])
+                            Stmt.assign (Expr.var "request" @=> "ContentType") ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "multipart/related; type=\"text/xml\"; start=\"test\"; boundary=\"{0}\""; Expr.var "boundaryMarker"])
+                            Stmt.ofExpr (((Expr.var "request" @=> "Headers") @-> "Add") @% [Expr.value "MIME-Version"; Expr.value "1.0"])
+                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
+                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}"; Expr.var "boundaryMarker"])
+                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Type: text/xml; charset=UTF-8"])
+                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Transfer-Encoding: 8bit"])
+                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-ID: <test>"])
+                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% []) ]
+              Stmt.declVarWith<XmlWriter> "writer" Expr.nil
+              Stmt.tryFinally
+                  [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "sw"])
+                    (Expr.var "writer" @-> "WriteStartDocument") @% [] |> Stmt.ofExpr
+                    (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
+                    (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
+                    (Expr.var "writeHeaderAction") @%% [Expr.var "writer"] |> Stmt.ofExpr
+                    (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
+                    (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
+                    (Expr.var "writeBody") @%% [Expr.var "writer"] |> Stmt.ofExpr
+                    (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
+                    (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
+                    (Expr.var "writer" @-> "WriteEndDocument") @% [] |> Stmt.ofExpr ]
+                  [ Stmt.condIf (Op.isNotNull (Expr.var "writer")) [ (Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
+              Stmt.condIf (Op.boolAnd (Op.notEquals (Expr.var "attachments") Expr.nil)
+                                      (Op.greater (Expr.var "attachments" @=> "Count") (Expr.value 0)))
+                          [ Stmt.forLoop (Stmt.declVarWith<IEnumerator<KeyValuePair<string,Stream>>> "enumerator" ((Expr.var "attachments" @-> "GetEnumerator") @% []))
+                                         ((Expr.var "enumerator" @-> "MoveNext") @% [])
+                                         (Stmt.ofExpr Expr.empty)
+                                         [ Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}"; Expr.var "boundaryMarker"])
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Disposition: attachment; filename=notAnswering"])
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Type: application/octet-stream"])
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Transfer-Encoding: binary"])
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-ID: <{0}>"; (Expr.var "enumerator" @=> "Current") @=> "Key"])
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "Flush") @% [])
+                                           Stmt.declVarWith<int> "bytesRead" (Expr.value 1000)
+                                           Stmt.declVarWith<byte[]> "buffer" (Arr.createOfSize<byte> 1000)
+                                           Stmt.assign (((Expr.var "enumerator" @=> "Current") @=> "Value") @=> "Position") (Expr.value 0)
+                                           Stmt.whileLoop (Op.ge (Expr.var "bytesRead") (Expr.value 1000))
+                                                          [ Stmt.assign (Expr.var "bytesRead") (((((Expr.var "enumerator" @=> "Current") @=> "Value") @-> "Read")) @% [Expr.var "buffer"; Expr.value 0; Expr.value 1000])
+                                                            Stmt.ofExpr ((Expr.var "stream" @-> "Write") @% [Expr.var "buffer"; Expr.value 0; Expr.var "bytesRead"]) ]
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% []) ] ]
+              Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
+              Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}--"; Expr.var "boundaryMarker"]) ]
+            [ Stmt.condIf (Op.isNotNull (Expr.var "sw")) [ (Expr.var "sw" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
         ]
 
     let xmlReaderTypRef = if undescribedFaults then CodeTypeReference("XmlBookmarkReader") else CodeTypeReference(typeof<XmlReader>)
@@ -417,7 +483,7 @@ let makeReturnType (types: RuntimeType list) =
     | (i,tp)::[] -> (tp.AsCodeTypeReference(), Expr.var(sprintf "v%d" i))
     | many -> getReturnTypeTuple([], many)
 
-let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
+let buildParameterType (context: TypeBuilderContext) isMultipart (part: MessagePart) =
     match context.Style, part.Reference with
     | DocLiteral, SchemaType(t) ->
         failwithf "Document/Literal style message part '%s' should reference global element as message part, but type '%s' is used instead" part.Name t.LocalName
@@ -429,16 +495,39 @@ let buildParameterType (context: TypeBuilderContext) (part: MessagePart) =
         | Name(name) ->
             context.GetRuntimeType(SchemaType(name)),
             fun varName ->
-                [ Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName])
-                  Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value elementName.NamespaceName) ]
+                [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName])
+                  yield Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value elementName.NamespaceName)
+                  if isMultipart then
+                    yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
+                    yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
+                    yield Stmt.assign (Expr.var (varName + "Value") @=> "XmlIgnore") (Expr.value true)
+                    yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf (CodeTypeReference("BinaryContent")); Expr.value "Value"; Expr.var (varName + "Value")])
+                  else
+                    yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil ]
         | Reference(_) ->
             failwith "not implemented"
         | Definition(_) ->
             ProvidedType(context.GetOrCreateType(SchemaElement(elementName))),
-            fun varName -> [ Stmt.declVarWith<XmlRootAttribute> varName Expr.nil ]
+            fun varName ->
+                [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") Expr.nil
+                  if isMultipart then
+                    yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
+                    yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
+                    yield Stmt.assign (Expr.var (varName + "Value") @=> "XmlIgnore") (Expr.value true)
+                    yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf (CodeTypeReference("BinaryContent")); Expr.value "Value"; Expr.var (varName + "Value")])
+                  else
+                    yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil ]
     | RpcEncoded, SchemaType(typeName) ->
         context.GetRuntimeType(SchemaType(typeName)), 
-        fun varName -> [ Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value part.Name]) ]
+        fun varName ->
+            [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value part.Name])
+              if isMultipart then
+                yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
+                yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
+                yield Stmt.assign (Expr.var (varName + "Value") @=> "XmlIgnore") (Expr.value true)
+                yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf (CodeTypeReference("BinaryContent")); Expr.value "Value"; Expr.var (varName + "Value")])
+              else
+                yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil ]
 
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let schema = resolveUri producerUri |> readSchema
@@ -633,9 +722,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         | Name(_) -> ()
 
     let buildOperationService (operation: Operation) =
+        let isMultipart = operation.Request.MultipartContent |> List.isEmpty |> not
         let serviceMethod = Meth.create operation.Name.LocalName |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        let requestParameters = operation.Request.Body.Parts |> List.map (fun p -> p |> buildParameterType context, p.Name)
-        let responseParameters = operation.Response.Body.Parts |> List.map (fun p -> p |> buildParameterType context, p.Name)
+        let requestParameters = operation.Request.Body.Parts |> List.map (fun p -> p |> buildParameterType context isMultipart, p.Name)
+        let responseParameters = operation.Response.Body.Parts |> List.map (fun p -> p |> buildParameterType context isMultipart, p.Name)
         let returnType, returnExpr = responseParameters |> List.map (fst >> fst) |> makeReturnType
 
         serviceMethod.ReturnType <- returnType
@@ -662,12 +752,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         requestParameters
         |> List.iter (fun ((runtimeType, overrideFunc), partName) ->
             let serializerName = partName + "Serializer"
-            let varName = partName + "Overrides"
+            //let varName = partName + "Overrides"
             let typ = runtimeType.AsCodeTypeReference()
             serviceMethod |> Meth.addParamRef typ partName |> ignore
-            varName |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
+            partName |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
             serviceMethod
-            |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName]))
+            |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var (partName + "Overrides"); Arr.createOfSize<Type> 0; Expr.var (partName + "Root"); Expr.nil ]))
             |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var partName])
             |> ignore)
 
@@ -675,12 +765,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             responseParameters
             |> List.mapi (fun i ((runtimeType, overrideFunc), partName) ->
                 let serializerName = partName + "Serializer"
-                let varName = partName + "Overrides"
                 let typ = runtimeType.AsCodeTypeReference()
 
                 let deserializeExpr =
-                    (overrideFunc varName) @
-                        [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var varName])
+                    (overrideFunc partName) @
+                        [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var (partName + "Overrides"); Arr.createOfSize<Type> 0; Expr.var (partName + "Root"); Expr.nil])
                           Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
 
                 let deserializeExpr =
@@ -716,16 +805,22 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             serviceMethod |> Meth.addStmt (Stmt.declVarRefWith typ (sprintf "v%d" i) Expr.nil) |> ignore)
 
         serviceMethod
-        |> Meth.addStmt (Stmt.whl ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
+        |> Meth.addStmt (Stmt.whileLoop ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
         |> Meth.addStmt (Stmt.ret returnExpr)
         |> Meth.addExpr (Expr.code "}")
         |> ignore
+
+        let attachmentsExpr =
+            if isMultipart then
+                serviceMethod |> Meth.addParam<IDictionary<string,Stream>> "attachments" |> ignore
+                Expr.var "attachments"
+            else Expr.nil
 
         match operation.Documentation.TryGetValue("et") with
         | true, doc -> serviceMethod.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
         | _ -> ()
 
-        let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
+        let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [attachmentsExpr; Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
 
         if responseParameters.IsEmpty then serviceMethod |> Meth.addExpr methodCall |> ignore
         else serviceMethod |> Meth.addStmt (Stmt.ret methodCall) |> ignore 

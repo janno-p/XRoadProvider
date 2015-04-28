@@ -57,6 +57,7 @@ module Attributes =
 
     let DebuggerBrowsable = Attr.create<DebuggerBrowsableAttribute> |> Attr.addArg (Expr.enumValue<DebuggerBrowsableState> "Never")
     let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
+    let XmlAttributeWithName (name: string) = Attr.create<XmlAttributeAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm
     let XmlText = Attr.create<XmlTextAttribute>
 
     let XmlType(typeName: XName) =
@@ -70,6 +71,7 @@ module Attributes =
     let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable
     let XmlArrayItem(name) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm //|> addNullable isNillable
     let XmlRoot name ns = Attr.create<XmlRootAttribute> |> Attr.addArg (Expr.value name) |> Attr.addNamedArg "Namespace" (Expr.value ns)
+    let XmlIgnore = Attr.create<XmlIgnoreAttribute>
 
 module Fld =
     let create<'T> name = CodeMemberField(typeRef<'T>, name)
@@ -100,8 +102,9 @@ module Stmt =
     let declVarRef (typ: CodeTypeReference) name = CodeVariableDeclarationStatement(typ, name) :> CodeStatement
     let declVarRefWith (typ: CodeTypeReference) name e = CodeVariableDeclarationStatement(typ, name, e) :> CodeStatement
     let throw<'T> (args: CodeExpression list) = CodeThrowExceptionStatement(Expr.inst<'T> args) :> CodeStatement
-    let whl testExpression statements = CodeIterationStatement(CodeSnippetStatement(), testExpression, CodeSnippetStatement(), statements |> Array.ofList) :> CodeStatement
+    let whileLoop testExpr statements = CodeIterationStatement(CodeSnippetStatement(), testExpr, CodeSnippetStatement(), statements |> Array.ofList) :> CodeStatement
     let tryFinally tryStmts finallyStmts = CodeTryCatchFinallyStatement(tryStmts |> Array.ofList, [| |], finallyStmts |> Array.ofList) :> CodeStatement
+    let forLoop initStmt testExpr incrStmt statements = CodeIterationStatement(initStmt, testExpr, incrStmt, statements |> Array.ofList) :> CodeStatement
 
 module Meth =
     let create name = CodeMemberMethod(Name=name)
@@ -111,6 +114,8 @@ module Meth =
     let addExpr (e: CodeExpression) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let addStmt (e: CodeStatement) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let returns<'T> (m: CodeMemberMethod) = m.ReturnType <- typeRef<'T>; m
+    let returnsOf (t: CodeTypeReference) (m: CodeMemberMethod) = m.ReturnType <- t; m
+    let typeParam (name: string) (m: CodeMemberMethod) = m.TypeParameters.Add(name) |> ignore; m
 
 module Ctor =
     let create () = CodeConstructor()
@@ -126,6 +131,7 @@ module Op =
     let isNull e = equals e (Expr.value null)
     let isNotNull e = notEquals e (Expr.value null)
     let ge lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThanOrEqual, rhs) :> CodeExpression
+    let greater lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThan, rhs) :> CodeExpression
 
 module Cls =
     let create name = CodeTypeDeclaration(name, IsClass=true)
