@@ -39,10 +39,11 @@ type TypeBuilderContext =
     with
         member this.GetOrCreateNamespace(nsname: XNamespace) =
             let (|Producer|_|) ns =
-                match Regex.Match(ns, @"^http://(((?<producer>\w+)\.x-road\.ee/producer(/(?<path>.*))?)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)(/(?<path>.*))?))$") with
+                match Regex.Match(ns, @"^http://(((?<producer>\w+)\.x-road\.ee/producer/(?<path>.*)?)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)(/(?<path>.*))?))$") with
                 | m when m.Success ->
                     let suffix =
-                        if m.Groups.["path"].Success then sprintf "_%s" <| m.Groups.["path"].Value.toClassName()
+                        if m.Groups.["path"].Success
+                        then sprintf "_%s" <| m.Groups.["path"].Value.toClassName()
                         else ""
                     Some(sprintf "%s%s" m.Groups.["producer"].Value suffix)
                 | _ -> None
@@ -667,9 +668,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     | SequenceContent.Element(spec) -> parseElementSpec(spec)
                     | SequenceContent.Any -> printfn "TODO: Any not implemented."
                     | _ -> failwith "not implemented")
-            | Some(ComplexTypeParticle.Choice(_)) ->
-                // TODO: Create choice type
-                ()
+            | Some(ComplexTypeParticle.Choice(_)) -> printfn "TODO: Choice type not implemented!"
             | None -> ()
 
         match typeInfo with
@@ -752,7 +751,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         requestParameters
         |> List.iter (fun ((runtimeType, overrideFunc), partName) ->
             let serializerName = partName + "Serializer"
-            //let varName = partName + "Overrides"
             let typ = runtimeType.AsCodeTypeReference()
             serviceMethod |> Meth.addParamRef typ partName |> ignore
             partName |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
