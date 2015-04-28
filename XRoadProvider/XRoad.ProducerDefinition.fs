@@ -358,16 +358,16 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
               Stmt.declVarWith<XmlWriter> "writer" Expr.nil
               Stmt.tryFinally
                   [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "sw"])
-                    (Expr.var "writer" @-> "WriteStartDocument") @% [] |> Stmt.ofExpr
-                    (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
-                    (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
-                    (Expr.var "writeHeaderAction") @%% [Expr.var "writer"] |> Stmt.ofExpr
-                    (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
-                    (Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope] |> Stmt.ofExpr
-                    (Expr.var "writeBody") @%% [Expr.var "writer"] |> Stmt.ofExpr
-                    (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
-                    (Expr.var "writer" @-> "WriteEndElement") @% [] |> Stmt.ofExpr
-                    (Expr.var "writer" @-> "WriteEndDocument") @% [] |> Stmt.ofExpr ]
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartDocument") @% [])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnvelope])
+                    Stmt.ofExpr ((Expr.var "writeHeaderAction") @%% [Expr.var "writer"])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope])
+                    Stmt.ofExpr ((Expr.var "writeBody") @%% [Expr.var "writer"])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndDocument") @% []) ]
                   [ Stmt.condIf (Op.isNotNull (Expr.var "writer")) [ (Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
               Stmt.condIf (Op.boolAnd (Op.notEquals (Expr.var "attachments") Expr.nil)
                                       (Op.greater (Expr.var "attachments" @=> "Count") (Expr.value 0)))
