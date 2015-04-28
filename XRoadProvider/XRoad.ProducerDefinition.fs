@@ -496,7 +496,7 @@ let buildParameterType (context: TypeBuilderContext) isMultipart (part: MessageP
             context.GetRuntimeType(SchemaType(name)),
             fun varName ->
                 [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName])
-                  yield Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value elementName.NamespaceName)
+                  yield Stmt.assign (Expr.var (varName + "Root") @=> "Namespace") (Expr.value elementName.NamespaceName)
                   if isMultipart then
                     yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
                     yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
