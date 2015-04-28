@@ -369,6 +369,7 @@ module XsdSchema =
         | XsdType "integer" -> Some typeof<bigint>
         | XsdType "long" -> Some typeof<int64>
         | XsdType "string" -> Some typeof<string>
+        | XsdType "NMTOKEN" -> Some typeof<string>
         | XsdType name -> failwithf "Unmapped XSD type %s" name
         | SoapEncType "base64Binary" -> Some typeof<byte[]>
         | SoapEncType name -> failwithf "Unmapped SOAP-ENC type %s" name

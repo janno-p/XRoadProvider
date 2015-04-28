@@ -64,7 +64,7 @@ module Attributes =
         |> Attr.addArg (Expr.value typeName.LocalName)
         |> Attr.addNamedArg "Namespace" (Expr.value typeName.NamespaceName)
 
-    let XmlInclude(providedTy: CodeTypeDeclaration) = Attr.create<XmlIncludeAttribute> |> Attr.addArg (Expr.typeRef providedTy)
+    let XmlInclude(providedTy: CodeTypeReference) = Attr.create<XmlIncludeAttribute> |> Attr.addArg (Expr.typeOf providedTy)
     let XmlElement(isNillable) = Attr.create<XmlElementAttribute> |> addUnqualifiedForm |> addNullable isNillable
     let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
     let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable

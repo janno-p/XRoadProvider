@@ -20,10 +20,12 @@ type RuntimeType =
     | PrimitiveType of Type
     | ProvidedType of CodeTypeDeclaration * string
     | CollectionType of RuntimeType * string
+    | ContentType
     member this.AsCodeTypeReference() = match this with
                                         | PrimitiveType(typ) -> CodeTypeReference(typ)
                                         | ProvidedType(_,name) -> CodeTypeReference(name)
                                         | CollectionType(typ,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
+                                        | ContentType -> CodeTypeReference("BinaryContent")
 
 let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
@@ -71,7 +73,12 @@ type TypeBuilderContext =
             | true, info -> info
         member this.GetRuntimeType(name: XmlReference) =
             match mapPrimitiveType name.XName with
-            | Some typ -> PrimitiveType(typ)
+            | Some typ ->
+                match name.XName with
+                | XsdType "hexBinary"
+                | XsdType "base64Binary"
+                | SoapEncType "base64Binary" -> ContentType
+                | _ -> PrimitiveType(typ)
             | None -> ProvidedType(this.GetOrCreateType(name))
         member this.GetElementSpec(name: XName) =
             match this.Elements.TryFind(name.ToString()) with
@@ -463,7 +470,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | _ -> None
         | _ -> None
 
-    let rec buildType(providedTy: CodeTypeDeclaration, typeInfo) =
+    let rec buildType(runtimeType: RuntimeType, typeInfo) =
+        let providedTy, providedTypeName =
+            match runtimeType with
+            | ProvidedType(decl, name) -> decl, name
+            | _ -> failwith "Only provided types are accepted as arguments!"
+
         let addProperty(name, ty: RuntimeType, isOptional) =
             let specifiedField =
                 if isOptional then
@@ -532,9 +544,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 getArrayType(contentSpec), [ Attributes.XmlArray(true); Attributes.XmlArrayItem("temp") ]
             | Definition(typeInfo) ->
                 let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public
-                buildType(subTy, typeInfo)
-                providedTy.Members.Add(subTy) |> ignore
                 let runtimeType = ProvidedType(subTy, subTy.Name)
+                buildType(runtimeType, typeInfo)
+                providedTy.Members.Add(subTy) |> ignore
                 if maxOccurs > 1u
                 then CollectionType(runtimeType, name), [Attributes.XmlElement(true)]
                 else runtimeType, [Attributes.XmlElement(true)]
@@ -580,7 +592,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | _ -> failwith "not implemented"
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             match context.GetRuntimeType(SchemaType(spec.Base)) with
-            | PrimitiveType(_) as rtyp ->
+            | PrimitiveType(_)
+            | ContentType as rtyp ->
                 let property = addProperty("BaseValue", rtyp, false)
                 property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                 // TODO: Apply constraints?
@@ -594,7 +607,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             match spec.Content with
             | SimpleContent(SimpleContentSpec.Extension(spec)) ->
                 match context.GetRuntimeType(SchemaType(spec.Base)) with
-                | PrimitiveType(_) as rtyp ->
+                | PrimitiveType(_)
+                | ContentType as rtyp ->
                     let property = addProperty("BaseValue", rtyp, false)
                     property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                     parseComplexTypeContentSpec(spec.Content)
@@ -604,7 +618,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                 let baseTy, name = context.GetOrCreateType(SchemaType(spec.Base))
                 providedTy.BaseTypes.Add(name) |> ignore
-                baseTy.CustomAttributes.Add(Attributes.XmlInclude(providedTy)) |> ignore
+                baseTy.CustomAttributes.Add(Attributes.XmlInclude(typeRefName providedTypeName)) |> ignore
                 parseComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(_)) ->
                 failwith "not implemented"
@@ -612,7 +626,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 parseComplexTypeContentSpec(spec)
         | EmptyType -> ()
 
-    let buildElementType (typ: CodeTypeDeclaration, spec: ElementSpec) =
+    let buildElementType (typ: RuntimeType, spec: ElementSpec) =
         match spec.Type with
         | Definition(def) -> buildType(typ, def)
         | Reference(_) -> failwith "Root level element references are not allowed."
@@ -721,7 +735,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     schema.TypeSchemas
     |> Map.toSeq
     |> Seq.collect (fun (_, typeSchema) -> typeSchema.Types)
-    |> Seq.map (fun x -> context.GetOrCreateType(SchemaType(x.Key)) |> fst, x.Value)
+    |> Seq.map (fun x -> context.GetRuntimeType(SchemaType(x.Key)), x.Value)
     |> Seq.iter buildType
 
     schema.TypeSchemas
@@ -729,7 +743,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     |> Seq.collect (fun (_, typeSchema) -> typeSchema.Elements)
     |> Seq.choose (fun x ->
         match x.Value.Type with
-        | Definition(_) -> Some(context.GetOrCreateType(SchemaElement(x.Key)) |> fst, x.Value)
+        | Definition(_) -> Some(context.GetRuntimeType(SchemaElement(x.Key)), x.Value)
         | _ -> None)
     |> Seq.iter buildElementType
 
