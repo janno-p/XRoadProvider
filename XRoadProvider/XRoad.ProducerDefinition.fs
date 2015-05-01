@@ -16,17 +16,6 @@ open XRoad.CodeDom
 open XRoad.Parser
 open XRoad.Parser.XsdSchema
 
-type RuntimeType =
-    | PrimitiveType of Type
-    | ProvidedType of CodeTypeDeclaration * string
-    | CollectionType of RuntimeType * string * SchemaType option
-    | ContentType
-    member this.AsCodeTypeReference() = match this with
-                                        | PrimitiveType(typ) -> CodeTypeReference(typ)
-                                        | ProvidedType(_,name) -> CodeTypeReference(name)
-                                        | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
-                                        | ContentType -> CodeTypeReference("BinaryContent")
-
 let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
 
@@ -639,34 +628,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | ProvidedType(decl, name) -> decl, name
             | _ -> failwith "Only provided types are accepted as arguments!"
 
-        let addProperty(name, ty: RuntimeType, isOptional) =
-            let specifiedField =
-                if isOptional then
-                    let f = CodeMemberField(typeof<bool>, name + "__specified")
-                    f.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
-                    providedTy.Members.Add(f) |> ignore
-                    let p = CodeMemberProperty(Name=name + "Specified", Type=CodeTypeReference(typeof<bool>))
-                    p.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-                    p.GetStatements.Add(Expr.this @=> f.Name |> Stmt.ret) |> ignore
-                    providedTy.Members.Add(p) |> ignore
-                    Some(f)
-                else None
-            let backingField = CodeMemberField(ty.AsCodeTypeReference(), name + "__backing")
-            backingField.CustomAttributes.Add(Attributes.DebuggerBrowsable) |> ignore
-            providedTy.Members.Add(backingField) |> ignore
-            let backingFieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), backingField.Name)
-            let property = CodeMemberProperty(Name=name, Type=ty.AsCodeTypeReference())
-            property.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-            property.GetStatements.Add(CodeMethodReturnStatement(backingFieldRef)) |> ignore
-            property.SetStatements.Add(CodeAssignStatement(backingFieldRef, CodePropertySetValueReferenceExpression())) |> ignore
-            match specifiedField with
-            | Some(field) ->
-                let fieldRef = CodeFieldReferenceExpression(CodeThisReferenceExpression(), field.Name)
-                property.SetStatements.Add(CodeAssignStatement(fieldRef, CodePrimitiveExpression(true))) |> ignore
-            | _ -> ()
-            providedTy.Members.Add(property) |> ignore
-            property
-
         let rec getAttributeType (schemaObject, name) =
             let convertedObject =
                 match schemaObject with
@@ -711,14 +672,20 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         and parseElementSpec(spec: ElementSpec) =
             let elemName, elemType = context.GetElementDefinition(spec)
             let elementTy, attrs = getParticleType(elemType, spec.MaxOccurs, spec.IsNillable, elemName)
-            let property = addProperty(elemName, elementTy, spec.MinOccurs = 0u)
+            let property = providedTy |> addProperty(elemName, elementTy, spec.MinOccurs = 0u)
             attrs |> List.iter (property.CustomAttributes.Add >> ignore)
+
+        let nextChoiceName =
+            let num = ref 0
+            (fun () ->
+                num := !num + 1
+                sprintf "Choice%d" !num)
 
         let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
             spec.Attributes |> List.iter (fun spec ->
                 let attrName, attrTypeDef = context.GetAttributeDefinition(spec)
                 let attributeTy, _ = getAttributeType(attrTypeDef, attrName)
-                let property = addProperty(attrName, attributeTy, match spec.Use with Required -> true | _ -> false)
+                let property = providedTy |> addProperty(attrName, attributeTy, match spec.Use with Required -> true | _ -> false)
                 property.CustomAttributes.Add(Attributes.XmlAttribute) |> ignore)
             match spec.Content with
             | Some(ComplexTypeParticle.All(spec)) ->
@@ -730,20 +697,41 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     failwith "not implemented"
                 spec.Content |> List.iter (fun item ->
                     match item with
-                    | SequenceContent.Choice(_) -> printfn "TODO: Choice not implemented."
+                    | SequenceContent.Choice(choice) ->
+                        let choiceName = nextChoiceName()
+                        let choiceType = Cls.create (choiceName + "Type") |> Cls.setAttr TypeAttributes.Public
+                        providedTy |> Cls.addMember choiceType |> ignore
+                        choice.Content
+                        |> List.iter (fun opt ->
+                            match opt with
+                            | ChoiceContent.Any -> failwith "Not implemented: any in choice."
+                            | ChoiceContent.Choice(_) -> failwith "Not implemented: choice in choice."
+                            | ChoiceContent.Element(spec) ->
+                                let elemName, elemType = context.GetElementDefinition(spec)
+                                let elementTy, attrs = getParticleType(elemType, spec.MaxOccurs, spec.IsNillable, elemName)
+                                let property = choiceType |> addProperty(elemName, elementTy, spec.MinOccurs = 0u)
+                                attrs |> List.iter (property.CustomAttributes.Add >> ignore)
+                            | ChoiceContent.Sequence(_) ->
+                                //failwith "Not implemented: sequence in choice.")
+                                ())
+                        providedTy
+                        |> addProperty(choiceName, ProvidedType(choiceType, choiceType.Name), choice.MinOccurs = 0u)
+                        |> ignore
                     | SequenceContent.Element(spec) -> parseElementSpec(spec)
+                    | SequenceContent.Sequence(_) -> failwith "Not implemented: nested sequences."
                     | SequenceContent.Any ->
-                        let property = addProperty("AnyElements", PrimitiveType(typeof<XmlElement[]>), false)
-                        property.CustomAttributes.Add(Attributes.XmlAnyElement) |> ignore
-                    | _ -> failwith "not implemented")
-            | Some(ComplexTypeParticle.Choice(_)) -> printfn "TODO: Choice type not implemented!"
+                        let property = providedTy |> addProperty("AnyElements", PrimitiveType(typeof<XmlElement[]>), false)
+                        property.CustomAttributes.Add(Attributes.XmlAnyElement) |> ignore)
+            | Some(ComplexTypeParticle.Choice(_)) ->
+                //failwith "Not implemented: choice in complexType content."
+                ()
             | None -> ()
 
         match typeInfo with
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | PrimitiveType(_) as rtyp ->
-                let property = addProperty("BaseValue", rtyp, false)
+                let property = providedTy |> addProperty("BaseValue", rtyp, false)
                 property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                 // TODO: Apply constraints?
             | ContentType -> providedTy |> inheritBinaryContent
@@ -759,7 +747,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 match context.GetRuntimeType(SchemaType(spec.Base)) with
                 | PrimitiveType(_)
                 | ContentType as rtyp ->
-                    let property = addProperty("BaseValue", rtyp, false)
+                    let property = providedTy |> addProperty("BaseValue", rtyp, false)
                     property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                     parseComplexTypeContentSpec(spec.Content)
                 | _ -> failwith "not implemented"

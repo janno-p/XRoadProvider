@@ -8,6 +8,7 @@ open System.Collections
 open System.Diagnostics
 open System.Globalization
 open System.IO
+open XRoad.Parser.XsdSchema
 
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
 let typeRefName name = CodeTypeReference(name: string)
@@ -76,10 +77,12 @@ module Attributes =
 
 module Fld =
     let create<'T> name = CodeMemberField(typeRef<'T>, name)
+    let createRef (typ: CodeTypeReference) name = CodeMemberField(typ, name)
     let addAttr a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
 
 module Prop =
     let create<'T> name = CodeMemberProperty(Name=name, Type=typeRef<'T>)
+    let createRef (typ: CodeTypeReference) name = CodeMemberProperty(Name=name, Type=typ)
     let setAttr a (p: CodeMemberProperty) = p.Attributes <- a; p
     let addGetStmt (s: CodeStatement) (p: CodeMemberProperty) = p.GetStatements.Add(s) |> ignore; p
     let addSetStmt (s: CodeStatement) (p: CodeMemberProperty) = p.SetStatements.Add(s) |> ignore; p
@@ -190,6 +193,17 @@ module String =
             then failwithf "invalid name %s" className
             className
 
+type RuntimeType =
+    | PrimitiveType of Type
+    | ProvidedType of CodeTypeDeclaration * string
+    | CollectionType of RuntimeType * string * SchemaType option
+    | ContentType
+    member this.AsCodeTypeReference() = match this with
+                                        | PrimitiveType(typ) -> CodeTypeReference(typ)
+                                        | ProvidedType(_,name) -> CodeTypeReference(name)
+                                        | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
+                                        | ContentType -> CodeTypeReference("BinaryContent")
+
 let makeChoiceType() =
     ()
 
@@ -212,3 +226,24 @@ let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
     ownerType
     |> Cls.addMember backingField
     |> Cls.addMember property
+
+let addProperty (name, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration) =
+    let sf =
+        if isOptional then
+            let f = Fld.create<bool> (name + "__specified")
+                    |> Fld.addAttr Attributes.DebuggerBrowsable
+            let p = Prop.create<bool> (name + "Specified")
+                    |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+                    |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
+            owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
+            Some(f)
+        else None
+    let f = Fld.createRef (ty.AsCodeTypeReference()) (name + "__backing")
+            |> Fld.addAttr Attributes.DebuggerBrowsable
+    let p = Prop.createRef (ty.AsCodeTypeReference()) name
+            |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+            |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
+            |> Prop.addSetStmt (Stmt.assign (Expr.this @=> f.Name) (Prop.setValue))
+            |> iif (sf.IsSome) (fun x -> x |> Prop.addSetStmt (Stmt.assign (Expr.this @=> sf.Value.Name) (Expr.value true)))
+    owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
+    p
