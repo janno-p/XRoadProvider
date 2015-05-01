@@ -31,7 +31,7 @@ let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
 
 type TypeBuilderContext =
-    { CachedTypes: Dictionary<XmlReference,CodeTypeDeclaration*string>
+    { CachedTypes: Dictionary<XmlReference,RuntimeType>
       CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
       Attributes: Map<string,AttributeSpec>
       Elements: Map<string,ElementSpec>
@@ -59,30 +59,26 @@ type TypeBuilderContext =
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
             | true, typ -> typ
-        member this.GetOrCreateType(name: XmlReference) =
-            match this.CachedTypes.TryGetValue(name) with
-            | false, _ ->
-                let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public
-                let nstyp = this.GetOrCreateNamespace(name.XName.Namespace)
-                nstyp.Members.Add(typ) |> ignore
-                let info = typ, (providedTypeFullName nstyp.Name typ.Name)
-                this.CachedTypes.Add(name, info)
-                typ.CustomAttributes.Add(
+        member private this.CreateType(name: XmlReference) =
+            match name.XName with
+            | XsdType "hexBinary"
+            | XsdType "base64Binary"
+            | SoapEncType "base64Binary" -> ContentType
+            | SystemType(typ) -> PrimitiveType(typ)
+            | _ ->
+                let attr =
                     match name with
                     | SchemaElement(_) -> Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName
                     | SchemaType(_) -> Attributes.XmlType name.XName
-                    ) |> ignore
-                info
-            | true, info -> info
+                let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
+                let nstyp = this.GetOrCreateNamespace(name.XName.Namespace) |> Cls.addMember typ
+                ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
         member this.GetRuntimeType(name: XmlReference) =
-            match mapPrimitiveType name.XName with
-            | Some typ ->
-                match name.XName with
-                | XsdType "hexBinary"
-                | XsdType "base64Binary"
-                | SoapEncType "base64Binary" -> ContentType
-                | _ -> PrimitiveType(typ)
-            | None -> ProvidedType(this.GetOrCreateType(name))
+            match this.CachedTypes.TryGetValue(name) with
+            | true, info -> info
+            | _ -> let info = this.CreateType(name)
+                   this.CachedTypes.Add(name, info)
+                   info
         member this.GetElementSpec(name: XName) =
             match this.Elements.TryFind(name.ToString()) with
             | Some(elementSpec) -> elementSpec
@@ -508,7 +504,7 @@ let buildParameterType (context: TypeBuilderContext) isMultipart (part: MessageP
         | Reference(_) ->
             failwith "not implemented"
         | Definition(_) ->
-            ProvidedType(context.GetOrCreateType(SchemaElement(elementName))),
+            context.GetRuntimeType(SchemaElement(elementName)),
             fun varName ->
                 [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") Expr.nil
                   if isMultipart then
@@ -704,9 +700,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | SimpleContent(SimpleContentSpec.Restriction(_)) ->
                 failwith "not implemented"
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
-                let baseTy, name = context.GetOrCreateType(SchemaType(spec.Base))
-                providedTy.BaseTypes.Add(name) |> ignore
-                baseTy.CustomAttributes.Add(Attributes.XmlInclude(typeRefName providedTypeName)) |> ignore
+                let baseTy = context.GetRuntimeType(SchemaType(spec.Base))
+                providedTy.BaseTypes.Add(baseTy.AsCodeTypeReference()) |> ignore
+                match baseTy with
+                | ProvidedType(baseDecl,_) ->
+                    baseDecl |> Cls.describe (Attributes.XmlInclude(typeRefName providedTypeName)) |> ignore
+                | _ -> failwithf "Only complex types can be inherited! (%A)" spec.Base
                 parseComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(_)) ->
                 failwith "not implemented"

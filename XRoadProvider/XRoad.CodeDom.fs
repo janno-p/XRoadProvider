@@ -77,9 +77,6 @@ module Fld =
     let create<'T> name = CodeMemberField(typeRef<'T>, name)
     let addAttr a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
 
-module Typ =
-    let addMember m (t: CodeTypeDeclaration) = t.Members.Add(m) |> ignore; t
-
 module Prop =
     let create<'T> name = CodeMemberProperty(Name=name, Type=typeRef<'T>)
     let setAttr a (p: CodeMemberProperty) = p.Attributes <- a; p
@@ -144,6 +141,7 @@ module Cls =
         c
 
     let addMember m (c: CodeTypeDeclaration) = c.Members.Add(m) |> ignore; c
+    let describe a (t: CodeTypeDeclaration) = t.CustomAttributes.Add(a) |> ignore; t
 
 module Arr =
     let createOfSize<'T> (size: int) = CodeArrayCreateExpression(typeRef<'T>, size) :> CodeExpression
@@ -209,5 +207,5 @@ let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
         |> Prop.addSetStmt (Prop.setValue |> Stmt.assign (Expr.this |> Expr.fldref backingField))
         |> Prop.addDoc doc
     ownerType
-    |> Typ.addMember backingField
-    |> Typ.addMember property
+    |> Cls.addMember backingField
+    |> Cls.addMember property

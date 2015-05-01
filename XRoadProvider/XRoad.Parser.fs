@@ -303,7 +303,7 @@ module XsdSchema =
 
     let (|XmlName|_|) (name: XName) =
         match name.NamespaceName with
-        | XmlNamespace.Xml -> Some name.LocalName
+        | "" | null | XmlNamespace.Xml -> Some name.LocalName
         | _ -> None
 
     let (|XsdType|_|) (name: XName) =
@@ -357,7 +357,7 @@ module XsdSchema =
     // teenuse sisendis olevad skalaarsed elemendid, mille tüüp on xsd:base64Binary või
     // xsd:hexBinary.
 
-    let mapPrimitiveType = function
+    let (|SystemType|_|) = function
         | XsdType "anyURI" -> Some typeof<string>
         | XsdType "hexBinary" -> Some typeof<byte[]>
         | XsdType "base64Binary" -> Some typeof<byte[]>
