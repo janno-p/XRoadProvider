@@ -30,7 +30,7 @@ type RuntimeType =
 let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
 
-let parseArrayContent (schemaType: SchemaType) =
+let (|ArrayContent|_|) (schemaType: SchemaType) =
     let (|ArrayType|_|) (attributes: AttributeSpec list) =
         attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)))
     let getArrayItemElement contentParticle =
@@ -82,7 +82,7 @@ type TypeBuilderContext =
     with
         member this.GetOrCreateNamespace(nsname: XNamespace) =
             let (|Producer|_|) ns =
-                match Regex.Match(ns, @"^http://(((?<producer>\w+)\.x-road\.ee/producer/(?<path>.*)?)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)(/(?<path>.*))?))$") with
+                match Regex.Match(ns, @"^http://(((?<producer>\w+)\.x-road\.ee/producer(/(?<path>.*)?)?)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)(/(?<path>.*))?))$") with
                 | m when m.Success ->
                     let suffix =
                         if m.Groups.["path"].Success
@@ -116,8 +116,8 @@ type TypeBuilderContext =
                         let elementSpec = this.GetElementSpec(xn)
                         this.GetTypeDefinition(elementSpec.Type)
                     | SchemaType(xn) -> this.GetSchemaType(xn)
-                match parseArrayContent(schemaType) with
-                | Some(element) ->
+                match schemaType with
+                | ArrayContent element ->
                     match this.GetElementDefinition(element) with
                     | itemName, Name(xn) -> CollectionType(this.GetRuntimeType(SchemaType(xn)), itemName, None)
                     | itemName, Definition(def) ->
@@ -126,7 +126,7 @@ type TypeBuilderContext =
                         nstyp |> Cls.addMember typ |> ignore
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
                     | _, Reference(_) -> failwith "never"
-                | None ->
+                | _ ->
                     let attr =
                         match name with
                         | SchemaElement(_) -> Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName
