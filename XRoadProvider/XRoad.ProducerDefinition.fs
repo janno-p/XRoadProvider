@@ -30,11 +30,47 @@ type RuntimeType =
 let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
 
+let parseArrayContent (schemaType: SchemaType) =
+    match schemaType with
+    | ComplexType(spec) ->
+        match spec.Content with
+        | ComplexTypeContent.ComplexContent(Restriction(rstr))
+            when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEncoding ->
+                Some(rstr.Content)
+        | ComplexTypeContent.Particle(content) ->
+            match content.Content with
+            | Some(ComplexTypeParticle.All(all)) ->
+                if all.MaxOccurs > 1u then Some(content)
+                elif all.MaxOccurs < 1u then None
+                elif all.Elements.Length = 1 && all.Elements.Head.MaxOccurs > 1u then Some(content)
+                else None
+            | Some(ComplexTypeParticle.Choice(choice)) ->
+                if choice.MaxOccurs > 1u then Some(content)
+                elif choice.MaxOccurs < 1u then None
+                elif (choice.Content
+                      |> List.fold (fun state cc ->
+                          if state then match cc with ChoiceContent.Element(_) -> true | _ -> false
+                          else false) true) then Some(content)
+                else None
+            | Some(ComplexTypeParticle.Sequence(sequence)) ->
+                if sequence.MaxOccurs > 1u then Some(content)
+                elif sequence.MaxOccurs < 1u then None
+                elif (sequence.Content
+                      |> List.fold (fun state sc ->
+                          if state then match sc with SequenceContent.Element(_) -> true | _ -> false
+                          else false) true) then Some(content)
+                else None
+            | None -> None
+        | _ -> None
+    | EmptyType
+    | SimpleType(_) -> None
+
 type TypeBuilderContext =
     { CachedTypes: Dictionary<XmlReference,RuntimeType>
       CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
       Attributes: Map<string,AttributeSpec>
       Elements: Map<string,ElementSpec>
+      Types: Map<string,SchemaType>
       Style: OperationStyle }
     with
         member this.GetOrCreateNamespace(nsname: XNamespace) =
@@ -66,13 +102,26 @@ type TypeBuilderContext =
             | SoapEncType "base64Binary" -> ContentType
             | SystemType(typ) -> PrimitiveType(typ)
             | _ ->
-                let attr =
+                let nstyp = this.GetOrCreateNamespace(name.XName.Namespace)
+                let schemaType =
                     match name with
-                    | SchemaElement(_) -> Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName
-                    | SchemaType(_) -> Attributes.XmlType name.XName
-                let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
-                let nstyp = this.GetOrCreateNamespace(name.XName.Namespace) |> Cls.addMember typ
-                ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
+                    | SchemaElement(xn) ->
+                        let elementSpec = this.GetElementSpec(xn)
+                        this.GetTypeDefinition(elementSpec.Type)
+                    | SchemaType(xn) -> this.GetSchemaType(xn)
+                match parseArrayContent(schemaType) with
+                | Some(_) ->
+                    let typ = Cls.create(name.XName.LocalName + "Item") |> Cls.addAttr TypeAttributes.Public
+                    nstyp |> Cls.addMember typ |> ignore
+                    CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), "item")
+                | None ->
+                    let attr =
+                        match name with
+                        | SchemaElement(_) -> Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName
+                        | SchemaType(_) -> Attributes.XmlType name.XName
+                    let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
+                    nstyp |> Cls.addMember typ |> ignore
+                    ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
         member this.GetRuntimeType(name: XmlReference) =
             match this.CachedTypes.TryGetValue(name) with
             | true, info -> info
@@ -83,6 +132,20 @@ type TypeBuilderContext =
             match this.Elements.TryFind(name.ToString()) with
             | Some(elementSpec) -> elementSpec
             | None -> failwithf "Invalid reference: global element %A was not found in current context." name
+        member this.GetSchemaType(name: XName) =
+            match this.Types.TryFind(name.ToString()) with
+            | Some(schemaType) -> schemaType
+            | None -> failwith "Invalid reference: global type `%A` was not found in current context." name
+        member this.GetTypeDefinition(schemaObj) =
+            let rec findTypeDefinition (schemaObj: SchemaObject<_>) =
+                match schemaObj with
+                | Name(xn)
+                | Reference(xn) ->
+                    match this.Types.TryFind(xn.ToString()) with
+                    | Some(schemaType) -> schemaType
+                    | None -> failwithf "Missing referenced schema type `%A`." xn
+                | Definition(spec) -> spec
+            findTypeDefinition schemaObj
         member this.GetAttributeDefinition(spec) =
             let rec findAttributeDefinition (spec: AttributeSpec) =
                 match spec.RefOrType with
@@ -129,6 +192,11 @@ type TypeBuilderContext =
                   schema.TypeSchemas
                   |> Map.toSeq
                   |> Seq.collect (fun (_,typ) -> typ.Elements |> Seq.map (fun x -> x.Key.ToString(), x.Value))
+                  |> Map.ofSeq
+              Types =
+                  schema.TypeSchemas
+                  |> Map.toSeq
+                  |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
               Style = style }
 
