@@ -19,48 +19,55 @@ open XRoad.Parser.XsdSchema
 type RuntimeType =
     | PrimitiveType of Type
     | ProvidedType of CodeTypeDeclaration * string
-    | CollectionType of RuntimeType * string
+    | CollectionType of RuntimeType * string * SchemaType option
     | ContentType
     member this.AsCodeTypeReference() = match this with
                                         | PrimitiveType(typ) -> CodeTypeReference(typ)
                                         | ProvidedType(_,name) -> CodeTypeReference(name)
-                                        | CollectionType(typ,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
+                                        | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
                                         | ContentType -> CodeTypeReference("BinaryContent")
 
 let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
 
 let parseArrayContent (schemaType: SchemaType) =
+    let (|ArrayType|_|) (attributes: AttributeSpec list) =
+        attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)))
+    let getArrayItemElement contentParticle =
+        match contentParticle with
+        | Some(ComplexTypeParticle.All(all)) ->
+            if all.MaxOccurs > 1u then failwith "Not implemented: array of anonymous all types."
+            elif all.MaxOccurs < 1u then None
+            else match all.Elements with
+                 | [ single ] when single.MaxOccurs > 1u -> Some(single)
+                 | _ -> None
+        | Some(ComplexTypeParticle.Choice(_)) ->
+            failwith "Not implemented: array of choice types."
+        | Some(ComplexTypeParticle.Sequence(sequence)) ->
+            if sequence.MaxOccurs > 1u then failwith "Not implemented: array of anonymous sequence types."
+            elif sequence.MaxOccurs < 1u then None
+            else match sequence.Content with
+                 | [ SequenceContent.Element(single) ] when single.MaxOccurs > 1u -> Some(single)
+                 | _ -> None
+        | None -> None
     match schemaType with
     | ComplexType(spec) ->
         match spec.Content with
-        | ComplexTypeContent.ComplexContent(Restriction(rstr))
-            when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEncoding ->
-                Some(rstr.Content)
-        | ComplexTypeContent.Particle(content) ->
-            match content.Content with
-            | Some(ComplexTypeParticle.All(all)) ->
-                if all.MaxOccurs > 1u then Some(content)
-                elif all.MaxOccurs < 1u then None
-                elif all.Elements.Length = 1 && all.Elements.Head.MaxOccurs > 1u then Some(content)
-                else None
-            | Some(ComplexTypeParticle.Choice(choice)) ->
-                if choice.MaxOccurs > 1u then Some(content)
-                elif choice.MaxOccurs < 1u then None
-                elif (choice.Content
-                      |> List.fold (fun state cc ->
-                          if state then match cc with ChoiceContent.Element(_) -> true | _ -> false
-                          else false) true) then Some(content)
-                else None
-            | Some(ComplexTypeParticle.Sequence(sequence)) ->
-                if sequence.MaxOccurs > 1u then Some(content)
-                elif sequence.MaxOccurs < 1u then None
-                elif (sequence.Content
-                      |> List.fold (fun state sc ->
-                          if state then match sc with SequenceContent.Element(_) -> true | _ -> false
-                          else false) true) then Some(content)
-                else None
-            | None -> None
+        | ComplexTypeContent.ComplexContent(Restriction(rstr)) when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEncoding ->
+            match rstr.Content.Attributes with
+            | ArrayType(attrSpec) ->
+                match attrSpec.ArrayType with
+                | Some(_, rank) when rank <> 1 -> failwith "Multidimensional SOAP encoding arrays are not supported."
+                | Some(typeName, _) ->
+                    match getArrayItemElement(rstr.Content.Content) with
+                    | Some(element) -> Some({ element with Type = Name(typeName) })
+                    | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Type = Name(typeName) })
+                | None -> failwith "Array underlying type specification is missing."
+            | _ ->
+                match getArrayItemElement(rstr.Content.Content) with
+                | Some(_) as element -> element
+                | None -> failwith "Unsupported SOAP encoding array definition."
+        | ComplexTypeContent.Particle(content) -> getArrayItemElement(content.Content)
         | _ -> None
     | EmptyType
     | SimpleType(_) -> None
@@ -110,10 +117,15 @@ type TypeBuilderContext =
                         this.GetTypeDefinition(elementSpec.Type)
                     | SchemaType(xn) -> this.GetSchemaType(xn)
                 match parseArrayContent(schemaType) with
-                | Some(_) ->
-                    let typ = Cls.create(name.XName.LocalName + "Item") |> Cls.addAttr TypeAttributes.Public
-                    nstyp |> Cls.addMember typ |> ignore
-                    CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), "item")
+                | Some(element) ->
+                    match this.GetElementDefinition(element) with
+                    | itemName, Name(xn) -> CollectionType(this.GetRuntimeType(SchemaType(xn)), itemName, None)
+                    | itemName, Definition(def) ->
+                        let suffix = itemName.toClassName()
+                        let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public
+                        nstyp |> Cls.addMember typ |> ignore
+                        CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
+                    | _, Reference(_) -> failwith "never"
                 | None ->
                     let attr =
                         match name with
@@ -299,6 +311,18 @@ let writeXRoadHeaderMethod (style) =
     |> Meth.addStmt (writeHeaderElement (hdrName "salastada") (Expr.this @=> (propName "salastada")) "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "salastada_sertifikaadiga") (Expr.this @=> (propName "salastada_sertifikaadiga")) "WriteString")
 
+let inheritBinaryContent (typ: CodeTypeDeclaration) =
+    typ
+    |> Cls.setParent (ContentType.AsCodeTypeReference())
+    |> Cls.addMember (Ctor.create()
+                      |> Ctor.setAttr MemberAttributes.Public
+                      |> Ctor.addParam<IDictionary<string,Stream>> "attachments"
+                      |> Ctor.addParam<string> "id"
+                      |> Ctor.addBaseArg (Expr.var "attachments")
+                      |> Ctor.addBaseArg (Expr.var "id"))
+    |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Public)
+    |> ignore
+
 let createBinaryContentType () =
     let contentField = Fld.create<Stream> "content__backing"
     let contentProp =
@@ -452,9 +476,8 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
                                            Stmt.whileLoop (Op.ge (Expr.var "bytesRead") (Expr.value 1000))
                                                           [ Stmt.assign (Expr.var "bytesRead") (((((Expr.var "enumerator" @=> "Current") @=> "Value") @-> "Read")) @% [Expr.var "buffer"; Expr.value 0; Expr.value 1000])
                                                             Stmt.ofExpr ((Expr.var "stream" @-> "Write") @% [Expr.var "buffer"; Expr.value 0; Expr.var "bytesRead"]) ]
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% []) ] ]
-              Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
-              Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}--"; Expr.var "boundaryMarker"]) ]
+                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% []) ]
+                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}--"; Expr.var "boundaryMarker"]) ] ]
             [ Stmt.condIf (Op.isNotNull (Expr.var "sw")) [ (Expr.var "sw" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
         ]
 
@@ -601,28 +624,28 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let portBaseTy = makeServicePortBaseType(undescribedFaults, context.Style)
     let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
 
-    let (|ArrayType|_|) (attributes: AttributeSpec list) =
-        attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)))
-
-    let (|SoapEncArray|_|) (def: SchemaType) =
-        match def with SchemaType.ComplexType(x) -> Some(x) | _ -> None
-        |> Option.bind (fun x ->
-            match x.Content with
-            | ComplexTypeContent.ComplexContent(Restriction(c))
-                when c.Base.LocalName = "Array" && c.Base.NamespaceName = XmlNamespace.SoapEncoding -> Some(c.Content)
-            | _ -> None)
-
-    let getArrayItemElement particle =
-        match particle with
-        | Some(ComplexTypeParticle.Sequence(spec)) ->
-            match spec.Content with
-            | [ SequenceContent.Element(e) ] -> Some(e)
-            | _ -> None
-        | Some(ComplexTypeParticle.All(spec)) ->
-            match spec.Elements with
-            | [ e ] -> Some(e)
-            | _ -> None
-        | _ -> None
+//    let (|ArrayType|_|) (attributes: AttributeSpec list) =
+//        attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)))
+//
+//    let (|SoapEncArray|_|) (def: SchemaType) =
+//        match def with SchemaType.ComplexType(x) -> Some(x) | _ -> None
+//        |> Option.bind (fun x ->
+//            match x.Content with
+//            | ComplexTypeContent.ComplexContent(Restriction(c))
+//                when c.Base.LocalName = "Array" && c.Base.NamespaceName = XmlNamespace.SoapEncoding -> Some(c.Content)
+//            | _ -> None)
+//
+//    let getArrayItemElement particle =
+//        match particle with
+//        | Some(ComplexTypeParticle.Sequence(spec)) ->
+//            match spec.Content with
+//            | [ SequenceContent.Element(e) ] -> Some(e)
+//            | _ -> None
+//        | Some(ComplexTypeParticle.All(spec)) ->
+//            match spec.Elements with
+//            | [ e ] -> Some(e)
+//            | _ -> None
+//        | _ -> None
 
     let rec buildType(runtimeType: RuntimeType, typeInfo) =
         let providedTy, providedTypeName =
@@ -666,22 +689,22 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 | Reference(ref) -> Reference(ref)
             getParticleType(convertedObject, 1u, false, name)
 
-        and getArrayType (contentSpec: ComplexTypeContentSpec) =
-            match contentSpec.Attributes with
-            | ArrayType(attrSpec) ->
-                match attrSpec.ArrayType with
-                | Some(typeName, rank) ->
-                    let itemName = getArrayItemElement(contentSpec.Content) |> Option.bind (fun x -> x.Name) |> Option.orDefault "item"
-                    [1..rank] |> List.fold (fun aggType _ -> CollectionType(aggType, itemName)) (context.GetRuntimeType(SchemaType(typeName)))
-                | _ -> failwith "Array underlying type specification is missing."
-            | _ ->
-                match getArrayItemElement(contentSpec.Content) with
-                | Some(elementSpec) ->
-                    let elemName, elemType = context.GetElementDefinition(elementSpec)
-                    let subTyName = providedTy.Name + "ArrayItem"
-                    let elementTy = fst <| getParticleType(elemType, elementSpec.MaxOccurs, elementSpec.IsNillable, subTyName)
-                    CollectionType(elementTy, elemName)
-                | None -> failwith "Unsupported SOAP encoding array definition."
+//        and getArrayType (contentSpec: ComplexTypeContentSpec) =
+//            match contentSpec.Attributes with
+//            | ArrayType(attrSpec) ->
+//                match attrSpec.ArrayType with
+//                | Some(typeName, rank) ->
+//                    let itemName = getArrayItemElement(contentSpec.Content) |> Option.bind (fun x -> x.Name) |> Option.orDefault "item"
+//                    [1..rank] |> List.fold (fun aggType _ -> CollectionType(aggType, itemName)) (context.GetRuntimeType(SchemaType(typeName)))
+//                | _ -> failwith "Array underlying type specification is missing."
+//            | _ ->
+//                match getArrayItemElement(contentSpec.Content) with
+//                | Some(elementSpec) ->
+//                    let elemName, elemType = context.GetElementDefinition(elementSpec)
+//                    let subTyName = providedTy.Name + "ArrayItem"
+//                    let elementTy = fst <| getParticleType(elemType, elementSpec.MaxOccurs, elementSpec.IsNillable, subTyName)
+//                    CollectionType(elementTy, elemName)
+//                | None -> failwith "Unsupported SOAP encoding array definition."
 
         and getParticleType (particleType, maxOccurs, isNillable, name) =
             match particleType with
@@ -689,20 +712,20 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 let typ = context.GetRuntimeType(SchemaType(xname))
                 match typ with
                 | x when maxOccurs > 1u ->
-                    CollectionType(x, name), [Attributes.XmlElement(true)]
+                    CollectionType(x, name, None), [Attributes.XmlElement(true)]
                 | PrimitiveType(x) when x.IsValueType ->
                     if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [Attributes.XmlElement(true)])
                     else (PrimitiveType(x), [Attributes.XmlElement(false)])
                 | x -> (x, [Attributes.XmlElement(true)])
-            | Definition(SoapEncArray(contentSpec)) ->
-                getArrayType(contentSpec), [ Attributes.XmlArray(true); Attributes.XmlArrayItem("temp") ]
+//            | Definition(SoapEncArray(contentSpec)) ->
+//                getArrayType(contentSpec), [ Attributes.XmlArray(true); Attributes.XmlArrayItem("temp") ]
             | Definition(typeInfo) ->
                 let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public
                 let runtimeType = ProvidedType(subTy, subTy.Name)
                 buildType(runtimeType, typeInfo)
                 providedTy.Members.Add(subTy) |> ignore
                 if maxOccurs > 1u
-                then CollectionType(runtimeType, name), [Attributes.XmlElement(true)]
+                then CollectionType(runtimeType, name, None), [Attributes.XmlElement(true)]
                 else runtimeType, [Attributes.XmlElement(true)]
             | _ -> failwithf "not implemented: %A" name
 
@@ -736,19 +759,19 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | None -> ()
 
         match typeInfo with
-        | SoapEncArray(contentSpec) ->
-            match getArrayType(contentSpec) with
-            | CollectionType(elementType, itemName) as arrayType ->
-                let property = addProperty("Array", arrayType, false)
-                property.CustomAttributes.Add(Attributes.XmlElement2(itemName, elementType.AsCodeTypeReference())) |> ignore
-            | _ -> failwith "not implemented"
+//        | SoapEncArray(contentSpec) ->
+//            match getArrayType(contentSpec) with
+//            | CollectionType(elementType, itemName) as arrayType ->
+//                let property = addProperty("Array", arrayType, false)
+//                property.CustomAttributes.Add(Attributes.XmlElement2(itemName, elementType.AsCodeTypeReference())) |> ignore
+//            | _ -> failwith "not implemented"
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             match context.GetRuntimeType(SchemaType(spec.Base)) with
-            | PrimitiveType(_)
-            | ContentType as rtyp ->
+            | PrimitiveType(_) as rtyp ->
                 let property = addProperty("BaseValue", rtyp, false)
                 property.CustomAttributes.Add(Attributes.XmlText) |> ignore
                 // TODO: Apply constraints?
+            | ContentType -> providedTy |> inheritBinaryContent
             | _ -> failwith "not implemented"
         | SimpleType(Union(_)) ->
             failwith "not implemented"
@@ -769,7 +792,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 failwith "not implemented"
             | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                 let baseTy = context.GetRuntimeType(SchemaType(spec.Base))
-                providedTy.BaseTypes.Add(baseTy.AsCodeTypeReference()) |> ignore
+                providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
                 match baseTy with
                 | ProvidedType(baseDecl,_) ->
                     baseDecl |> Cls.describe (Attributes.XmlInclude(typeRefName providedTypeName)) |> ignore
@@ -895,7 +918,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     schema.TypeSchemas
     |> Map.toSeq
     |> Seq.collect (fun (_, typeSchema) -> typeSchema.Types)
-    |> Seq.map (fun x -> context.GetRuntimeType(SchemaType(x.Key)), x.Value)
+    |> Seq.choose (fun x ->
+        match context.GetRuntimeType(SchemaType(x.Key)) with
+        | CollectionType(prtyp, _, Some(st)) -> Some(prtyp, st)
+        | CollectionType(_, _, None) -> None
+        | rtyp -> Some(rtyp, x.Value))
     |> Seq.iter buildType
 
     schema.TypeSchemas
@@ -922,7 +949,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let portTy = CodeTypeDeclaration(port.Name, IsClass=true, TypeAttributes=TypeAttributes.Public)
             serviceTy.Members.Add(portTy) |> ignore
 
-            portTy.BaseTypes.Add(CodeTypeReference(portBaseTy.Name)) |> ignore
+            portTy |> Cls.setParent (typeRefName portBaseTy.Name) |> ignore
 
             match port.Documentation.TryGetValue("et") with
             | true, doc -> portTy.Comments.Add(CodeCommentStatement(doc, true)) |> ignore

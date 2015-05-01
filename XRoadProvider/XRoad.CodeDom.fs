@@ -119,6 +119,7 @@ module Ctor =
     let setAttr a (c: CodeConstructor) = c.Attributes <- a; c
     let addParam<'T> name (c: CodeConstructor) = c.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; c
     let addStmt (e: CodeStatement) (c: CodeConstructor) = c.Statements.Add(e) |> ignore; c
+    let addBaseArg a (c: CodeConstructor) = c.BaseConstructorArgs.Add(a) |> ignore; c
 
 module Op =
     let equals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityEquality, rhs) :> CodeExpression
@@ -142,6 +143,7 @@ module Cls =
 
     let addMember m (c: CodeTypeDeclaration) = c.Members.Add(m) |> ignore; c
     let describe a (t: CodeTypeDeclaration) = t.CustomAttributes.Add(a) |> ignore; t
+    let setParent (p: CodeTypeReference) (t: CodeTypeDeclaration) = t.BaseTypes.Add(p) |> ignore; t
 
 module Arr =
     let createOfSize<'T> (size: int) = CodeArrayCreateExpression(typeRef<'T>, size) :> CodeExpression
