@@ -624,29 +624,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let portBaseTy = makeServicePortBaseType(undescribedFaults, context.Style)
     let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
 
-//    let (|ArrayType|_|) (attributes: AttributeSpec list) =
-//        attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)))
-//
-//    let (|SoapEncArray|_|) (def: SchemaType) =
-//        match def with SchemaType.ComplexType(x) -> Some(x) | _ -> None
-//        |> Option.bind (fun x ->
-//            match x.Content with
-//            | ComplexTypeContent.ComplexContent(Restriction(c))
-//                when c.Base.LocalName = "Array" && c.Base.NamespaceName = XmlNamespace.SoapEncoding -> Some(c.Content)
-//            | _ -> None)
-//
-//    let getArrayItemElement particle =
-//        match particle with
-//        | Some(ComplexTypeParticle.Sequence(spec)) ->
-//            match spec.Content with
-//            | [ SequenceContent.Element(e) ] -> Some(e)
-//            | _ -> None
-//        | Some(ComplexTypeParticle.All(spec)) ->
-//            match spec.Elements with
-//            | [ e ] -> Some(e)
-//            | _ -> None
-//        | _ -> None
-
     let rec buildType(runtimeType: RuntimeType, typeInfo) =
         let providedTy, providedTypeName =
             match runtimeType with
@@ -689,23 +666,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 | Reference(ref) -> Reference(ref)
             getParticleType(convertedObject, 1u, false, name)
 
-//        and getArrayType (contentSpec: ComplexTypeContentSpec) =
-//            match contentSpec.Attributes with
-//            | ArrayType(attrSpec) ->
-//                match attrSpec.ArrayType with
-//                | Some(typeName, rank) ->
-//                    let itemName = getArrayItemElement(contentSpec.Content) |> Option.bind (fun x -> x.Name) |> Option.orDefault "item"
-//                    [1..rank] |> List.fold (fun aggType _ -> CollectionType(aggType, itemName)) (context.GetRuntimeType(SchemaType(typeName)))
-//                | _ -> failwith "Array underlying type specification is missing."
-//            | _ ->
-//                match getArrayItemElement(contentSpec.Content) with
-//                | Some(elementSpec) ->
-//                    let elemName, elemType = context.GetElementDefinition(elementSpec)
-//                    let subTyName = providedTy.Name + "ArrayItem"
-//                    let elementTy = fst <| getParticleType(elemType, elementSpec.MaxOccurs, elementSpec.IsNillable, subTyName)
-//                    CollectionType(elementTy, elemName)
-//                | None -> failwith "Unsupported SOAP encoding array definition."
-
         and getParticleType (particleType, maxOccurs, isNillable, name) =
             match particleType with
             | Name(xname) ->
@@ -717,8 +677,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [Attributes.XmlElement(true)])
                     else (PrimitiveType(x), [Attributes.XmlElement(false)])
                 | x -> (x, [Attributes.XmlElement(true)])
-//            | Definition(SoapEncArray(contentSpec)) ->
-//                getArrayType(contentSpec), [ Attributes.XmlArray(true); Attributes.XmlArrayItem("temp") ]
             | Definition(typeInfo) ->
                 let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public
                 let runtimeType = ProvidedType(subTy, subTy.Name)
@@ -753,18 +711,14 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     match item with
                     | SequenceContent.Choice(_) -> printfn "TODO: Choice not implemented."
                     | SequenceContent.Element(spec) -> parseElementSpec(spec)
-                    | SequenceContent.Any -> printfn "TODO: Any not implemented."
+                    | SequenceContent.Any ->
+                        let property = addProperty("AnyElements", PrimitiveType(typeof<XmlElement[]>), false)
+                        property.CustomAttributes.Add(Attributes.XmlAnyElement) |> ignore
                     | _ -> failwith "not implemented")
             | Some(ComplexTypeParticle.Choice(_)) -> printfn "TODO: Choice type not implemented!"
             | None -> ()
 
         match typeInfo with
-//        | SoapEncArray(contentSpec) ->
-//            match getArrayType(contentSpec) with
-//            | CollectionType(elementType, itemName) as arrayType ->
-//                let property = addProperty("Array", arrayType, false)
-//                property.CustomAttributes.Add(Attributes.XmlElement2(itemName, elementType.AsCodeTypeReference())) |> ignore
-//            | _ -> failwith "not implemented"
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | PrimitiveType(_) as rtyp ->

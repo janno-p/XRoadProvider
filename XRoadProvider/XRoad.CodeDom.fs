@@ -72,6 +72,7 @@ module Attributes =
     let XmlArrayItem(name) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm //|> addNullable isNillable
     let XmlRoot name ns = Attr.create<XmlRootAttribute> |> Attr.addArg (Expr.value name) |> Attr.addNamedArg "Namespace" (Expr.value ns)
     let XmlIgnore = Attr.create<XmlIgnoreAttribute>
+    let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
 
 module Fld =
     let create<'T> name = CodeMemberField(typeRef<'T>, name)
