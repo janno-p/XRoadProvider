@@ -41,8 +41,17 @@ let (|ArrayContent|_|) (schemaType: SchemaType) =
             else match all.Elements with
                  | [ single ] when single.MaxOccurs > 1u -> Some(single)
                  | _ -> None
-        | Some(ComplexTypeParticle.Choice(_)) ->
-            failwith "Not implemented: array of choice types."
+        | Some(ComplexTypeParticle.Choice(choice)) ->
+            if choice.MaxOccurs > 1u then failwith "Not implemented: array of anonymous choice types."
+            elif choice.MaxOccurs < 1u then None
+            elif (choice.Content
+                  |> List.fold (fun state ch ->
+                        match state, ch with
+                        | true, ChoiceContent.Element(e) when e.MaxOccurs < 2u -> true
+                        | true, ChoiceContent.Sequence(s) when s.MaxOccurs < 2u -> true
+                        | _ -> false) true)
+                 then None
+            else failwith "Not implemented: array of varying choice types."
         | Some(ComplexTypeParticle.Sequence(sequence)) ->
             if sequence.MaxOccurs > 1u then failwith "Not implemented: array of anonymous sequence types."
             elif sequence.MaxOccurs < 1u then None
@@ -677,6 +686,18 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [Attributes.XmlElement(true)])
                     else (PrimitiveType(x), [Attributes.XmlElement(false)])
                 | x -> (x, [Attributes.XmlElement(true)])
+            | Definition(ArrayContent element) ->
+                match context.GetElementDefinition(element) with
+                | itemName, Name(xn) ->
+                    CollectionType(context.GetRuntimeType(SchemaType(xn)), itemName, None), [ Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName) ]
+                | itemName, Definition(def) ->
+                    let suffix = itemName.toClassName()
+                    let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public
+                    let runtimeType = ProvidedType(typ, typ.Name)
+                    buildType(runtimeType, def)
+                    providedTy |> Cls.addMember typ |> ignore
+                    CollectionType(runtimeType, itemName, None), [ Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName) ]
+                | _, Reference(_) -> failwith "never"
             | Definition(typeInfo) ->
                 let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public
                 let runtimeType = ProvidedType(subTy, subTy.Name)
@@ -753,7 +774,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 | _ -> failwithf "Only complex types can be inherited! (%A)" spec.Base
                 parseComplexTypeContentSpec(spec.Content)
             | ComplexContent(ComplexContentSpec.Restriction(_)) ->
-                failwith "not implemented"
+                failwithf "Not implemented: restriction (%A)" typeInfo
             | ComplexTypeContent.Particle(spec) ->
                 parseComplexTypeContentSpec(spec)
         | EmptyType -> ()
