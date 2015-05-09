@@ -13,8 +13,21 @@ open System.Xml.Linq
 open System.Xml.Serialization
 
 open XRoad.CodeDom
+open XRoad.Common
 open XRoad.Parser
 open XRoad.Parser.XsdSchema
+open XRoad.ServiceDescription
+
+/// Combines operations and types documented in producer definitions.
+type ProducerDescription =
+    { TypeSchemas: Map<string,XsdSchema.SchemaNode>
+      Services: Service list }
+    /// Load producer definition from given uri location.
+    static member Load(uri: string) =
+        let document = XDocument.Load(uri)
+        let definitions = document.Element(xnsname "definitions" XmlNamespace.Wsdl)
+        { Services = definitions |> parseServices
+          TypeSchemas = definitions |> XsdSchema.parseSchema }
 
 let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
@@ -71,7 +84,7 @@ let (|ArrayContent|_|) (schemaType: SchemaType) =
     | SimpleType(_) -> None
 
 type TypeBuilderContext =
-    { CachedTypes: Dictionary<XmlReference,RuntimeType>
+    { CachedTypes: Dictionary<SchemaName,RuntimeType>
       CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
       Attributes: Map<string,AttributeSpec>
       Elements: Map<string,ElementSpec>
@@ -100,11 +113,9 @@ type TypeBuilderContext =
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
             | true, typ -> typ
-        member private this.CreateType(name: XmlReference) =
+        member private this.CreateType(name: SchemaName) =
             match name.XName with
-            | XsdType "hexBinary"
-            | XsdType "base64Binary"
-            | SoapEncType "base64Binary" -> ContentType
+            | BinaryType(_) -> ContentType
             | SystemType(typ) -> PrimitiveType(typ)
             | _ ->
                 let nstyp = this.GetOrCreateNamespace(name.XName.Namespace)
@@ -132,7 +143,7 @@ type TypeBuilderContext =
                     let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
                     nstyp |> Cls.addMember typ |> ignore
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
-        member this.GetRuntimeType(name: XmlReference) =
+        member this.GetRuntimeType(name: SchemaName) =
             match this.CachedTypes.TryGetValue(name) with
             | true, info -> info
             | _ -> let info = this.CreateType(name)
@@ -547,9 +558,9 @@ let private getRequiredHeaders(operation: Operation) =
     let headers, rest =
         operation.Request.Header
         |> List.partition (fun part ->
-            match part with
-            | IsXteeHeader _ when operation.Style = RpcEncoded -> true
-            | IsXRoadHeader _ when operation.Style = DocLiteral -> true
+            match part.SchemaEntity with
+            | SchemaElement(XteeHeader(_)) when operation.Style = RpcEncoded -> true
+            | SchemaElement(XRoadHeader(_)) when operation.Style = DocLiteral -> true
             | _ -> false)
     if rest.Length > 0 then
         failwithf "Unhandled SOAP Header elements detected: %A" rest
@@ -570,7 +581,7 @@ let makeReturnType (types: RuntimeType list) =
     | many -> getReturnTypeTuple([], many)
 
 let buildParameterType (context: TypeBuilderContext) isMultipart (part: MessagePart) =
-    match context.Style, part.Reference with
+    match context.Style, part.SchemaEntity with
     | DocLiteral, SchemaType(t) ->
         failwithf "Document/Literal style message part '%s' should reference global element as message part, but type '%s' is used instead" part.Name t.LocalName
     | RpcEncoded, SchemaElement(e) ->
@@ -616,7 +627,7 @@ let buildParameterType (context: TypeBuilderContext) isMultipart (part: MessageP
                 yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil ]
 
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
-    let schema = resolveUri producerUri |> readSchema
+    let schema = ProducerDescription.Load(resolveUri producerUri)
     let context = TypeBuilderContext.FromSchema(schema)
 
     let portBaseTy = makeServicePortBaseType(undescribedFaults, context.Style)

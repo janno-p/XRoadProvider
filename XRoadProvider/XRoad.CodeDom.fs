@@ -208,7 +208,7 @@ let makeChoiceType() =
     ()
 
 let createXmlBookmarkReaderType() =
-    let assembly = typeof<XRoad.Parser.MessagePart>.Assembly
+    let assembly = typeof<RuntimeType>.Assembly
     use stream = assembly.GetManifestResourceStream("XmlBookmarkReader.cs")
     use reader = new StreamReader(stream)
     CodeSnippetTypeMember(reader.ReadToEnd())

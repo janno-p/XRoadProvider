@@ -2,6 +2,7 @@
 
 open System.Xml
 open System.Xml.Linq
+open XRoad.Common
 open XRoad.Parser
 
 type Producer =
