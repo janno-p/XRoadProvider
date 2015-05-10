@@ -90,7 +90,7 @@ let readLanguages (element: XElement) =
     |> Seq.fold (fun (doc: IDictionary<_,_>) el ->
         let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) "en"
         doc.[lang] <- el.Value
-        doc) (dict [])
+        doc) (upcast Dictionary<_,_>())
 
 /// Read documentation element contents into language code indexed dictionary.
 let readDocumentation (element: XElement) =

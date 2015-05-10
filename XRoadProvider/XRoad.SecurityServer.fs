@@ -27,9 +27,9 @@ let discoverProducers serverIP =
         (   use stream = request.GetRequestStream() in
             use writer = XmlWriter.Create(stream)
             writer.WriteStartDocument()
-            writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnvelope)
+            writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnv)
 
-            writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
+            writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
             writer.WriteStartElement("listProducers", XmlNamespace.XRoad)
             writer.WriteEndElement()
             writer.WriteEndElement()
@@ -40,8 +40,8 @@ let discoverProducers serverIP =
         use reader = new System.IO.StreamReader(resp.GetResponseStream())
         XDocument.Load(reader)
 
-    let envelope = doc.Elements(XName.Get("Envelope", XmlNamespace.SoapEnvelope)) |> Seq.exactlyOne
-    let body = envelope.Elements(XName.Get("Body", XmlNamespace.SoapEnvelope)) |> Seq.exactlyOne
+    let envelope = doc.Elements(XName.Get("Envelope", XmlNamespace.SoapEnv)) |> Seq.exactlyOne
+    let body = envelope.Elements(XName.Get("Body", XmlNamespace.SoapEnv)) |> Seq.exactlyOne
     let message = body.Elements(XName.Get("listProducersResponse", XmlNamespace.XRoad)) |> Seq.exactlyOne
     let response = message.Elements(XName.Get("response"))
 

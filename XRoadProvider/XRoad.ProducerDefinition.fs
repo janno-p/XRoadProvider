@@ -34,7 +34,7 @@ let providedTypeFullName nsname name =
 
 let (|ArrayContent|_|) (schemaType: SchemaType) =
     let (|ArrayType|_|) (attributes: AttributeSpec list) =
-        attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)))
+        attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEnc)))
     let getArrayItemElement contentParticle =
         match contentParticle with
         | Some(ComplexTypeParticle.All(all)) ->
@@ -64,7 +64,7 @@ let (|ArrayContent|_|) (schemaType: SchemaType) =
     match schemaType with
     | ComplexType(spec) ->
         match spec.Content with
-        | ComplexTypeContent.ComplexContent(Restriction(rstr)) when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEncoding ->
+        | ComplexTypeContent.ComplexContent(Restriction(rstr)) when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEnc ->
             match rstr.Content.Attributes with
             | ArrayType(attrSpec) ->
                 match attrSpec.ArrayType with
@@ -93,7 +93,7 @@ type TypeBuilderContext =
     with
         member this.GetOrCreateNamespace(nsname: XNamespace) =
             let (|Producer|_|) ns =
-                match Regex.Match(ns, @"^http://(((?<producer>\w+)\.x-road\.ee/producer(/(?<path>.*)?)?)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)(/(?<path>.*))?))$") with
+                match Regex.Match(ns, @"^http://(((?<producer>\w+)\.x-road\.ee/producer(/(?<path>.+)?)?)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)(/(?<path>.+))?))$") with
                 | m when m.Success ->
                     let suffix =
                         if m.Groups.["path"].Success
@@ -456,11 +456,11 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
               Stmt.tryFinally
                   [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "sw"])
                     Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartDocument") @% [])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnvelope])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnv])
                     Stmt.ofExpr ((Expr.var "writeHeaderAction") @%% [Expr.var "writer"])
                     Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope])
+                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnv])
                     Stmt.ofExpr ((Expr.var "writeBody") @%% [Expr.var "writer"])
                     Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
                     Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
@@ -501,17 +501,17 @@ let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
         Stmt.declVarRefWith xmlReaderTypRef "reader" Expr.nil
         Stmt.tryFinally
             [ Stmt.assign (Expr.var("reader")) createReaderExpr
-              Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope; Expr.value 0])
+              Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv; Expr.value 0])
                                []
                                [ Stmt.throw<Exception> [Expr.value "Soap envelope element was not found in response message."] ]
-              Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope; Expr.value 1])
+              Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Body"; Expr.value XmlNamespace.SoapEnv; Expr.value 1])
                                []
                                [ Stmt.throw<Exception> [Expr.value "Soap body element was not found in response message."] ]
               (Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 2] |> Stmt.ofExpr
               Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
                                                  (Expr.value "Fault"))
                                       (Op.equals (Expr.var "reader" @=> "NamespaceURI")
-                                                 (Expr.value XmlNamespace.SoapEnvelope)))
+                                                 (Expr.value XmlNamespace.SoapEnv)))
                            [Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []]]
               Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"]) ]
             [ Stmt.condIf (Op.isNotNull (Expr.var "reader"))

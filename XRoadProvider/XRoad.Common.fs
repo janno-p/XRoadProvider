@@ -15,17 +15,18 @@ module XmlNamespace =
     let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
     let [<Literal>] Mime = "http://schemas.xmlsoap.org/wsdl/mime/"
     let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
-    let [<Literal>] SoapEncoding = "http://schemas.xmlsoap.org/soap/encoding/"
-    let [<Literal>] SoapEnvelope = "http://schemas.xmlsoap.org/soap/envelope/"
+    let [<Literal>] SoapEnc = "http://schemas.xmlsoap.org/soap/encoding/"
+    let [<Literal>] SoapEnv = "http://schemas.xmlsoap.org/soap/envelope/"
     let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
-    let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
+    let [<Literal>] Xmime = "http://www.w3.org/2005/05/xmlmime"
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
+    let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
     /// Defines namespaces which are handled separately (not generated).
-    let predefined = [ Http; Mime; Soap; SoapEncoding; SoapEnvelope; Wsdl; Xml; Xsd; Xsi ]
+    let predefined = [ Http; Mime; Soap; SoapEnc; SoapEnv; Wsdl; Xmime; Xml; Xsd; Xsi ]
 
 /// Active patterns for matching XML document nodes from various namespaces.
 [<AutoOpen>]
@@ -57,7 +58,7 @@ module Pattern =
     /// Matches names defined in `http://schemas.xmlsoap.org/soap/encoding/` namespace.
     let (|SoapEncName|_|) (name: XName) =
         match name.NamespaceName with
-        | XmlNamespace.SoapEncoding -> Some name.LocalName
+        | XmlNamespace.SoapEnc -> Some name.LocalName
         | _ -> None
 
     /// Matches elements defined in `http://www.w3.org/2001/XMLSchema` namespace.
