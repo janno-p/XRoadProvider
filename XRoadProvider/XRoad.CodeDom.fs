@@ -8,7 +8,8 @@ open System.Collections
 open System.Diagnostics
 open System.Globalization
 open System.IO
-open XRoad.Parser.XsdSchema
+
+open XRoad.TypeSchema
 
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
 let typeRefName name = CodeTypeReference(name: string)

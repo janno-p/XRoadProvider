@@ -14,20 +14,19 @@ open System.Xml.Serialization
 
 open XRoad.CodeDom
 open XRoad.Common
-open XRoad.Parser
-open XRoad.Parser.XsdSchema
 open XRoad.ServiceDescription
+open XRoad.TypeSchema
 
 /// Combines operations and types documented in producer definitions.
 type ProducerDescription =
-    { TypeSchemas: Map<string,XsdSchema.SchemaNode>
+    { TypeSchemas: Map<string,SchemaNode>
       Services: Service list }
     /// Load producer definition from given uri location.
     static member Load(uri: string) =
         let document = XDocument.Load(uri)
         let definitions = document.Element(xnsname "definitions" XmlNamespace.Wsdl)
-        { Services = definitions |> parseServices
-          TypeSchemas = definitions |> XsdSchema.parseSchema }
+        { Services = definitions |> ServiceDescription.Parser.parseServices
+          TypeSchemas = definitions |> TypeSchema.Parser.parseSchema }
 
 let providedTypeFullName nsname name =
     sprintf "DefinedTypes.%s.%s" nsname name
@@ -60,6 +59,7 @@ let (|ArrayContent|_|) (schemaType: SchemaType) =
             else match sequence.Content with
                  | [ SequenceContent.Element(single) ] when single.MaxOccurs > 1u -> Some(single)
                  | _ -> None
+        | Some(ComplexTypeParticle.Group) -> failwith "group not implemented."
         | None -> None
     match schemaType with
     | ComplexType(spec) ->
@@ -724,7 +724,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                                 attrs |> List.iter (property.CustomAttributes.Add >> ignore)
                             | ChoiceContent.Sequence(_) ->
                                 //failwith "Not implemented: sequence in choice.")
-                                ())
+                                ()
+                            | ChoiceContent.Group -> failwith "group not implemented")
                         providedTy
                         |> addProperty(choiceName, ProvidedType(choiceType, choiceType.Name), choice.MinOccurs = 0u)
                         |> ignore
@@ -732,10 +733,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     | SequenceContent.Sequence(_) -> failwith "Not implemented: nested sequences."
                     | SequenceContent.Any ->
                         let property = providedTy |> addProperty("AnyElements", PrimitiveType(typeof<XmlElement[]>), false)
-                        property.CustomAttributes.Add(Attributes.XmlAnyElement) |> ignore)
+                        property.CustomAttributes.Add(Attributes.XmlAnyElement) |> ignore
+                    | SequenceContent.Group -> failwith "group not implemented")
             | Some(ComplexTypeParticle.Choice(_)) ->
                 //failwith "Not implemented: choice in complexType content."
                 ()
+            | Some(ComplexTypeParticle.Group) -> failwith "group not implemented"
             | None -> ()
 
         match typeInfo with
@@ -747,7 +750,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 // TODO: Apply constraints?
             | ContentType -> providedTy |> inheritBinaryContent
             | _ -> failwith "not implemented"
-        | SimpleType(Union(_)) ->
+        | SimpleType(Union(_) | ListDef) ->
             failwith "not implemented"
         | ComplexType(spec) ->
             if spec.IsAbstract then

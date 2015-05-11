@@ -135,6 +135,9 @@ module Pattern =
         | XrdName "encryptedCert" -> Some(name)
         | _ -> None
 
+/// Helper function for generating XNamespace-s.
+let xns name = XNamespace.Get(name)
+
 /// Helper function for generating XName-s.
 let xname name = XName.Get(name)
 

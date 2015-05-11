@@ -58,7 +58,7 @@
     </Compile>
     <Compile Include="XRoad.Common.fs" />
     <Compile Include="XRoad.ServiceDescription.fs" />
-    <Compile Include="XRoad.Parser.fs" />
+    <Compile Include="XRoad.TypeSchema.fs" />
     <Compile Include="XRoad.CodeDom.fs" />
     <Compile Include="XRoad.ProducerDefinition.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
