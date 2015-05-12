@@ -187,7 +187,7 @@ let private createMoveToElementMethod () =
     |> Meth.addStmt (Expr.value false |> Stmt.ret)
 
 /// Builds serialization statements for writing main SOAP body element for request message in MakeServiceCall method.
-let private createSerializationStatements () =
+let private createSerializationStatements style =
     [ // Retrieve stream to write contents into:
       Stmt.assign (Expr.var("stream")) ((Expr.var "request" @-> "GetRequestStream") @% [])
       Stmt.declVarWith<StreamWriter> "sw" Expr.nil
@@ -213,6 +213,9 @@ let private createSerializationStatements () =
                 [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "sw"])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartDocument") @% [])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv])
+                  Stmt.ofExpr (if style = RpcEncoded
+                               then (Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "encodingStyle"; Expr.value XmlNamespace.SoapEnv; Expr.value XmlNamespace.SoapEnc]
+                               else Expr.empty)
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnv])
                   Stmt.ofExpr ((Expr.var "writeHeaderAction") @%% [Expr.var "writer"])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
@@ -286,7 +289,7 @@ let private createDeserializationStatements undescribedFaults =
 /// Method which handles a single service call from request serialization to response deserialization.
 /// General part is handled by method itself; individual logic for each service is injected with callback
 /// delegates which serialize and deserialize SOAP body according to their specification.
-let private createMakeServiceCallMethod undescribedFaults =
+let private createMakeServiceCallMethod undescribedFaults style =
     // Method declaration:
     Meth.create "MakeServiceCall"
     |> Meth.setAttr (MemberAttributes.Family ||| MemberAttributes.Final)
@@ -305,7 +308,7 @@ let private createMakeServiceCallMethod undescribedFaults =
     |> Meth.addExpr (((Expr.var "request" @=> "Headers") @-> "Set") @% [Expr.value "SOAPAction"; Expr.value ""])
     // Serialize request message:
     |> Meth.addStmt (Stmt.declVarWith<Stream> "stream" Expr.nil)
-    |> Meth.addStmt (Stmt.tryFinally (createSerializationStatements())
+    |> Meth.addStmt (Stmt.tryFinally (createSerializationStatements style)
                                      [ Stmt.condIf (Op.isNotNull (Expr.var "stream"))
                                                    [(Expr.var "stream" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
     // Deserialize response message:
@@ -352,7 +355,7 @@ let makeServicePortBaseType undescribedFaults (style: OperationStyle) =
     |> Cls.addMember addressProperty
     |> Cls.addMember producerField
     |> Cls.addMember producerProperty
-    |> Cls.addMember (createMakeServiceCallMethod undescribedFaults)
+    |> Cls.addMember (createMakeServiceCallMethod undescribedFaults style)
     |> Cls.addMember (createWriteXRoadHeaderMethod style)
     |> Cls.addMember defaultNonceMethod
     |> Cls.addMember (createMoveToElementMethod())

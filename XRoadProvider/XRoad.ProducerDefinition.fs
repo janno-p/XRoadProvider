@@ -86,6 +86,116 @@ let buildParameterType (context: TypeBuilderContext) isMultipart (part: MessageP
               else
                 yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil ]
 
+type PropertyDefinition =
+    { Type: RuntimeType
+      IsNillable: bool // Attributes.XmlElement(propdef.IsNillable)
+      IsItemNillable: bool option
+      AddedTypes: CodeTypeDeclaration list
+      IsOptional: bool
+      IsWrappedArray: bool option
+      Name: string }
+    static member Create(name, isOptional) =
+        { Type = RuntimeType.PrimitiveType(typeof<System.Void>)
+          IsNillable = false
+          IsItemNillable = None
+          AddedTypes = []
+          IsOptional = isOptional
+          IsWrappedArray = None
+          Name = name }
+
+let rec private buildType (runtimeType) (schemaType) =
+    ()
+
+and private buildElementProperty (spec: ElementSpec) (context: TypeBuilderContext) =
+    let name, schemaType = context.GetElementDefinition(spec)
+    buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable spec.MinOccurs context
+
+and private buildPropertyDef schemaType maxOccurs name isNillable minOccurs context =
+    let propertyDef = PropertyDefinition.Create(name, (minOccurs = 0u))
+    match schemaType with
+    | Definition(ArrayContent itemSpec) ->
+        match context.GetElementDefinition(itemSpec) with
+        | itemName, Name(n) ->
+            { propertyDef with
+                Type = CollectionType(context.GetRuntimeType(SchemaType(n)), itemName, None)
+                IsNillable = isNillable
+                IsItemNillable = Some(itemSpec.IsNillable)
+                IsWrappedArray = Some(true) }
+        | itemName, Definition(def) ->
+            let suffix = itemName.toClassName()
+            let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public
+            let runtimeType = ProvidedType(typ, typ.Name)
+            buildType runtimeType def
+            { propertyDef with
+                Type = CollectionType(runtimeType, itemName, None)
+                IsNillable = isNillable
+                IsItemNillable = Some(itemSpec.IsNillable)
+                AddedTypes = [typ]
+                IsWrappedArray = Some(true) }
+        | _, Reference(_) -> failwith "never"
+    | Definition(def) ->
+        let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public
+        let runtimeType = ProvidedType(subTy, subTy.Name)
+        buildType runtimeType def
+        if maxOccurs > 1u then
+            { propertyDef with
+                Type = CollectionType(runtimeType, name, None)
+                IsItemNillable = Some(isNillable)
+                AddedTypes = [subTy]
+                IsWrappedArray = Some(false) }
+        else
+            { propertyDef with
+                Type = runtimeType
+                IsNillable = isNillable
+                AddedTypes = [subTy] }
+    | Name(n) ->
+        match context.GetRuntimeType(SchemaType(n)) with
+        | x when maxOccurs > 1u ->
+            { propertyDef with
+                Type = CollectionType(x, name, None)
+                IsItemNillable = Some(isNillable)
+                IsWrappedArray = Some(false) }
+        | PrimitiveType(x) when x.IsValueType ->
+            { propertyDef with
+                Type = PrimitiveType(if isNillable then typedefof<Nullable<_>>.MakeGenericType(x) else x)
+                IsNillable = isNillable }
+        | x ->
+            { propertyDef with
+                Type = x
+                IsNillable = isNillable }
+    | Reference(_) ->
+        failwith "Not implemented: schema reference to type."
+
+let private buildSequenceMembers (spec: SequenceSpec) context =
+    spec.Content
+    |> List.map (
+        function
+        | SequenceContent.Any ->
+            failwith "Not implemented: any in sequence."
+        | SequenceContent.Choice(_) ->
+            failwith "Not implemented: choice in sequence."
+        | SequenceContent.Element(espec) ->
+            buildElementProperty espec context
+        | SequenceContent.Group ->
+            failwith "Not implemented: group in sequence."
+        | SequenceContent.Sequence(_) ->
+            failwith "Not implemented: sequence in sequence.")
+
+let private buildChoiceMembers (spec: ChoiceSpec) context =
+    spec.Content
+    |> List.map (
+        function
+        | ChoiceContent.Any ->
+            failwith "Not implemented: any in choice."
+        | ChoiceContent.Choice(_) ->
+            failwith "Not implemented: choice in choice."
+        | ChoiceContent.Element(espec) ->
+            [ buildElementProperty espec context ]
+        | ChoiceContent.Group ->
+            failwith "Not implemented: group in choice."
+        | ChoiceContent.Sequence(sspec) ->
+            buildSequenceMembers sspec context)
+
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let schema = ProducerDescription.Load(resolveUri producerUri)
     let context = TypeBuilderContext.FromSchema(schema)
@@ -152,6 +262,58 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                 num := !num + 1
                 sprintf "Choice%d" !num)
 
+        let buildChoiceType spec context =
+            match buildChoiceMembers spec context with
+            | [] -> ()
+            | [ _ ] -> failwith "Not implemented: single option choice should be treated as regular sequence."
+            | options ->
+                let choiceName = nextChoiceName()
+                let choiceEnum =
+                    Cls.createEnum (choiceName + "Type")
+                    |> Cls.setAttr TypeAttributes.Public
+                    |> Cls.describe Attributes.XmlTypeExclude
+                let isArray = options |> List.map (List.length) |> List.max > 1
+                let enumNameType =
+                    let tr = typeRefName (choiceName + "Type")
+                    if isArray then CodeTypeReference(tr, 1) else tr
+                let choiceTypeProp =
+                    Fld.createRef enumNameType (choiceName + "Name")
+                    |> Fld.setAttr MemberAttributes.Public
+                    |> Fld.describe Attributes.XmlIgnore
+                    |> iif isArray (fun x -> x |> Fld.describe (Attributes.XmlElement false))
+                let choiceItemType =
+                    let rt =
+                        options
+                        |> List.collect (id)
+                        |> List.fold (fun (s: RuntimeType option) x ->
+                            match s with
+                            | None -> Some(x.Type)
+                            | Some(y) when x.Type = y -> s
+                            | _ -> Some(PrimitiveType(typeof<obj>))) None
+                        |> Option.get
+                    if isArray then CodeTypeReference(rt.AsCodeTypeReference(), 1) else rt.AsCodeTypeReference()
+                let choiceItemProp =
+                    Fld.createRef choiceItemType (choiceName + (if isArray then "Items" else"Item"))
+                    |> Fld.setAttr MemberAttributes.Public
+                    |> Fld.describe (Attributes.XmlChoiceIdentifier choiceTypeProp.Name)
+                options
+                |> List.collect (id)
+                |> List.iter (fun opt ->
+                    let fld =
+                        Fld.createEnum (choiceName + "Type") opt.Name
+                        |> Fld.describe (Attributes.XmlEnum opt.Name)
+                    choiceEnum
+                    |> Cls.addMember fld
+                    |> ignore
+                    choiceItemProp
+                    |> Fld.describe (Attributes.XmlElement2(opt.Name, opt.Type.AsCodeTypeReference()))
+                    |> ignore)
+                providedTy
+                |> Cls.addMember choiceEnum
+                |> Cls.addMember choiceTypeProp
+                |> Cls.addMember choiceItemProp
+                |> ignore
+
         let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
             spec.Attributes |> List.iter (fun spec ->
                 let attrName, attrTypeDef = context.GetAttributeDefinition(spec)
@@ -168,36 +330,14 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     failwith "not implemented"
                 spec.Content |> List.iter (fun item ->
                     match item with
-                    | SequenceContent.Choice(choice) ->
-                        let choiceName = nextChoiceName()
-                        let choiceType = Cls.create (choiceName + "Type") |> Cls.setAttr TypeAttributes.Public
-                        providedTy |> Cls.addMember choiceType |> ignore
-                        choice.Content
-                        |> List.iter (fun opt ->
-                            match opt with
-                            | ChoiceContent.Any -> failwith "Not implemented: any in choice."
-                            | ChoiceContent.Choice(_) -> failwith "Not implemented: choice in choice."
-                            | ChoiceContent.Element(spec) ->
-                                let elemName, elemType = context.GetElementDefinition(spec)
-                                let elementTy, attrs = getParticleType(elemType, spec.MaxOccurs, spec.IsNillable, elemName)
-                                let property = choiceType |> addProperty(elemName, elementTy, spec.MinOccurs = 0u)
-                                attrs |> List.iter (property.CustomAttributes.Add >> ignore)
-                            | ChoiceContent.Sequence(_) ->
-                                //failwith "Not implemented: sequence in choice.")
-                                ()
-                            | ChoiceContent.Group -> failwith "group not implemented")
-                        providedTy
-                        |> addProperty(choiceName, ProvidedType(choiceType, choiceType.Name), choice.MinOccurs = 0u)
-                        |> ignore
+                    | SequenceContent.Choice(cspec) -> buildChoiceType cspec context
                     | SequenceContent.Element(spec) -> parseElementSpec(spec)
                     | SequenceContent.Sequence(_) -> failwith "Not implemented: nested sequences."
                     | SequenceContent.Any ->
                         let property = providedTy |> addProperty("AnyElements", PrimitiveType(typeof<XmlElement[]>), false)
                         property.CustomAttributes.Add(Attributes.XmlAnyElement) |> ignore
                     | SequenceContent.Group -> failwith "group not implemented")
-            | Some(ComplexTypeParticle.Choice(_)) ->
-                //failwith "Not implemented: choice in complexType content."
-                ()
+            | Some(ComplexTypeParticle.Choice(cspec)) -> buildChoiceType cspec context
             | Some(ComplexTypeParticle.Group) -> failwith "group not implemented"
             | None -> ()
 

@@ -78,6 +78,7 @@ module Attributes =
         |> Attr.addArg (Expr.value typeName.LocalName)
         |> Attr.addNamedArg "Namespace" (Expr.value typeName.NamespaceName)
 
+    let XmlTypeExclude = Attr.create<XmlTypeAttribute> |> Attr.addNamedArg "IncludeInSchema" (Expr.value false)
     let XmlInclude(providedTy: CodeTypeReference) = Attr.create<XmlIncludeAttribute> |> Attr.addArg (Expr.typeOf providedTy)
     let XmlElement(isNillable) = Attr.create<XmlElementAttribute> |> addUnqualifiedForm |> addNullable isNillable
     let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
@@ -86,12 +87,16 @@ module Attributes =
     let XmlRoot name ns = Attr.create<XmlRootAttribute> |> Attr.addArg (Expr.value name) |> Attr.addNamedArg "Namespace" (Expr.value ns)
     let XmlIgnore = Attr.create<XmlIgnoreAttribute>
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
+    let XmlEnum name = Attr.create<XmlEnumAttribute> |> Attr.addArg (Expr.value name)
+    let XmlChoiceIdentifier name = Attr.create<XmlChoiceIdentifierAttribute> |> Attr.addArg (Expr.value name)
 
 /// Functions to create and manipulate type fields.
 module Fld =
     let create<'T> name = CodeMemberField(typeRef<'T>, name)
+    let createEnum enumName valueName = CodeMemberField((enumName : string), valueName)
     let createRef (typ: CodeTypeReference) name = CodeMemberField(typ, name)
-    let addAttr a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
+    let describe a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
+    let setAttr a (f: CodeMemberField) = f.Attributes <- a; f
 
 /// Functions to create and manipulate type properties.
 module Prop =
@@ -155,6 +160,7 @@ module Op =
 
 /// Functions to create and manipulate types.
 module Cls =
+    let createEnum name = CodeTypeDeclaration(name, IsEnum=true)
     let create name = CodeTypeDeclaration(name, IsClass=true)
     let addAttr a (c: CodeTypeDeclaration) = c.TypeAttributes <- c.TypeAttributes ||| a; c
     let setAttr a (c: CodeTypeDeclaration) = c.TypeAttributes <- a; c
@@ -251,7 +257,7 @@ let createXmlBookmarkReaderType() =
 let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
     let backingField =
         Fld.create<'T> (name + "__backing")
-        |> Fld.addAttr Attributes.DebuggerBrowsable
+        |> Fld.describe Attributes.DebuggerBrowsable
     let property =
         Prop.create<'T> name
         |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
@@ -268,7 +274,7 @@ let addProperty (name, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration)
     let sf =
         if isOptional then
             let f = Fld.create<bool> (name + "__specified")
-                    |> Fld.addAttr Attributes.DebuggerBrowsable
+                    |> Fld.describe Attributes.DebuggerBrowsable
             let p = Prop.create<bool> (name + "Specified")
                     |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
                     |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
@@ -276,7 +282,7 @@ let addProperty (name, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration)
             Some(f)
         else None
     let f = Fld.createRef (ty.AsCodeTypeReference()) (name + "__backing")
-            |> Fld.addAttr Attributes.DebuggerBrowsable
+            |> Fld.describe Attributes.DebuggerBrowsable
     let p = Prop.createRef (ty.AsCodeTypeReference()) name
             |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
