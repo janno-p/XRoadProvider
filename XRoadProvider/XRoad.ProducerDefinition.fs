@@ -196,6 +196,58 @@ let private buildChoiceMembers (spec: ChoiceSpec) context =
         | ChoiceContent.Sequence(sspec) ->
             buildSequenceMembers sspec context)
 
+let addChoiceTypeMembers choiceNameGenerator spec context owner =
+    match buildChoiceMembers spec context with
+    | [] -> ()
+    | [ _ ] -> failwith "Not implemented: single option choice should be treated as regular sequence."
+    | options ->
+        let choiceName = choiceNameGenerator()
+        let choiceEnum =
+            Cls.createEnum (choiceName + "Type")
+            |> Cls.setAttr TypeAttributes.Public
+            |> Cls.describe Attributes.XmlTypeExclude
+        let isArray = options |> List.map (List.length) |> List.max > 1
+        let enumNameType =
+            let tr = typeRefName (choiceName + "Type")
+            if isArray then CodeTypeReference(tr, 1) else tr
+        let choiceTypeProp =
+            Fld.createRef enumNameType (choiceName + "Name")
+            |> Fld.setAttr MemberAttributes.Public
+            |> Fld.describe Attributes.XmlIgnore
+            |> iif isArray (fun x -> x |> Fld.describe (Attributes.XmlElement false))
+        let choiceItemType =
+            let rt =
+                options
+                |> List.collect (id)
+                |> List.fold (fun (s: RuntimeType option) x ->
+                    match s with
+                    | None -> Some(x.Type)
+                    | Some(y) when x.Type = y -> s
+                    | _ -> Some(PrimitiveType(typeof<obj>))) None
+                |> Option.get
+            if isArray then CodeTypeReference(rt.AsCodeTypeReference(), 1) else rt.AsCodeTypeReference()
+        let choiceItemProp =
+            Fld.createRef choiceItemType (choiceName + (if isArray then "Items" else"Item"))
+            |> Fld.setAttr MemberAttributes.Public
+            |> Fld.describe (Attributes.XmlChoiceIdentifier choiceTypeProp.Name)
+        options
+        |> List.collect (id)
+        |> List.iter (fun opt ->
+            let fld =
+                Fld.createEnum (choiceName + "Type") opt.Name
+                |> Fld.describe (Attributes.XmlEnum opt.Name)
+            choiceEnum
+            |> Cls.addMember fld
+            |> ignore
+            choiceItemProp
+            |> Fld.describe (Attributes.XmlElement2(opt.Name, opt.Type.AsCodeTypeReference()))
+            |> ignore)
+        owner
+        |> Cls.addMember choiceEnum
+        |> Cls.addMember choiceTypeProp
+        |> Cls.addMember choiceItemProp
+        |> ignore
+
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     let schema = ProducerDescription.Load(resolveUri producerUri)
     let context = TypeBuilderContext.FromSchema(schema)
@@ -256,63 +308,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let property = providedTy |> addProperty(elemName, elementTy, spec.MinOccurs = 0u)
             attrs |> List.iter (property.CustomAttributes.Add >> ignore)
 
-        let nextChoiceName =
+        let addChoiceTypeMembers' =
             let num = ref 0
-            (fun () ->
-                num := !num + 1
-                sprintf "Choice%d" !num)
-
-        let buildChoiceType spec context =
-            match buildChoiceMembers spec context with
-            | [] -> ()
-            | [ _ ] -> failwith "Not implemented: single option choice should be treated as regular sequence."
-            | options ->
-                let choiceName = nextChoiceName()
-                let choiceEnum =
-                    Cls.createEnum (choiceName + "Type")
-                    |> Cls.setAttr TypeAttributes.Public
-                    |> Cls.describe Attributes.XmlTypeExclude
-                let isArray = options |> List.map (List.length) |> List.max > 1
-                let enumNameType =
-                    let tr = typeRefName (choiceName + "Type")
-                    if isArray then CodeTypeReference(tr, 1) else tr
-                let choiceTypeProp =
-                    Fld.createRef enumNameType (choiceName + "Name")
-                    |> Fld.setAttr MemberAttributes.Public
-                    |> Fld.describe Attributes.XmlIgnore
-                    |> iif isArray (fun x -> x |> Fld.describe (Attributes.XmlElement false))
-                let choiceItemType =
-                    let rt =
-                        options
-                        |> List.collect (id)
-                        |> List.fold (fun (s: RuntimeType option) x ->
-                            match s with
-                            | None -> Some(x.Type)
-                            | Some(y) when x.Type = y -> s
-                            | _ -> Some(PrimitiveType(typeof<obj>))) None
-                        |> Option.get
-                    if isArray then CodeTypeReference(rt.AsCodeTypeReference(), 1) else rt.AsCodeTypeReference()
-                let choiceItemProp =
-                    Fld.createRef choiceItemType (choiceName + (if isArray then "Items" else"Item"))
-                    |> Fld.setAttr MemberAttributes.Public
-                    |> Fld.describe (Attributes.XmlChoiceIdentifier choiceTypeProp.Name)
-                options
-                |> List.collect (id)
-                |> List.iter (fun opt ->
-                    let fld =
-                        Fld.createEnum (choiceName + "Type") opt.Name
-                        |> Fld.describe (Attributes.XmlEnum opt.Name)
-                    choiceEnum
-                    |> Cls.addMember fld
-                    |> ignore
-                    choiceItemProp
-                    |> Fld.describe (Attributes.XmlElement2(opt.Name, opt.Type.AsCodeTypeReference()))
-                    |> ignore)
-                providedTy
-                |> Cls.addMember choiceEnum
-                |> Cls.addMember choiceTypeProp
-                |> Cls.addMember choiceItemProp
-                |> ignore
+            addChoiceTypeMembers (fun () -> num := !num + 1; sprintf "Choice%d" !num)
 
         let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
             spec.Attributes |> List.iter (fun spec ->
@@ -330,15 +328,23 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                     failwith "not implemented"
                 spec.Content |> List.iter (fun item ->
                     match item with
-                    | SequenceContent.Choice(cspec) -> buildChoiceType cspec context
-                    | SequenceContent.Element(spec) -> parseElementSpec(spec)
-                    | SequenceContent.Sequence(_) -> failwith "Not implemented: nested sequences."
+                    | SequenceContent.Choice(cspec) ->
+                        providedTy |> addChoiceTypeMembers' cspec context
+                    | SequenceContent.Element(spec) ->
+                        parseElementSpec(spec)
+                    | SequenceContent.Sequence(_) ->
+                        failwith "Not implemented: sequence in complexType sequence."
                     | SequenceContent.Any ->
-                        let property = providedTy |> addProperty("AnyElements", PrimitiveType(typeof<XmlElement[]>), false)
-                        property.CustomAttributes.Add(Attributes.XmlAnyElement) |> ignore
-                    | SequenceContent.Group -> failwith "group not implemented")
-            | Some(ComplexTypeParticle.Choice(cspec)) -> buildChoiceType cspec context
-            | Some(ComplexTypeParticle.Group) -> failwith "group not implemented"
+                        providedTy
+                        |> addProperty("AnyElements", PrimitiveType(typeof<XmlElement[]>), false)
+                        |> Prop.describe Attributes.XmlAnyElement
+                        |> ignore
+                    | SequenceContent.Group ->
+                        failwith "Not implemented: group in complexType sequence.")
+            | Some(ComplexTypeParticle.Choice(cspec)) ->
+                providedTy |> addChoiceTypeMembers' cspec context
+            | Some(ComplexTypeParticle.Group) ->
+                failwith "Not implemented: group in complexType"
             | None -> ()
 
         match typeInfo with

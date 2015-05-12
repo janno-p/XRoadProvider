@@ -107,6 +107,7 @@ module Prop =
     let addSetStmt (s: CodeStatement) (p: CodeMemberProperty) = p.SetStatements.Add(s) |> ignore; p
     let addDoc d (p: CodeMemberProperty) = p.Comments.Add(CodeCommentStatement(d, true)) |> ignore; p
     let setValue = CodePropertySetValueReferenceExpression() :> CodeExpression
+    let describe a (p: CodeMemberProperty) = p.CustomAttributes.Add(a) |> ignore; p
 
 /// Functions to simplify handling of code statements.
 module Stmt =
