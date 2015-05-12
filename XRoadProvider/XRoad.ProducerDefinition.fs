@@ -4,9 +4,7 @@ open System
 open System.CodeDom
 open System.Collections.Generic
 open System.IO
-open System.Net
 open System.Reflection
-open System.Security.Cryptography
 open System.Xml
 open System.Xml.Serialization
 
