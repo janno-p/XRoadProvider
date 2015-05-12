@@ -59,7 +59,9 @@
     <Compile Include="XRoad.Common.fs" />
     <Compile Include="XRoad.ServiceDescription.fs" />
     <Compile Include="XRoad.TypeSchema.fs" />
-    <Compile Include="XRoad.CodeDom.fs" />
+    <Compile Include="XRoad.CodeDom.Common.fs" />
+    <Compile Include="XRoad.CodeDom.ServiceImpl.fs" />
+    <Compile Include="XRoad.TypeBuilderContext.fs" />
     <Compile Include="XRoad.ProducerDefinition.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
     <Compile Include="XRoad.Providers.fs" />

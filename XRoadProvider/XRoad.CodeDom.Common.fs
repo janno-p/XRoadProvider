@@ -1,4 +1,4 @@
-﻿module internal XRoad.CodeDom
+﻿module internal XRoad.CodeDom.Common
 
 open Microsoft.CSharp
 open System
