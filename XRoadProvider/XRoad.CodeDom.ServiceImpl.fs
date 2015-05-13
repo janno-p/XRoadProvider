@@ -13,8 +13,8 @@ open XRoad.CodeDom.Common
 open XRoad.Common
 open XRoad.ServiceDescription
 
-// Description of method which generates random nonce value.
-// Nonce value is sent in X-Road <id /> header element, when user has not provided its own value.
+/// Description of method which generates random nonce value.
+/// Nonce value is sent in X-Road <id /> header element, when user has not provided its own value.
 let defaultNonceMethod =
     Meth.create "GenerateNonce"
     |> Meth.setAttr MemberAttributes.Private
@@ -23,6 +23,24 @@ let defaultNonceMethod =
     |> Meth.addStmt (Stmt.declVarWith<RandomNumberGenerator> "rng" ((Expr.typeRefOf<RNGCryptoServiceProvider> @-> "Create") @% []))
     |> Meth.addExpr ((Expr.var "rng" @-> "GetNonZeroBytes") @% [Expr.var("nonce")])
     |> Meth.addStmt (Stmt.ret ((Expr.typeRefOf<Convert> @-> "ToBase64String") @% [Expr.var "nonce"]))
+
+/// Description for method which extracts boundary marker value from MIME/multipart header.
+/// Returns null if response is not MIME/multipart content-type.
+let getBoundaryMarkerMethod =
+    Meth.create "GetBoundaryMarker"
+    |> Meth.addParam<WebResponse> "response"
+    |> Meth.returns<string>
+    |> Meth.addStmt (Stmt.condIf (Op.isNull (Expr.var "response" @=> "ContentType"))
+                                 [Stmt.ret (Expr.value null)])
+    |> Meth.addStmt (Stmt.declVarWith<string[]> "parts" (((Expr.var "response" @=> "ContentType") @-> "Split") @% [Expr.value ';']))
+    |> Meth.addStmt (Stmt.condIf (Op.notEquals ((((Expr.var "parts") @? (Expr.value 0)) @-> "Trim") @% []) (Expr.value "multipart/related"))
+                                 [Stmt.ret (Expr.value null)])
+    |> Meth.addStmt (Stmt.forLoop (Stmt.declVarWith<int> "i" (Expr.value 1))
+                                  (Op.greater (Expr.var "parts" @=> "Length") (Expr.var "i"))
+                                  (Stmt.assign (Expr.var "i") (Op.plus (Expr.var "i") (Expr.value 1)))
+                                  [ Stmt.condIf (((((Expr.var "parts" @? (Expr.var "i")) @-> "Trim") @% []) @-> "StartsWith") @% [Expr.value "boundary="])
+                                                [Stmt.ret (((((((Expr.var "parts" @? (Expr.var "i")) @-> "Trim") @% []) @-> "Substring") @% [Expr.value 9]) @-> "Trim") @% [Expr.value '"'])] ])
+    |> Meth.addStmt (Stmt.ret (Expr.value null))
 
 /// Creates method for serializing X-Road specific header elements in SOAP message.
 /// Header usage depends on operation style: rpc/encoded and document/literal styles use different names.
@@ -263,6 +281,7 @@ let private createDeserializationStatements undescribedFaults =
         if undescribedFaults then Expr.instOf xmlReaderTypRef [readerExpr] else readerExpr
     // Deserialization statements:
     [ Stmt.assign (Expr.var("response")) ((Expr.var "request" @-> "GetResponse") @% [])
+      Stmt.declVarWith<string> "boundaryMarker" ((Expr.this @-> "GetBoundaryMarker") @% [Expr.var "response"])
       Stmt.declVarRefWith xmlReaderTypRef "reader" Expr.nil
       Stmt.tryFinally
           [ Stmt.assign (Expr.var("reader")) createReaderExpr
@@ -358,5 +377,6 @@ let makeServicePortBaseType undescribedFaults (style: OperationStyle) =
     |> Cls.addMember (createMakeServiceCallMethod undescribedFaults style)
     |> Cls.addMember (createWriteXRoadHeaderMethod style)
     |> Cls.addMember defaultNonceMethod
+    |> Cls.addMember getBoundaryMarkerMethod
     |> Cls.addMember (createMoveToElementMethod())
     |> addHeaderProperties style
