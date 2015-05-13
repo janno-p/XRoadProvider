@@ -83,7 +83,7 @@ module Attributes =
     let XmlElement(isNillable) = Attr.create<XmlElementAttribute> |> addUnqualifiedForm |> addNullable isNillable
     let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
     let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable
-    let XmlArrayItem(name) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm //|> addNullable isNillable
+    let XmlArrayItem(name, isNillable) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm |> addNullable isNillable
     let XmlRoot name ns = Attr.create<XmlRootAttribute> |> Attr.addArg (Expr.value name) |> Attr.addNamedArg "Namespace" (Expr.value ns)
     let XmlIgnore = Attr.create<XmlIgnoreAttribute>
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
@@ -107,6 +107,7 @@ module Prop =
     let addSetStmt (s: CodeStatement) (p: CodeMemberProperty) = p.SetStatements.Add(s) |> ignore; p
     let addDoc d (p: CodeMemberProperty) = p.Comments.Add(CodeCommentStatement(d, true)) |> ignore; p
     let setValue = CodePropertySetValueReferenceExpression() :> CodeExpression
+    let describe a (p: CodeMemberProperty) = p.CustomAttributes.Add(a) |> ignore; p
 
 /// Functions to simplify handling of code statements.
 module Stmt =
