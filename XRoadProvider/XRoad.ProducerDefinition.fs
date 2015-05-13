@@ -4,776 +4,412 @@ open System
 open System.CodeDom
 open System.Collections.Generic
 open System.IO
-open System.Net
 open System.Reflection
-open System.Security.Cryptography
-open System.Text.RegularExpressions
 open System.Xml
-open System.Xml.Linq
 open System.Xml.Serialization
 
-open XRoad.CodeDom
-open XRoad.Parser
-open XRoad.Parser.XsdSchema
+open XRoad.CodeDom.Common
+open XRoad.CodeDom.ServiceImpl
+open XRoad.Common
+open XRoad.ServiceDescription
+open XRoad.TypeSchema
 
-let providedTypeFullName nsname name =
-    sprintf "DefinedTypes.%s.%s" nsname name
+/// Functions and types to handle type building process.
+module TypeBuilder =
+    /// Describes single property for type declaration.
+    type private PropertyDefinition =
+        { /// Name of the property.
+          Name: string
+          /// Runtime type to use on property.
+          Type: RuntimeType
+          /// Does property accept nil values?
+          IsNillable: bool
+          /// Can array items be nil values?
+          IsItemNillable: bool option
+          /// Extra types to add as nested type declarations to owner type.
+          AddedTypes: CodeTypeDeclaration list
+          /// Can property value be unspecified in resulting SOAP message.
+          IsOptional: bool
+          /// Does array type property specify wrapper element around items?
+          IsWrappedArray: bool option
+          // Attribute type:
+          IsAttribute: bool
+          IsAny: bool
+          IsIgnored: bool
+          // Choice element specific attributes:
+          ChoiceIdentifier: string option
+          ChoiceElements: PropertyDefinition list }
+        /// Initializes default property with name and optional value.
+        static member Create(name, isOptional) =
+            { Type = RuntimeType.PrimitiveType(typeof<System.Void>)
+              IsNillable = false
+              IsItemNillable = None
+              AddedTypes = []
+              IsOptional = isOptional
+              IsWrappedArray = None
+              Name = name
+              IsAttribute = false
+              IsAny = false
+              IsIgnored = false
+              ChoiceIdentifier = None
+              ChoiceElements = [] }
 
-let (|ArrayContent|_|) (schemaType: SchemaType) =
-    let (|ArrayType|_|) (attributes: AttributeSpec list) =
-        attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEncoding)))
-    let getArrayItemElement contentParticle =
-        match contentParticle with
-        | Some(ComplexTypeParticle.All(all)) ->
-            if all.MaxOccurs > 1u then failwith "Not implemented: array of anonymous all types."
-            elif all.MaxOccurs < 1u then None
-            else match all.Elements with
-                 | [ single ] when single.MaxOccurs > 1u -> Some(single)
-                 | _ -> None
-        | Some(ComplexTypeParticle.Choice(choice)) ->
-            if choice.MaxOccurs > 1u then failwith "Not implemented: array of anonymous choice types."
-            elif choice.MaxOccurs < 1u then None
-            elif (choice.Content
-                  |> List.fold (fun state ch ->
-                        match state, ch with
-                        | true, ChoiceContent.Element(e) when e.MaxOccurs < 2u -> true
-                        | true, ChoiceContent.Sequence(s) when s.MaxOccurs < 2u -> true
-                        | _ -> false) true)
-                 then None
-            else failwith "Not implemented: array of varying choice types."
-        | Some(ComplexTypeParticle.Sequence(sequence)) ->
-            if sequence.MaxOccurs > 1u then failwith "Not implemented: array of anonymous sequence types."
-            elif sequence.MaxOccurs < 1u then None
-            else match sequence.Content with
-                 | [ SequenceContent.Element(single) ] when single.MaxOccurs > 1u -> Some(single)
-                 | _ -> None
-        | None -> None
-    match schemaType with
-    | ComplexType(spec) ->
-        match spec.Content with
-        | ComplexTypeContent.ComplexContent(Restriction(rstr)) when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEncoding ->
-            match rstr.Content.Attributes with
-            | ArrayType(attrSpec) ->
-                match attrSpec.ArrayType with
-                | Some(_, rank) when rank <> 1 -> failwith "Multidimensional SOAP encoding arrays are not supported."
-                | Some(typeName, _) ->
-                    match getArrayItemElement(rstr.Content.Content) with
-                    | Some(element) -> Some({ element with Type = Name(typeName) })
-                    | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Type = Name(typeName) })
-                | None -> failwith "Array underlying type specification is missing."
-            | _ ->
-                match getArrayItemElement(rstr.Content.Content) with
-                | Some(_) as element -> element
-                | None -> failwith "Unsupported SOAP encoding array definition."
-        | ComplexTypeContent.Particle(content) -> getArrayItemElement(content.Content)
-        | _ -> None
-    | EmptyType
-    | SimpleType(_) -> None
+    /// Build property declarations from property definitions and add them to owner type.
+    let private addTypeProperties definitions ownerTy =
+        definitions
+        |> List.iter (fun definition ->
+            // Most of the conditions handle XmlSerializer specific attributes.
+            let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional)
+            if definition.IsIgnored then
+                prop |> Prop.describe Attributes.XmlIgnore |> ignore
+            elif definition.IsAny then
+                prop |> Prop.describe Attributes.XmlAnyElement |> ignore
+            elif definition.IsAttribute then
+                prop |> Prop.describe Attributes.XmlAttribute |> ignore
+            else
+                match definition.IsWrappedArray, definition.Type with
+                | Some(true), CollectionType(_, itemName, _) ->
+                    prop |> Prop.describe (Attributes.XmlArray(definition.IsNillable))
+                         |> Prop.describe (Attributes.XmlArrayItem(itemName, definition.IsItemNillable.Value))
+                         |> ignore
+                | Some(true), _ ->
+                    failwith "Wrapped array should match to CollectionType."
+                | (None | Some(false)), _ ->
+                    if definition.ChoiceIdentifier.IsNone then
+                        prop |> Prop.describe (Attributes.XmlElement(definition.IsNillable))
+                             |> ignore
+                match definition.ChoiceIdentifier with
+                | Some(identifierName) ->
+                    prop |> Prop.describe (Attributes.XmlChoiceIdentifier(identifierName)) |> ignore
+                    definition.ChoiceElements
+                    |> List.iter (fun x -> prop |> Prop.describe (Attributes.XmlElement2(x.Name, x.Type.AsCodeTypeReference()))
+                                                |> ignore)
+                | None -> ()
+            // Add extra types to owner type declaration.
+            definition.AddedTypes |> List.iter (fun x -> ownerTy |> Cls.addMember x |> ignore))
 
-type TypeBuilderContext =
-    { CachedTypes: Dictionary<XmlReference,RuntimeType>
-      CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
-      Attributes: Map<string,AttributeSpec>
-      Elements: Map<string,ElementSpec>
-      Types: Map<string,SchemaType>
-      Style: OperationStyle }
-    with
-        member this.GetOrCreateNamespace(nsname: XNamespace) =
-            let (|Producer|_|) ns =
-                match Regex.Match(ns, @"^http://(((?<producer>\w+)\.x-road\.ee/producer(/(?<path>.*)?)?)|(producers\.\w+\.xtee\.riik\.ee/producer/(?<producer>\w+)(/(?<path>.*))?))$") with
-                | m when m.Success ->
-                    let suffix =
-                        if m.Groups.["path"].Success
-                        then sprintf "_%s" <| m.Groups.["path"].Value.toClassName()
-                        else ""
-                    Some(sprintf "%s%s" m.Groups.["producer"].Value suffix)
-                | _ -> None
-            match this.CachedNamespaces.TryGetValue(nsname) with
-            | false, _ ->
-                let producerName =
-                    match nsname.NamespaceName with
-                    | Producer(producerName) -> producerName
-                    | XmlNamespace.Xtee -> "xtee"
-                    | XmlNamespace.XRoad -> "xroad"
-                    | ns -> ns.toClassName()
-                let typ = Cls.create(producerName) |> Cls.addAttr TypeAttributes.Public
-                this.CachedNamespaces.Add(nsname, typ)
-                typ
-            | true, typ -> typ
-        member private this.CreateType(name: XmlReference) =
-            match name.XName with
-            | XsdType "hexBinary"
-            | XsdType "base64Binary"
-            | SoapEncType "base64Binary" -> ContentType
-            | SystemType(typ) -> PrimitiveType(typ)
-            | _ ->
-                let nstyp = this.GetOrCreateNamespace(name.XName.Namespace)
-                let schemaType =
-                    match name with
-                    | SchemaElement(xn) ->
-                        let elementSpec = this.GetElementSpec(xn)
-                        this.GetTypeDefinition(elementSpec.Type)
-                    | SchemaType(xn) -> this.GetSchemaType(xn)
-                match schemaType with
-                | ArrayContent element ->
-                    match this.GetElementDefinition(element) with
-                    | itemName, Name(xn) -> CollectionType(this.GetRuntimeType(SchemaType(xn)), itemName, None)
-                    | itemName, Definition(def) ->
-                        let suffix = itemName.toClassName()
-                        let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public
-                        nstyp |> Cls.addMember typ |> ignore
-                        CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
-                    | _, Reference(_) -> failwith "never"
-                | _ ->
-                    let attr =
-                        match name with
-                        | SchemaElement(_) -> Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName
-                        | SchemaType(_) -> Attributes.XmlType name.XName
-                    let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
-                    nstyp |> Cls.addMember typ |> ignore
-                    ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
-        member this.GetRuntimeType(name: XmlReference) =
-            match this.CachedTypes.TryGetValue(name) with
-            | true, info -> info
-            | _ -> let info = this.CreateType(name)
-                   this.CachedTypes.Add(name, info)
-                   info
-        member this.GetElementSpec(name: XName) =
-            match this.Elements.TryFind(name.ToString()) with
-            | Some(elementSpec) -> elementSpec
-            | None -> failwithf "Invalid reference: global element %A was not found in current context." name
-        member this.GetSchemaType(name: XName) =
-            match this.Types.TryFind(name.ToString()) with
-            | Some(schemaType) -> schemaType
-            | None -> failwith "Invalid reference: global type `%A` was not found in current context." name
-        member this.GetTypeDefinition(schemaObj) =
-            let rec findTypeDefinition (schemaObj: SchemaObject<_>) =
-                match schemaObj with
-                | Name(xn)
-                | Reference(xn) ->
-                    match this.Types.TryFind(xn.ToString()) with
-                    | Some(schemaType) -> schemaType
-                    | None -> failwithf "Missing referenced schema type `%A`." xn
-                | Definition(spec) -> spec
-            findTypeDefinition schemaObj
-        member this.GetAttributeDefinition(spec) =
-            let rec findAttributeDefinition (spec: AttributeSpec) =
-                match spec.RefOrType with
-                | Reference(ref) ->
-                    match this.Attributes.TryFind(ref.ToString()) with
-                    | Some(spec) -> findAttributeDefinition(spec)
-                    | None ->
-                        match ref with
-                        | XmlName "lang" -> "lang", Name(XName.Get("string", XmlNamespace.Xsd))
-                        | _ -> failwithf "Missing referenced attribute %A." ref
-                | _ ->
-                    match spec.Name with
-                    | Some(name) -> name, spec.RefOrType
-                    | None -> failwithf "Attribute has no name."
-            findAttributeDefinition(spec)
-        member this.GetElementDefinition(spec) =
-            let rec findElementDefinition (spec: ElementSpec) =
-                match spec.Type with
-                | Reference(ref) ->
-                    match this.Elements.TryFind(ref.ToString()) with
-                    | Some(spec) -> findElementDefinition(spec)
-                    | None -> failwithf "Missing referenced attribute %A." ref
-                | _ ->
-                    match spec.Name with
-                    | Some(name) -> name, spec.Type
-                    | None -> failwithf "Attribute has no name."
-            findElementDefinition(spec)
-        static member FromSchema(schema) =
-            let style =
-                let reduceStyle s1 s2 =
-                    if s1 <> s2 then failwith "Mixing services of different style is not accepted!"
-                    s1
-                schema.Services
-                |> List.map (fun svc -> svc.Ports |> List.map (fun p -> p.Style) |> List.reduce reduceStyle)
-                |> List.reduce reduceStyle
-            { CachedNamespaces = Dictionary<_,_>()
-              CachedTypes = Dictionary<_,_>()
-              Attributes =
-                  schema.TypeSchemas
-                  |> Map.toSeq
-                  |> Seq.collect (fun (_,typ) -> typ.Attributes |> Seq.map (fun x -> x.Key.ToString(), x.Value))
-                  |> Map.ofSeq
-              Elements =
-                  schema.TypeSchemas
-                  |> Map.toSeq
-                  |> Seq.collect (fun (_,typ) -> typ.Elements |> Seq.map (fun x -> x.Key.ToString(), x.Value))
-                  |> Map.ofSeq
-              Types =
-                  schema.TypeSchemas
-                  |> Map.toSeq
-                  |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
-                  |> Map.ofSeq
-              Style = style }
+    /// Create definition of property that accepts any element not defined in schema.
+    let private buildAnyProperty () =
+        let prop = PropertyDefinition.Create("AnyElements", false)
+        { prop with Type = PrimitiveType(typeof<XmlElement[]>); IsAny = true }
 
-// Define X-Road SOAP header element name and description values depending on operation style used in WSDL binding:
-// First tuple contains RPC/Encoded style values and second one values for Document/Literal style.
-let headerMapping = function
-    | "asutus"                    -> ("asutus", "Asutus", "Asutuse DNS-nimi."),
-                                     ("consumer", "Consumer", "DNS-name of the institution")
-    | "andmekogu"                 -> ("andmekogu", "Andmekogu", "Andmekogu DNS-nimi."),
-                                     ("producer", "Producer", "DNS-name of the database")
-    | "isikukood"                 -> ("isikukood", "Isikukood", "Teenuse kasutaja isikukood, millele eelneb kahekohaline maa kood. Näiteks EE37702026518."),
-                                     ("userId", "UserId", "ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518")
-    | "ametnik"                   -> ("ametnik", "Ametnik", "Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0)."),
-                                     ("", "", "")
-    | "id"                        -> ("id", "Id", "Teenuse väljakutse nonss (unikaalne identifikaator)."),
-                                     ("id", "Id", "Service invocation nonce (unique identifier)")
-    | "nimi"                      -> ("nimi", "Nimi", "Kutsutava teenuse nimi."),
-                                     ("service", "Service", "Name of the service to be invoked")
-    | "toimik"                    -> ("toimik", "Toimik", "Teenuse väljakutsega seonduva toimiku number (mittekohustuslik)."),
-                                     ("issue", "Issue", "Name of file or document related to the service invocation")
-    | "allasutus"                 -> ("allasutus", "Allasutus", "Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis)."),
-                                     ("unit", "Unit", "Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal)")
-    | "amet"                      -> ("amet", "Amet", "Teenuse kasutaja ametikoht."),
-                                     ("position", "Position", "Organizational position or role of the person invoking the service")
-    | "ametniknimi"               -> ("ametniknimi", "Ametniknimi", "Teenuse kasutaja nimi."),
-                                     ("userName", "UserName", "Name of the person invoking the service")
-    | "asynkroonne"               -> ("asynkroonne", "Asynkroonne", "Teenuse kasutamise asünkroonsus. Kui väärtus on 'true', siis sooritab turvaserver päringu asünkroonselt."),
-                                     ("async", "Async", "Specifies asynchronous service. If the value is \"true\", then the security server performs the service call asynchronously.")
-    | "autentija"                 -> ("autentija", "Autentija", "Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis)."),
-                                     ("authenticator", "Authenticator", "Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.")
-    | "makstud"                   -> ("makstud", "Makstud", "Teenuse kasutamise eest makstud summa."),
-                                     ("paid", "Paid", "The amount of money paid for invoking the service")
-    | "salastada"                 -> ("salastada", "Salastada", "Kui asutusele on X-tee keskuse poolt antud päringute salastamise õigus ja andmekogu on nõus päringut salastama, siis selle elemendi olemasolul päringu päises andmekogu turvaserver krüpteerib päringu logi, kasutades selleks X-tee keskuse salastusvõtit."),
-                                     ("encrypt", "Encrypt", "If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center")
-    | "salastada_sertifikaadiga"  -> ("salastada_sertifikaadiga", "SalastadaSertifikaadiga", "Päringu sooritaja ID-kaardi autentimissertifikaat DERkujul base64 kodeerituna. Selle elemendi olemasolu päringu päises väljendab soovi päringu logi salastamiseks asutuse turvaserveris päringu sooritaja ID-kaardi autentimisvõtmega. Seda välja kasutatakse ainult kodaniku päringute portaalis."),
-                                     ("encryptCert", "EncryptCert", "Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only.")
-    | "salastatud"                -> ("salastatud", "Salastatud", "Kui päringu välja päises oli element salastada ja päringulogi salastamine õnnestus, siis vastuse päisesse lisatakse tühi element salastatud."),
-                                     ("encrypted", "Encrypted", "If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header.")
-    | "salastatud_sertifikaadiga" -> ("salastatud_sertifikaadiga", "SalastatudSertifikaadiga", "Kui päringu päises oli element salastada_sertifikaadiga ja päringulogi salastamine õnnestus, siis vastuse päisesesse lisatakse tühi element salastatud_sertifikaadiga."),
-                                     ("encryptedCert", "EncryptedCert", "If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header.")
-    | name                        -> failwithf "Invalid header name '%s'" name
-
-// Functions to help extracting values from previously defined mappings.
-let fst3 (x, _, _) = x
-let snd3 (_, x, _) = x
-let trd3 (_, _, x) = x
-
-// Description of method which generates random nonce value.
-// Nonce value is sent in X-Road <id /> header element, when user has not given its own value.
-let defaultNonceMethod =
-    Meth.create "GenerateNonce"
-    |> Meth.setAttr MemberAttributes.Private
-    |> Meth.returns<string>
-    |> Meth.addStmt (Stmt.declVarWith<byte[]> "nonce" (Arr.createOfSize<byte> 42))
-    |> Meth.addStmt (Stmt.declVarWith<RandomNumberGenerator> "rng" ((Expr.typeRefOf<RNGCryptoServiceProvider> @-> "Create") @% []))
-    |> Meth.addExpr ((Expr.var "rng" @-> "GetNonZeroBytes") @% [Expr.var("nonce")])
-    |> Meth.addStmt (Stmt.ret ((Expr.typeRefOf<Convert> @-> "ToBase64String") @% [Expr.var "nonce"]))
-
-let writeXRoadHeaderMethod (style) =
-    let hdrns, hdrName, propName, nsprefix =
-        match style with
-        | DocLiteral -> XmlNamespace.XRoad, headerMapping >> snd >> fst3, headerMapping >> snd >> snd3, "xrd"
-        | RpcEncoded -> XmlNamespace.Xtee, headerMapping >> fst >> fst3, headerMapping >> fst >> snd3, "xtee"
-    let writerVar = Expr.var "writer"
-    let writeHeaderElement name propVar methodName =
-        let reqHeaderContainsNameExpr = ((Expr.var "requiredHeaders") @-> "Contains") @% [Expr.value name]
-        let propNotNullExpr = Op.isNotNull propVar
-        Stmt.condIf (Op.boolOr reqHeaderContainsNameExpr
-                               propNotNullExpr)
-                    [ Stmt.ofExpr ((writerVar @-> "WriteStartElement") @% [Expr.value name; Expr.value hdrns])
-                      Stmt.condIf propNotNullExpr [ Stmt.ofExpr ((writerVar @-> methodName) @% [propVar]) ]
-                      Stmt.ofExpr ((writerVar @-> "WriteEndElement") @% []) ]
-    let declareWithDefaultValue name xtname defExpr (m: CodeMemberMethod) =
-        m |> Meth.addStmt (Stmt.declVar<string> name)
-          |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @=> (propName xtname)))
-                                           [Stmt.assign (Expr.var name) defExpr]
-                                           [Stmt.assign (Expr.var name) (Expr.this @=> (propName xtname))])
-    Meth.create "WriteHeader"
-    |> Meth.setAttr (MemberAttributes.Family ||| MemberAttributes.Final)
-    |> Meth.addParam<XmlWriter> "writer"
-    |> Meth.addParam<string> "serviceName"
-    |> Meth.addParam<IList<string>> "requiredHeaders"
-    |> Meth.addExpr ((writerVar @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value nsprefix; Expr.value null; Expr.value hdrns])
-    |> declareWithDefaultValue "producerValue" "andmekogu" (Expr.var "producerName")
-    |> declareWithDefaultValue "requestId" "id" ((Expr.this @-> "GenerateNonce") @% [])
-    |> declareWithDefaultValue "fullServiceName" "nimi" ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "{0}.{1}"; Expr.var "producerValue"; Expr.var "serviceName"])
-    |> Meth.addStmt (writeHeaderElement (hdrName "asutus") (Expr.this @=> (propName "asutus")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "andmekogu") (Expr.var "producerValue") "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "isikukood") (Expr.this @=> (propName "isikukood")) "WriteString")
-    |> iif (style = RpcEncoded) (fun m -> m |> Meth.addStmt (writeHeaderElement (hdrName "ametnik") (Expr.this @=> (propName "ametnik")) "WriteString"))
-    |> Meth.addStmt (writeHeaderElement (hdrName "id") (Expr.var "requestId") "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "nimi") (Expr.var "fullServiceName") "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "toimik") (Expr.this @=> (propName "toimik")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "allasutus") (Expr.this @=> (propName "allasutus")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "amet") (Expr.this @=> (propName "amet")) "WriteRaw")
-    |> Meth.addStmt (writeHeaderElement (hdrName "ametniknimi") (Expr.this @=> (propName "ametniknimi")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "asynkroonne") (Expr.this @=> (propName "asynkroonne")) "WriteValue")
-    |> Meth.addStmt (writeHeaderElement (hdrName "autentija") (Expr.this @=> (propName "autentija")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "makstud") (Expr.this @=> (propName "makstud")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "salastada") (Expr.this @=> (propName "salastada")) "WriteString")
-    |> Meth.addStmt (writeHeaderElement (hdrName "salastada_sertifikaadiga") (Expr.this @=> (propName "salastada_sertifikaadiga")) "WriteString")
-
-let inheritBinaryContent (typ: CodeTypeDeclaration) =
-    typ
-    |> Cls.setParent (ContentType.AsCodeTypeReference())
-    |> Cls.addMember (Ctor.create()
-                      |> Ctor.setAttr MemberAttributes.Public
-                      |> Ctor.addParam<IDictionary<string,Stream>> "attachments"
-                      |> Ctor.addParam<string> "id"
-                      |> Ctor.addBaseArg (Expr.var "attachments")
-                      |> Ctor.addBaseArg (Expr.var "id"))
-    |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Public)
-    |> ignore
-
-let createBinaryContentType () =
-    let contentField = Fld.create<Stream> "content__backing"
-    let contentProp =
-        Prop.create<Stream> "Content"
-        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        |> Prop.addGetStmt (Stmt.ret (Expr.this @=> contentField.Name))
-        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> contentField.Name) Prop.setValue)
-    contentProp.CustomAttributes.Add(Attributes.XmlIgnore) |> ignore
-    let idField = Fld.create<string> "id__backing"
-    let idProp =
-        Prop.create<string> "Id"
-        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        |> Prop.addGetStmt (Expr.this @=> idField.Name |> Stmt.ret)
-        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> idField.Name) Prop.setValue)
-    idProp.CustomAttributes.Add(Attributes.XmlAttributeWithName "href") |> ignore
-    let valueProp =
-        Prop.create<byte[]> "Value"
-        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        |> Prop.addGetStmt (Stmt.declVarWith<MemoryStream> "temp" Expr.nil)
-        |> Prop.addGetStmt (Stmt.tryFinally
-                                [ Stmt.assign (Expr.var "temp") (Expr.inst<MemoryStream> [])
-                                  Stmt.assign (Expr.var contentField.Name @=> "Position") (Expr.value 0)
-                                  Stmt.ofExpr ((Expr.var contentField.Name @-> "CopyTo") @% [Expr.var "temp"])
-                                  Stmt.ret ((Expr.var "temp" @-> "ToArray") @% []) ]
-                                [ Stmt.ofExpr ((Expr.var "temp" @-> "Dispose") @% []) ])
-        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> contentField.Name) (Expr.inst<MemoryStream> [Prop.setValue]))
-    valueProp.CustomAttributes.Add(Attributes.XmlText) |> ignore
-    let ctor =
-        Ctor.create()
-        |> Ctor.setAttr MemberAttributes.Public
-        |> Ctor.addParam<IDictionary<string,Stream>> "attachments"
-        |> Ctor.addParam<string> "id"
-        |> Ctor.addStmt (Stmt.assign (Expr.this @=> idField.Name) ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "cid:{0}"; Expr.var "id"]))
-        |> Ctor.addStmt (Stmt.assign (Expr.this @=> contentField.Name) (CodeArrayIndexerExpression(Expr.var "attachments", Expr.var "id")))
-    Cls.create "BinaryContent"
-    |> Cls.setAttr TypeAttributes.Public
-    |> Cls.addMember (contentField)
-    |> Cls.addMember (contentProp)
-    |> Cls.addMember (idField)
-    |> Cls.addMember (idProp)
-    |> Cls.addMember (valueProp)
-    |> Cls.addMember (ctor)
-    |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Public)
-
-let private makeServicePortBaseType(undescribedFaults, style: OperationStyle) =
-    let portBaseTy = Cls.create "AbstractServicePort" |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Abstract)
-
-    let addressField = Fld.create<string> "producerUri"
-    let addressFieldRef = Expr.this @=> addressField.Name
-    let addressProperty = CodeMemberProperty(Name="ProducerUri", Type=CodeTypeReference(typeof<string>))
-    addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-    addressProperty.GetStatements.Add(Stmt.ret addressFieldRef) |> ignore
-    addressProperty.SetStatements.Add(Stmt.assign addressFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
-
-    let producerField = CodeMemberField(typeof<string>, "producerName")
-    let producerFieldRef = Expr.this @=> producerField.Name
-    let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
-    producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-    producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
-    producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
-
-    let ctor =
-        Ctor.create()
-        |> Ctor.setAttr MemberAttributes.Family
-        |> Ctor.addParam<string> "producerUri"
-        |> Ctor.addParam<string> "producerName"
-        |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerUri") (Expr.var("producerUri")))
-        |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (Expr.var("producerName")))
-
-    let moveToElementMeth = CodeMemberMethod(Name="MoveToElement")
-    moveToElementMeth.Attributes <- MemberAttributes.Family
-    moveToElementMeth.ReturnType <- CodeTypeReference(typeof<bool>)
-    moveToElementMeth |> Meth.addParam<XmlReader> "reader"
-                      |> Meth.addParam<string> "name"
-                      |> Meth.addParam<string> "ns"
-                      |> Meth.addParam<int> "depth"
-                      |> Meth.addStmt (Stmt.whileLoop (Expr.value true)
-                                                      [ Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "Depth")
-                                                                                           (Expr.var "depth"))
-                                                                                (Op.boolAnd (Op.equals (Expr.var "reader" @=> "NodeType")
-                                                                                                       (Expr.typeRefOf<XmlNodeType> @=> "Element"))
-                                                                                            (Op.boolOr (Op.isNull (Expr.var "name"))
-                                                                                                       (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
-                                                                                                                              (Expr.var "name"))
-                                                                                                                   (Op.equals (Expr.var "reader" @=> "NamespaceURI")
-                                                                                                                              (Expr.var "ns"))))))
-                                                                    [Expr.value true |> Stmt.ret]
-                                                        Stmt.condIfElse (Op.boolAnd ((Expr.var "reader" @-> "Read") @% [])
-                                                                                    (Op.ge (Expr.var "reader" @=> "Depth")
-                                                                                           (Expr.var "depth")))
-                                                                        []
-                                                                        [Expr.value false |> Stmt.ret] ])
-                      |> Meth.addStmt (Expr.value false |> Stmt.ret)
-                      |> ignore
-
-    let serviceCallMeth =
-        Meth.create "MakeServiceCall"
-        |> Meth.setAttr (MemberAttributes.Family ||| MemberAttributes.Final)
-        |> Meth.addParam<IDictionary<string,Stream>> "attachments"
-        |> Meth.typeParam "T"
-        |> Meth.returnsOf (CodeTypeReference("T"))
-
-    let writerStatements = [
-        Stmt.assign (Expr.var("stream")) ((Expr.var "request" @-> "GetRequestStream") @% [])
-
-        Stmt.declVarWith<StreamWriter> "sw" Expr.nil
-        Stmt.tryFinally
-            [ Stmt.assign (Expr.var "sw") (Expr.inst<StreamWriter> [Expr.var "stream"])
-              Stmt.declVarWith<string> "boundaryMarker" Expr.nil
-              Stmt.condIf (Op.boolAnd (Op.notEquals (Expr.var "attachments") Expr.nil)
-                                      (Op.greater (Expr.var "attachments" @=> "Count") (Expr.value 0)))
-                          [ Stmt.assign (Expr.var "boundaryMarker") ((((Expr.typeRefOf<Guid> @-> "NewGuid") @% []) @-> "ToString") @% [])
-                            Stmt.assign (Expr.var "request" @=> "ContentType") ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "multipart/related; type=\"text/xml\"; start=\"test\"; boundary=\"{0}\""; Expr.var "boundaryMarker"])
-                            Stmt.ofExpr (((Expr.var "request" @=> "Headers") @-> "Add") @% [Expr.value "MIME-Version"; Expr.value "1.0"])
-                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
-                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}"; Expr.var "boundaryMarker"])
-                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Type: text/xml; charset=UTF-8"])
-                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Transfer-Encoding: 8bit"])
-                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-ID: <test>"])
-                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% []) ]
-              Stmt.declVarWith<XmlWriter> "writer" Expr.nil
-              Stmt.tryFinally
-                  [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "sw"])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartDocument") @% [])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnvelope])
-                    Stmt.ofExpr ((Expr.var "writeHeaderAction") @%% [Expr.var "writer"])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope])
-                    Stmt.ofExpr ((Expr.var "writeBody") @%% [Expr.var "writer"])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
-                    Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndDocument") @% []) ]
-                  [ Stmt.condIf (Op.isNotNull (Expr.var "writer")) [ (Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
-              Stmt.condIf (Op.boolAnd (Op.notEquals (Expr.var "attachments") Expr.nil)
-                                      (Op.greater (Expr.var "attachments" @=> "Count") (Expr.value 0)))
-                          [ Stmt.forLoop (Stmt.declVarWith<IEnumerator<KeyValuePair<string,Stream>>> "enumerator" ((Expr.var "attachments" @-> "GetEnumerator") @% []))
-                                         ((Expr.var "enumerator" @-> "MoveNext") @% [])
-                                         (Stmt.ofExpr Expr.empty)
-                                         [ Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}"; Expr.var "boundaryMarker"])
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Disposition: attachment; filename=notAnswering"])
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Type: application/octet-stream"])
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Transfer-Encoding: binary"])
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-ID: <{0}>"; (Expr.var "enumerator" @=> "Current") @=> "Key"])
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "Flush") @% [])
-                                           Stmt.declVarWith<int> "bytesRead" (Expr.value 1000)
-                                           Stmt.declVarWith<byte[]> "buffer" (Arr.createOfSize<byte> 1000)
-                                           Stmt.assign (((Expr.var "enumerator" @=> "Current") @=> "Value") @=> "Position") (Expr.value 0)
-                                           Stmt.whileLoop (Op.ge (Expr.var "bytesRead") (Expr.value 1000))
-                                                          [ Stmt.assign (Expr.var "bytesRead") (((((Expr.var "enumerator" @=> "Current") @=> "Value") @-> "Read")) @% [Expr.var "buffer"; Expr.value 0; Expr.value 1000])
-                                                            Stmt.ofExpr ((Expr.var "stream" @-> "Write") @% [Expr.var "buffer"; Expr.value 0; Expr.var "bytesRead"]) ]
-                                           Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% []) ]
-                            Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}--"; Expr.var "boundaryMarker"]) ] ]
-            [ Stmt.condIf (Op.isNotNull (Expr.var "sw")) [ (Expr.var "sw" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
-        ]
-
-    let xmlReaderTypRef = if undescribedFaults then CodeTypeReference("XmlBookmarkReader") else CodeTypeReference(typeof<XmlReader>)
-
-    let createReaderExpr =
-        let readerExpr = (Expr.typeRefOf<XmlReader> @-> "Create") @% [(Expr.var "response" @-> "GetResponseStream") @% []]
-        if undescribedFaults then Expr.instOf xmlReaderTypRef [readerExpr] else readerExpr
-
-    let readerStatements = [
-        Stmt.assign (Expr.var("response")) ((Expr.var "request" @-> "GetResponse") @% [])
-        Stmt.declVarRefWith xmlReaderTypRef "reader" Expr.nil
-        Stmt.tryFinally
-            [ Stmt.assign (Expr.var("reader")) createReaderExpr
-              Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnvelope; Expr.value 0])
-                               []
-                               [ Stmt.throw<Exception> [Expr.value "Soap envelope element was not found in response message."] ]
-              Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Body"; Expr.value XmlNamespace.SoapEnvelope; Expr.value 1])
-                               []
-                               [ Stmt.throw<Exception> [Expr.value "Soap body element was not found in response message."] ]
-              (Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 2] |> Stmt.ofExpr
-              Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
-                                                 (Expr.value "Fault"))
-                                      (Op.equals (Expr.var "reader" @=> "NamespaceURI")
-                                                 (Expr.value XmlNamespace.SoapEnvelope)))
-                           [Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []]]
-              Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"]) ]
-            [ Stmt.condIf (Op.isNotNull (Expr.var "reader"))
-                          [(Expr.var "reader" @-> "Dispose") @% [] |> Stmt.ofExpr] ]
-        ]
-
-    serviceCallMeth |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
-                    |> Meth.addParam<Action<XmlWriter>> "writeBody"
-                    |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, CodeTypeReference("T"))) "readBody"
-                    |> Meth.addStmt (Stmt.declVarWith<WebRequest> "request" ((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))
-                    |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "Method") (Expr.value "POST"))
-                    |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "ContentType") (Expr.value "text/xml; charset=utf-8"))
-                    |> Meth.addExpr (((Expr.var "request" @=> "Headers") @-> "Set") @% [Expr.value "SOAPAction"; Expr.value ""])
-                    |> Meth.addStmt (Stmt.declVarWith<Stream> "stream" Expr.nil)
-                    |> Meth.addStmt (Stmt.tryFinally writerStatements
-                                                     [ Stmt.condIf (Op.isNotNull (Expr.var "stream"))
-                                                                   [(Expr.var "stream" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
-                    |> Meth.addStmt (Stmt.declVarWith<WebResponse> "response" Expr.nil)
-                    |> Meth.addStmt (Stmt.tryFinally readerStatements
-                                                     [ Stmt.condIf (Op.isNotNull (Expr.var "response"))
-                                                                   [(Expr.var "response" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
-                    |> ignore
-
-    portBaseTy.Members.Add(ctor) |> ignore
-    portBaseTy.Members.Add(addressField) |> ignore
-    portBaseTy.Members.Add(addressProperty) |> ignore
-    portBaseTy.Members.Add(producerField) |> ignore
-    portBaseTy.Members.Add(producerProperty) |> ignore
-    portBaseTy.Members.Add(serviceCallMeth) |> ignore
-    portBaseTy.Members.Add(writeXRoadHeaderMethod(style)) |> ignore
-    portBaseTy.Members.Add(defaultNonceMethod) |> ignore
-    portBaseTy.Members.Add(moveToElementMeth) |> ignore
-
-    let choose = headerMapping >> (match style with RpcEncoded -> fst | DocLiteral -> snd)
-    let propName = choose >> snd3
-    let docValue = choose >> trd3
-
-    [ "asutus"; "andmekogu"; "isikukood"; "id"; "nimi"; "toimik"; "allasutus"; "amet"; "ametniknimi"; "autentija"; "makstud"; "salastada"; "salastada_sertifikaadiga"; "salastatud"; "salastatud_sertifikaadiga" ]
-    |> List.fold (fun typ hdr -> typ |> createProperty<string> (propName hdr) (docValue hdr)) portBaseTy
-    |> iif (style = RpcEncoded) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
-    |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
-
-let private getRequiredHeaders(operation: Operation) =
-    let headers, rest =
-        operation.Request.Header
-        |> List.partition (fun part ->
-            match part with
-            | IsXteeHeader _ when operation.Style = RpcEncoded -> true
-            | IsXRoadHeader _ when operation.Style = DocLiteral -> true
-            | _ -> false)
-    if rest.Length > 0 then
-        failwithf "Unhandled SOAP Header elements detected: %A" rest
-    headers |> List.map (fun part -> part.Name)
-
-let makeReturnType (types: RuntimeType list) =
-    let rec getReturnTypeTuple (tuple: (int * RuntimeType) list, types) =
-        match types with
-        | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference()) |> Array.ofList)
-                (typ, Expr.instOf typ (tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))))
-        | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
-        | x::xs -> let inner = getReturnTypeTuple([x], xs)
-                   let typ = CodeTypeReference("System.Tuple", ((tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference())) @ [fst inner]) |> Array.ofList)
-                   (typ, Expr.instOf typ ((tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))) @ [snd inner]))
-    match types |> List.mapi (fun i x -> (i, x)) with
-    | [] -> (CodeTypeReference(typeof<Void>), Expr.var("???"))
-    | (i,tp)::[] -> (tp.AsCodeTypeReference(), Expr.var(sprintf "v%d" i))
-    | many -> getReturnTypeTuple([], many)
-
-let buildParameterType (context: TypeBuilderContext) isMultipart (part: MessagePart) =
-    match context.Style, part.Reference with
-    | DocLiteral, SchemaType(t) ->
-        failwithf "Document/Literal style message part '%s' should reference global element as message part, but type '%s' is used instead" part.Name t.LocalName
-    | RpcEncoded, SchemaElement(e) ->
-        failwithf "RPC/Encoded style message part '%s' should reference global type as message part, but element '%s' is used instead" part.Name e.LocalName
-    | DocLiteral, SchemaElement(elementName) ->
-        let elemType = snd <| context.GetElementDefinition(context.GetElementSpec(elementName))
-        match elemType with
-        | Name(name) ->
-            context.GetRuntimeType(SchemaType(name)),
-            fun varName ->
-                [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName])
-                  yield Stmt.assign (Expr.var (varName + "Root") @=> "Namespace") (Expr.value elementName.NamespaceName)
-                  if isMultipart then
-                    yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
-                    yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
-                    yield Stmt.assign (Expr.var (varName + "Value") @=> "XmlIgnore") (Expr.value true)
-                    yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf (CodeTypeReference("BinaryContent")); Expr.value "Value"; Expr.var (varName + "Value")])
-                  else
-                    yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil ]
-        | Reference(_) ->
-            failwith "not implemented"
-        | Definition(_) ->
-            context.GetRuntimeType(SchemaElement(elementName)),
-            fun varName ->
-                [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") Expr.nil
-                  if isMultipart then
-                    yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
-                    yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
-                    yield Stmt.assign (Expr.var (varName + "Value") @=> "XmlIgnore") (Expr.value true)
-                    yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf (CodeTypeReference("BinaryContent")); Expr.value "Value"; Expr.var (varName + "Value")])
-                  else
-                    yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil ]
-    | RpcEncoded, SchemaType(typeName) ->
-        context.GetRuntimeType(SchemaType(typeName)), 
-        fun varName ->
-            [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value part.Name])
-              if isMultipart then
-                yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
-                yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
-                yield Stmt.assign (Expr.var (varName + "Value") @=> "XmlIgnore") (Expr.value true)
-                yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf (CodeTypeReference("BinaryContent")); Expr.value "Value"; Expr.var (varName + "Value")])
-              else
-                yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil ]
-
-let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
-    let schema = resolveUri producerUri |> readSchema
-    let context = TypeBuilderContext.FromSchema(schema)
-
-    let portBaseTy = makeServicePortBaseType(undescribedFaults, context.Style)
-    let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
-
-    let rec buildType(runtimeType: RuntimeType, typeInfo) =
+    /// Populate generated type declaration with properties specified in type schema definition.
+    let rec build (context: TypeBuilderContext) runtimeType schemaType =
+        // Extract type declaration from runtime type definition.
         let providedTy, providedTypeName =
             match runtimeType with
             | ProvidedType(decl, name) -> decl, name
-            | _ -> failwith "Only provided types are accepted as arguments!"
-
-        let rec getAttributeType (schemaObject, name) =
-            let convertedObject =
-                match schemaObject with
-                | Definition(simpleTypeSpec) -> Definition(SimpleType(simpleTypeSpec))
-                | Name(name) -> Name(name)
-                | Reference(ref) -> Reference(ref)
-            getParticleType(convertedObject, 1u, false, name)
-
-        and getParticleType (particleType, maxOccurs, isNillable, name) =
-            match particleType with
-            | Name(xname) ->
-                let typ = context.GetRuntimeType(SchemaType(xname))
-                match typ with
-                | x when maxOccurs > 1u ->
-                    CollectionType(x, name, None), [Attributes.XmlElement(true)]
-                | PrimitiveType(x) when x.IsValueType ->
-                    if isNillable then (PrimitiveType(typedefof<Nullable<_>>.MakeGenericType(x)), [Attributes.XmlElement(true)])
-                    else (PrimitiveType(x), [Attributes.XmlElement(false)])
-                | x -> (x, [Attributes.XmlElement(true)])
-            | Definition(ArrayContent element) ->
-                match context.GetElementDefinition(element) with
-                | itemName, Name(xn) ->
-                    CollectionType(context.GetRuntimeType(SchemaType(xn)), itemName, None), [ Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName) ]
-                | itemName, Definition(def) ->
-                    let suffix = itemName.toClassName()
-                    let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public
-                    let runtimeType = ProvidedType(typ, typ.Name)
-                    buildType(runtimeType, def)
-                    providedTy |> Cls.addMember typ |> ignore
-                    CollectionType(runtimeType, itemName, None), [ Attributes.XmlArray(true); Attributes.XmlArrayItem(itemName) ]
-                | _, Reference(_) -> failwith "never"
-            | Definition(typeInfo) ->
-                let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public
-                let runtimeType = ProvidedType(subTy, subTy.Name)
-                buildType(runtimeType, typeInfo)
-                providedTy.Members.Add(subTy) |> ignore
-                if maxOccurs > 1u
-                then CollectionType(runtimeType, name, None), [Attributes.XmlElement(true)]
-                else runtimeType, [Attributes.XmlElement(true)]
-            | _ -> failwithf "not implemented: %A" name
-
-        and parseElementSpec(spec: ElementSpec) =
-            let elemName, elemType = context.GetElementDefinition(spec)
-            let elementTy, attrs = getParticleType(elemType, spec.MaxOccurs, spec.IsNillable, elemName)
-            let property = providedTy |> addProperty(elemName, elementTy, spec.MinOccurs = 0u)
-            attrs |> List.iter (property.CustomAttributes.Add >> ignore)
-
-        let nextChoiceName =
+            | _ -> failwith "Only generated types are accepted as arguments!"
+        // Generates unique type name for every choice element.
+        let choiceNameGenerator =
             let num = ref 0
             (fun () ->
                 num := !num + 1
                 sprintf "Choice%d" !num)
-
-        let parseComplexTypeContentSpec(spec: ComplexTypeContentSpec) =
-            spec.Attributes |> List.iter (fun spec ->
-                let attrName, attrTypeDef = context.GetAttributeDefinition(spec)
-                let attributeTy, _ = getAttributeType(attrTypeDef, attrName)
-                let property = providedTy |> addProperty(attrName, attributeTy, match spec.Use with Required -> true | _ -> false)
-                property.CustomAttributes.Add(Attributes.XmlAttribute) |> ignore)
-            match spec.Content with
-            | Some(ComplexTypeParticle.All(spec)) ->
-                if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then
-                    failwith "not implemented"
-                spec.Elements |> List.iter parseElementSpec
-            | Some(ComplexTypeParticle.Sequence(spec)) ->
-                if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then
-                    failwith "not implemented"
-                spec.Content |> List.iter (fun item ->
-                    match item with
-                    | SequenceContent.Choice(choice) ->
-                        let choiceName = nextChoiceName()
-                        let choiceType = Cls.create (choiceName + "Type") |> Cls.setAttr TypeAttributes.Public
-                        providedTy |> Cls.addMember choiceType |> ignore
-                        choice.Content
-                        |> List.iter (fun opt ->
-                            match opt with
-                            | ChoiceContent.Any -> failwith "Not implemented: any in choice."
-                            | ChoiceContent.Choice(_) -> failwith "Not implemented: choice in choice."
-                            | ChoiceContent.Element(spec) ->
-                                let elemName, elemType = context.GetElementDefinition(spec)
-                                let elementTy, attrs = getParticleType(elemType, spec.MaxOccurs, spec.IsNillable, elemName)
-                                let property = choiceType |> addProperty(elemName, elementTy, spec.MinOccurs = 0u)
-                                attrs |> List.iter (property.CustomAttributes.Add >> ignore)
-                            | ChoiceContent.Sequence(_) ->
-                                //failwith "Not implemented: sequence in choice.")
-                                ())
-                        providedTy
-                        |> addProperty(choiceName, ProvidedType(choiceType, choiceType.Name), choice.MinOccurs = 0u)
-                        |> ignore
-                    | SequenceContent.Element(spec) -> parseElementSpec(spec)
-                    | SequenceContent.Sequence(_) -> failwith "Not implemented: nested sequences."
-                    | SequenceContent.Any ->
-                        let property = providedTy |> addProperty("AnyElements", PrimitiveType(typeof<XmlElement[]>), false)
-                        property.CustomAttributes.Add(Attributes.XmlAnyElement) |> ignore)
-            | Some(ComplexTypeParticle.Choice(_)) ->
-                //failwith "Not implemented: choice in complexType content."
-                ()
-            | None -> ()
-
-        match typeInfo with
+        // Parse schema definition and add all properties that are defined.
+        match schemaType with
         | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | PrimitiveType(_) as rtyp ->
-                let property = providedTy |> addProperty("BaseValue", rtyp, false)
-                property.CustomAttributes.Add(Attributes.XmlText) |> ignore
-                // TODO: Apply constraints?
-            | ContentType -> providedTy |> inheritBinaryContent
-            | _ -> failwith "not implemented"
+                providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.XmlText |> ignore
+            | ContentType ->
+                providedTy |> inheritBinaryContent |> ignore
+            | _ ->
+                failwith "Simple types should not restrict complex types."
+        | SimpleType(ListDef) ->
+            failwith "Not implemented: list in simpleType."
         | SimpleType(Union(_)) ->
-            failwith "not implemented"
+            failwith "Not implemented: union in simpleType."
         | ComplexType(spec) ->
+            // Abstract types will have only protected constructor.
             if spec.IsAbstract then
-                providedTy.TypeAttributes <- providedTy.TypeAttributes ||| TypeAttributes.Abstract
-                providedTy.Members.Add(CodeConstructor(Attributes=MemberAttributes.Family)) |> ignore
-            match spec.Content with
-            | SimpleContent(SimpleContentSpec.Extension(spec)) ->
-                match context.GetRuntimeType(SchemaType(spec.Base)) with
-                | PrimitiveType(_)
-                | ContentType as rtyp ->
-                    let property = providedTy |> addProperty("BaseValue", rtyp, false)
-                    property.CustomAttributes.Add(Attributes.XmlText) |> ignore
-                    parseComplexTypeContentSpec(spec.Content)
-                | _ -> failwith "not implemented"
-            | SimpleContent(SimpleContentSpec.Restriction(_)) ->
-                failwith "not implemented"
-            | ComplexContent(ComplexContentSpec.Extension(spec)) ->
-                let baseTy = context.GetRuntimeType(SchemaType(spec.Base))
-                providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
-                match baseTy with
-                | ProvidedType(baseDecl,_) ->
-                    baseDecl |> Cls.describe (Attributes.XmlInclude(typeRefName providedTypeName)) |> ignore
-                | _ -> failwithf "Only complex types can be inherited! (%A)" spec.Base
-                parseComplexTypeContentSpec(spec.Content)
-            | ComplexContent(ComplexContentSpec.Restriction(_)) ->
-                failwithf "Not implemented: restriction (%A)" typeInfo
-            | ComplexTypeContent.Particle(spec) ->
-                parseComplexTypeContentSpec(spec)
+                providedTy |> Cls.addAttr TypeAttributes.Abstract
+                           |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Family)
+                           |> ignore
+            // Handle complex type content and add properties for attributes and elements.
+            let specContent =
+                match spec.Content with
+                | SimpleContent(SimpleContentSpec.Extension(spec)) ->
+                    match context.GetRuntimeType(SchemaType(spec.Base)) with
+                    | PrimitiveType(_)
+                    | ContentType as rtyp ->
+                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.XmlText |> ignore
+                        spec.Content
+                    | _ ->
+                        failwith "ComplexType-s simpleContent should not extend complex types."
+                | SimpleContent(SimpleContentSpec.Restriction(_)) ->
+                    failwith "Not implemented: restriction in complexType-s simpleContent."
+                | ComplexContent(ComplexContentSpec.Extension(spec)) ->
+                    match context.GetRuntimeType(SchemaType(spec.Base)) with
+                    | ProvidedType(baseDecl,_) as baseTy ->
+                        providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
+                        baseDecl |> Cls.describe (Attributes.XmlInclude(typeRefName providedTypeName)) |> ignore
+                    | _ ->
+                        failwithf "Only complex types can be inherited! (%A)" spec.Base
+                    spec.Content
+                | ComplexContent(ComplexContentSpec.Restriction(_)) ->
+                    failwith "Not implemented: restriction in complexType-s complexContent"
+                | ComplexTypeContent.Particle(spec) ->
+                    spec
+            providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGenerator context specContent)
         | EmptyType -> ()
 
-    let buildElementType (typ: RuntimeType, spec: ElementSpec) =
-        match spec.Type with
-        | Definition(def) -> buildType(typ, def)
-        | Reference(_) -> failwith "Root level element references are not allowed."
-        | Name(_) -> ()
+    /// Collects property definitions from every content element of complexType.
+    and private collectComplexTypeContentProperties choiceNameGenerator context spec =
+        // Attribute definitions
+        let attributeProperties = spec.Attributes |> List.map (buildAttributeProperty context)
+        // Element definitions
+        let elementProperties =
+            match spec.Content with
+            | Some(ComplexTypeParticle.All(spec)) ->
+                if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
+                spec.Elements |> List.map (buildElementProperty context)
+            | Some(ComplexTypeParticle.Sequence(spec)) ->
+                if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
+                spec.Content
+                |> List.map (fun item ->
+                    match item with
+                    | SequenceContent.Choice(cspec) ->
+                        collectChoiceProperties choiceNameGenerator context cspec
+                    | SequenceContent.Element(spec) ->
+                        [ buildElementProperty context spec ]
+                    | SequenceContent.Sequence(_) ->
+                        failwith "Not implemented: sequence in complexType sequence."
+                    | SequenceContent.Any ->
+                        [ buildAnyProperty() ]
+                    | SequenceContent.Group ->
+                        failwith "Not implemented: group in complexType sequence.")
+                |> List.collect (id)
+            | Some(ComplexTypeParticle.Choice(cspec)) ->
+                collectChoiceProperties choiceNameGenerator context cspec
+            | Some(ComplexTypeParticle.Group) ->
+                failwith "Not implemented: group in complexType."
+            | None -> []
+        List.concat [attributeProperties; elementProperties]
 
-    let buildOperationService (operation: Operation) =
+    /// Create single property definition for given element-s schema specification.
+    and private buildElementProperty (context: TypeBuilderContext) (spec: ElementSpec) =
+        let name, schemaType = context.GetElementDefinition(spec)
+        buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (spec.MinOccurs = 0u) context
+
+    /// Create single property definition for given attribute-s schema specification.
+    and private buildAttributeProperty (context: TypeBuilderContext) (spec: AttributeSpec) =
+        let name, schemaObject = context.GetAttributeDefinition(spec)
+        // Resolve schema type for attribute:
+        let schemaType =
+            match schemaObject with
+            | Definition(simpleTypeSpec) -> Definition(SimpleType(simpleTypeSpec))
+            | Name(name) -> Name(name)
+            | Reference(ref) -> Reference(ref)
+        let isOptional = match spec.Use with Required -> true | _ -> false
+        let prop = buildPropertyDef schemaType 1u name false isOptional context
+        { prop with IsAttribute = true }
+
+    /// Build default property definition from provided schema information.
+    and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context =
+        let propertyDef = PropertyDefinition.Create(name, isOptional)
+        match schemaType with
+        | Definition(ArrayContent itemSpec) ->
+            match context.GetElementDefinition(itemSpec) with
+            | itemName, Name(n) ->
+                { propertyDef with
+                    Type = CollectionType(context.GetRuntimeType(SchemaType(n)), itemName, None)
+                    IsNillable = isNillable
+                    IsItemNillable = Some(itemSpec.IsNillable)
+                    IsWrappedArray = Some(true) }
+            | itemName, Definition(def) ->
+                let suffix = itemName.toClassName()
+                let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public
+                let runtimeType = ProvidedType(typ, typ.Name)
+                build context runtimeType def
+                { propertyDef with
+                    Type = CollectionType(runtimeType, itemName, None)
+                    IsNillable = isNillable
+                    IsItemNillable = Some(itemSpec.IsNillable)
+                    AddedTypes = [typ]
+                    IsWrappedArray = Some(true) }
+            | _, Reference(_) -> failwith "never"
+        | Definition(def) ->
+            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public
+            let runtimeType = ProvidedType(subTy, subTy.Name)
+            build context runtimeType def
+            if maxOccurs > 1u then
+                { propertyDef with
+                    Type = CollectionType(runtimeType, name, None)
+                    IsNillable = isNillable
+                    AddedTypes = [subTy]
+                    IsWrappedArray = Some(false) }
+            else
+                { propertyDef with
+                    Type = runtimeType
+                    IsNillable = isNillable
+                    AddedTypes = [subTy] }
+        | Name(n) ->
+            match context.GetRuntimeType(SchemaType(n)) with
+            | x when maxOccurs > 1u ->
+                { propertyDef with
+                    Type = CollectionType(x, name, None)
+                    IsNillable = isNillable
+                    IsWrappedArray = Some(false) }
+            | PrimitiveType(x) when x.IsValueType ->
+                { propertyDef with
+                    Type = PrimitiveType(if isNillable then typedefof<Nullable<_>>.MakeGenericType(x) else x)
+                    IsNillable = isNillable }
+            | x ->
+                { propertyDef with
+                    Type = x
+                    IsNillable = isNillable }
+        | Reference(_) ->
+            failwith "Not implemented: schema reference to type."
+
+    /// Create property definitions for choice element specification.
+    and private collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition list =
+        match buildChoiceMembers spec context with
+        | [] -> []
+        | [ _ ] -> failwith "Not implemented: single option choice should be treated as regular sequence."
+        | options ->
+            // New unique name for choice properties and types.
+            let choiceName = choiceNameGenerator()
+            // Create enumeration type for options.
+            let choiceEnum =
+                Cls.createEnum (choiceName + "Type")
+                |> Cls.setAttr TypeAttributes.Public
+                |> Cls.describe Attributes.XmlTypeExclude
+            let isArray = options |> List.map (List.length) |> List.max > 1
+            let enumNameType =
+                let rt = ProvidedType(choiceEnum, choiceEnum.Name)
+                if isArray then CollectionType(rt, "", None) else rt
+            let choiceTypeProp =
+                let prop = PropertyDefinition.Create(choiceName + "Name", false)
+                { prop with Type = enumNameType; IsIgnored = true; AddedTypes = [choiceEnum] }
+            // Create property for holding option values.
+            let choiceItemType =
+                let rt =
+                    options
+                    |> List.collect (id)
+                    |> List.fold (fun (s: RuntimeType option) x ->
+                        match s with
+                        | None -> Some(x.Type)
+                        | Some(y) when x.Type = y -> s
+                        | _ -> Some(PrimitiveType(typeof<obj>))) None
+                    |> Option.get
+                if isArray then CollectionType(rt, "", None) else rt
+            let choiceElements = options |> List.collect (id)
+            choiceElements
+            |> List.iter (fun opt ->
+                let fld =
+                    Fld.createEnum (choiceName + "Type") opt.Name
+                    |> Fld.describe (Attributes.XmlEnum opt.Name)
+                choiceEnum
+                |> Cls.addMember fld
+                |> ignore)
+            let choiceItemProp =
+                let prop = PropertyDefinition.Create(choiceName + (if isArray then "Items" else"Item"), false)
+                { prop with Type = choiceItemType; ChoiceIdentifier = Some(choiceTypeProp.Name); ChoiceElements = choiceElements }
+            [ choiceTypeProp; choiceItemProp ]
+
+    /// Extract property definitions for all the elements defined in sequence element.
+    and private buildSequenceMembers context (spec: SequenceSpec) =
+        spec.Content
+        |> List.map (
+            function
+            | SequenceContent.Any ->
+                failwith "Not implemented: any in sequence."
+            | SequenceContent.Choice(_) ->
+                failwith "Not implemented: choice in sequence."
+            | SequenceContent.Element(espec) ->
+                buildElementProperty context espec
+            | SequenceContent.Group ->
+                failwith "Not implemented: group in sequence."
+            | SequenceContent.Sequence(_) ->
+                failwith "Not implemented: sequence in sequence.")
+
+    /// Extract property definitions for all the elements defined in choice element.
+    and private buildChoiceMembers (spec: ChoiceSpec) context =
+        spec.Content
+        |> List.map (
+            function
+            | ChoiceContent.Any ->
+                failwith "Not implemented: any in choice."
+            | ChoiceContent.Choice(_) ->
+                failwith "Not implemented: choice in choice."
+            | ChoiceContent.Element(espec) ->
+                [ buildElementProperty context espec ]
+            | ChoiceContent.Group ->
+                failwith "Not implemented: group in choice."
+            | ChoiceContent.Sequence(sspec) ->
+                buildSequenceMembers context sspec)
+
+/// Functions and types to handle building methods for services and operation bindings.
+module ServiceBuilder =
+    /// Creates return type for the operation.
+    /// To support returning multiple output parameters, they are wrapped into tuples accordingly:
+    /// Single parameter responses return that single parameter.
+    /// Multiple parameter responses are wrapped into tuples, since C# provides tuples upto 8 arguments,
+    /// some composition is required when more output parameters are present.
+    let private makeReturnType (types: RuntimeType list) =
+        let rec getReturnTypeTuple (tuple: (int * RuntimeType) list, types) =
+            match types with
+            | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference()) |> Array.ofList)
+                    (typ, Expr.instOf typ (tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))))
+            | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
+            | x::xs -> let inner = getReturnTypeTuple([x], xs)
+                       let typ = CodeTypeReference("System.Tuple", ((tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference())) @ [fst inner]) |> Array.ofList)
+                       (typ, Expr.instOf typ ((tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))) @ [snd inner]))
+        match types |> List.mapi (fun i x -> (i, x)) with
+        | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
+        | (i,tp)::[] -> (tp.AsCodeTypeReference(), Expr.var(sprintf "v%d" i))
+        | many -> getReturnTypeTuple([], many)
+
+    /// Create root element for service request. Root elements are feeded to XmlSerializer as arguments,
+    /// so they need to define XmlRoot attributes to override default element name (type name).
+    /// Depending on operation style and MIME/multipart mode, some overrides are required to default serialization.
+    let private buildParameterType (context: TypeBuilderContext) isMultipart (part: MessagePart) =
+        // Enables MIME/multipart serialization mode via overrides:
+        let enableOverrides varName = seq {
+            if isMultipart then
+                yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
+                yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
+                yield Stmt.assign (Expr.var (varName + "Value") @=> "XmlIgnore") (Expr.value true)
+                yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf (CodeTypeReference("BinaryContent")); Expr.value "Value"; Expr.var (varName + "Value")])
+            else
+                yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil
+        }
+        // Generate types for root entities:
+        match context.Style, part.SchemaEntity with
+        | DocLiteral, SchemaType(t) ->
+            failwithf "Document/Literal style message part '%s' should reference global element as message part, but type '%s' is used instead" part.Name t.LocalName
+        | RpcEncoded, SchemaElement(e) ->
+            failwithf "RPC/Encoded style message part '%s' should reference global type as message part, but element '%s' is used instead" part.Name e.LocalName
+        | DocLiteral, SchemaElement(elementName) ->
+            // Document/literal style references `element` objects in message parts.
+            // Find element type definition:
+            let elemType = snd <| context.GetElementDefinition(context.GetElementSpec(elementName))
+            match elemType with
+            | Name(name) ->
+                // Type is defined by element type; root element has element name and namespace defined in operation binding.
+                context.GetRuntimeType(SchemaType(name)),
+                fun varName ->
+                    [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName])
+                      yield Stmt.assign (Expr.var (varName + "Root") @=> "Namespace") (Expr.value elementName.NamespaceName)
+                      yield! enableOverrides varName ]
+            | Reference(_) ->
+                failwith "Not implemented: message part should use elements defined in target namespace."
+            | Definition(_) ->
+                // Element itself is used as root element type, so no overrides are neccessary.
+                context.GetRuntimeType(SchemaElement(elementName)),
+                fun varName ->
+                    [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") Expr.nil
+                      yield! enableOverrides varName ]
+        | RpcEncoded, SchemaType(typeName) ->
+            // Referenced type is also root element type; root element name matches part name.
+            context.GetRuntimeType(SchemaType(typeName)), 
+            fun varName ->
+                [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value part.Name])
+                  yield! enableOverrides varName ]
+
+    /// Build content for each individual service call method.
+    let build context undescribedFaults operation =
         let isMultipart = operation.Request.MultipartContent |> List.isEmpty |> not
         let serviceMethod = Meth.create operation.Name.LocalName |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
         let requestParameters = operation.Request.Body.Parts |> List.map (fun p -> p |> buildParameterType context isMultipart, p.Name)
@@ -782,14 +418,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         serviceMethod.ReturnType <- returnType
 
-        let requiredHeadersExpr =
-            getRequiredHeaders(operation)
-            |> List.map Expr.value
-            |> Arr.create<string>
-
+        let requiredHeadersExpr = operation.GetRequiredHeaders() |> List.map Expr.value |> Arr.create<string>
         let serviceName = match operation.Version with Some v -> sprintf "%s.%s" operation.Name.LocalName v | _ -> operation.Name.LocalName
 
-        // CodeDom doesn't support delegates, so we have to improvise
+        // CodeDom doesn't support delegates, so we have to improvise.
         serviceMethod
         |> Meth.addStmt (Stmt.declVarWith<string[]> "requiredHeaders" requiredHeadersExpr)
         |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeHeader" (Expr.code "(writer) => { //"))
@@ -801,6 +433,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value operation.Request.Name.LocalName; Expr.value operation.Request.Body.Namespace]))
         |> ignore
 
+        // Create separate serializer for each parameter.
         requestParameters
         |> List.iter (fun ((runtimeType, overrideFunc), partName) ->
             let serializerName = partName + "Serializer"
@@ -812,17 +445,16 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var partName])
             |> ignore)
 
+        // Create separate deserializer call for each output parameter.
         let deserializePartsExpr =
             responseParameters
             |> List.mapi (fun i ((runtimeType, overrideFunc), partName) ->
                 let serializerName = partName + "Serializer"
                 let typ = runtimeType.AsCodeTypeReference()
-
                 let deserializeExpr =
                     (overrideFunc partName) @
                         [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var (partName + "Overrides"); Arr.createOfSize<Type> 0; Expr.var (partName + "Root"); Expr.nil])
                           Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
-
                 let deserializeExpr =
                     if partName = "keha" && undescribedFaults then
                       [ (Expr.var "reader" @-> "SetBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
@@ -831,14 +463,15 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
                                           Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []] ]
                                         ([ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr ] @ deserializeExpr) ]
                     else deserializeExpr
-
                 Stmt.condIf (Op.equals (Expr.var "reader" @=> "LocalName")
                                        (Expr.value partName))
                             deserializeExpr)
 
+        // Finish body writer delegate.
         serviceMethod
         |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
         |> Meth.addExpr (Expr.code "}")
+        // Reading body of response.
         |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
         |> Meth.addStmt (if undescribedFaults
                          then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
@@ -861,6 +494,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         |> Meth.addExpr (Expr.code "}")
         |> ignore
 
+        // Multipart services have separate argument: list of MIME/multipart attachments.
         let attachmentsExpr =
             if isMultipart then
                 serviceMethod |> Meth.addParam<IDictionary<string,Stream>> "attachments" |> ignore
@@ -871,6 +505,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         | true, doc -> serviceMethod.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
         | _ -> ()
 
+        // Execute base class service call method with custom serialization delegates.
         let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [attachmentsExpr; Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
 
         if responseParameters.IsEmpty then serviceMethod |> Meth.addExpr methodCall |> ignore
@@ -878,6 +513,22 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
 
         serviceMethod
 
+/// Builds all types, namespaces and services for give producer definition.
+/// Called by type provider to retrieve assembly details for generated types.
+let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
+    // Load schema details from specified file or network location.
+    let schema = ProducerDescription.Load(resolveUri producerUri)
+
+    // Initialize type and schema element lookup context.
+    let context = TypeBuilderContext.FromSchema(schema)
+
+    // Create base type which provides access to service calls.
+    let portBaseTy = makeServicePortBaseType undescribedFaults context.Style
+
+    // Create base type which holds types generated from all provided schema-s.
+    let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
+
+    // Build all global types for each type schema definition.
     schema.TypeSchemas
     |> Map.toSeq
     |> Seq.collect (fun (_, typeSchema) -> typeSchema.Types)
@@ -886,8 +537,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         | CollectionType(prtyp, _, Some(st)) -> Some(prtyp, st)
         | CollectionType(_, _, None) -> None
         | rtyp -> Some(rtyp, x.Value))
-    |> Seq.iter buildType
+    |> Seq.iter (fun (rtyp, def) -> TypeBuilder.build context rtyp def)
 
+    // Build all global elements for each type schema definition.
     schema.TypeSchemas
     |> Map.toSeq
     |> Seq.collect (fun (_, typeSchema) -> typeSchema.Elements)
@@ -895,42 +547,60 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         match x.Value.Type with
         | Definition(_) -> Some(context.GetRuntimeType(SchemaElement(x.Key)), x.Value)
         | _ -> None)
-    |> Seq.iter buildElementType
+    |> Seq.iter (fun (typ, spec) ->
+        match spec.Type with
+        | Definition(def) -> TypeBuilder.build context typ def
+        | Reference(_) -> failwith "Root level element references are not allowed."
+        | Name(_) -> ())
 
-    let targetClass = Cls.create typeNamePath.[typeNamePath.Length - 1] |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
+    // Main class that wraps all provided functionality and types.
+    let targetClass =
+        Cls.create typeNamePath.[typeNamePath.Length - 1]
+        |> Cls.setAttr TypeAttributes.Public
+        |> Cls.asStatic
+        // Undescribed faults require looser navigation in XmlReader.
+        |> iif undescribedFaults (fun x -> x |> Cls.addMember (createXmlBookmarkReaderType()))
+        |> Cls.addMember portBaseTy
+        |> Cls.addMember serviceTypesTy
+        |> Cls.addMember (createBinaryContentType())
 
-    if undescribedFaults then
-        targetClass.Members.Add(createXmlBookmarkReaderType()) |> ignore
-
-    targetClass.Members.Add(portBaseTy) |> ignore
-    targetClass.Members.Add(serviceTypesTy) |> ignore
-    targetClass.Members.Add(createBinaryContentType()) |> ignore
-
-    schema.Services |> List.iter (fun service ->
-        let serviceTy = Cls.create service.Name |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
-        service.Ports |> List.iter (fun port ->
-            let portTy = CodeTypeDeclaration(port.Name, IsClass=true, TypeAttributes=TypeAttributes.Public)
-            serviceTy.Members.Add(portTy) |> ignore
-
-            portTy |> Cls.setParent (typeRefName portBaseTy.Name) |> ignore
-
+    // Create methods for all operation bindings.
+    schema.Services
+    |> List.iter (fun service ->
+        let serviceTy =
+            Cls.create service.Name
+            |> Cls.setAttr TypeAttributes.Public
+            |> Cls.asStatic
+        service.Ports
+        |> List.iter (fun port ->
+            let ctor =
+                Ctor.create()
+                |> Ctor.setAttr MemberAttributes.Public
+                |> Ctor.addBaseArg (Expr.value port.Address)
+                |> Ctor.addBaseArg (Expr.value port.Producer)
+            let portTy =
+                Cls.create port.Name
+                |> Cls.setAttr TypeAttributes.Public
+                |> Cls.setParent (typeRefName portBaseTy.Name)
+                |> Cls.addMember ctor
+            serviceTy |> Cls.addMember portTy |> ignore
             match port.Documentation.TryGetValue("et") with
             | true, doc -> portTy.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
             | _ -> ()
+            port.Operations
+            |> List.iter (fun op ->
+                portTy
+                |> Cls.addMember (ServiceBuilder.build context undescribedFaults op)
+                |> ignore))
+        targetClass |> Cls.addMember serviceTy |> ignore)
 
-            let ctor = CodeConstructor()
-            ctor.Attributes <- MemberAttributes.Public
-            ctor.BaseConstructorArgs.Add(CodePrimitiveExpression(port.Address)) |> ignore
-            ctor.BaseConstructorArgs.Add(CodePrimitiveExpression(port.Producer)) |> ignore
-            portTy.Members.Add(ctor) |> ignore
-
-            port.Operations |> List.iter (buildOperationService >> portTy.Members.Add >> ignore))
-        targetClass.Members.Add(serviceTy) |> ignore)
-
+    // Create types for all type namespaces.
     context.CachedNamespaces |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
 
+    // Initialize default namespace to hold main type.
     let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))
     codeNamespace.Types.Add(targetClass) |> ignore
 
+    // Compile the assembly and return to type provider.
     let assembly = Compiler.buildAssembly(codeNamespace)
     assembly.GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)

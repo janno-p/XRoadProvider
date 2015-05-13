@@ -1,4 +1,4 @@
-﻿module internal XRoad.CodeDom
+﻿module internal XRoad.CodeDom.Common
 
 open Microsoft.CSharp
 open System
@@ -8,16 +8,19 @@ open System.Collections
 open System.Diagnostics
 open System.Globalization
 open System.IO
-open XRoad.Parser.XsdSchema
 
+open XRoad.TypeSchema
+
+/// Get type reference from generic argument.
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
+
+/// Get type reference from given type name.
 let typeRefName name = CodeTypeReference(name: string)
 
-let private attrArg expr = CodeAttributeArgument(expr)
-let private attrDecl<'T> = CodeAttributeDeclaration(typeRef<'T>)
-
+/// Applies function to argument if condition is met.
 let iif condition f x = if condition then x |> f else x
 
+/// Functions to simplify handling of code expressions.
 module Expr =
     let value x = CodePrimitiveExpression(x) :> CodeExpression
     let fldref (f: CodeMemberField) e = CodeFieldReferenceExpression(e, f.Name) :> CodeExpression
@@ -35,19 +38,28 @@ module Expr =
     let cast (t: CodeTypeReference) e = CodeCastExpression(t, e) :> CodeExpression
     let code text = CodeSnippetExpression(text) :> CodeExpression
 
+/// Property reference operator.
 let (@=>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression
 
+/// Method call operator.
 let (@->) (target: CodeExpression) (memberName: string) = CodeMethodReferenceExpression(target, memberName)
+
+/// Add generic arguments to method call.
 let (@<>) (mie: CodeMethodReferenceExpression) (args: CodeTypeReference list) = args |> List.iter (mie.TypeArguments.Add >> ignore); mie
+
+/// Add parameter values to method call.
 let (@%) (mie: CodeMethodReferenceExpression) (args: CodeExpression list) = CodeMethodInvokeExpression(mie, args |> Array.ofList) :> CodeExpression
 
+/// Add parameters to delegate call.
 let (@%%) target args = CodeDelegateInvokeExpression(target, args |> Array.ofList) :> CodeExpression
 
+/// Functions to create and manipulate code attributes.
 module Attr =
     let create<'T> = CodeAttributeDeclaration(typeRef<'T>)
     let addArg e (a: CodeAttributeDeclaration) = a.Arguments.Add(CodeAttributeArgument(e)) |> ignore; a
     let addNamedArg name e (a: CodeAttributeDeclaration) = a.Arguments.Add(CodeAttributeArgument(name, e)) |> ignore; a
 
+/// Predefined attributes for code generator.
 module Attributes =
     open System.Xml.Linq
     open System.Xml.Schema
@@ -66,20 +78,27 @@ module Attributes =
         |> Attr.addArg (Expr.value typeName.LocalName)
         |> Attr.addNamedArg "Namespace" (Expr.value typeName.NamespaceName)
 
+    let XmlTypeExclude = Attr.create<XmlTypeAttribute> |> Attr.addNamedArg "IncludeInSchema" (Expr.value false)
     let XmlInclude(providedTy: CodeTypeReference) = Attr.create<XmlIncludeAttribute> |> Attr.addArg (Expr.typeOf providedTy)
     let XmlElement(isNillable) = Attr.create<XmlElementAttribute> |> addUnqualifiedForm |> addNullable isNillable
     let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
     let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable
-    let XmlArrayItem(name) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm //|> addNullable isNillable
+    let XmlArrayItem(name, isNillable) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm |> addNullable isNillable
     let XmlRoot name ns = Attr.create<XmlRootAttribute> |> Attr.addArg (Expr.value name) |> Attr.addNamedArg "Namespace" (Expr.value ns)
     let XmlIgnore = Attr.create<XmlIgnoreAttribute>
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
+    let XmlEnum name = Attr.create<XmlEnumAttribute> |> Attr.addArg (Expr.value name)
+    let XmlChoiceIdentifier name = Attr.create<XmlChoiceIdentifierAttribute> |> Attr.addArg (Expr.value name)
 
+/// Functions to create and manipulate type fields.
 module Fld =
     let create<'T> name = CodeMemberField(typeRef<'T>, name)
+    let createEnum enumName valueName = CodeMemberField((enumName : string), valueName)
     let createRef (typ: CodeTypeReference) name = CodeMemberField(typ, name)
-    let addAttr a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
+    let describe a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
+    let setAttr a (f: CodeMemberField) = f.Attributes <- a; f
 
+/// Functions to create and manipulate type properties.
 module Prop =
     let create<'T> name = CodeMemberProperty(Name=name, Type=typeRef<'T>)
     let createRef (typ: CodeTypeReference) name = CodeMemberProperty(Name=name, Type=typ)
@@ -88,7 +107,9 @@ module Prop =
     let addSetStmt (s: CodeStatement) (p: CodeMemberProperty) = p.SetStatements.Add(s) |> ignore; p
     let addDoc d (p: CodeMemberProperty) = p.Comments.Add(CodeCommentStatement(d, true)) |> ignore; p
     let setValue = CodePropertySetValueReferenceExpression() :> CodeExpression
+    let describe a (p: CodeMemberProperty) = p.CustomAttributes.Add(a) |> ignore; p
 
+/// Functions to simplify handling of code statements.
 module Stmt =
     let ret e = CodeMethodReturnStatement(e) :> CodeStatement
     let assign le re = CodeAssignStatement(le, re) :> CodeStatement
@@ -107,6 +128,7 @@ module Stmt =
     let tryFinally tryStmts finallyStmts = CodeTryCatchFinallyStatement(tryStmts |> Array.ofList, [| |], finallyStmts |> Array.ofList) :> CodeStatement
     let forLoop initStmt testExpr incrStmt statements = CodeIterationStatement(initStmt, testExpr, incrStmt, statements |> Array.ofList) :> CodeStatement
 
+/// Functions to create and manipulate type methods.
 module Meth =
     let create name = CodeMemberMethod(Name=name)
     let setAttr a (m: CodeMemberMethod) = m.Attributes <- a; m
@@ -118,6 +140,7 @@ module Meth =
     let returnsOf (t: CodeTypeReference) (m: CodeMemberMethod) = m.ReturnType <- t; m
     let typeParam (name: string) (m: CodeMemberMethod) = m.TypeParameters.Add(name) |> ignore; m
 
+/// Functions to create and manipulate type constructors.
 module Ctor =
     let create () = CodeConstructor()
     let setAttr a (c: CodeConstructor) = c.Attributes <- a; c
@@ -125,6 +148,7 @@ module Ctor =
     let addStmt (e: CodeStatement) (c: CodeConstructor) = c.Statements.Add(e) |> ignore; c
     let addBaseArg a (c: CodeConstructor) = c.BaseConstructorArgs.Add(a) |> ignore; c
 
+/// Functions to simplify operator usage.
 module Op =
     let equals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityEquality, rhs) :> CodeExpression
     let notEquals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityInequality, rhs) :> CodeExpression
@@ -135,7 +159,9 @@ module Op =
     let ge lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThanOrEqual, rhs) :> CodeExpression
     let greater lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThan, rhs) :> CodeExpression
 
+/// Functions to create and manipulate types.
 module Cls =
+    let createEnum name = CodeTypeDeclaration(name, IsEnum=true)
     let create name = CodeTypeDeclaration(name, IsClass=true)
     let addAttr a (c: CodeTypeDeclaration) = c.TypeAttributes <- c.TypeAttributes ||| a; c
     let setAttr a (c: CodeTypeDeclaration) = c.TypeAttributes <- a; c
@@ -149,11 +175,13 @@ module Cls =
     let describe a (t: CodeTypeDeclaration) = t.CustomAttributes.Add(a) |> ignore; t
     let setParent (p: CodeTypeReference) (t: CodeTypeDeclaration) = t.BaseTypes.Add(p) |> ignore; t
 
+/// Functions to create and manipulate arrays.
 module Arr =
     let createOfSize<'T> (size: int) = CodeArrayCreateExpression(typeRef<'T>, size) :> CodeExpression
     let create<'T> (args: CodeExpression list) = CodeArrayCreateExpression(typeRef<'T>, args |> Array.ofList) :> CodeExpression
 
 module Compiler =
+    /// Builds new assembly for provided namespace.
     let buildAssembly codeNamespace =
         let codeCompileUnit = CodeCompileUnit()
         codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
@@ -161,6 +189,7 @@ module Compiler =
         codeCompileUnit.ReferencedAssemblies.Add("System.Net.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Xml.dll") |> ignore
+        // Assembly is placed under temporary files path.
         let fileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid() |> sprintf "%A.dll")
         use codeProvider = new CSharpCodeProvider()
         let parameters = CompilerParameters(OutputAssembly=fileName, GenerateExecutable=false)
@@ -172,16 +201,21 @@ module Compiler =
             printfn "%A" compilerResults.Errors
         compilerResults.CompiledAssembly
 
+/// Extensions for String module and class.
 [<AutoOpen>]
 module String =
+    /// Joins sequence of elements with given separator to string.
     let join (sep: string) (arr: seq<'T>) = String.Join(sep, arr)
 
     type String with
+        /// Converts given XML namespace to class name.
         member this.toClassName() =
+            // Remove `http://` prefix from namespace if present.
             let str =
                 match this.StartsWith("http://") with
                 | true -> this.Substring(7)
                 | _ -> this
+            // Remove special symbols from class name.
             let className =
                 str.Split('/')
                 |> Array.map (fun p ->
@@ -189,34 +223,42 @@ module String =
                     |> Array.map (fun x -> CultureInfo.InvariantCulture.TextInfo.ToTitleCase(x.ToLower()).Replace("-", ""))
                     |> join "")
                 |> join "_"
+            // Check validity of generated class name.
             if not <| CodeGenerator.IsValidLanguageIndependentIdentifier(className)
             then failwithf "invalid name %s" className
             className
 
+/// Type abstraction for code generator.
 type RuntimeType =
+    /// Simple types that are presented with system runtime types.
     | PrimitiveType of Type
+    /// Types that are provided by generated assembly.
     | ProvidedType of CodeTypeDeclaration * string
+    /// Types that represent collection or array of runtime type.
     | CollectionType of RuntimeType * string * SchemaType option
+    /// Binary content types are handled separately.
     | ContentType
-    member this.AsCodeTypeReference() = match this with
-                                        | PrimitiveType(typ) -> CodeTypeReference(typ)
-                                        | ProvidedType(_,name) -> CodeTypeReference(name)
-                                        | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
-                                        | ContentType -> CodeTypeReference("BinaryContent")
+    /// Get type name reference for this instance.
+    member this.AsCodeTypeReference() =
+        match this with
+        | PrimitiveType(typ) -> CodeTypeReference(typ)
+        | ProvidedType(_,name) -> CodeTypeReference(name)
+        | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
+        | ContentType -> CodeTypeReference("BinaryContent")
 
-let makeChoiceType() =
-    ()
-
+/// Add special XmlReader class to allow seeking previous parts of XML document.
+/// Required for reading XML documents which do not comply with given schema.
 let createXmlBookmarkReaderType() =
-    let assembly = typeof<XRoad.Parser.MessagePart>.Assembly
+    let assembly = typeof<RuntimeType>.Assembly
     use stream = assembly.GetManifestResourceStream("XmlBookmarkReader.cs")
     use reader = new StreamReader(stream)
     CodeSnippetTypeMember(reader.ReadToEnd())
 
+/// Create property with backing field.
 let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
     let backingField =
         Fld.create<'T> (name + "__backing")
-        |> Fld.addAttr Attributes.DebuggerBrowsable
+        |> Fld.describe Attributes.DebuggerBrowsable
     let property =
         Prop.create<'T> name
         |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
@@ -227,11 +269,13 @@ let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
     |> Cls.addMember backingField
     |> Cls.addMember property
 
+/// Add property to given type with backing field.
+/// For optional members, extra field is added to notify if property was assigned or not.
 let addProperty (name, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration) =
     let sf =
         if isOptional then
             let f = Fld.create<bool> (name + "__specified")
-                    |> Fld.addAttr Attributes.DebuggerBrowsable
+                    |> Fld.describe Attributes.DebuggerBrowsable
             let p = Prop.create<bool> (name + "Specified")
                     |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
                     |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
@@ -239,7 +283,7 @@ let addProperty (name, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration)
             Some(f)
         else None
     let f = Fld.createRef (ty.AsCodeTypeReference()) (name + "__backing")
-            |> Fld.addAttr Attributes.DebuggerBrowsable
+            |> Fld.describe Attributes.DebuggerBrowsable
     let p = Prop.createRef (ty.AsCodeTypeReference()) name
             |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))

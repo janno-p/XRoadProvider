@@ -2,53 +2,59 @@
 
 open System.Xml
 open System.Xml.Linq
-open XRoad.Parser
 
+open XRoad.Common
+
+/// Represents single producer information acquired from security server.
 type Producer =
-  { Name: string
-    WsdlUri: string
-    Description: string }
+    { Name: string
+      WsdlUri: string
+      Description: string }
 
+/// Executes listProducers service call on specified security server.
+/// All available producers are deserialized from response message and returned to caller.
 let discoverProducers serverIP =
-    let serverUri = sprintf "http://%s/cgi-bin/consumer_proxy" serverIP
-
-    let initRequest(serverUri: string) =
+    let doc =
+        // Prepare request message.
+        let serverUri = sprintf "http://%s/cgi-bin/consumer_proxy" serverIP
         let request = System.Net.WebRequest.Create(serverUri)
-        // request.Timeout <- timeout
         request.Method <- "POST"
         request.ContentType <- sprintf "text/xml; charset=%s" System.Text.Encoding.UTF8.HeaderName
         request.Headers.Set("SOAPAction", "")
-        // request.Proxy <- System.Net.WebProxy()
-        request
 
-    let doc =
-        let request = initRequest(serverUri)
-        (   use stream = request.GetRequestStream() in
+        // Serialize request message content.
+        let writeRequest () =
+            use stream = request.GetRequestStream() in
             use writer = XmlWriter.Create(stream)
             writer.WriteStartDocument()
-            writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnvelope)
+            writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnv)
 
-            writer.WriteStartElement("Body", XmlNamespace.SoapEnvelope)
+            writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
             writer.WriteStartElement("listProducers", XmlNamespace.XRoad)
             writer.WriteEndElement()
             writer.WriteEndElement()
 
             writer.WriteEndElement()
-            writer.WriteEndDocument())
+            writer.WriteEndDocument()
+        writeRequest()
+
+        // Retrieve and load response message.
         use resp = request.GetResponse()
         use reader = new System.IO.StreamReader(resp.GetResponseStream())
         XDocument.Load(reader)
 
-    let envelope = doc.Elements(XName.Get("Envelope", XmlNamespace.SoapEnvelope)) |> Seq.exactlyOne
-    let body = envelope.Elements(XName.Get("Body", XmlNamespace.SoapEnvelope)) |> Seq.exactlyOne
-    let message = body.Elements(XName.Get("listProducersResponse", XmlNamespace.XRoad)) |> Seq.exactlyOne
-    let response = message.Elements(XName.Get("response"))
+    // Locate response message main part in XDocument object.
+    let envelope = doc.Elements(xnsname "Envelope" XmlNamespace.SoapEnv) |> Seq.exactlyOne
+    let body = envelope.Elements(xnsname "Body" XmlNamespace.SoapEnv) |> Seq.exactlyOne
+    let message = body.Elements(xnsname "listProducersResponse" XmlNamespace.XRoad) |> Seq.exactlyOne
+    let response = message.Elements(xname "response")
 
-    response.Elements(XName.Get("item"))
+    // Parse all producer elements from XDocument object
+    response.Elements(xname "item")
     |> Seq.map (fun item ->
         let oneValue es = es |> Seq.map (fun (e: XElement) -> e.Value) |> Seq.exactlyOne
-        let name = oneValue(item.Elements(XName.Get("name")))
+        let name = oneValue(item.Elements(xname "name"))
         { Name = name
           WsdlUri = sprintf "http://%s/cgi-bin/uriproxy?producer=%s" serverIP name
-          Description = oneValue(item.Elements(XName.Get("description"))) })
+          Description = oneValue(item.Elements(xname "description")) })
     |> List.ofSeq
