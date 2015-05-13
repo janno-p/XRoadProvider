@@ -59,6 +59,18 @@ type Operation =
       Request: OperationMessage
       Response: OperationMessage
       Documentation: IDictionary<string,string> }
+    /// Reads list of required X-Road header elements from operation definition.
+    member this.GetRequiredHeaders () =
+        let headers, rest =
+            this.Request.Header
+            |> List.partition (fun part ->
+                match part.SchemaEntity with
+                | SchemaElement(XteeHeader(_)) when this.Style = RpcEncoded -> true
+                | SchemaElement(XRoadHeader(_)) when this.Style = DocLiteral -> true
+                | _ -> false)
+        if rest.Length > 0
+        then failwithf "Unhandled SOAP Header elements detected: %A" rest
+        else headers |> List.map (fun part -> part.Name)
 
 /// Collects multiple operations into logical group.
 type PortBinding =
