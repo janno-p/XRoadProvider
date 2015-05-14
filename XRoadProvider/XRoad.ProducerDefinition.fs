@@ -426,16 +426,90 @@ module ServiceBuilder =
             (runtimeType, f)
 
     /// Create serializer code segment for given parameter.
-    let private serializeParameter context isMultiPart serviceMethod (part: MessagePart) =
+    let private serializeParameter (context: TypeBuilderContext) isMultipart serviceMethod (part: MessagePart) =
         let serializerName = part.Name + "Serializer"
-        let runtimeType, overrideFunc = buildParameterType context isMultiPart part
-        let typ = runtimeType.AsCodeTypeReference()
-        serviceMethod |> Meth.addParamRef typ part.Name |> ignore
-        part.Name |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
-        serviceMethod
-        |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var (part.Name + "Overrides"); Arr.createOfSize<Type> 0; Expr.var (part.Name + "Root"); Expr.nil ]))
-        |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var part.Name])
-        |> ignore
+        let overridesName = part.Name + "Overrides"
+        let attributesName = part.Name + "Attributes"
+        let rootName = part.Name + "Root"
+        // Initializes overrides for multipart serialization mode.
+        let initMultipart () =
+            if isMultipart then
+                serviceMethod
+                |> Meth.addStmt (Stmt.declVarWith<XmlAttributeOverrides> overridesName (Expr.inst<XmlAttributeOverrides> []))
+                |> Meth.addStmt (Stmt.declVarWith<XmlAttributes> attributesName (Expr.inst<XmlAttributes> []))
+                |> Meth.addStmt (Stmt.assign (Expr.var attributesName @=> "XmlIgnore") (Expr.value true))
+                |> Meth.addStmt (Stmt.ofExpr ((Expr.var overridesName @-> "Add") @% [Expr.typeOf (typeRefName "BinaryContent"); Expr.value "Value"; Expr.var attributesName]))
+                |> ignore
+            else
+                serviceMethod
+                |> Meth.addStmt (Stmt.declVarWith<XmlAttributeOverrides> overridesName Expr.nil)
+                |> ignore
+        // Initialize serializing
+        let initSerializing schemaName (rnm, rns : string option) =
+            // Add new argument to method for this message part.
+            let runtimeType = context.GetRuntimeType(schemaName)
+            serviceMethod |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) part.Name |> ignore
+            // Initialize root attribute override for this method.
+            let initRoot = (fun () ->
+                match rnm with
+                | Some(v) ->
+                    serviceMethod
+                    |> Meth.addStmt (Stmt.declVarWith<XmlRootAttribute> rootName (Expr.inst<XmlRootAttribute> [Expr.value v]))
+                    |> iif (rns.IsSome) (fun x -> x |> Meth.addStmt (Stmt.assign (Expr.var rootName @=> "Namespace") (Expr.value rns.Value)))
+                    |> ignore
+                | None ->
+                    serviceMethod
+                    |> Meth.addStmt (Stmt.declVarWith<XmlRootAttribute> rootName (Expr.inst<XmlRootAttribute> [Expr.nil]))
+                    |> ignore)
+            // Collection types need special handling for root element.
+            match runtimeType with
+            | CollectionType(itemType, itemName, _) ->
+                let rootElementName =
+                    match rnm, rns with
+                    | Some(v1), Some(v2) -> [Expr.value v1; Expr.value v2]
+                    | Some(v), None -> [Expr.value v]
+                    | _ -> failwith "fix me!"
+                initMultipart()
+                // Write array wrapper manually and serialize each array item separately.
+                serviceMethod
+                |> Meth.addExpr ((Expr.var "writer" @-> "WriteStartElement") @% rootElementName)
+                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.var part.Name))
+                                                 [Stmt.ofExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "nil"; Expr.value XmlNamespace.Xsi; Expr.value "true"])]
+                                                 [Stmt.declVarWith<XmlRootAttribute> rootName (Expr.inst<XmlRootAttribute> [Expr.value itemName])
+                                                  Stmt.forLoop (Stmt.declVarWith<int> "i" (Expr.value 0))
+                                                               (Op.greater (Expr.var part.Name @=> "Length") (Expr.var "i"))
+                                                               (Stmt.assign (Expr.var "i") (Op.plus (Expr.var "i") (Expr.value 1)))
+                                                               [Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (itemType.AsCodeTypeReference()); Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ])
+                                                                Stmt.ofExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var part.Name @? (Expr.var "i")])]])
+                |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
+                |> ignore
+            | _ ->
+                initRoot()
+                initMultipart()
+                serviceMethod
+                |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (runtimeType.AsCodeTypeReference()); Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ]))
+                |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var part.Name])
+                |> ignore
+        // Generate types and serializing statements for root entities
+        match context.Style, part.SchemaEntity with
+        | DocLiteral, SchemaType(t) ->
+            failwithf "Document/Literal style message part '%s' should reference global element as message part, but type '%s' is used instead" part.Name t.LocalName
+        | RpcEncoded, SchemaElement(e) ->
+            failwithf "RPC/Encoded style message part '%s' should reference global type as message part, but element '%s' is used instead" part.Name e.LocalName
+        | DocLiteral, SchemaElement(elementName) ->
+            match context.GetElementDefinition(context.GetElementSpec(elementName)) with
+            | _, Definition(_) ->
+                // Inline element type definition uses same name as global element.
+                initSerializing (SchemaElement(elementName)) (None, None)
+            | _, Name(name) ->
+                // Element references globally defined type, so parameter should use same runtime type.
+                initSerializing (SchemaType(name)) (Some(elementName.LocalName), Some(elementName.NamespaceName))
+            | _ ->
+                // Ref attribute will be resolved earlier.
+                failwith "never"
+        | RpcEncoded, SchemaType(_) ->
+            // Use the same type that is referenced from message part definition.
+            initSerializing (part.SchemaEntity) (Some(part.Name), None)
 
     /// Build content for each individual service call method.
     let build context undescribedFaults (operation: Operation) =
