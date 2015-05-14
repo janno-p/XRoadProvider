@@ -240,7 +240,7 @@ let private createDeserializationStatements undescribedFaults =
                                     (Op.equals (Expr.var "reader" @=> "NamespaceURI")
                                                (Expr.value XmlNamespace.SoapEnv)))
                          [Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []]]
-            Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"]) ]
+            Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"; Expr.var "responseAttachments"]) ]
           [ Stmt.condIf (Op.isNotNull (Expr.var "reader"))
                         [(Expr.var "reader" @-> "Dispose") @% [] |> Stmt.ofExpr] ]
     ]
@@ -259,7 +259,7 @@ let private createMakeServiceCallMethod undescribedFaults style =
     |> Meth.addParam<IDictionary<string,Stream>> "attachments"
     |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
     |> Meth.addParam<Action<XmlWriter>> "writeBody"
-    |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, CodeTypeReference("T"))) "readBody"
+    |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, typeRef<IDictionary<string,Stream>>, CodeTypeReference("T"))) "readBody"
     // Create request and initialize HTTP headers:
     |> Meth.addStmt (Stmt.declVarWith<WebRequest> "request" ((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))
     |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "Method") (Expr.value "POST"))

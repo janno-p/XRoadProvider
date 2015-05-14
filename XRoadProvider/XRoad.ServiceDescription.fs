@@ -44,6 +44,10 @@ type OperationMessage =
       Body: OperationBody
       Header: MessagePart list
       MultipartContent: MessagePart list }
+    /// Returns if message has multipart content.
+    member this.IsMultipart
+        with get() =
+            this.MultipartContent |> List.isEmpty |> not
     /// Initializes empty message.
     static member Create(name) =
         { Name = name

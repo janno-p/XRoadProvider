@@ -347,18 +347,24 @@ module ServiceBuilder =
     /// Single parameter responses return that single parameter.
     /// Multiple parameter responses are wrapped into tuples, since C# provides tuples upto 8 arguments,
     /// some composition is required when more output parameters are present.
-    let private makeReturnType (types: RuntimeType list) =
+    let private makeReturnType isMultipart (types: RuntimeType list) =
+        let varName i =
+            if isMultipart && i = 0 then "responseAttachments" else sprintf "v%d" i
         let rec getReturnTypeTuple (tuple: (int * RuntimeType) list, types) =
             match types with
             | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference()) |> Array.ofList)
-                    (typ, Expr.instOf typ (tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))))
+                    (typ, Expr.instOf typ (tuple |> List.map (fun (i, _) -> Expr.var(varName i))))
             | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
             | x::xs -> let inner = getReturnTypeTuple([x], xs)
                        let typ = CodeTypeReference("System.Tuple", ((tuple |> List.map (fun (_, x) -> x.AsCodeTypeReference())) @ [fst inner]) |> Array.ofList)
-                       (typ, Expr.instOf typ ((tuple |> List.map (fun (i, _) -> Expr.var(sprintf "v%d" i))) @ [snd inner]))
+                       (typ, Expr.instOf typ ((tuple |> List.map (fun (i, _) -> Expr.var(varName i))) @ [snd inner]))
+        let types =
+            if isMultipart
+            then PrimitiveType(typeof<IDictionary<string,Stream>>)::types
+            else types
         match types |> List.mapi (fun i x -> (i, x)) with
         | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
-        | (i,tp)::[] -> (tp.AsCodeTypeReference(), Expr.var(sprintf "v%d" i))
+        | (i,tp)::[] -> (tp.AsCodeTypeReference(), Expr.var(varName i))
         | many -> getReturnTypeTuple([], many)
 
     /// Create root element for service request. Root elements are feeded to XmlSerializer as arguments,
@@ -419,13 +425,23 @@ module ServiceBuilder =
                   yield! enableOverrides varName runtimeType ])
             (runtimeType, f)
 
+    /// Create serializer code segment for given parameter.
+    let private serializeParameter context isMultiPart serviceMethod (part: MessagePart) =
+        let serializerName = part.Name + "Serializer"
+        let runtimeType, overrideFunc = buildParameterType context isMultiPart part
+        let typ = runtimeType.AsCodeTypeReference()
+        serviceMethod |> Meth.addParamRef typ part.Name |> ignore
+        part.Name |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
+        serviceMethod
+        |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var (part.Name + "Overrides"); Arr.createOfSize<Type> 0; Expr.var (part.Name + "Root"); Expr.nil ]))
+        |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var part.Name])
+        |> ignore
+
     /// Build content for each individual service call method.
-    let build context undescribedFaults operation =
-        let isMultipart = operation.Request.MultipartContent |> List.isEmpty |> not
+    let build context undescribedFaults (operation: Operation) =
         let serviceMethod = Meth.create operation.Name.LocalName |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        let requestParameters = operation.Request.Body.Parts |> List.map (fun p -> p |> buildParameterType context isMultipart, p.Name)
-        let responseParameters = operation.Response.Body.Parts |> List.map (fun p -> p |> buildParameterType context isMultipart, p.Name)
-        let returnType, returnExpr = responseParameters |> List.map (fst >> fst) |> makeReturnType
+        let responseParameters = operation.Response.Body.Parts |> List.map (fun p -> p |> buildParameterType context operation.Response.IsMultipart, p.Name)
+        let returnType, returnExpr = responseParameters |> List.map (fst >> fst) |> makeReturnType operation.Response.IsMultipart
 
         serviceMethod.ReturnType <- returnType
 
@@ -445,21 +461,14 @@ module ServiceBuilder =
         |> ignore
 
         // Create separate serializer for each parameter.
-        requestParameters
-        |> List.iter (fun ((runtimeType, overrideFunc), partName) ->
-            let serializerName = partName + "Serializer"
-            let typ = runtimeType.AsCodeTypeReference()
-            serviceMethod |> Meth.addParamRef typ partName |> ignore
-            partName |> overrideFunc |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
-            serviceMethod
-            |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var (partName + "Overrides"); Arr.createOfSize<Type> 0; Expr.var (partName + "Root"); Expr.nil ]))
-            |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var partName])
-            |> ignore)
+        operation.Request.Body.Parts
+        |> List.iter (serializeParameter context operation.Request.IsMultipart serviceMethod)
 
         // Create separate deserializer call for each output parameter.
         let deserializePartsExpr =
             responseParameters
             |> List.mapi (fun i ((runtimeType, overrideFunc), partName) ->
+                let i = if operation.Response.IsMultipart then i + 1 else i
                 let serializerName = partName + "Serializer"
                 let typ = runtimeType.AsCodeTypeReference()
                 let deserializeExpr =
@@ -483,7 +492,7 @@ module ServiceBuilder =
         |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
         |> Meth.addExpr (Expr.code "}")
         // Reading body of response.
-        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
+        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, typeRef<IDictionary<string,Stream>>, returnType)) "readBody" (Expr.code "(r, responseAttachments) => { //"))
         |> Meth.addStmt (if undescribedFaults
                          then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
                          else Stmt.declVarWith<XmlReader> "reader" (Expr.var "r"))
@@ -496,6 +505,7 @@ module ServiceBuilder =
 
         responseParameters
         |> List.iteri (fun i ((runtimeType,_),_) ->
+            let i = if operation.Response.IsMultipart then i + 1 else i
             let typ = runtimeType.AsCodeTypeReference()
             serviceMethod |> Meth.addStmt (Stmt.declVarRefWith typ (sprintf "v%d" i) Expr.nil) |> ignore)
 
@@ -507,7 +517,7 @@ module ServiceBuilder =
 
         // Multipart services have separate argument: list of MIME/multipart attachments.
         let attachmentsExpr =
-            if isMultipart then
+            if operation.Request.IsMultipart then
                 serviceMethod |> Meth.addParam<IDictionary<string,Stream>> "attachments" |> ignore
                 Expr.var "attachments"
             else Expr.nil
