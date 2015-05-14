@@ -7,40 +7,12 @@ open System.IO
 open System.Net
 open System.Reflection
 open System.Security.Cryptography
+open System.Text
 open System.Xml
 
 open XRoad.CodeDom.Common
 open XRoad.Common
 open XRoad.ServiceDescription
-
-/// Description of method which generates random nonce value.
-/// Nonce value is sent in X-Road <id /> header element, when user has not provided its own value.
-let defaultNonceMethod =
-    Meth.create "GenerateNonce"
-    |> Meth.setAttr MemberAttributes.Private
-    |> Meth.returns<string>
-    |> Meth.addStmt (Stmt.declVarWith<byte[]> "nonce" (Arr.createOfSize<byte> 42))
-    |> Meth.addStmt (Stmt.declVarWith<RandomNumberGenerator> "rng" ((Expr.typeRefOf<RNGCryptoServiceProvider> @-> "Create") @% []))
-    |> Meth.addExpr ((Expr.var "rng" @-> "GetNonZeroBytes") @% [Expr.var("nonce")])
-    |> Meth.addStmt (Stmt.ret ((Expr.typeRefOf<Convert> @-> "ToBase64String") @% [Expr.var "nonce"]))
-
-/// Description for method which extracts boundary marker value from MIME/multipart header.
-/// Returns null if response is not MIME/multipart content-type.
-let getBoundaryMarkerMethod =
-    Meth.create "GetBoundaryMarker"
-    |> Meth.addParam<WebResponse> "response"
-    |> Meth.returns<string>
-    |> Meth.addStmt (Stmt.condIf (Op.isNull (Expr.var "response" @=> "ContentType"))
-                                 [Stmt.ret (Expr.value null)])
-    |> Meth.addStmt (Stmt.declVarWith<string[]> "parts" (((Expr.var "response" @=> "ContentType") @-> "Split") @% [Expr.value ';']))
-    |> Meth.addStmt (Stmt.condIf (Op.notEquals ((((Expr.var "parts") @? (Expr.value 0)) @-> "Trim") @% []) (Expr.value "multipart/related"))
-                                 [Stmt.ret (Expr.value null)])
-    |> Meth.addStmt (Stmt.forLoop (Stmt.declVarWith<int> "i" (Expr.value 1))
-                                  (Op.greater (Expr.var "parts" @=> "Length") (Expr.var "i"))
-                                  (Stmt.assign (Expr.var "i") (Op.plus (Expr.var "i") (Expr.value 1)))
-                                  [ Stmt.condIf (((((Expr.var "parts" @? (Expr.var "i")) @-> "Trim") @% []) @-> "StartsWith") @% [Expr.value "boundary="])
-                                                [Stmt.ret (((((((Expr.var "parts" @? (Expr.var "i")) @-> "Trim") @% []) @-> "Substring") @% [Expr.value 9]) @-> "Trim") @% [Expr.value '"'])] ])
-    |> Meth.addStmt (Stmt.ret (Expr.value null))
 
 /// Creates method for serializing X-Road specific header elements in SOAP message.
 /// Header usage depends on operation style: rpc/encoded and document/literal styles use different names.
@@ -76,10 +48,10 @@ let createWriteXRoadHeaderMethod (style) =
     |> Meth.addParam<string> "serviceName"
     |> Meth.addParam<IList<string>> "requiredHeaders"
     // Add namespace prefix definition:
-    |> Meth.addExpr ((writerVar @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value nsprefix; Expr.value null; Expr.value hdrns])
+    |> Meth.addExpr ((writerVar @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value nsprefix; Expr.nil; Expr.value hdrns])
     // Required elements with defualt values:
     |> declareWithDefaultValue "producerValue" "andmekogu" (Expr.var "producerName")
-    |> declareWithDefaultValue "requestId" "id" ((Expr.this @-> "GenerateNonce") @% [])
+    |> declareWithDefaultValue "requestId" "id" (Expr.var "GenerateNonce" @%% [])
     |> declareWithDefaultValue "fullServiceName" "nimi" ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "{0}.{1}"; Expr.var "producerValue"; Expr.var "serviceName"])
     // Write header elements to stream:
     |> Meth.addStmt (writeHeaderElement (hdrName "asutus") (Expr.this @=> (propName "asutus")) "WriteString")
@@ -175,35 +147,6 @@ let private addHeaderProperties style portBaseTy =
     |> iif (style = RpcEncoded) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
     |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
 
-/// Create helper method to seek certain elements in response messages.
-let private createMoveToElementMethod () =
-    Meth.create "MoveToElement"
-    |> Meth.setAttr MemberAttributes.Family
-    |> Meth.returns<bool>
-    |> Meth.addParam<XmlReader> "reader"
-    |> Meth.addParam<string> "name"
-    |> Meth.addParam<string> "ns"
-    |> Meth.addParam<int> "depth"
-    // Looks for element with certain name or any element at the current level in XML document.
-    // If suitable element is found, returns true; otherwise false.
-    |> Meth.addStmt (Stmt.whileLoop (Expr.value true)
-                                    [ Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "Depth")
-                                                                         (Expr.var "depth"))
-                                                              (Op.boolAnd (Op.equals (Expr.var "reader" @=> "NodeType")
-                                                                                     (Expr.typeRefOf<XmlNodeType> @=> "Element"))
-                                                                          (Op.boolOr (Op.isNull (Expr.var "name"))
-                                                                                     (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
-                                                                                                            (Expr.var "name"))
-                                                                                                 (Op.equals (Expr.var "reader" @=> "NamespaceURI")
-                                                                                                            (Expr.var "ns"))))))
-                                                  [Expr.value true |> Stmt.ret]
-                                      Stmt.condIfElse (Op.boolAnd ((Expr.var "reader" @-> "Read") @% [])
-                                                                  (Op.ge (Expr.var "reader" @=> "Depth")
-                                                                         (Expr.var "depth")))
-                                                      []
-                                                      [Expr.value false |> Stmt.ret] ])
-    |> Meth.addStmt (Expr.value false |> Stmt.ret)
-
 /// Builds serialization statements for writing main SOAP body element for request message in MakeServiceCall method.
 let private createSerializationStatements style =
     [ // Retrieve stream to write contents into:
@@ -271,30 +214,27 @@ let private createSerializationStatements style =
 /// Builds deserialization statements to extract data from request retrieved from producers adapter server.
 let private createDeserializationStatements undescribedFaults =
     // Special reader class is required to support reading faults that are not defined in WSDL document.
-    let xmlReaderTypRef =
-        if undescribedFaults
-        then CodeTypeReference("XmlBookmarkReader")
-        else CodeTypeReference(typeof<XmlReader>)
+    let xmlReaderTypRef = if undescribedFaults then typeRefName "XmlBookmarkReader" else typeRef<XmlReader>
     // If in undescribed faults mode we need to initialize XmlBookmarkReader in place of regular XmlReader.
     let createReaderExpr =
-        let readerExpr = (Expr.typeRefOf<XmlReader> @-> "Create") @% [(Expr.var "response" @-> "GetResponseStream") @% []]
+        let readerExpr = Expr.var "GetResponseReader" @%% [Expr.var "response"; Expr.var "responseAttachments"]
         if undescribedFaults then Expr.instOf xmlReaderTypRef [readerExpr] else readerExpr
     // Deserialization statements:
     [ Stmt.assign (Expr.var("response")) ((Expr.var "request" @-> "GetResponse") @% [])
-      Stmt.declVarWith<string> "boundaryMarker" ((Expr.this @-> "GetBoundaryMarker") @% [Expr.var "response"])
+      Stmt.declVarWith<IDictionary<string,Stream>> "responseAttachments" (Expr.inst<Dictionary<string,Stream>> [])
       Stmt.declVarRefWith xmlReaderTypRef "reader" Expr.nil
       Stmt.tryFinally
           [ Stmt.assign (Expr.var("reader")) createReaderExpr
             // Seek for SOAP:Envelope element, exception when not found:
-            Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv; Expr.value 0])
+            Stmt.condIfElse (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv; Expr.value 0])
                              []
                              [ Stmt.throw<Exception> [Expr.value "Soap envelope element was not found in response message."] ]
             // Seek for SOAP:Body element, exception when not found:
-            Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "Body"; Expr.value XmlNamespace.SoapEnv; Expr.value 1])
+            Stmt.condIfElse (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.value "Body"; Expr.value XmlNamespace.SoapEnv; Expr.value 1])
                              []
                              [ Stmt.throw<Exception> [Expr.value "Soap body element was not found in response message."] ]
             // Seek first element of body and try to deserialize it:
-            (Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 2] |> Stmt.ofExpr
+            Stmt.ofExpr (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 2])
             Stmt.condIf (Op.boolAnd (Op.equals (Expr.var "reader" @=> "LocalName")
                                                (Expr.value "Fault"))
                                     (Op.equals (Expr.var "reader" @=> "NamespaceURI")
@@ -376,7 +316,5 @@ let makeServicePortBaseType undescribedFaults (style: OperationStyle) =
     |> Cls.addMember producerProperty
     |> Cls.addMember (createMakeServiceCallMethod undescribedFaults style)
     |> Cls.addMember (createWriteXRoadHeaderMethod style)
-    |> Cls.addMember defaultNonceMethod
-    |> Cls.addMember getBoundaryMarkerMethod
-    |> Cls.addMember (createMoveToElementMethod())
+    |> Cls.addMember (createTypeFromAssemblyResource("AbstractServicePortExtensions.cs"))
     |> addHeaderProperties style

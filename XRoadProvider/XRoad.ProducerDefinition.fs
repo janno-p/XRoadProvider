@@ -458,7 +458,7 @@ module ServiceBuilder =
                 let deserializeExpr =
                     if partName = "keha" && undescribedFaults then
                       [ (Expr.var "reader" @-> "SetBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
-                        Stmt.condIfElse ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.value "faultCode"; Expr.value ""; Expr.value 4])
+                        Stmt.condIfElse (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.value "faultCode"; Expr.value ""; Expr.value 4])
                                         [ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
                                           Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []] ]
                                         ([ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr ] @ deserializeExpr) ]
@@ -489,7 +489,7 @@ module ServiceBuilder =
             serviceMethod |> Meth.addStmt (Stmt.declVarRefWith typ (sprintf "v%d" i) Expr.nil) |> ignore)
 
         serviceMethod
-        |> Meth.addStmt (Stmt.whileLoop ((Expr.this @-> "MoveToElement") @% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
+        |> Meth.addStmt (Stmt.whileLoop (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
         |> Meth.addStmt (Stmt.ret returnExpr)
         |> Meth.addExpr (Expr.code "}")
         |> ignore
@@ -559,7 +559,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         |> Cls.setAttr TypeAttributes.Public
         |> Cls.asStatic
         // Undescribed faults require looser navigation in XmlReader.
-        |> iif undescribedFaults (fun x -> x |> Cls.addMember (createXmlBookmarkReaderType()))
+        |> iif undescribedFaults (fun x -> x |> Cls.addMember (createTypeFromAssemblyResource("XmlBookmarkReader.cs")))
         |> Cls.addMember portBaseTy
         |> Cls.addMember serviceTypesTy
         |> Cls.addMember (createBinaryContentType())

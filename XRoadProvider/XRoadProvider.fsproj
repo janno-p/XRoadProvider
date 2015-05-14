@@ -46,6 +46,8 @@
   </PropertyGroup>
   <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
   <ItemGroup>
+    <EmbeddedResource Include="Snippets\AbstractServicePortExtensions.cs" />
+    <EmbeddedResource Include="Snippets/XmlBookmarkReader.cs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ProvidedTypes.fsi">
       <Paket>True</Paket>
@@ -66,7 +68,6 @@
     <Compile Include="XRoad.SecurityServer.fs" />
     <Compile Include="XRoad.Providers.fs" />
     <None Include="paket.references" />
-    <EmbeddedResource Include="XmlBookmarkReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

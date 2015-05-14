@@ -252,9 +252,9 @@ type RuntimeType =
 
 /// Add special XmlReader class to allow seeking previous parts of XML document.
 /// Required for reading XML documents which do not comply with given schema.
-let createXmlBookmarkReaderType() =
+let createTypeFromAssemblyResource resourceName =
     let assembly = typeof<RuntimeType>.Assembly
-    use stream = assembly.GetManifestResourceStream("XmlBookmarkReader.cs")
+    use stream = assembly.GetManifestResourceStream(resourceName)
     use reader = new StreamReader(stream)
     CodeSnippetTypeMember(reader.ReadToEnd())
 
