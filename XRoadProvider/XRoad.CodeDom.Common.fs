@@ -53,6 +53,9 @@ let (@%) (mie: CodeMethodReferenceExpression) (args: CodeExpression list) = Code
 /// Add parameters to delegate call.
 let (@%%) target args = CodeDelegateInvokeExpression(target, args |> Array.ofList) :> CodeExpression
 
+/// Array indexer operator.
+let (@?) target i = CodeArrayIndexerExpression(target, [| i |]) :> CodeExpression
+
 /// Functions to create and manipulate code attributes.
 module Attr =
     let create<'T> = CodeAttributeDeclaration(typeRef<'T>)
@@ -158,6 +161,7 @@ module Op =
     let isNotNull e = notEquals e (Expr.value null)
     let ge lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThanOrEqual, rhs) :> CodeExpression
     let greater lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThan, rhs) :> CodeExpression
+    let plus lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.Add, rhs) :> CodeExpression
 
 /// Functions to create and manipulate types.
 module Cls =
@@ -248,9 +252,9 @@ type RuntimeType =
 
 /// Add special XmlReader class to allow seeking previous parts of XML document.
 /// Required for reading XML documents which do not comply with given schema.
-let createXmlBookmarkReaderType() =
+let createTypeFromAssemblyResource resourceName =
     let assembly = typeof<RuntimeType>.Assembly
-    use stream = assembly.GetManifestResourceStream("XmlBookmarkReader.cs")
+    use stream = assembly.GetManifestResourceStream(resourceName)
     use reader = new StreamReader(stream)
     CodeSnippetTypeMember(reader.ReadToEnd())
 
