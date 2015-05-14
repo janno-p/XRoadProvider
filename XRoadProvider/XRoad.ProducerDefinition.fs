@@ -366,14 +366,22 @@ module ServiceBuilder =
     /// Depending on operation style and MIME/multipart mode, some overrides are required to default serialization.
     let private buildParameterType (context: TypeBuilderContext) isMultipart (part: MessagePart) =
         // Enables MIME/multipart serialization mode via overrides:
-        let enableOverrides varName = seq {
+        let enableOverrides varName runtimeType = seq {
+            let collInfo =
+                match runtimeType with
+                | CollectionType(rt,itemName,_) -> Some(itemName, rt)
+                | _ -> None
+            if isMultipart || collInfo.IsSome
+            then yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
+            else yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil
             if isMultipart then
-                yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
                 yield Stmt.declVarWith<XmlAttributes> (varName + "Value") (Expr.inst<XmlAttributes> [])
                 yield Stmt.assign (Expr.var (varName + "Value") @=> "XmlIgnore") (Expr.value true)
                 yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf (CodeTypeReference("BinaryContent")); Expr.value "Value"; Expr.var (varName + "Value")])
-            else
-                yield Stmt.declVarWith<XmlAttributeOverrides> (varName + "Overrides") Expr.nil
+            if collInfo.IsSome then
+                yield Stmt.declVarWith<XmlAttributes> (varName + "ItemValue") (Expr.inst<XmlAttributes> [])
+                yield Stmt.assign (Expr.var (varName + "ItemValue") @=> "XmlType") (Expr.inst<XmlTypeAttribute> [Expr.value (fst collInfo.Value)])
+                yield Stmt.ofExpr ((Expr.var (varName + "Overrides") @-> "Add") @% [Expr.typeOf ((snd collInfo.Value).AsCodeTypeReference()); Expr.var (varName + "ItemValue")])
         }
         // Generate types for root entities:
         match context.Style, part.SchemaEntity with
@@ -388,25 +396,28 @@ module ServiceBuilder =
             match elemType with
             | Name(name) ->
                 // Type is defined by element type; root element has element name and namespace defined in operation binding.
-                context.GetRuntimeType(SchemaType(name)),
-                fun varName ->
+                let runtimeType = context.GetRuntimeType(SchemaType(name))
+                let f = (fun varName ->
                     [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value elementName.LocalName])
                       yield Stmt.assign (Expr.var (varName + "Root") @=> "Namespace") (Expr.value elementName.NamespaceName)
-                      yield! enableOverrides varName ]
+                      yield! enableOverrides varName runtimeType ])
+                (runtimeType, f)
             | Reference(_) ->
                 failwith "Not implemented: message part should use elements defined in target namespace."
             | Definition(_) ->
                 // Element itself is used as root element type, so no overrides are neccessary.
-                context.GetRuntimeType(SchemaElement(elementName)),
-                fun varName ->
+                let runtimeType = context.GetRuntimeType(SchemaElement(elementName))
+                let f = (fun varName ->
                     [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") Expr.nil
-                      yield! enableOverrides varName ]
+                      yield! enableOverrides varName runtimeType ])
+                (runtimeType, f)
         | RpcEncoded, SchemaType(typeName) ->
             // Referenced type is also root element type; root element name matches part name.
-            context.GetRuntimeType(SchemaType(typeName)), 
-            fun varName ->
+            let runtimeType = context.GetRuntimeType(SchemaType(typeName))
+            let f = (fun varName ->
                 [ yield Stmt.declVarWith<XmlRootAttribute> (varName + "Root") (Expr.inst<XmlRootAttribute> [Expr.value part.Name])
-                  yield! enableOverrides varName ]
+                  yield! enableOverrides varName runtimeType ])
+            (runtimeType, f)
 
     /// Build content for each individual service call method.
     let build context undescribedFaults operation =
