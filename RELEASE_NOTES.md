@@ -1,4 +1,4 @@
-### New in 0.0.1-alpha (Released 2015/??/??)
+#### 0.0.1-alpha - Unreleased
 
 * Initial prerelease of XRoadProvider.
 * Basic support for rpc/encoded style (X-Road protocol 2.0) producer definitions.

@@ -1,7 +1,12 @@
 source https://nuget.org/api/v2
 
 nuget FAKE
-nuget NuGet.CommandLine
+nuget FSharp.Formatting
 nuget FSharp.TypeProviders.StarterPack
-nuget NUnit
+nuget NuGet.CommandLine
+nuget NUnit 
+nuget NUnit.Runners
+nuget SourceLink.Fake
 nuget Unquote
+
+github fsharp/FAKE modules/Octokit/Octokit.fsx

@@ -616,7 +616,7 @@ module Parser =
         |> snd
 
     /// Parses `schema` node contents and completes schemaNode definition details.
-    let private parseSchemaNode schemaNode (node: XElement) =
+    let internal parseSchemaNode schemaNode (node: XElement) =
         node.Elements()
         |> Seq.fold (fun (state, snode) node ->
             match node, state with

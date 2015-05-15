@@ -3,7 +3,8 @@
 open NUnit.Framework
 open Swensen.Unquote
 open System.Xml.Linq
-open XRoad.Parser.XsdSchema
+open XRoad.TypeSchema
+open XRoad.TypeSchema.Parser
 
 [<TestFixture>]
 module XmlSchemaTest =
@@ -14,5 +15,7 @@ module XmlSchemaTest =
                            <annotation />\
                            <include namespace=\"urn:some-namespace-to-include\" />\
                         </schema>"
-        let schemaNode = XElement.Parse(fragment)
-        raisesWith<exn> <@ parseSchemaNode(schemaNode) @> (fun e -> <@ e.Message = "Element {http://www.w3.org/2001/XMLSchema}include inside schema element was not expected at the current position!" @>)
+        let node = XElement.Parse(fragment)
+        let schemaNode = SchemaNode.FromNode(node)
+        raisesWith<exn> <@ node |> parseSchemaNode schemaNode @>
+                        (fun e -> <@ e.Message = "Element {http://www.w3.org/2001/XMLSchema}include inside schema element was not expected at the current position!" @>)

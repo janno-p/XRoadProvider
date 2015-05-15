@@ -1,27 +1,38 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XRoadProvider", "XRoadProvider\XRoadProvider.fsproj", "{4E04C5A5-00B9-4D7C-8501-31B4B7389671}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{B5BC653F-B0DB-4C0D-AB47-A15B4469215A}"
+# Visual Studio 2012
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{63297B98-5CED-492C-A5B7-A5B4F73CF142}"
 	ProjectSection(SolutionItems) = preProject
-		.gitignore = .gitignore
-		Build.cmd = Build.cmd
-		Build.fsx = Build.fsx
-		LICENSE.md = LICENSE.md
 		paket.dependencies = paket.dependencies
-		README.md = README.md
-		RELEASENOTES.md = RELEASENOTES.md
-		XRoadProvider.nuspec = XRoadProvider.nuspec
-		Build.sh = Build.sh
+		paket.lock = paket.lock
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{0592FF8F-3C1F-4B0F-A16C-5478C1CC5228}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{A6A6AF7D-D6E3-442D-9B1E-58CC91879BE1}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XRoadProvider", "src\XRoadProvider\XRoadProvider.fsproj", "{4E04C5A5-00B9-4D7C-8501-31B4B7389671}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{BF60BC93-E09B-4E5F-9D85-95A519479D54}"
 	ProjectSection(SolutionItems) = preProject
-		.paket\paket.bootstrapper.exe = .paket\paket.bootstrapper.exe
+		build.fsx = build.fsx
+		README.md = README.md
+		RELEASE_NOTES.md = RELEASE_NOTES.md
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{83F16175-43B1-4C90-A1EE-8E351C33435D}"
+	ProjectSection(SolutionItems) = preProject
+		docs\tools\generate.fsx = docs\tools\generate.fsx
+		docs\tools\templates\template.cshtml = docs\tools\templates\template.cshtml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "content", "content", "{8E6D5255-776D-4B61-85F9-73C37AA1FB9A}"
+	ProjectSection(SolutionItems) = preProject
+		docs\content\index.fsx = docs\content\index.fsx
+		docs\content\tutorial.fsx = docs\content\tutorial.fsx
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{ED8079DD-2B06-4030-9F0F-DC548F98E1C4}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XRoadProvider.Tests", "tests\XRoadProvider.Tests\XRoadProvider.Tests.fsproj", "{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,41 +44,17 @@ Global
 		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		Policies = $0
-		$0.TextStylePolicy = $5
-		$1.FileWidth = 120
-		$1.TabWidth = 2
-		$1.IndentWidth = 2
-		$1.inheritsSet = VisualStudio
-		$1.inheritsScope = text/plain
-		$1.scope = text/plain
-		$2.inheritsSet = null
-		$2.scope = application/xml
-		$0.XmlFormattingPolicy = $3
-		$3.inheritsSet = Mono
-		$3.inheritsScope = application/xml
-		$3.scope = application/xml
-		$0.DotNetNamingPolicy = $4
-		$4.DirectoryNamespaceAssociation = None
-		$4.ResourceNamePolicy = FileFormatDefault
-		$5.FileWidth = 120
-		$5.inheritsSet = VisualStudio
-		$5.inheritsScope = text/plain
-		$5.scope = text/x-fsharp
-		$0.FSharpFormattingPolicy = $6
-		$6.DefaultFormat = $7
-		$7.IndentOnTryWith = False
-		$7.ReorderOpenDeclaration = False
-		$7.SpaceAfterComma = True
-		$7.SpaceAfterSemicolon = True
-		$7.SpaceAroundDelimiter = True
-		$7.SpaceBeforeArgument = True
-		$7.SpaceBeforeColon = True
-		$6.scope = text/x-fsharp
+	GlobalSection(NestedProjects) = preSolution
+		{83F16175-43B1-4C90-A1EE-8E351C33435D} = {A6A6AF7D-D6E3-442D-9B1E-58CC91879BE1}
+		{8E6D5255-776D-4B61-85F9-73C37AA1FB9A} = {A6A6AF7D-D6E3-442D-9B1E-58CC91879BE1}
+		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790} = {ED8079DD-2B06-4030-9F0F-DC548F98E1C4}
 	EndGlobalSection
 EndGlobal
