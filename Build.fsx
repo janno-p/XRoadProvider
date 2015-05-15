@@ -51,6 +51,8 @@ let testAssemblies = "tests/**/bin/Release/*Tests*.dll"
 
 // Git configuration (used for publishing documentation in gh-pages branch)
 // The profile where the project is posted
+let gitAuthor = "Janno Põldma"
+let gitEmail = "janno.poldma@gmail.com"
 let gitOwner = "janno-p" 
 let gitHome = "https://github.com/" + gitOwner
 
@@ -305,7 +307,10 @@ Target "AddLangDocs" (fun _ ->
 Target "ReleaseDocs" (fun _ ->
     let tempDocsDir = "temp/gh-pages"
     CleanDir tempDocsDir
+    
     Repository.cloneSingleBranch "" (gitHome + "/" + gitName + ".git") "gh-pages" tempDocsDir
+    runGitCommand tempDocsDir (sprintf @"config user.name ""%s""" gitAuthor) |> ignore
+    runGitCommand tempDocsDir (sprintf @"config user.email ""%s""" gitEmail) |> ignore
 
     CopyRecursive "docs/output" tempDocsDir true |> tracefn "%A"
     StageAll tempDocsDir
