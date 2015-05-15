@@ -155,7 +155,7 @@ private static System.Xml.XmlReader GetResponseReader(System.Net.WebResponse res
             targetStream.Position = 0;
         }
         else currentLine = ReadLineFrom(responseStream, encoding);
-    } while (responseStream.Length > responseStream.Position && !BufferStartsWith(currentLine, endMarker));
+    } while (!BufferStartsWith(currentLine, endMarker));
 
     return System.Xml.XmlReader.Create(contentStream);
 }
