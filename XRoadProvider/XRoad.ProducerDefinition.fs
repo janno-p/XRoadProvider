@@ -425,25 +425,23 @@ module ServiceBuilder =
                   yield! enableOverrides varName runtimeType ])
             (runtimeType, f)
 
+    /// Initializes overrides for multipart serialization mode.
+    let private initMultipart prefix isMultipart =
+        [ if isMultipart then
+            yield Stmt.declVarWith<XmlAttributeOverrides> (prefix + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
+            yield Stmt.declVarWith<XmlAttributes> (prefix + "Attributes") (Expr.inst<XmlAttributes> [])
+            yield Stmt.assign (Expr.var (prefix + "Attributes") @=> "XmlIgnore") (Expr.value true)
+            yield Stmt.ofExpr ((Expr.var (prefix + "Overrides") @-> "Add") @% [Expr.typeOf (typeRefName "BinaryContent"); Expr.value "Value"; Expr.var (prefix + "Attributes")])
+          else
+            yield Stmt.declVarWith<XmlAttributeOverrides> (prefix + "Overrides") Expr.nil
+        ]
+
     /// Create serializer code segment for given parameter.
     let private serializeParameter (context: TypeBuilderContext) isMultipart serviceMethod (part: MessagePart) =
         let serializerName = part.Name + "Serializer"
         let overridesName = part.Name + "Overrides"
         let attributesName = part.Name + "Attributes"
         let rootName = part.Name + "Root"
-        // Initializes overrides for multipart serialization mode.
-        let initMultipart () =
-            if isMultipart then
-                serviceMethod
-                |> Meth.addStmt (Stmt.declVarWith<XmlAttributeOverrides> overridesName (Expr.inst<XmlAttributeOverrides> []))
-                |> Meth.addStmt (Stmt.declVarWith<XmlAttributes> attributesName (Expr.inst<XmlAttributes> []))
-                |> Meth.addStmt (Stmt.assign (Expr.var attributesName @=> "XmlIgnore") (Expr.value true))
-                |> Meth.addStmt (Stmt.ofExpr ((Expr.var overridesName @-> "Add") @% [Expr.typeOf (typeRefName "BinaryContent"); Expr.value "Value"; Expr.var attributesName]))
-                |> ignore
-            else
-                serviceMethod
-                |> Meth.addStmt (Stmt.declVarWith<XmlAttributeOverrides> overridesName Expr.nil)
-                |> ignore
         // Initialize serializing
         let initSerializing schemaName (rnm, rns : string option) =
             // Add new argument to method for this message part.
@@ -469,7 +467,8 @@ module ServiceBuilder =
                     | Some(v1), Some(v2) -> [Expr.value v1; Expr.value v2]
                     | Some(v), None -> [Expr.value v]
                     | _ -> failwith "fix me!"
-                initMultipart()
+                initMultipart part.Name isMultipart
+                |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
                 // Write array wrapper manually and serialize each array item separately.
                 serviceMethod
                 |> Meth.addExpr ((Expr.var "writer" @-> "WriteStartElement") @% rootElementName)
@@ -485,7 +484,8 @@ module ServiceBuilder =
                 |> ignore
             | _ ->
                 initRoot()
-                initMultipart()
+                initMultipart part.Name isMultipart
+                |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
                 serviceMethod
                 |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (runtimeType.AsCodeTypeReference()); Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ]))
                 |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var part.Name])
@@ -511,13 +511,61 @@ module ServiceBuilder =
             // Use the same type that is referenced from message part definition.
             initSerializing (part.SchemaEntity) (Some(part.Name), None)
 
+    /// Create deserializer code segment for given parameter.
+    let private buildDeserialization (context: TypeBuilderContext) undescribedFaults (message: OperationMessage) : CodeTypeReference * CodeStatement list =
+        let statements = List<CodeStatement>()
+
+        (*
+        let responseParameters = message.Body.Parts |> List.map (fun p -> p |> buildParameterType context message.IsMultipart, p.Name)
+        let returnType, returnExpr = responseParameters |> List.map (fst >> fst) |> makeReturnType message.IsMultipart
+
+        // Create separate deserializer call for each output parameter.
+        let deserializePartsExpr =
+            responseParameters
+            |> List.mapi (fun i ((runtimeType, overrideFunc), partName) ->
+                let i = if message.IsMultipart then i + 1 else i
+                let serializerName = partName + "Serializer"
+                let typ = runtimeType.AsCodeTypeReference()
+                let deserializeExpr =
+                    (overrideFunc partName) @
+                        [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var (partName + "Overrides"); Arr.createOfSize<Type> 0; Expr.var (partName + "Root"); Expr.nil])
+                          Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
+                let deserializeExpr =
+                    if partName = "keha" && undescribedFaults then
+                      [ (Expr.var "reader" @-> "SetBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
+                        Stmt.condIfElse (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.value "faultCode"; Expr.value ""; Expr.value 4])
+                                        [ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
+                                          Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []] ]
+                                        ([ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr ] @ deserializeExpr) ]
+                    else deserializeExpr
+                Stmt.condIf (Op.equals (Expr.var "reader" @=> "LocalName")
+                                       (Expr.value partName))
+                            deserializeExpr)
+
+        
+
+        responseParameters
+        |> List.iteri (fun i ((runtimeType,_),_) ->
+            let i = if operation.Response.IsMultipart then i + 1 else i
+            let typ = runtimeType.AsCodeTypeReference()
+            serviceMethod |> Meth.addStmt (Stmt.declVarRefWith typ (sprintf "v%d" i) Expr.nil) |> ignore)
+
+        |> Meth.addStmt (Stmt.whileLoop (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
+        |> Meth.addStmt (Stmt.ret returnExpr)
+        null, []
+        *)
+        null, statements |> List.ofSeq
+
     /// Build content for each individual service call method.
     let build context undescribedFaults (operation: Operation) =
-        let serviceMethod = Meth.create operation.Name.LocalName |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        let responseParameters = operation.Response.Body.Parts |> List.map (fun p -> p |> buildParameterType context operation.Response.IsMultipart, p.Name)
-        let returnType, returnExpr = responseParameters |> List.map (fst >> fst) |> makeReturnType operation.Response.IsMultipart
+        let serviceMethod =
+            Meth.create operation.Name.LocalName
+            |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
 
-        serviceMethod.ReturnType <- returnType
+        // Add documentation to the method if present.
+        match operation.Documentation.TryGetValue("et") with
+        | true, doc -> serviceMethod.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
+        | _ -> ()
 
         let requiredHeadersExpr = operation.GetRequiredHeaders() |> List.map Expr.value |> Arr.create<string>
         let serviceName = match operation.Version with Some v -> sprintf "%s.%s" operation.Name.LocalName v | _ -> operation.Name.LocalName
@@ -538,34 +586,18 @@ module ServiceBuilder =
         operation.Request.Body.Parts
         |> List.iter (serializeParameter context operation.Request.IsMultipart serviceMethod)
 
-        // Create separate deserializer call for each output parameter.
-        let deserializePartsExpr =
-            responseParameters
-            |> List.mapi (fun i ((runtimeType, overrideFunc), partName) ->
-                let i = if operation.Response.IsMultipart then i + 1 else i
-                let serializerName = partName + "Serializer"
-                let typ = runtimeType.AsCodeTypeReference()
-                let deserializeExpr =
-                    (overrideFunc partName) @
-                        [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var (partName + "Overrides"); Arr.createOfSize<Type> 0; Expr.var (partName + "Root"); Expr.nil])
-                          Stmt.assign (Expr.var(sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
-                let deserializeExpr =
-                    if partName = "keha" && undescribedFaults then
-                      [ (Expr.var "reader" @-> "SetBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
-                        Stmt.condIfElse (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.value "faultCode"; Expr.value ""; Expr.value 4])
-                                        [ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr
-                                          Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []] ]
-                                        ([ (Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"] |> Stmt.ofExpr ] @ deserializeExpr) ]
-                    else deserializeExpr
-                Stmt.condIf (Op.equals (Expr.var "reader" @=> "LocalName")
-                                       (Expr.value partName))
-                            deserializeExpr)
-
         // Finish body writer delegate.
         serviceMethod
         |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
         |> Meth.addExpr (Expr.code "}")
+        |> ignore
+
+        // Build output parameters deserialization expressions.
+        let returnType, deserializeExpr = buildDeserialization context undescribedFaults operation.Response
+
         // Reading body of response.
+        serviceMethod
+        |> Meth.returnsOf returnType
         |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, typeRef<IDictionary<string,Stream>>, returnType)) "readBody" (Expr.code "(r, responseAttachments) => { //"))
         |> Meth.addStmt (if undescribedFaults
                          then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
@@ -577,17 +609,11 @@ module ServiceBuilder =
                                      [Stmt.throw<Exception> [Expr.value "Invalid response message."]])
         |> ignore
 
-        responseParameters
-        |> List.iteri (fun i ((runtimeType,_),_) ->
-            let i = if operation.Response.IsMultipart then i + 1 else i
-            let typ = runtimeType.AsCodeTypeReference()
-            serviceMethod |> Meth.addStmt (Stmt.declVarRefWith typ (sprintf "v%d" i) Expr.nil) |> ignore)
+        // Deserialize main content.
+        deserializeExpr |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
 
-        serviceMethod
-        |> Meth.addStmt (Stmt.whileLoop (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) deserializePartsExpr)
-        |> Meth.addStmt (Stmt.ret returnExpr)
-        |> Meth.addExpr (Expr.code "}")
-        |> ignore
+        // Finish delegate block.
+        serviceMethod |> Meth.addExpr (Expr.code "}") |> ignore
 
         // Multipart services have separate argument: list of MIME/multipart attachments.
         let attachmentsExpr =
@@ -596,17 +622,12 @@ module ServiceBuilder =
                 Expr.var "attachments"
             else Expr.nil
 
-        match operation.Documentation.TryGetValue("et") with
-        | true, doc -> serviceMethod.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
-        | _ -> ()
-
         // Execute base class service call method with custom serialization delegates.
         let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [attachmentsExpr; Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
 
-        if responseParameters.IsEmpty then serviceMethod |> Meth.addExpr methodCall |> ignore
-        else serviceMethod |> Meth.addStmt (Stmt.ret methodCall) |> ignore 
-
-        serviceMethod
+        // Make return statement if definition specifies result.
+        let isEmptyResponse = (not operation.Response.IsMultipart) && (not (operation.Response.Body.Parts |> List.isEmpty))
+        serviceMethod |> Meth.addStmt (if isEmptyResponse then Stmt.ofExpr methodCall else Stmt.ret methodCall)
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
@@ -662,10 +683,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
     // Create methods for all operation bindings.
     schema.Services
     |> List.iter (fun service ->
-        let serviceTy =
-            Cls.create service.Name
-            |> Cls.setAttr TypeAttributes.Public
-            |> Cls.asStatic
+        let serviceTy = Cls.create service.Name |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
         service.Ports
         |> List.iter (fun port ->
             let ctor =
@@ -683,11 +701,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             | true, doc -> portTy.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
             | _ -> ()
             port.Operations
-            |> List.iter (fun op ->
-                portTy
-                |> Cls.addMember (ServiceBuilder.build context undescribedFaults op)
-                |> ignore))
-        targetClass |> Cls.addMember serviceTy |> ignore)
+            |> List.iter (fun op -> portTy |> Cls.addMember (ServiceBuilder.build context undescribedFaults op) |> ignore)
+            )
+        targetClass |> Cls.addMember serviceTy |> ignore
+        )
 
     // Create types for all type namespaces.
     context.CachedNamespaces |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
