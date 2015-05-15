@@ -123,6 +123,7 @@ let createBinaryContentType () =
     |> Cls.addMember (valueProp)
     |> Cls.addMember (ctor)
     |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Public)
+    |> Cls.describe (Attributes.XmlType (xnsname "base64Binary" XmlNamespace.SoapEnc))
 
 /// Types which extend BinaryContent types should inherit its properties from BinaryContent runtime type also.
 /// Create overloaded constructor to match BinaryContent constructor.
