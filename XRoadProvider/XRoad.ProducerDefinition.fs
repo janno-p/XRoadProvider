@@ -669,6 +669,14 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         targetClass |> Cls.addMember serviceTy |> ignore
         )
 
+    // Temporary hack to enable serialization for soapenc:base64Binary type.
+    context.GetOrCreateNamespace(xns XmlNamespace.SoapEnc)
+    |> Cls.addMember (Cls.create("base64Binary")
+                      |> Cls.addAttr TypeAttributes.Public
+                      |> Cls.describe (Attributes.XmlType (xnsname "base64Binary" XmlNamespace.SoapEnc))
+                      |> inheritBinaryContent)
+    |> ignore
+
     // Create types for all type namespaces.
     context.CachedNamespaces |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
 
