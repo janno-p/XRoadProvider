@@ -2,7 +2,6 @@ source https://nuget.org/api/v2
 
 nuget FAKE
 nuget FSharp.Formatting
-nuget FSharp.TypeProviders.StarterPack
 nuget NuGet.CommandLine
 nuget NUnit 
 nuget NUnit.Runners

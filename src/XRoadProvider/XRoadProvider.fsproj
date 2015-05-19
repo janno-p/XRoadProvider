@@ -51,15 +51,7 @@
     <EmbeddedResource Include="Snippets\AbstractServicePortExtensions.cs" />
     <EmbeddedResource Include="Snippets/XmlBookmarkReader.cs" />
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="ProvidedTypes.fsi">
-      <Paket>True</Paket>
-    </Compile>
-    <Compile Include="ProvidedTypes.fs">
-      <Paket>True</Paket>
-    </Compile>
-    <Compile Include="DebugProvidedTypes.fs">
-      <Paket>True</Paket>
-    </Compile>
+    <Compile Include="ProvidedTypes.fs" />
     <Compile Include="XRoad.Common.fs" />
     <Compile Include="XRoad.ServiceDescription.fs" />
     <Compile Include="XRoad.TypeSchema.fs" />
