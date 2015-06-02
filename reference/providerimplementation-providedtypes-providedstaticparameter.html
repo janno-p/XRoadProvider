@@ -37,9 +37,6 @@
 
 <h1>ProvidedStaticParameter</h1>
 <div class="xmldoc">
-<p>Represents a provided static parameter.</p>
-
-
 </div>
   <h3>Constructors</h3>
   <table class="table table-bordered member-list">
@@ -50,10 +47,10 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '80', 80)" onmouseover="showTip(event, '80', 80)">
+          <code onmouseout="hideTip(event, '112', 112)" onmouseover="showTip(event, '112', 112)">
             new(...)
           </code>
-          <div class="tip" id="80">
+          <div class="tip" id="112">
             <strong>Signature:</strong> (parameterName:string * parameterType:Type * parameterDefaultValue:obj option) -&gt; ProvidedStaticParameter<br />
                       </div>
         </td>
@@ -76,11 +73,11 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '81', 81)" onmouseover="showTip(event, '81', 81)">
-            AddXmlDoc(xmlDoc)
+          <code onmouseout="hideTip(event, '113', 113)" onmouseover="showTip(event, '113', 113)">
+            AddXmlDoc(text)
           </code>
-          <div class="tip" id="81">
-            <strong>Signature:</strong> xmlDoc:string -&gt; unit<br />
+          <div class="tip" id="113">
+            <strong>Signature:</strong> text:string -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
@@ -88,20 +85,35 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Add XML documentation information to this provided constructor</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '82', 82)" onmouseover="showTip(event, '82', 82)">
-            AddXmlDocDelayed(xmlDocFunction)
+          <code onmouseout="hideTip(event, '114', 114)" onmouseover="showTip(event, '114', 114)">
+            AddXmlDocComputed(xmlDoc)
           </code>
-          <div class="tip" id="82">
-            <strong>Signature:</strong> (xmlDocFunction:(unit -&gt; string)) -&gt; unit<br />
+          <div class="tip" id="114">
+            <strong>Signature:</strong> (xmlDoc:(unit -&gt; string)) -&gt; unit<br />
+                      </div>
+        </td>
+        <td class="xmldoc">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L561-561" class="github-link">
+              <img src="../content/img/github.png" class="normal" />
+              <img src="../content/img/github-blue.png" class="hover" />
+            </a>
+          
+        </td>
+      </tr>
+      <tr>
+        <td class="member-name">
+
+          <code onmouseout="hideTip(event, '115', 115)" onmouseover="showTip(event, '115', 115)">
+            AddXmlDocDelayed(xmlDoc)
+          </code>
+          <div class="tip" id="115">
+            <strong>Signature:</strong> (xmlDoc:(unit -&gt; string)) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
@@ -109,10 +121,7 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Add XML documentation information to this provided constructor, where the computation of the documentation is delayed until necessary</p>
-
-
-
+          
         </td>
       </tr>
     </tbody>
