@@ -1,3 +1,7 @@
+#### 0.0.2-alpha - June 2 2015
+
+* Fix unnecessary dependency for NuGet package.
+
 #### 0.0.1-alpha - May 15 2015
 
 * Initial prerelease of XRoadProvider.
