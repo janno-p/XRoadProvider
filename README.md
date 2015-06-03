@@ -12,8 +12,8 @@ Documentation and samples can be found at the [XRoadProvider home page](http://j
 
 ## Building
 
-* Mono: Run *build.sh*
-* Windows: Run *build.cmd*
+* Mono: Run `build.sh`
+* Windows: Run `build.cmd`
 
 ## Known Issues
 
