@@ -1,37 +1,27 @@
-# XRoadProvider
+[![Issue Stats](http://issuestats.com/github/janno-p/XRoadProvider/badge/issue)](http://issuestats.com/github/janno-p/XRoadProvider)
+[![Issue Stats](http://issuestats.com/github/janno-p/XRoadProvider/badge/pr)](http://issuestats.com/github/janno-p/XRoadProvider)
 
-A collection of F# type provider library to support easy interfacing with service providers over
+# XRoadProvider [![NuGet Status](http://img.shields.io/nuget/v/XRoadProvider.svg?style=flat)](https://www.nuget.org/packages/XRoadProvider/)
+
+A library containing collection of F# type providers to support easier integration with service providers over
 [X-Road](http://x-road.eu) infrastructure.
 
-## Usage
+## Documentation
 
-```F#
-open XRoad.Providers
+Documentation and samples can be found at the [XRoadProvider home page](http://janno-p.github.com/XRoadProvider/).
 
-type Maakataster = XRoadProducer<"H:\\Work\\Maakataster.wsdl">
+## Building
 
-let myport = new Maakataster.myservice.myport()
-myport.Address <- "http://localhost/maakataster/adapter.asmx"
-myport.Producer <- "maakataster"
+* Mono: Run *build.sh*
+* Windows: Run *build.cmd*
 
-let paring = new Maakataster.DefinedTypes.maakataster.ky_paring()
-paring.katastritunnus <- "test"
+## Known Issues
 
-let vastus, _ = myport.ky(paring)
-```
+## Disclaimer
 
-## TODO
+This is an alpha build and as such most likely has problems that are yet undetected. That means the solution is not suitable
+for use in production environment. I will not hold responsibility for any damage caused by this software.
 
-* Overrideable service settings (producer, soap address, doc language).
-* Logging outgoing incoming messages when necessary.
-* Cleaner type hierarchy considering XRoad specific message structure.
-* Separate types for XRoad specific structures: header, non-technical fault etc.
-* Generate special type for return types instead of tuples.
+## Maintainer(s)
 
-## Mistakes in XRoad samples
-
-### Maakataster (v4)
-
-* Operation binding response for `uploadMime` service binds to `mimeResponse` message part `p1`
-  through portType operation `uploadMime`, but that message has no part with that name. Part `p2`
-  should be used instead.
+* [@janno-p](https://github.com/janno-p)

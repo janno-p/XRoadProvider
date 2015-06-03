@@ -7,14 +7,21 @@
 XRoadProvider
 ======================
 
-Documentation
+Collection of type providers that make easier the integration process for data exchange layer X-Road. Currently
+two different type providers are implemented:
+
+* [XRoadProducer](reference/xroad-providers-xroadproducer.html) is generated type provider which offers type
+  signatures for types and method call functionality for operations defined in producers service description.
+
+* [XRoadServer](reference/xroad-providers-xroadserver.html) is erased type provider that discovers available
+  producer names from specified security server and offers their details inside development environment.
 
 <div class="row">
   <div class="span1"></div>
   <div class="span6">
     <div class="well well-small" id="nuget">
       The XRoadProvider library can be <a href="https://nuget.org/packages/XRoadProvider">installed from NuGet</a>:
-      <pre>PM> Install-Package XRoadProvider</pre>
+      <pre>PM> Install-Package XRoadProvider -Pre</pre>
     </div>
   </div>
   <div class="span1"></div>
@@ -23,16 +30,45 @@ Documentation
 Example
 -------
 
-This example demonstrates using a function defined in this sample library.
+This example demonstrates the use of the XRoadProvider:
 
 *)
+// Reference the type provider assembly.
 #r "XRoadProvider.dll"
-open XRoadProvider
 
-printfn "hello = %i" <| Library.hello 0
+open XRoad.Providers
+
+// Acquire list of producer from security server.
+type SecurityServer = XRoadServer<"xxx.xxx.xx.xxx">
+
+// Initialize service interface for specific producer using details from security server.
+type Maakataster = XRoadProducer<SecurityServer.Producers.maakataster.WsdlUri>
+
+// Initialize service interface which provides access to operation methods.
+let myport = new Maakataster.myservice.myport()
+
+// Override default values acquired from port definition (when necessary).
+myport.ProducerName <- "maakataster"
+myport.ProducerUri <- "http://localhost:8001/"
+
+// Assign X-Road header values.
+myport.Ametniknimi <- "toomas.dumpty"
+
+// Initialize request parameters.
+let request = new Maakataster.DefinedTypes.maakataster.ky_paring()
+request.katastritunnus <- "test"
+request.ky_max <- new Maakataster.DefinedTypes.maakataster.t_ky_max(BaseValue="001")
+
+// Execute service request against specified adapter.
+let response, _ = myport.ky(request)
+
+// Display results to console.
+response |> Array.iteri (printfn "%d) %A")
 
 (**
-Some more info
+
+As an alternative to asking service descriptions from security server, it's also possible to
+exclude security server from development process by using local WSDL definitions instead.
 
 Samples & documentation
 -----------------------
