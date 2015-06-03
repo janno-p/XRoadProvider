@@ -1,3 +1,9 @@
+#### 0.0.3-alpha - Unreleased
+
+* Restore MIT license.
+* Improve documentation on home page.
+* Automatically add framework assembly dependencies (System.Xml).
+
 #### 0.0.2-alpha - June 2 2015
 
 * Fix unnecessary dependency for NuGet package.
