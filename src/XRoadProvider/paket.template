@@ -19,5 +19,6 @@ summary
     Type providers for generating types and service interfaces for XRoad producers.
 description
     Type providers for generating types and service interfaces for XRoad producers.
-
+frameworkAssemblies
+    System.Xml
 
