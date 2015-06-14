@@ -81,10 +81,10 @@ type internal ProducerDescription =
     { TypeSchemas: Map<string,SchemaNode>
       Services: Service list }
     /// Load producer definition from given uri location.
-    static member Load(uri: string) =
+    static member Load(uri: string, languageCode) =
         let document = XDocument.Load(uri)
         let definitions = document.Element(xnsname "definitions" XmlNamespace.Wsdl)
-        { Services = definitions |> ServiceDescription.Parser.parseServices
+        { Services = definitions |> ServiceDescription.parseServices languageCode
           TypeSchemas = definitions |> TypeSchema.Parser.parseSchema }
 
 /// Context keeps track of already generated types for provided types and namespaces
@@ -100,8 +100,8 @@ type internal TypeBuilderContext =
       Elements: Map<string,ElementSpec>
       /// Schema level type definition lookup.
       Types: Map<string,SchemaType>
-      /// Operation style used by this producer.
-      Style: OperationStyle }
+      /// X-Road protocol used by this producer.
+      Protocol: XRoadProtocol }
     with
         /// Find generated type that corresponds to given namespace name.
         /// If type exists, the existing instance is used; otherwise new type is generated.
@@ -234,12 +234,12 @@ type internal TypeBuilderContext =
         /// Initializes new context object from given schema definition.
         static member FromSchema(schema) =
             // Validates that schema contains single operation style, as required by X-Road specification.
-            let style =
+            let protocol =
                 let reduceStyle s1 s2 =
-                    if s1 <> s2 then failwith "Mixing services of different style is not accepted!"
+                    if s1 <> s2 then failwith "Mixing services implementing different X-Road protocols is not accepted!"
                     s1
                 schema.Services
-                |> List.map (fun svc -> svc.Ports |> List.map (fun p -> p.Style) |> List.reduce reduceStyle)
+                |> List.map (fun svc -> svc.Ports |> List.map (fun p -> p.Protocol) |> List.reduce reduceStyle)
                 |> List.reduce reduceStyle
             // Initialize type builder context.
             { CachedNamespaces = Dictionary<_,_>()
@@ -259,4 +259,4 @@ type internal TypeBuilderContext =
                   |> Map.toSeq
                   |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
-              Style = style }
+              Protocol = protocol }

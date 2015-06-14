@@ -459,7 +459,7 @@ module ServiceBuilder =
         initSerializing typeName rootName
 
     /// Create deserializer code segment for given parameter.
-    let private buildDeserialization (context: TypeBuilderContext) undescribedFaults (message: OperationMessage) : CodeTypeReference * CodeStatement list =
+    let private buildDeserialization (context: TypeBuilderContext) undescribedFaults (message: MethodCall) : CodeTypeReference * CodeStatement list =
         let statements = List<CodeStatement>()
         let returnType = List<string * RuntimeType>()
 
@@ -520,18 +520,16 @@ module ServiceBuilder =
         retType, bodyStatements |> List.ofSeq
 
     /// Build content for each individual service call method.
-    let build context undescribedFaults (operation: Operation) =
+    let build context undescribedFaults (operation: ServicePortMethod) =
         let serviceMethod =
-            Meth.create operation.Name.LocalName
+            Meth.create operation.Name
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+            |> Code.comment operation.Documentation
 
-        // Add documentation to the method if present.
-        match operation.Documentation.TryGetValue("et") with
-        | true, doc -> serviceMethod.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
-        | _ -> ()
+        let requiredHeadersExpr = operation.InputParameters.RequiredHeaders |> List.map Expr.value |> Arr.create<string>
+        let serviceName = match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name
 
-        let requiredHeadersExpr = operation.GetRequiredHeaders() |> List.map Expr.value |> Arr.create<string>
-        let serviceName = match operation.Version with Some v -> sprintf "%s.%s" operation.Name.LocalName v | _ -> operation.Name.LocalName
+        operation.InputParameters.Accessor
 
         // CodeDom doesn't support delegates, so we have to improvise.
         serviceMethod
@@ -547,7 +545,7 @@ module ServiceBuilder =
 
         // Create separate serializer for each parameter.
         operation.Request.Body.Parts
-        |> List.iter (serializeParameter context operation.Request.IsMultipart serviceMethod)
+        |> List.iter (serializeParameter context operation.InputParameters.IsMultipart serviceMethod)
 
         // Finish body writer delegate.
         serviceMethod
@@ -556,7 +554,7 @@ module ServiceBuilder =
         |> ignore
 
         // Build output parameters deserialization expressions.
-        let returnType, deserializeExpr = buildDeserialization context undescribedFaults operation.Response
+        let returnType, deserializeExpr = buildDeserialization context undescribedFaults operation.OutputParameters
 
         // Reading body of response.
         serviceMethod
@@ -580,7 +578,7 @@ module ServiceBuilder =
 
         // Multipart services have separate argument: list of MIME/multipart attachments.
         let attachmentsExpr =
-            if operation.Request.IsMultipart then
+            if operation.InputParameters.IsMultipart then
                 serviceMethod |> Meth.addParam<IDictionary<string,Stream>> "attachments" |> ignore
                 Expr.var "attachments"
             else Expr.nil
@@ -589,20 +587,20 @@ module ServiceBuilder =
         let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [attachmentsExpr; Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
 
         // Make return statement if definition specifies result.
-        let isEmptyResponse = (not operation.Response.IsMultipart) && (operation.Response.Body.Parts |> List.isEmpty)
+        let isEmptyResponse = (not operation.OutputParameters.IsMultipart) && (operation.Response.Body.Parts |> List.isEmpty)
         serviceMethod |> Meth.addStmt (if isEmptyResponse then Stmt.ofExpr methodCall else Stmt.ret methodCall)
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
+let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, languageCode) =
     // Load schema details from specified file or network location.
-    let schema = ProducerDescription.Load(resolveUri producerUri)
+    let schema = ProducerDescription.Load(resolveUri producerUri, languageCode)
 
     // Initialize type and schema element lookup context.
     let context = TypeBuilderContext.FromSchema(schema)
 
     // Create base type which provides access to service calls.
-    let portBaseTy = makeServicePortBaseType undescribedFaults context.Style
+    let portBaseTy = makeServicePortBaseType undescribedFaults context.Protocol
 
     // Create base type which holds types generated from all provided schema-s.
     let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
@@ -641,7 +639,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
         |> iif undescribedFaults (fun x -> x |> Cls.addMember (createTypeFromAssemblyResource("XmlBookmarkReader.cs")))
         |> Cls.addMember portBaseTy
         |> Cls.addMember serviceTypesTy
-        |> Cls.addMember (createBinaryContentType())
+        |> Cls.addMember (createTypeFromAssemblyResource("Serialization.cs"))
 
     // Create methods for all operation bindings.
     schema.Services
@@ -652,18 +650,16 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults) =
             let ctor =
                 Ctor.create()
                 |> Ctor.setAttr MemberAttributes.Public
-                |> Ctor.addBaseArg (Expr.value port.Address)
+                |> Ctor.addBaseArg (Expr.value port.Uri)
                 |> Ctor.addBaseArg (Expr.value port.Producer)
             let portTy =
                 Cls.create port.Name
                 |> Cls.setAttr TypeAttributes.Public
                 |> Cls.setParent (typeRefName portBaseTy.Name)
                 |> Cls.addMember ctor
+                |> Code.comment port.Documentation
             serviceTy |> Cls.addMember portTy |> ignore
-            match port.Documentation.TryGetValue("et") with
-            | true, doc -> portTy.Comments.Add(CodeCommentStatement(doc, true)) |> ignore
-            | _ -> ()
-            port.Operations
+            port.Methods
             |> List.iter (fun op -> portTy |> Cls.addMember (ServiceBuilder.build context undescribedFaults op) |> ignore)
             )
         targetClass |> Cls.addMember serviceTy |> ignore
