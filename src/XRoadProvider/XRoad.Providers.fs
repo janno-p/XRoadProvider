@@ -27,7 +27,7 @@ type XRoadProducerProvider() as this =
            // Add code to handle service errors even if WSDL document doesn't explicitly define error responses.
            ProvidedStaticParameter("UndescribedFaults", typeof<bool>, false)
            // Specify language code that is extracted as documentation tooltips.
-           ProvidedStaticParameter("LanguageCode", typeof<string>, "")
+           ProvidedStaticParameter("LanguageCode", typeof<string>, "et")
            |]
 
     interface ITypeProvider with

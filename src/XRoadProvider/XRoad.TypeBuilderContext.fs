@@ -64,7 +64,7 @@ module internal Pattern =
                     | Some(typeName, _) ->
                         match getArrayItemElement(rstr.Content.Content) with
                         | Some(element) -> Some({ element with Type = Name(typeName) })
-                        | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Type = Name(typeName) })
+                        | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Type = Name(typeName); Annotation = None })
                     | None -> failwith "Array underlying type specification is missing."
                 | _ ->
                     match getArrayItemElement(rstr.Content.Content) with
@@ -101,7 +101,9 @@ type internal TypeBuilderContext =
       /// Schema level type definition lookup.
       Types: Map<string,SchemaType>
       /// X-Road protocol used by this producer.
-      Protocol: XRoadProtocol }
+      Protocol: XRoadProtocol
+      /// Language code preferred for code comments.
+      LanguageCode: string }
     with
         /// Find generated type that corresponds to given namespace name.
         /// If type exists, the existing instance is used; otherwise new type is generated.
@@ -232,7 +234,7 @@ type internal TypeBuilderContext =
             findElementDefinition(spec)
 
         /// Initializes new context object from given schema definition.
-        static member FromSchema(schema) =
+        static member FromSchema(schema, languageCode) =
             // Validates that schema contains single operation style, as required by X-Road specification.
             let protocol =
                 let reduceStyle s1 s2 =
@@ -259,4 +261,5 @@ type internal TypeBuilderContext =
                   |> Map.toSeq
                   |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
-              Protocol = protocol }
+              Protocol = protocol
+              LanguageCode = languageCode }

@@ -7,6 +7,7 @@
 * Populate documentation tooltips from data extracted from service description.
 * Fix deserialization bug when attachment marker gets splitted.
 * Fix order of elements in sequence particle.
+* Coding tooltips for types, methods and properties.
 
 #### 0.0.2-alpha - June 2 2015
 

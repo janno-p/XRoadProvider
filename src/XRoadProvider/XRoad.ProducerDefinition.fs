@@ -38,9 +38,10 @@ module TypeBuilder =
           IsIgnored: bool
           // Choice element specific attributes:
           ChoiceIdentifier: string option
-          ChoiceElements: PropertyDefinition list }
+          ChoiceElements: PropertyDefinition list
+          Documentation: string option }
         /// Initializes default property with name and optional value.
-        static member Create(name, isOptional) =
+        static member Create(name, isOptional, doc) =
             { Type = RuntimeType.PrimitiveType(typeof<System.Void>)
               IsNillable = false
               IsItemNillable = None
@@ -52,7 +53,8 @@ module TypeBuilder =
               IsAny = false
               IsIgnored = false
               ChoiceIdentifier = None
-              ChoiceElements = [] }
+              ChoiceElements = []
+              Documentation = doc }
 
     /// Build property declarations from property definitions and add them to owner type.
     let private addTypeProperties definitions ownerTy =
@@ -60,6 +62,7 @@ module TypeBuilder =
         |> List.iter (fun definition ->
             // Most of the conditions handle XmlSerializer specific attributes.
             let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional)
+                               |> Code.comment (definition.Documentation)
             if definition.IsIgnored then
                 prop |> Prop.describe Attributes.XmlIgnore |> ignore
             elif definition.IsAny then
@@ -90,8 +93,19 @@ module TypeBuilder =
 
     /// Create definition of property that accepts any element not defined in schema.
     let private buildAnyProperty () =
-        let prop = PropertyDefinition.Create("AnyElements", false)
+        let prop = PropertyDefinition.Create("AnyElements", false, None)
         { prop with Type = PrimitiveType(typeof<XmlElement[]>); IsAny = true }
+
+    let private annotationToText (context: TypeBuilderContext) (annotation: Annotation option) =
+        annotation
+        |> Option.bind (fun annotation ->
+            annotation.AppInfo
+            |> List.collect (fun e -> e.Elements(xnsname "title" context.Protocol.Namespace) |> List.ofSeq)
+            |> List.fold (fun doc el ->
+                let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) "et"
+                (lang, el.Value)::doc) []
+            |> List.tryFind (fst >> ((=) context.LanguageCode))
+            |> Option.map snd)
 
     /// Populate generated type declaration with properties specified in type schema definition.
     let rec build (context: TypeBuilderContext) runtimeType schemaType =
@@ -108,7 +122,8 @@ module TypeBuilder =
                 sprintf "Choice%d" !num)
         // Parse schema definition and add all properties that are defined.
         match schemaType with
-        | SimpleType(SimpleTypeSpec.Restriction(spec)) ->
+        | SimpleType(SimpleTypeSpec.Restriction(spec, annotation)) ->
+            providedTy |> Code.comment (annotationToText context annotation) |> ignore
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | PrimitiveType(_) as rtyp ->
                 providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.XmlText |> ignore
@@ -125,6 +140,7 @@ module TypeBuilder =
             if spec.IsAbstract then
                 providedTy |> Cls.addAttr TypeAttributes.Abstract
                            |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Family)
+                           |> Code.comment (annotationToText context spec.Annotation)
                            |> ignore
             // Handle complex type content and add properties for attributes and elements.
             let specContent =
@@ -193,7 +209,7 @@ module TypeBuilder =
     /// Create single property definition for given element-s schema specification.
     and private buildElementProperty (context: TypeBuilderContext) (spec: ElementSpec) =
         let name, schemaType = context.GetElementDefinition(spec)
-        buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (spec.MinOccurs = 0u) context
+        buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (spec.MinOccurs = 0u) context (annotationToText context spec.Annotation)
 
     /// Create single property definition for given attribute-s schema specification.
     and private buildAttributeProperty (context: TypeBuilderContext) (spec: AttributeSpec) =
@@ -205,12 +221,12 @@ module TypeBuilder =
             | Name(name) -> Name(name)
             | Reference(ref) -> Reference(ref)
         let isOptional = match spec.Use with Required -> true | _ -> false
-        let prop = buildPropertyDef schemaType 1u name false isOptional context
+        let prop = buildPropertyDef schemaType 1u name false isOptional context (annotationToText context spec.Annotation)
         { prop with IsAttribute = true }
 
     /// Build default property definition from provided schema information.
-    and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context =
-        let propertyDef = PropertyDefinition.Create(name, isOptional)
+    and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context doc =
+        let propertyDef = PropertyDefinition.Create(name, isOptional, doc)
         match schemaType with
         | Definition(ArrayContent itemSpec) ->
             match context.GetElementDefinition(itemSpec) with
@@ -283,7 +299,7 @@ module TypeBuilder =
                 let rt = ProvidedType(choiceEnum, choiceEnum.Name)
                 if isArray then CollectionType(rt, "", None) else rt
             let choiceTypeProp =
-                let prop = PropertyDefinition.Create(choiceName + "Name", false)
+                let prop = PropertyDefinition.Create(choiceName + "Name", false, None)
                 { prop with Type = enumNameType; IsIgnored = true; AddedTypes = [choiceEnum] }
             // Create property for holding option values.
             let choiceItemType =
@@ -307,7 +323,7 @@ module TypeBuilder =
                 |> Cls.addMember fld
                 |> ignore)
             let choiceItemProp =
-                let prop = PropertyDefinition.Create(choiceName + (if isArray then "Items" else"Item"), false)
+                let prop = PropertyDefinition.Create(choiceName + (if isArray then "Items" else"Item"), false, None)
                 { prop with Type = choiceItemType; ChoiceIdentifier = Some(choiceTypeProp.Name); ChoiceElements = choiceElements }
             [ choiceTypeProp; choiceItemProp ]
 
@@ -651,7 +667,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
     let schema = ProducerDescription.Load(resolveUri producerUri, languageCode)
 
     // Initialize type and schema element lookup context.
-    let context = TypeBuilderContext.FromSchema(schema)
+    let context = TypeBuilderContext.FromSchema(schema, languageCode)
 
     // Create base type which provides access to service calls.
     let portBaseTy = makeServicePortBaseType undescribedFaults context.Protocol

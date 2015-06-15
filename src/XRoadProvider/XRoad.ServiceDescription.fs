@@ -25,15 +25,11 @@ type private MimeContent =
 
 /// Parse X-Road title elements for various languages.
 let private readLanguages languageCode (protocol: XRoadProtocol) (element: XElement) =
-    let languages =
-        element.Elements(xnsname "title" protocol.Namespace)
-        |> Seq.fold (fun doc el ->
-            let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) ""
-            (lang, el.Value)::doc
-            ) []
-    languages
+    element.Elements(xnsname "title" protocol.Namespace)
+    |> Seq.fold (fun doc el ->
+        let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) "et"
+        (lang, el.Value)::doc) []
     |> List.tryFind (fst >> ((=) languageCode))
-    |> Option.fold (fun x _ -> x) (languages |> List.sort |> List.tryFind (fun _ -> true))
     |> Option.map snd
 
 /// Read documentation element contents into language code indexed dictionary.

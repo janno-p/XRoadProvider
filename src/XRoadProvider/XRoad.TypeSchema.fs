@@ -77,13 +77,15 @@ type SchemaObject<'T> =
 
 /// Type schemas `element` node definition.
 type ElementSpec =
-    { Name: string option
+    { Annotation: Annotation option
+      Name: string option
       MinOccurs: uint32
       MaxOccurs: uint32
       IsNillable: bool
       Type: SchemaObject<SchemaType> }
     static member FromNode(node) =
-        { Name = None
+        { Annotation = None
+          Name = None
           MinOccurs = readMinOccurs node
           MaxOccurs = readMaxOccurs node
           IsNillable = readNillable node
@@ -97,12 +99,13 @@ and SchemaType =
 
 /// Wraps complex type definition.
 and ComplexTypeSpec =
-    { IsAbstract: bool
+    { Annotation: Annotation option
+      IsAbstract: bool
       Content: ComplexTypeContent }
 
 /// Simple types can restrict existing simple types or combine existing simple types to list and unions.
 and SimpleTypeSpec =
-    | Restriction of SimpleTypeRestrictionSpec
+    | Restriction of SimpleTypeRestrictionSpec * Annotation option
     | ListDef
     | Union of UnionSpec
 
@@ -181,7 +184,8 @@ and ComplexTypeParticle =
 
 /// Single attribute definition.
 and AttributeSpec =
-    { Name: string option
+    { Annotation: Annotation option
+      Name: string option
       RefOrType: SchemaObject<SimpleTypeSpec>
       Use: AttributeUse
       /// Used for SOAP-encoded array-s.
@@ -223,6 +227,8 @@ and ChoiceContent =
     | Element of ElementSpec
     | Group
     | Sequence of SequenceSpec
+
+and Annotation = { AppInfo: XElement list }
 
 /// Wrap multiple attribute definitions into predefined group.
 type AttributeGroupSpec =
@@ -266,9 +272,18 @@ module Parser =
         | TypeSpec
         | Other
 
+    /// Extracts documentation from annotation element definition.
+    let private parseAnnotation (parentNode: XElement): Annotation option =
+        match parentNode.Element(xnsname "annotation" XmlNamespace.Xsd) with
+        | null -> None
+        | node ->
+            match node.Elements(xnsname "appinfo" XmlNamespace.Xsd) |> List.ofSeq with
+            | [] -> None
+            | elements -> Some({ AppInfo = elements })
+
     /// Extracts complexType specification from schema definition.
     let rec private parseComplexType (node: XElement): ComplexTypeSpec =
-        let parseChildElements () =
+        let parseChildElements() =
             node.Elements()
             |> Seq.fold (fun (state, spec) node ->
                 match node, state with
@@ -300,9 +315,9 @@ module Parser =
                 | _ ->
                     node |> notExpectedIn "complexType"
                 ) (Begin, None)
-            |> snd
-            |> Option.orDefault ComplexTypeContent.Empty
-        { IsAbstract = node |> readBoolean "abstract"; Content = parseChildElements() }
+                |> snd
+                |> Option.orDefault ComplexTypeContent.Empty
+        { IsAbstract = node |> readBoolean "abstract"; Content = parseChildElements(); Annotation = parseAnnotation(node) }
 
     /// Extracts complexType-s simpleContent element specification from schema definition.
     and private parseSimpleContent (node: XElement): SimpleContentSpec =
@@ -424,11 +439,11 @@ module Parser =
         | Some refv ->
             match node |> attr (xname "name") with
             | Some _ -> failwith "Attribute element name and ref attribute cannot be present at the same time."
-            | _ -> { Name = None; RefOrType = Reference(parseXName node refv); ArrayType = arrayType; Use = attrUse }
+            | _ -> { Name = None; RefOrType = Reference(parseXName node refv); ArrayType = arrayType; Use = attrUse; Annotation = parseAnnotation(node) }
         | _ ->
             let name = node |> reqAttr (xname "name")
             match node |> attr (xname "type") with
-            | Some value -> { Name = Some(name); RefOrType = Name(parseXName node value); ArrayType = arrayType; Use = attrUse }
+            | Some value -> { Name = Some(name); RefOrType = Name(parseXName node value); ArrayType = arrayType; Use = attrUse; Annotation = parseAnnotation(node) }
             | _ ->
                 node.Elements()
                 |> Seq.fold (fun (state, spec) node ->
@@ -438,7 +453,7 @@ module Parser =
                     | _ -> node |> notExpectedIn "attribute"
                     ) (Begin, None)
                 |> (fun (_, typ) -> match typ with
-                                    | Some(typ) -> { Name = Some(name); RefOrType = Definition(typ); ArrayType = arrayType; Use = attrUse }
+                                    | Some(typ) -> { Name = Some(name); RefOrType = Definition(typ); ArrayType = arrayType; Use = attrUse; Annotation = parseAnnotation(node) }
                                     | _ -> failwithf "Attribute element %s type definition is missing." name)
 
     /// Extracts complexType-s `simpleContent` element specification from schema definition.
@@ -519,6 +534,7 @@ module Parser =
             | _ -> { elementSpec with Type = Reference(parseXName node refv) }
         | _ ->
             { elementSpec with
+                Annotation = parseAnnotation(node)
                 Name = Some(node |> reqAttr (xname "name"))
                 Type = match node |> attr (xname "type") with
                        | Some value -> Name(parseXName node value)
@@ -526,6 +542,7 @@ module Parser =
 
     /// Extracts `simpleType` element specification from schema definition.
     and private parseSimpleType (node: XElement): SimpleTypeSpec =
+        let annotation = parseAnnotation(node)
         let content =
             node.Elements()
             |> Seq.fold (fun (state, spec) node ->
@@ -533,7 +550,7 @@ module Parser =
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "restriction", (Begin | Annotation) ->
-                    Content, Some(SimpleTypeSpec.Restriction(parseSimpleTypeRestriction node))
+                    Content, Some(SimpleTypeSpec.Restriction(parseSimpleTypeRestriction node, annotation))
                 | Xsd "union", (Begin | Annotation) ->
                     Content, Some(SimpleTypeSpec.Union(parseUnion node))
                 | Xsd "list", (Begin | Annotation) ->
