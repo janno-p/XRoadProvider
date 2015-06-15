@@ -193,9 +193,11 @@ private static ChunkState ReadChunkOrMarker(out byte[] chunk, System.IO.Stream s
 {
     var result = ChunkState.BufferLimit;
     var markerLength = marker != null ? marker.Length : 0;
-    var buffer = new byte[chunkSize];
+    var buffer = new byte[chunkSize + markerLength];
 
     var position = -1;
+    var markerPos = -1;
+
     while (true)
     {
         var lastByte = stream.ReadByte();
@@ -208,10 +210,17 @@ private static ChunkState ReadChunkOrMarker(out byte[] chunk, System.IO.Stream s
         position += 1;
         buffer[position] = (byte)lastByte;
 
-        if (position >= chunkSize - 1)
+        if (marker != null && markerLength > 0)
+        {
+            markerPos += 1;
+            if (lastByte != marker[markerPos])
+                markerPos = -1;
+        }
+
+        if (position >= chunkSize - 1 && markerPos < 0)
             break;
 
-        if (marker == null || !BufferEndsWith(buffer, marker, position))
+        if (markerLength < 1 || markerPos != (markerLength - 1))
             continue;
 
         result = ChunkState.Marker;

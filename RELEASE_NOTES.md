@@ -3,6 +3,10 @@
 * Restore MIT license.
 * Improve documentation on home page.
 * Automatically add framework assembly dependencies (System.Xml).
+* Add partial support for unallowed binding styles Document/Encoded and RPC/Literal.
+* Populate documentation tooltips from data extracted from service description.
+* Fix deserialization bug when attachment marker gets splitted.
+* Fix order of elements in sequence particle.
 
 #### 0.0.2-alpha - June 2 2015
 

@@ -350,15 +350,15 @@ module Parser =
             | Xsd "annotation", Begin ->
                 Annotation, { spec with Annotation = Some(node.Value) }
             | Xsd "any", _ ->
-                Content, { spec with Content = [ChoiceContent.Any] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [ChoiceContent.Any] }
             | Xsd "choice", _ ->
-                Content, { spec with Content = [ChoiceContent.Choice(parseChoice(node))] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [ChoiceContent.Choice(parseChoice(node))] }
             | Xsd "element", _ ->
-                Content, { spec with Content = [ChoiceContent.Element(parseElement(node))] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [ChoiceContent.Element(parseElement(node))] }
             | Xsd "group", _ ->
                 Content, node |> notImplementedIn "choice"
             | Xsd "sequence", _ ->
-                Content, { spec with Content = [ChoiceContent.Sequence(parseSequence(node))] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [ChoiceContent.Sequence(parseSequence(node))] }
             | _ -> node |> notExpectedIn "choice"
             ) (Begin, { Annotation = None
                         MaxOccurs = readMaxOccurs node
@@ -374,15 +374,15 @@ module Parser =
             | Xsd "annotation", Begin ->
                 Annotation, spec
             | Xsd "any", (Begin | Annotation | Content) ->
-                Content, { spec with Content = [SequenceContent.Any] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [SequenceContent.Any] }
             | Xsd "choice", (Begin | Annotation | Content) ->
-                Content, { spec with Content = [SequenceContent.Choice(parseChoice(node))] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [SequenceContent.Choice(parseChoice(node))] }
             | Xsd "group", (Begin | Annotation | Content) ->
                 Content, node |> notImplementedIn "sequence"
             | Xsd "sequence", (Begin | Annotation | Content) ->
-                Content, { spec with Content = [SequenceContent.Sequence(parseSequence(node))] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [SequenceContent.Sequence(parseSequence(node))] }
             | Xsd "element", (Begin | Annotation | Content) ->
-                Content, { spec with Content = [SequenceContent.Element(parseElement(node))] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [SequenceContent.Element(parseElement(node))] }
             | _ -> node |> notExpectedIn "sequence"
             ) (Begin, { MinOccurs = readMinOccurs node
                         MaxOccurs = readMaxOccurs node
@@ -397,7 +397,7 @@ module Parser =
             | Xsd "annotation", Begin ->
                 Annotation, spec
             | Xsd "element", (Begin | Annotation | Content) ->
-                Content, { spec with Elements = [parseElement(node)] @ spec.Elements }
+                Content, { spec with Elements = spec.Elements @ [parseElement(node)] }
             | _ -> node |> notExpectedIn "all"
             ) (Begin, { MinOccurs = readMinOccurs node
                         MaxOccurs = readMaxOccurs node
@@ -556,11 +556,11 @@ module Parser =
                 TypeSpec, node |> notImplementedIn "simpleType restriction"
             | Xsd "enumeration", (Begin | Annotation | TypeSpec | Content) ->
                 let value = node |> reqAttr(xname "value")
-                Content, { spec with Content = [Enumeration(value)] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [Enumeration(value)] }
             | Xsd "minLength", (Begin | Annotation | TypeSpec | Content) ->
-                Content, { spec with Content = [MinLength(node |> readInt "value")] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [MinLength(node |> readInt "value")] }
             | Xsd "pattern", (Begin | Annotation | TypeSpec | Content) ->
-                Content, { spec with Content = [Pattern(node |> reqAttr(xname "value"))] @ spec.Content }
+                Content, { spec with Content = spec.Content @ [Pattern(node |> reqAttr(xname "value"))] }
             | (Xsd "minExclusive" | Xsd "minInclusive" | Xsd "maxExclusive" | Xsd "maxInclusive" | Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace"), (Begin | Annotation | TypeSpec | Content) ->
                 Content, node |> notImplementedIn "simpleType restriction"
             | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | TypeSpec | Content | Attribute) ->
@@ -593,7 +593,7 @@ module Parser =
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "simpleType", (Begin | Annotation) ->
-                    Content, [parseSimpleType(node)] @ spec
+                    Content, spec @ [parseSimpleType(node)]
                 | _ -> node |> notExpectedIn "union"
                 ) (Begin, [])
             |> snd }
