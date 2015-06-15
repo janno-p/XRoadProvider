@@ -1,4 +1,4 @@
-#### 0.0.3-alpha - Unreleased
+#### 0.0.3-alpha - June 15 2015
 
 * Restore MIT license.
 * Improve documentation on home page.

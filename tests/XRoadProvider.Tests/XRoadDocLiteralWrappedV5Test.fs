@@ -10,100 +10,91 @@ open XRoad.ServiceDescription
 module XRoadDocLiteralWrappedV5Test =
     [<Test>]
     let ``Read aktorstest service`` () =
-        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
         test <@ services.Length = 1 @>
         let service = services |> List.head
         test <@ service.Name = "aktorstestService" @>
         test <@ service.Ports.Length = 1 @>
         let port = service.Ports |> List.head
-        test <@ port.Address = "http://localhost:8080/axis2/services/aktorstestService" @>
-        test <@ port.Documentation.Count = 2 @>
-        test <@ port.Documentation.ContainsKey("en") @>
-        test <@ port.Documentation.["en"] = "Test database for xroad ver.5 doc/literal style" @>
-        test <@ port.Documentation.ContainsKey("et") @>
-        test <@ port.Documentation.["et"] = "Test andmekogu xtee ver5 doc/literal stiili jaoks" @>
+        test <@ port.Uri = "http://localhost:8080/axis2/services/aktorstestService" @>
+        test <@ port.Documentation.IsSome @>
+        test <@ port.Documentation.Value = "Test andmekogu xtee ver5 doc/literal stiili jaoks" @>
         test <@ port.Producer = "aktorstest" @>
 
     [<Test>]
     let ``Parse multipart input operation`` () =
-        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
-        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name.LocalName = "fileUpload")
-        test <@ operation.Documentation.Count = 2 @>
-        test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "File Upload" @>
-        test <@ operation.Documentation.ContainsKey("et") && operation.Documentation.["et"] = "Faili üleslaadimine" @>
-        let expectedStyle = OperationStyle.DocLiteral
-        test <@ operation.Style = expectedStyle @>
+        let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "fileUpload")
+        test <@ operation.Documentation.IsSome @>
+        test <@ operation.Documentation.Value = "Faili üleslaadimine" @>
         test <@ operation.Version = Some "v1" @>
-        test <@ operation.Request.Body.Parts.Length = 1 @>
-        test <@ operation.Request.Header.Length = 5 @>
-        test <@ operation.Request.MultipartContent.Length = 1 @>
-        test <@ operation.Response.Body.Parts.Length = 1 @>
-        test <@ operation.Response.Header.Length = 5 @>
-        test <@ operation.Response.MultipartContent.Length = 0 @>
-        ()
+        test <@ operation.InputParameters.Parameters.Length = 1 @>
+        test <@ operation.InputParameters.RequiredHeaders.Length = 5 @>
+        test <@ operation.InputParameters.IsMultipart = true @>
+        test <@ operation.InputParameters.IsEncoded = false @>
+        test <@ operation.InputParameters.Accessor.IsNone @>
+        test <@ operation.OutputParameters.Parameters.Length = 1 @>
+        test <@ operation.OutputParameters.RequiredHeaders.Length = 5 @>
+        test <@ operation.OutputParameters.IsEncoded = false @>
+        test <@ operation.OutputParameters.IsMultipart = false @>
+        test <@ operation.OutputParameters.Accessor.IsNone @>
+        let context = TypeBuilderContext.FromSchema(schema, "et")
+        let expectedProtocol = XRoad.Common.CodeSpec.XRoadProtocol.Version_31
+        test <@ context.Protocol = expectedProtocol @>
 
     [<Test>]
     let ``Parse multipart output operation`` () =
-        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
-        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name.LocalName = "fileDownload")
-        test <@ operation.Documentation.Count = 2 @>
-        test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "File download" @>
-        test <@ operation.Documentation.ContainsKey("et") && operation.Documentation.["et"] = "Faili allalaadimine" @>
-        let expectedStyle = OperationStyle.DocLiteral
-        test <@ operation.Style = expectedStyle @>
+        let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "fileDownload")
+        test <@ operation.Documentation.IsSome @>
+        test <@ operation.Documentation.Value = "Faili allalaadimine" @>
         test <@ operation.Version = Some "v1" @>
-        test <@ operation.Request.Body.Parts.Length = 1 @>
-        test <@ operation.Request.Header.Length = 5 @>
-        test <@ operation.Request.MultipartContent.Length = 0 @>
-        test <@ operation.Response.Body.Parts.Length = 1 @>
-        test <@ operation.Response.Header.Length = 5 @>
-        test <@ operation.Response.MultipartContent.Length = 1 @>
+        test <@ operation.InputParameters.Parameters.Length = 1 @>
+        test <@ operation.InputParameters.RequiredHeaders.Length = 5 @>
+        test <@ operation.InputParameters.IsMultipart = false @>
+        test <@ operation.OutputParameters.Parameters.Length = 1 @>
+        test <@ operation.OutputParameters.RequiredHeaders.Length = 5 @>
+        test <@ operation.OutputParameters.IsMultipart = true @>
         ()
 
     [<Test>]
     let ``Parse operation without version number`` () =
-        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
-        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name.LocalName = "listMethods")
-        test <@ operation.Documentation.Count = 1 @>
-        test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "listMethods" @>
-        let expectedStyle = OperationStyle.DocLiteral
-        test <@ operation.Style = expectedStyle @>
+        let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "listMethods")
+        test <@ operation.Documentation.IsNone @>
         test <@ operation.Version.IsNone @>
-        test <@ operation.Request.Body.Parts.Length = 1 @>
-        test <@ operation.Request.Header.Length = 0 @>
-        test <@ operation.Request.MultipartContent.Length = 0 @>
-        test <@ operation.Response.Body.Parts.Length = 1 @>
-        test <@ operation.Response.Header.Length = 0 @>
-        test <@ operation.Response.MultipartContent.Length = 0 @>
+        test <@ operation.InputParameters.Parameters.Length = 1 @>
+        test <@ operation.InputParameters.RequiredHeaders.Length = 0 @>
+        test <@ operation.InputParameters.IsMultipart = false @>
+        test <@ operation.OutputParameters.Parameters.Length = 1 @>
+        test <@ operation.OutputParameters.RequiredHeaders.Length = 0 @>
+        test <@ operation.OutputParameters.IsMultipart = false @>
         ()
 
     [<Test>]
     let ``Parse non-multipart operation`` () =
-        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
-        let operation = services.Head.Ports.Head.Operations |> List.find (fun op -> op.Name.LocalName = "isikOtsing")
-        test <@ operation.Name.LocalName = "isikOtsing" @>
-        test <@ operation.Documentation.Count = 2 @>
-        test <@ operation.Documentation.ContainsKey("en") && operation.Documentation.["en"] = "Search person by Id-code" @>
-        test <@ operation.Documentation.ContainsKey("et") && operation.Documentation.["et"] = "Isiku andmete otsimine isikukoodi järgi" @>
-        let expectedStyle = OperationStyle.DocLiteral
-        test <@ operation.Style = expectedStyle @>
+        let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "isikOtsing")
+        test <@ operation.Name = "isikOtsing" @>
+        test <@ operation.Documentation.IsSome @>
+        test <@ operation.Documentation.Value = "Isiku andmete otsimine isikukoodi järgi" @>
         test <@ operation.Version = Some "v1" @>
-        test <@ operation.Request.Body.Parts.Length = 1 @>
-        test <@ operation.Request.Header.Length = 5 @>
-        test <@ operation.Request.MultipartContent.Length = 0 @>
-        test <@ operation.Response.Body.Parts.Length = 1 @>
-        test <@ operation.Response.Header.Length = 5 @>
-        test <@ operation.Response.MultipartContent.Length = 0 @>
+        test <@ operation.InputParameters.Parameters.Length = 1 @>
+        test <@ operation.InputParameters.RequiredHeaders.Length = 5 @>
+        test <@ operation.InputParameters.IsMultipart = false @>
+        test <@ operation.OutputParameters.Parameters.Length = 1 @>
+        test <@ operation.OutputParameters.RequiredHeaders.Length = 5 @>
+        test <@ operation.OutputParameters.IsMultipart = false @>
         ()
 
     [<Test>]
     let ``Parse Aktorstest xml schema definition`` () =
-        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml")
+        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let typeSchemas = schema.TypeSchemas
         test <@ typeSchemas.Count = 2 @>
         test <@ typeSchemas.ContainsKey "http://aktorstest.x-road.ee/producer" @>

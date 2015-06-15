@@ -9,7 +9,7 @@ open XRoad
 module XRoadRpcEncodedV4Test =
     [<Test>]
     let ``Parse Maakataster xml schema definition`` () =
-        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml")
+        let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml", "et")
         let typeSchemas = schema.TypeSchemas
         test <@ typeSchemas.Count = 3 @>
         test <@ typeSchemas.ContainsKey("http://producers.maakataster.xtee.riik.ee/producer/maakataster") @>
