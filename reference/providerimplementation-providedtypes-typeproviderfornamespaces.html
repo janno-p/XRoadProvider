@@ -37,6 +37,10 @@
 
 <h1>TypeProviderForNamespaces</h1>
 <div class="xmldoc">
+<p>A base type providing default implementations of type provider functionality when all provided 
+types are of type ProvidedTypeDefinition.</p>
+
+
 </div>
   <h3>Constructors</h3>
   <table class="table table-bordered member-list">
@@ -47,10 +51,10 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '175', 175)" onmouseover="showTip(event, '175', 175)">
+          <code onmouseout="hideTip(event, '126', 126)" onmouseover="showTip(event, '126', 126)">
             new()
           </code>
-          <div class="tip" id="175">
+          <div class="tip" id="126">
             <strong>Signature:</strong> unit -&gt; TypeProviderForNamespaces<br />
                       </div>
         </td>
@@ -59,16 +63,19 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Initializes a type provider</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '176', 176)" onmouseover="showTip(event, '176', 176)">
+          <code onmouseout="hideTip(event, '127', 127)" onmouseover="showTip(event, '127', 127)">
             new(namespaceName, types)
           </code>
-          <div class="tip" id="176">
+          <div class="tip" id="127">
             <strong>Signature:</strong> (namespaceName:string * types:ProvidedTypeDefinition list) -&gt; TypeProviderForNamespaces<br />
                       </div>
         </td>
@@ -77,25 +84,10 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
-        </td>
-      </tr>
-      <tr>
-        <td class="member-name">
+          <p>Initializes a type provider to provide the types in the given namespace.</p>
 
-          <code onmouseout="hideTip(event, '177', 177)" onmouseover="showTip(event, '177', 177)">
-            new(namespacesAndTypes)
-          </code>
-          <div class="tip" id="177">
-            <strong>Signature:</strong> (namespacesAndTypes:(string * ProvidedTypeDefinition list) list) -&gt; TypeProviderForNamespaces<br />
-                      </div>
-        </td>
-        <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L2510-2510" class="github-link">
-              <img src="../content/img/github.png" class="normal" />
-              <img src="../content/img/github-blue.png" class="hover" />
-            </a>
-          
+
+
         </td>
       </tr>
     </tbody>
@@ -109,10 +101,10 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '178', 178)" onmouseover="showTip(event, '178', 178)">
+          <code onmouseout="hideTip(event, '128', 128)" onmouseover="showTip(event, '128', 128)">
             add_Disposing(arg1)
           </code>
-          <div class="tip" id="178">
+          <div class="tip" id="128">
             <strong>Signature:</strong> EventHandler -&gt; unit<br />
                       </div>
         </td>
@@ -127,10 +119,10 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '179', 179)" onmouseover="showTip(event, '179', 179)">
+          <code onmouseout="hideTip(event, '129', 129)" onmouseover="showTip(event, '129', 129)">
             AddNamespace(namespaceName, types)
           </code>
-          <div class="tip" id="179">
+          <div class="tip" id="129">
             <strong>Signature:</strong> (namespaceName:string * types:ProvidedTypeDefinition list) -&gt; unit<br />
                       </div>
         </td>
@@ -139,16 +131,19 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Add a namespace of provided types.</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '180', 180)" onmouseover="showTip(event, '180', 180)">
+          <code onmouseout="hideTip(event, '130', 130)" onmouseover="showTip(event, '130', 130)">
             Disposing
           </code>
-          <div class="tip" id="180">
+          <div class="tip" id="130">
             <strong>Signature:</strong> IEvent&lt;EventHandler,EventArgs&gt;<br />
                       </div>
         </td>
@@ -163,10 +158,10 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '181', 181)" onmouseover="showTip(event, '181', 181)">
+          <code onmouseout="hideTip(event, '131', 131)" onmouseover="showTip(event, '131', 131)">
             Invalidate()
           </code>
-          <div class="tip" id="181">
+          <div class="tip" id="131">
             <strong>Signature:</strong> unit -&gt; unit<br />
                       </div>
         </td>
@@ -175,16 +170,19 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Invalidate the information provided by the provider</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '182', 182)" onmouseover="showTip(event, '182', 182)">
+          <code onmouseout="hideTip(event, '132', 132)" onmouseover="showTip(event, '132', 132)">
             Namespaces
           </code>
-          <div class="tip" id="182">
+          <div class="tip" id="132">
             <strong>Signature:</strong> seq&lt;string * ProvidedTypeDefinition list&gt;<br />
                       </div>
         </td>
@@ -193,16 +191,20 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>FSharp.Data addition: this method is used by Debug.fs
+Get all namespace with their provided types.</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '183', 183)" onmouseover="showTip(event, '183', 183)">
+          <code onmouseout="hideTip(event, '133', 133)" onmouseover="showTip(event, '133', 133)">
             RegisterProbingFolder(folder)
           </code>
-          <div class="tip" id="183">
+          <div class="tip" id="133">
             <strong>Signature:</strong> folder:string -&gt; unit<br />
                       </div>
         </td>
@@ -211,16 +213,19 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Registers custom probing path that can be used for probing assemblies</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '184', 184)" onmouseover="showTip(event, '184', 184)">
+          <code onmouseout="hideTip(event, '134', 134)" onmouseover="showTip(event, '134', 134)">
             RegisterRuntimeAssemblyLocationAsProbingFolder(...)
           </code>
-          <div class="tip" id="184">
+          <div class="tip" id="134">
             <strong>Signature:</strong> cfg:TypeProviderConfig -&gt; unit<br />
                       </div>
         </td>
@@ -229,16 +234,19 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Registers location of RuntimeAssembly (from TypeProviderConfig) as probing folder</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '185', 185)" onmouseover="showTip(event, '185', 185)">
+          <code onmouseout="hideTip(event, '135', 135)" onmouseover="showTip(event, '135', 135)">
             remove_Disposing(arg1)
           </code>
-          <div class="tip" id="185">
+          <div class="tip" id="135">
             <strong>Signature:</strong> EventHandler -&gt; unit<br />
                       </div>
         </td>
@@ -253,11 +261,11 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '186', 186)" onmouseover="showTip(event, '186', 186)">
-            ResolveAssembly(args)
+          <code onmouseout="hideTip(event, '136', 136)" onmouseover="showTip(event, '136', 136)">
+            ResolveAssembly(arg1)
           </code>
-          <div class="tip" id="186">
-            <strong>Signature:</strong> args:ResolveEventArgs -&gt; Assembly<br />
+          <div class="tip" id="136">
+            <strong>Signature:</strong> ResolveEventArgs -&gt; Assembly<br />
               <strong>Modifiers:</strong> abstract<br />
                       </div>
         </td>
@@ -266,7 +274,10 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>AssemblyResolve handler. Default implementation searches <assemblyname>.dll file in registered folders</p>
+
+
+
         </td>
       </tr>
     </tbody>

@@ -37,6 +37,9 @@
 
 <h1>ProvidedLiteralField</h1>
 <div class="xmldoc">
+<p>Represents an erased provided field.</p>
+
+
 </div>
   <h3>Constructors</h3>
   <table class="table table-bordered member-list">
@@ -47,10 +50,10 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '56', 56)" onmouseover="showTip(event, '56', 56)">
+          <code onmouseout="hideTip(event, '37', 37)" onmouseover="showTip(event, '37', 37)">
             new(fieldName, fieldType, literalValue)
           </code>
-          <div class="tip" id="56">
+          <div class="tip" id="37">
             <strong>Signature:</strong> (fieldName:string * fieldType:Type * literalValue:obj) -&gt; ProvidedLiteralField<br />
                       </div>
         </td>
@@ -59,7 +62,10 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Create a new provided field. It is not initially associated with any specific provided type definition.</p>
+
+
+
         </td>
       </tr>
     </tbody>
@@ -73,10 +79,10 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '57', 57)" onmouseover="showTip(event, '57', 57)">
+          <code onmouseout="hideTip(event, '38', 38)" onmouseover="showTip(event, '38', 38)">
             AddDefinitionLocation(...)
           </code>
-          <div class="tip" id="57">
+          <div class="tip" id="38">
             <strong>Signature:</strong> (line:int * column:int * filePath:string) -&gt; unit<br />
                       </div>
         </td>
@@ -85,17 +91,20 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Add definition location information to the provided field.</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '58', 58)" onmouseover="showTip(event, '58', 58)">
-            AddObsoleteAttribute(msg, isError)
+          <code onmouseout="hideTip(event, '39', 39)" onmouseover="showTip(event, '39', 39)">
+            AddObsoleteAttribute(message, isError)
           </code>
-          <div class="tip" id="58">
-            <strong>Signature:</strong> (msg:string * isError:bool option) -&gt; unit<br />
+          <div class="tip" id="39">
+            <strong>Signature:</strong> (message:string * isError:bool option) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
@@ -103,16 +112,19 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Add a 'System.Obsolete' attribute to this provided field</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '59', 59)" onmouseover="showTip(event, '59', 59)">
+          <code onmouseout="hideTip(event, '40', 40)" onmouseover="showTip(event, '40', 40)">
             AddXmlDoc(xmlDoc)
           </code>
-          <div class="tip" id="59">
+          <div class="tip" id="40">
             <strong>Signature:</strong> xmlDoc:string -&gt; unit<br />
                       </div>
         </td>
@@ -121,17 +133,20 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Add XML documentation information to this provided field</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '60', 60)" onmouseover="showTip(event, '60', 60)">
-            AddXmlDocComputed(xmlDoc)
+          <code onmouseout="hideTip(event, '41', 41)" onmouseover="showTip(event, '41', 41)">
+            AddXmlDocComputed(xmlDocFunction)
           </code>
-          <div class="tip" id="60">
-            <strong>Signature:</strong> (xmlDoc:(unit -&gt; string)) -&gt; unit<br />
+          <div class="tip" id="41">
+            <strong>Signature:</strong> (xmlDocFunction:(unit -&gt; string)) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
@@ -139,17 +154,21 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
+          <p>Add XML documentation information to this provided field, where the computation of the documentation is delayed until necessary
+The documentation is re-computed  every time it is required.</p>
+
+
+
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '61', 61)" onmouseover="showTip(event, '61', 61)">
-            AddXmlDocDelayed(xmlDoc)
+          <code onmouseout="hideTip(event, '42', 42)" onmouseover="showTip(event, '42', 42)">
+            AddXmlDocDelayed(xmlDocFunction)
           </code>
-          <div class="tip" id="61">
-            <strong>Signature:</strong> (xmlDoc:(unit -&gt; string)) -&gt; unit<br />
+          <div class="tip" id="42">
+            <strong>Signature:</strong> (xmlDocFunction:(unit -&gt; string)) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
@@ -157,61 +176,10 @@
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          
-        </td>
-      </tr>
-      <tr>
-        <td class="member-name">
+          <p>Add XML documentation information to this provided field, where the computation of the documentation is delayed until necessary</p>
 
-          <code onmouseout="hideTip(event, '62', 62)" onmouseover="showTip(event, '62', 62)">
-            DeclaringTypeImpl()
-          </code>
-          <div class="tip" id="62">
-            <strong>Signature:</strong> unit -&gt; Type<br />
-                      </div>
-        </td>
-        <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L883-883" class="github-link">
-              <img src="../content/img/github.png" class="normal" />
-              <img src="../content/img/github-blue.png" class="hover" />
-            </a>
-          
-        </td>
-      </tr>
-      <tr>
-        <td class="member-name">
 
-          <code onmouseout="hideTip(event, '63', 63)" onmouseover="showTip(event, '63', 63)">
-            DeclaringTypeImpl()
-          </code>
-          <div class="tip" id="63">
-            <strong>Signature:</strong> unit -&gt; unit<br />
-                      </div>
-        </td>
-        <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L883-883" class="github-link">
-              <img src="../content/img/github.png" class="normal" />
-              <img src="../content/img/github-blue.png" class="hover" />
-            </a>
-          
-        </td>
-      </tr>
-      <tr>
-        <td class="member-name">
 
-          <code onmouseout="hideTip(event, '64', 64)" onmouseover="showTip(event, '64', 64)">
-            GetCustomAttributesDataImpl()
-          </code>
-          <div class="tip" id="64">
-            <strong>Signature:</strong> unit -&gt; IList&lt;CustomAttributeData&gt;<br />
-                      </div>
-        </td>
-        <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L877-877" class="github-link">
-              <img src="../content/img/github.png" class="normal" />
-              <img src="../content/img/github-blue.png" class="hover" />
-            </a>
-          
         </td>
       </tr>
     </tbody>

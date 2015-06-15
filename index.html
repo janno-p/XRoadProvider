@@ -35,14 +35,22 @@
           
 <h1><a name="XRoadProvider" class="anchor" href="#XRoadProvider">XRoadProvider</a></h1>
 
-<p>Documentation</p>
+<p>Collection of type providers that make easier the integration process for data exchange layer X-Road. Currently
+two different type providers are implemented:</p>
+
+<ul>
+<li><p><a href="reference/xroad-providers-xroadproducer.html">XRoadProducer</a> is generated type provider which offers type
+signatures for types and method call functionality for operations defined in producers service description.</p></li>
+<li><p><a href="reference/xroad-providers-xroadserver.html">XRoadServer</a> is erased type provider that discovers available
+producer names from specified security server and offers their details inside development environment.</p></li>
+</ul>
 
 <div class="row">
   <div class="span1"></div>
   <div class="span6">
     <div class="well well-small" id="nuget">
       The XRoadProvider library can be <a href="https://nuget.org/packages/XRoadProvider">installed from NuGet</a>:
-      <pre>PM> Install-Package XRoadProvider</pre>
+      <pre>PM> Install-Package XRoadProvider -Pre</pre>
     </div>
   </div>
   <div class="span1"></div>
@@ -50,26 +58,81 @@
 
 <h2><a name="Example" class="anchor" href="#Example">Example</a></h2>
 
-<p>This example demonstrates using a function defined in this sample library.</p>
+<p>This example demonstrates the use of the XRoadProvider:</p>
 
 <table class="pre"><tr><td class="lines"><pre class="fssnip">
-<span class="l">1: </span>
-<span class="l">2: </span>
-<span class="l">3: </span>
-<span class="l">4: </span>
+<span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+<span class="l">15: </span>
+<span class="l">16: </span>
+<span class="l">17: </span>
+<span class="l">18: </span>
+<span class="l">19: </span>
+<span class="l">20: </span>
+<span class="l">21: </span>
+<span class="l">22: </span>
+<span class="l">23: </span>
+<span class="l">24: </span>
+<span class="l">25: </span>
+<span class="l">26: </span>
+<span class="l">27: </span>
+<span class="l">28: </span>
+<span class="l">29: </span>
+<span class="l">30: </span>
+<span class="l">31: </span>
 </pre>
 </td>
 <td class="snippet"><pre class="fssnip">
+<span class="c">// Reference the type provider assembly.</span>
 <span class="prep">#r</span> <span class="s">&quot;XRoadProvider.dll&quot;</span>
-<span class="k">open</span> <span class="i">XRoadProvider</span>
 
-<span onmouseout="hideTip(event, 'fs1', 1)" onmouseover="showTip(event, 'fs1', 1)" class="f">printfn</span> <span class="s">&quot;hello = </span><span class="pf">%i</span><span class="s">&quot;</span> <span class="o">&lt;|</span> <span class="i">Library</span><span class="o">.</span><span class="i">hello</span> <span class="n">0</span>
+<span class="k">open</span> <span class="i">XRoad</span><span class="o">.</span><span class="i">Providers</span>
+
+<span class="c">// Acquire list of producer from security server.</span>
+<span class="k">type</span> <span onmouseout="hideTip(event, 'fs1', 1)" onmouseover="showTip(event, 'fs1', 1)" class="t">SecurityServer</span> <span class="o">=</span> <span class="i">XRoadServer</span><span class="o">&lt;</span><span class="s">&quot;xxx.xxx.xx.xxx&quot;</span><span class="o">&gt;</span>
+
+<span class="c">// Initialize service interface for specific producer using details from security server.</span>
+<span class="k">type</span> <span onmouseout="hideTip(event, 'fs2', 2)" onmouseover="showTip(event, 'fs2', 2)" class="t">Maakataster</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span onmouseout="hideTip(event, 'fs1', 3)" onmouseover="showTip(event, 'fs1', 3)" class="i">SecurityServer</span><span class="o">.</span><span class="i">Producers</span><span class="o">.</span><span class="i">maakataster</span><span class="o">.</span><span class="i">WsdlUri</span><span class="o">&gt;</span>
+
+<span class="c">// Initialize service interface which provides access to operation methods.</span>
+<span class="k">let</span> <span onmouseout="hideTip(event, 'fs3', 4)" onmouseover="showTip(event, 'fs3', 4)" class="i">myport</span> <span class="o">=</span> <span class="k">new</span> <span onmouseout="hideTip(event, 'fs2', 5)" onmouseover="showTip(event, 'fs2', 5)" class="i">Maakataster</span><span class="o">.</span><span class="i">myservice</span><span class="o">.</span><span onmouseout="hideTip(event, 'fs3', 6)" onmouseover="showTip(event, 'fs3', 6)" class="i">myport</span>()
+
+<span class="c">// Override default values acquired from port definition (when necessary).</span>
+<span onmouseout="hideTip(event, 'fs3', 7)" onmouseover="showTip(event, 'fs3', 7)" class="i">myport</span><span class="o">.</span><span class="i">ProducerName</span> <span class="o">&lt;-</span> <span class="s">&quot;maakataster&quot;</span>
+<span onmouseout="hideTip(event, 'fs3', 8)" onmouseover="showTip(event, 'fs3', 8)" class="i">myport</span><span class="o">.</span><span class="i">ProducerUri</span> <span class="o">&lt;-</span> <span class="s">&quot;http://localhost:8001/&quot;</span>
+
+<span class="c">// Assign X-Road header values.</span>
+<span onmouseout="hideTip(event, 'fs3', 9)" onmouseover="showTip(event, 'fs3', 9)" class="i">myport</span><span class="o">.</span><span class="i">Ametniknimi</span> <span class="o">&lt;-</span> <span class="s">&quot;toomas.dumpty&quot;</span>
+
+<span class="c">// Initialize request parameters.</span>
+<span class="k">let</span> <span onmouseout="hideTip(event, 'fs4', 10)" onmouseover="showTip(event, 'fs4', 10)" class="i">request</span> <span class="o">=</span> <span class="k">new</span> <span onmouseout="hideTip(event, 'fs2', 11)" onmouseover="showTip(event, 'fs2', 11)" class="i">Maakataster</span><span class="o">.</span><span class="i">DefinedTypes</span><span class="o">.</span><span class="i">maakataster</span><span class="o">.</span><span class="i">ky_paring</span>()
+<span onmouseout="hideTip(event, 'fs4', 12)" onmouseover="showTip(event, 'fs4', 12)" class="i">request</span><span class="o">.</span><span class="i">katastritunnus</span> <span class="o">&lt;-</span> <span class="s">&quot;test&quot;</span>
+<span onmouseout="hideTip(event, 'fs4', 13)" onmouseover="showTip(event, 'fs4', 13)" class="i">request</span><span class="o">.</span><span class="i">ky_max</span> <span class="o">&lt;-</span> <span class="k">new</span> <span onmouseout="hideTip(event, 'fs2', 14)" onmouseover="showTip(event, 'fs2', 14)" class="i">Maakataster</span><span class="o">.</span><span class="i">DefinedTypes</span><span class="o">.</span><span class="i">maakataster</span><span class="o">.</span><span class="i">t_ky_max</span>(<span class="i">BaseValue</span><span class="o">=</span><span class="s">&quot;001&quot;</span>)
+
+<span class="c">// Execute service request against specified adapter.</span>
+<span class="k">let</span> <span onmouseout="hideTip(event, 'fs5', 15)" onmouseover="showTip(event, 'fs5', 15)" class="i">response</span>, _ <span class="o">=</span> <span onmouseout="hideTip(event, 'fs3', 16)" onmouseover="showTip(event, 'fs3', 16)" class="i">myport</span><span class="o">.</span><span class="i">ky</span>(<span onmouseout="hideTip(event, 'fs4', 17)" onmouseover="showTip(event, 'fs4', 17)" class="i">request</span>)
+
+<span class="c">// Display results to console.</span>
+<span onmouseout="hideTip(event, 'fs5', 18)" onmouseover="showTip(event, 'fs5', 18)" class="i">response</span> <span class="o">|&gt;</span> <span onmouseout="hideTip(event, 'fs6', 19)" onmouseover="showTip(event, 'fs6', 19)" class="t">Array</span><span class="o">.</span><span onmouseout="hideTip(event, 'fs7', 20)" onmouseover="showTip(event, 'fs7', 20)" class="f">iteri</span> (<span onmouseout="hideTip(event, 'fs8', 21)" onmouseover="showTip(event, 'fs8', 21)" class="f">printfn</span> <span class="s">&quot;</span><span class="pf">%d</span><span class="s">) </span><span class="pf">%A</span><span class="s">&quot;</span>)
 </pre>
 </td>
 </tr>
 </table>
 
-<p>Some more info</p>
+<p>As an alternative to asking service descriptions from security server, it's also possible to
+exclude security server from development process by using local WSDL definitions instead.</p>
 
 <h2><a name="Samples-amp-documentation" class="anchor" href="#Samples-amp-documentation">Samples &amp; documentation</a></h2>
 
@@ -95,7 +158,14 @@ also want to read the <a href="https://github.com/fsprojects/XRoadProvider/blob/
 redistribution for both commercial and non-commercial purposes. For more information see the 
 <a href="https://github.com/fsprojects/XRoadProvider/blob/master/LICENSE.txt">License file</a> in the GitHub repository.</p>
 
-<div class="tip" id="fs1">val printfn : format:Printf.TextWriterFormat&lt;&#39;T&gt; -&gt; &#39;T<br /><br />Full name: Microsoft.FSharp.Core.ExtraTopLevelOperators.printfn</div>
+<div class="tip" id="fs1">type SecurityServer = obj<br /><br />Full name: Index.SecurityServer</div>
+<div class="tip" id="fs2">type Maakataster = obj<br /><br />Full name: Index.Maakataster</div>
+<div class="tip" id="fs3">val myport : obj<br /><br />Full name: Index.myport</div>
+<div class="tip" id="fs4">val request : obj<br /><br />Full name: Index.request</div>
+<div class="tip" id="fs5">val response : obj []<br /><br />Full name: Index.response</div>
+<div class="tip" id="fs6">module Array<br /><br />from Microsoft.FSharp.Collections</div>
+<div class="tip" id="fs7">val iteri : action:(int -&gt; &#39;T -&gt; unit) -&gt; array:&#39;T [] -&gt; unit<br /><br />Full name: Microsoft.FSharp.Collections.Array.iteri</div>
+<div class="tip" id="fs8">val printfn : format:Printf.TextWriterFormat&lt;&#39;T&gt; -&gt; &#39;T<br /><br />Full name: Microsoft.FSharp.Core.ExtraTopLevelOperators.printfn</div>
 
         </div>
         <div class="span3">
