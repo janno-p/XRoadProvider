@@ -189,8 +189,17 @@ module Code =
     let comment (text: string option) (t: #CodeTypeMember) =
         match text with
         | Some(text) ->
+            let lines =
+                text.Split('\n')
+                |> Array.map (fun s -> s.Trim())
+                |> Array.fold (fun (b: Text.StringBuilder) line ->
+                    match line with
+                    | "" -> b.AppendLine()
+                    | x -> if b.Length > 0 && b.[b.Length - 1] <> '\n'
+                           then b.AppendFormat(" {0}", x)
+                           else b.Append(x)) (Text.StringBuilder())
             Attr.create<TypeProviderXmlDocAttribute>
-            |> Attr.addArg (Expr.value text)
+            |> Attr.addArg (Expr.value (lines.ToString()))
             |> t.CustomAttributes.Add
             |> ignore
         | None -> ()

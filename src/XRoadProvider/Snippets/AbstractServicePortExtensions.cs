@@ -214,7 +214,7 @@ private static ChunkState ReadChunkOrMarker(out byte[] chunk, System.IO.Stream s
         {
             markerPos += 1;
             if (lastByte != marker[markerPos])
-                markerPos = -1;
+                markerPos = RewindMarker(markerPos, position, buffer, marker);
         }
 
         if (position >= chunkSize - 1 && markerPos < 0)
@@ -236,6 +236,34 @@ private static ChunkState ReadChunkOrMarker(out byte[] chunk, System.IO.Stream s
     stream.Flush();
 
     return result;
+}
+
+/// <summary>
+/// Rewind the marker start position in case new marker started while
+/// parsing marker from previous position.
+/// </summary>
+private static int RewindMarker(int markerPos, int maxPos, byte[] buffer, byte[] marker)
+{
+    var markerStart = maxPos - markerPos + 1;
+    while (true)
+    {
+        for (; markerStart <= maxPos; markerStart++)
+            if (marker[0] == buffer[markerStart])
+                break;
+
+        if (markerStart > maxPos)
+            return -1;
+
+        var pos = markerStart + 1;
+        for (; pos <= maxPos; pos++)
+            if (marker[pos - markerStart] != buffer[pos])
+                break;
+
+        if (pos > maxPos)
+            return maxPos - markerStart;
+
+        markerStart += 1;
+    }
 }
 
 /// <summary>

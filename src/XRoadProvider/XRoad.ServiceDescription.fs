@@ -24,20 +24,23 @@ type private MimeContent =
       Type: string option }
 
 /// Parse X-Road title elements for various languages.
-let private readLanguages languageCode (element: XElement) =
-    element.Elements(xnsname "title" XmlNamespace.XRoad)
-    |> Seq.fold (fun doc el ->
-        let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) languageCode
-        (lang, el.Value)::doc
-        ) []
+let private readLanguages languageCode (protocol: XRoadProtocol) (element: XElement) =
+    let languages =
+        element.Elements(xnsname "title" protocol.Namespace)
+        |> Seq.fold (fun doc el ->
+            let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) ""
+            (lang, el.Value)::doc
+            ) []
+    languages
     |> List.tryFind (fst >> ((=) languageCode))
+    |> Option.fold (fun x _ -> x) (languages |> List.sort |> List.tryFind (fun _ -> true))
     |> Option.map snd
 
 /// Read documentation element contents into language code indexed dictionary.
-let private readDocumentation languageCode (element: XElement) =
+let private readDocumentation languageCode protocol (element: XElement) =
     match element.Element(xnsname "documentation" XmlNamespace.Wsdl) with
     | null -> None
-    | element -> readLanguages languageCode element
+    | element -> readLanguages languageCode protocol element
 
 /// Parse qualified name for message attribute value.
 let private parseMessageName name (element: XElement) =
@@ -252,7 +255,7 @@ let private parseOperation languageCode operation portType definitions style ns 
       Version = version
       InputParameters = parseParameters "input"
       OutputParameters = parseParameters "output"
-      Documentation = readDocumentation languageCode abstractDesc }
+      Documentation = readDocumentation languageCode protocol abstractDesc }
 
 /// Parse operations bindings block.
 /// http://www.w3.org/TR/wsdl#_bindings
@@ -308,7 +311,7 @@ let private parsePortBinding languageCode definitions element =
         let protocol = XRoadProtocol.FromNamespace(e.Name.NamespaceName)
         let servicePort =
             { Name = name
-              Documentation = readLanguages languageCode element
+              Documentation = readLanguages languageCode protocol element
               Uri = address
               Producer = producer
               Methods = []
