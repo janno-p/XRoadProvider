@@ -134,7 +134,7 @@ module TypeBuilder =
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
                         providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.XmlText |> ignore
-                        spec.Content
+                        Some(spec.Content)
                     | _ ->
                         failwith "ComplexType-s simpleContent should not extend complex types."
                 | SimpleContent(SimpleContentSpec.Restriction(_)) ->
@@ -146,12 +146,15 @@ module TypeBuilder =
                         baseDecl |> Cls.describe (Attributes.XmlInclude(typeRefName providedTypeName)) |> ignore
                     | _ ->
                         failwithf "Only complex types can be inherited! (%A)" spec.Base
-                    spec.Content
+                    Some(spec.Content)
                 | ComplexContent(ComplexContentSpec.Restriction(_)) ->
                     failwith "Not implemented: restriction in complexType-s complexContent"
                 | ComplexTypeContent.Particle(spec) ->
-                    spec
-            providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGenerator context specContent)
+                    Some(spec)
+                | ComplexTypeContent.Empty ->
+                    None
+            specContent
+            |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGenerator context content)) ()
         | EmptyType -> ()
 
     /// Collects property definitions from every content element of complexType.
@@ -378,35 +381,32 @@ module ServiceBuilder =
 
     /// Generate types and serializing statements for root entities.
     /// Returns root name and type info.
-    let private findRootNameAndType (context: TypeBuilderContext) part =
-        match context.Style, part.SchemaEntity with
-        | DocLiteral, SchemaType(t) ->
-            failwithf "Document/Literal style message part '%s' should reference global element as message part, but type '%s' is used instead" part.Name t.LocalName
-        | RpcEncoded, SchemaElement(e) ->
-            failwithf "RPC/Encoded style message part '%s' should reference global type as message part, but element '%s' is used instead" part.Name e.LocalName
-        | DocLiteral, SchemaElement(elementName) ->
+    let private findRootNameAndType (context: TypeBuilderContext) (methodCall: MethodCall) (parameter: Parameter) =
+        match methodCall, parameter.Type with
+        | DocEncodedCall(_), SchemaName.SchemaType(_) // TODO: Encoding namespace for part name?
+        | RpcEncodedCall(_), SchemaName.SchemaType(_) -> (Some(parameter.Name), None), parameter.Type
+        | DocLiteralCall(_), SchemaName.SchemaType(_) -> (Some("Body"), Some(XmlNamespace.Soap)), parameter.Type
+        | RpcLiteralCall(_), SchemaName.SchemaType(_) -> (Some(methodCall.Accessor.Value.LocalName), Some(methodCall.Accessor.Value.NamespaceName)), parameter.Type
+        | DocLiteralCall(_), SchemaName.SchemaElement(elementName) ->
             match context.GetElementDefinition(context.GetElementSpec(elementName)) with
-            | _, Definition(_) ->
-                // Inline element type definition uses same name as global element.
-                (None, None), (SchemaElement(elementName))
-            | _, Name(name) ->
-                // Element references globally defined type, so parameter should use same runtime type.
-                (Some(elementName.LocalName), Some(elementName.NamespaceName)), (SchemaType(name))
-            | _ ->
-                // Ref attribute will be resolved earlier.
-                failwith "never"
-        | RpcEncoded, SchemaType(_) ->
-            // Use the same type that is referenced from message part definition.
-            (Some(part.Name), None), (part.SchemaEntity)
+            | _, Definition(_) -> (None, None), (SchemaElement(elementName))
+            | _, Name(name) -> (Some(elementName.LocalName), Some(elementName.NamespaceName)), SchemaType(name)
+            | _ -> failwith "never"
+        | RpcLiteralCall(_), SchemaName.SchemaElement(elementName) ->
+            match context.GetElementDefinition(context.GetElementSpec(elementName)) with
+            | _, Definition(_) -> (None, None), (SchemaElement(elementName))
+            | _, Name(name) -> (Some(elementName.LocalName), Some(elementName.NamespaceName)), SchemaType(name)
+            | _ -> failwith "never"
+        | _ -> failwith "never"
 
     /// Initialize root attribute override for this method parameter.
-    let initRoot varName name ns = seq {
+    let initRoot varName name ns parentNs = seq {
         match name with
         | Some(v) ->
             yield Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value v])
             match ns with
-            | Some(v) -> yield Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value v)
-            | None -> ()
+            | Some(v) when v <> parentNs -> yield Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value v)
+            | _ -> ()
         | None ->
             yield Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.nil])
         }
@@ -420,17 +420,22 @@ module ServiceBuilder =
         (Expr.var "writer" @-> "WriteStartElement") @% rootElementName
 
     /// Create serializer code segment for given parameter.
-    let private serializeParameter (context: TypeBuilderContext) isMultipart serviceMethod (part: MessagePart) =
-        let serializerName = part.Name + "Serializer"
-        let overridesName = part.Name + "Overrides"
-        let rootName = part.Name + "Root"
+    let private serializeParameter (context: TypeBuilderContext) (methodCall: MethodCall) serviceMethod parentNs (parameter: Parameter) =
+        let serializerName = parameter.Name + "Serializer"
+        let overridesName = parameter.Name + "Overrides"
+        let rootName = parameter.Name + "Root"
         // Initialize serializing
         let initSerializing schemaName (rnm, rns : string option) =
+            // Add namespace definition if not equal to parent element namespace.
+            match parentNs |> Option.orDefault "", rns with
+            | v1, Some(v2) when v1 <> v2 ->
+                serviceMethod |> Meth.addExpr ((!+ "writer" @-> "WriteAttributeString") @% [!^ "xmlns"; !^ "svcns"; Expr.nil; !^ v2]) |> ignore
+            | _ -> ()
             // Add new argument to method for this message part.
             let runtimeType = context.GetRuntimeType(schemaName)
-            serviceMethod |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) part.Name |> ignore
+            serviceMethod |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) parameter.Name |> ignore
             // Add overrides to support multipart attachment serialization.
-            initMultipart part.Name isMultipart
+            initMultipart parameter.Name methodCall.IsMultipart
             |> Seq.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
             // Collection types need special handling for root element.
             match runtimeType with
@@ -438,41 +443,41 @@ module ServiceBuilder =
                 // Write array wrapper manually and serialize each array item separately.
                 serviceMethod
                 |> Meth.addExpr (writeRootElementExpr rnm rns)
-                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.var part.Name))
+                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.var parameter.Name))
                                                  [Stmt.ofExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "nil"; Expr.value XmlNamespace.Xsi; Expr.value "true"])]
                                                  [Stmt.declVarWith<XmlRootAttribute> rootName (Expr.inst<XmlRootAttribute> [Expr.value itemName])
                                                   Stmt.forLoop (Stmt.declVarWith<int> "i" (Expr.value 0))
-                                                               (Op.greater (Expr.var part.Name @=> "Length") (Expr.var "i"))
+                                                               (Op.greater (Expr.var parameter.Name @=> "Length") (Expr.var "i"))
                                                                (Stmt.assign (Expr.var "i") (Op.plus (Expr.var "i") (Expr.value 1)))
                                                                [Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (itemType.AsCodeTypeReference()); Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ])
-                                                                Stmt.ofExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var part.Name @? (Expr.var "i")])]])
+                                                                Stmt.ofExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var parameter.Name @? (Expr.var "i")])]])
                 |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
                 |> ignore
             | _ ->
-                initRoot rootName rnm rns
+                initRoot rootName rnm rns (parentNs |> Option.orDefault "")
                 |> Seq.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
                 serviceMethod
                 |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (runtimeType.AsCodeTypeReference()); Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ]))
-                |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var part.Name])
+                |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var parameter.Name])
                 |> ignore
-        let rootName, typeName = findRootNameAndType context part
+        let rootName, typeName = findRootNameAndType context methodCall parameter
         initSerializing typeName rootName
 
     /// Create deserializer code segment for given parameter.
-    let private buildDeserialization (context: TypeBuilderContext) undescribedFaults (message: MethodCall) : CodeTypeReference * CodeStatement list =
+    let private buildDeserialization (context: TypeBuilderContext) undescribedFaults (methodCall: MethodCall) parentNs : CodeTypeReference * CodeStatement list =
         let statements = List<CodeStatement>()
         let returnType = List<string * RuntimeType>()
 
         // Create separate deserializer calls for each output parameter.
-        message.Body.Parts
-        |> List.iteri (fun i part ->
-            let (rootName, rootNamespace), typeName = findRootNameAndType context part
-            let serializerName = part.Name + "Serializer"
-            let overridesName = part.Name + "Overrides"
-            let rootVarName = part.Name + "Root"
+        methodCall.Parameters
+        |> List.iteri (fun i parameter ->
+            let (rootName, rootNamespace), typeName = findRootNameAndType context methodCall parameter
+            let serializerName = parameter.Name + "Serializer"
+            let overridesName = parameter.Name + "Overrides"
+            let rootVarName = parameter.Name + "Root"
             let runtimeType = context.GetRuntimeType(typeName)
-            returnType.Add(part.Name, runtimeType)
-            statements.AddRange(initMultipart part.Name message.IsMultipart)
+            returnType.Add(parameter.Name, runtimeType)
+            statements.AddRange(initMultipart parameter.Name methodCall.IsMultipart)
             let deserializerCallExpr =
                 match runtimeType with
                 | CollectionType(itemType, itemName, _) ->
@@ -493,11 +498,11 @@ module ServiceBuilder =
                                         Stmt.assign (Expr.var (sprintf "v%d" i)) ((Expr.var listVarName @-> "ToArray") @% []) ] ]
                 | _ ->
                     let typ = runtimeType.AsCodeTypeReference()
-                    statements.AddRange(initRoot rootVarName rootName rootNamespace)
+                    statements.AddRange(initRoot rootVarName rootName rootNamespace (parentNs |> Option.orDefault ""))
                     [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootVarName; Expr.nil])
                       Stmt.assign (Expr.var (sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
             let deserializeExpr =
-                if part.Name = "keha" && undescribedFaults then
+                if parameter.Name = "keha" && undescribedFaults then
                     [ Stmt.ofExpr((Expr.var "reader" @-> "SetBookmark") @% [Expr.value "keha"])
                       Stmt.condIfElse (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.value "faultCode"; Expr.value ""; Expr.value 4])
                                       [ Stmt.ofExpr ((Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"])
@@ -505,11 +510,11 @@ module ServiceBuilder =
                                       (Stmt.ofExpr ((Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"]) :: deserializerCallExpr) ]
                 else deserializerCallExpr
             statements.Add(Stmt.condIf (Op.equals (Expr.var "reader" @=> "LocalName")
-                                                    (Expr.value part.Name))
+                                                    (Expr.value parameter.Name))
                                         deserializeExpr))
 
         // Build return type and expression which returns the value.
-        let retType, returnExpr = makeReturnType message.IsMultipart (returnType |> Seq.mapi (fun i (_,rt) -> (sprintf "v%d" i), rt) |> List.ofSeq)
+        let retType, returnExpr = makeReturnType methodCall.IsMultipart (returnType |> Seq.mapi (fun i (_,rt) -> (sprintf "v%d" i), rt) |> List.ofSeq)
 
         // Build body part of deserialization block.
         let bodyStatements = List<_>()
@@ -526,10 +531,8 @@ module ServiceBuilder =
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Code.comment operation.Documentation
 
-        let requiredHeadersExpr = operation.InputParameters.RequiredHeaders |> List.map Expr.value |> Arr.create<string>
+        let requiredHeadersExpr = operation.InputParameters.RequiredHeaders |> List.map (!^) |> Arr.create<string>
         let serviceName = match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name
-
-        operation.InputParameters.Accessor
 
         // CodeDom doesn't support delegates, so we have to improvise.
         serviceMethod
@@ -538,23 +541,73 @@ module ServiceBuilder =
         |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
         |> Meth.addExpr (Expr.code "}")
         |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeBody" (Expr.code "(writer) => { //"))
-        |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svc"; Expr.nil; Expr.value operation.Name.NamespaceName])
-        |> iif (operation.Request.Body.Namespace <> operation.Name.NamespaceName) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "xmlns"; Expr.value "svcns"; Expr.nil; Expr.value operation.Request.Body.Namespace]))
-        |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value operation.Request.Name.LocalName; Expr.value operation.Request.Body.Namespace]))
         |> ignore
 
+        // Write SOAP Body element unless it is defined as parameter value type.
+        let writeSoapBody =
+            match operation.InputParameters with
+            | DocLiteralCall(wr) ->
+                match wr.Parameters with
+                | [p] ->
+                    match p.Type with
+                    | SchemaName.SchemaType(_) -> false
+                    | SchemaName.SchemaElement(_) -> true
+                | _ -> true
+            | _ -> true
+        if writeSoapBody then
+            serviceMethod
+            |> Meth.addExpr ((!+ "writer" @-> "WriteStartElement") @% [!^ "Body"; !^ XmlNamespace.SoapEnv])
+            |> iif (operation.InputParameters.Accessor.IsSome) (fun m -> m |> Meth.addExpr ((!+ "writer" @-> "WriteAttributeString") @% [!^ "xmlns"; !^ "acc"; Expr.nil; !^ operation.InputParameters.Accessor.Value.NamespaceName]))
+            |> ignore
+
+        // Write accessor element unless it is defined as parameter value type or method call uses document style.
+        let writeAccessorElement =
+            match operation.InputParameters with
+            | RpcLiteralCall(_,w) ->
+                match w.Parameters with
+                | [p] ->
+                    match p.Type with
+                    | SchemaName.SchemaType(_) -> false
+                    | SchemaName.SchemaElement(_) -> true
+                | _ -> true
+            | RpcEncodedCall(_) -> true
+            | _ -> false
+        if writeAccessorElement then
+            match operation.InputParameters.Accessor with
+            | Some(acc) -> serviceMethod |> Meth.addExpr ((!+ "writer" @-> "WriteStartElement") @% [!^ acc.LocalName; !^ acc.NamespaceName]) |> ignore
+            | None -> ()
+
         // Create separate serializer for each parameter.
-        operation.Request.Body.Parts
-        |> List.iter (serializeParameter context operation.InputParameters.IsMultipart serviceMethod)
+        let parentNs = if writeAccessorElement then operation.InputParameters.Accessor |> Option.map (fun x -> x.NamespaceName)
+                       elif writeSoapBody then Some(XmlNamespace.Soap)
+                       else None
+        operation.InputParameters.Parameters |> List.iter (serializeParameter context operation.InputParameters serviceMethod parentNs)
 
         // Finish body writer delegate.
         serviceMethod
-        |> iif (operation.Style = RpcEncoded) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
+        |> iif (writeAccessorElement) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
+        |> iif (writeSoapBody) (fun x -> x |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% []))
         |> Meth.addExpr (Expr.code "}")
         |> ignore
 
+        // Read accessor element unless it is defined as parameter value type or method call uses document style.
+        let readAccessorElement =
+            match operation.OutputParameters with
+            | RpcLiteralCall(_,w) ->
+                match w.Parameters with
+                | [p] ->
+                    match p.Type with
+                    | SchemaName.SchemaType(_) -> false
+                    | SchemaName.SchemaElement(_) -> true
+                | _ -> true
+            | RpcEncodedCall(_) -> true
+            | _ -> false
+
         // Build output parameters deserialization expressions.
-        let returnType, deserializeExpr = buildDeserialization context undescribedFaults operation.OutputParameters
+        let parentNs = if readAccessorElement then operation.OutputParameters.Accessor |> Option.map (fun x -> x.NamespaceName)
+                       //elif writeSoapBody then Some(XmlNamespace.Soap)
+                       else Some(XmlNamespace.Soap)
+        let returnType, deserializeExpr = buildDeserialization context undescribedFaults operation.OutputParameters parentNs
 
         // Reading body of response.
         serviceMethod
@@ -563,11 +616,12 @@ module ServiceBuilder =
         |> Meth.addStmt (if undescribedFaults
                          then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
                          else Stmt.declVarWith<XmlReader> "reader" (Expr.var "r"))
-        |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
-                                                              (Expr.value operation.Response.Name.LocalName))
-                                                (Op.notEquals (Expr.var "reader" @=> "NamespaceURI")
-                                                              (Expr.value operation.Response.Body.Namespace)))
-                                     [Stmt.throw<Exception> [Expr.value "Invalid response message."]])
+        |> iif readAccessorElement (fun x ->
+            x |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
+                                                                    (Expr.value operation.OutputParameters.Accessor.Value.LocalName))
+                                                      (Op.notEquals (Expr.var "reader" @=> "NamespaceURI")
+                                                                    (Expr.value operation.OutputParameters.Accessor.Value.NamespaceName)))
+                                           [Stmt.throw<Exception> [Expr.value "Invalid response message."]]))
         |> ignore
 
         // Deserialize main content.
@@ -584,10 +638,10 @@ module ServiceBuilder =
             else Expr.nil
 
         // Execute base class service call method with custom serialization delegates.
-        let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [attachmentsExpr; Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
+        let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [!^ operation.InputParameters.IsEncoded; attachmentsExpr; Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
 
         // Make return statement if definition specifies result.
-        let isEmptyResponse = (not operation.OutputParameters.IsMultipart) && (operation.Response.Body.Parts |> List.isEmpty)
+        let isEmptyResponse = (not operation.OutputParameters.IsMultipart) && (operation.OutputParameters.Parameters |> List.isEmpty)
         serviceMethod |> Meth.addStmt (if isEmptyResponse then Stmt.ofExpr methodCall else Stmt.ret methodCall)
 
 /// Builds all types, namespaces and services for give producer definition.

@@ -127,9 +127,7 @@ let private createSerializationStatements () =
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnv])
                   Stmt.ofExpr ((Expr.var "writeHeaderAction") @%% [Expr.var "writer"])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnv])
                   Stmt.ofExpr ((Expr.var "writeBody") @%% [Expr.var "writer"])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndDocument") @% []) ]
                 [ Stmt.condIf (Op.isNotNull (Expr.var "writer")) [ (Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
@@ -206,7 +204,7 @@ let private createMakeServiceCallMethod undescribedFaults =
     |> Meth.addParam<bool> "isEncoded"
     |> Meth.addParam<IDictionary<string,Stream>> "attachments"
     |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
-    |> Meth.addParam<Func<XmlWriter,IDictionary<string,Stream>>> "writeBody"
+    |> Meth.addParam<Action<XmlWriter>> "writeBody"
     |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, typeRef<IDictionary<string,Stream>>, CodeTypeReference("T"))) "readBody"
     // Create request and initialize HTTP headers:
     |> Meth.addStmt (Stmt.declVarWith<WebRequest> "request" ((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))

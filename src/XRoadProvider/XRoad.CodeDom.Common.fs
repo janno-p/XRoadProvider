@@ -57,6 +57,12 @@ let (@%%) target args = CodeDelegateInvokeExpression(target, args |> Array.ofLis
 /// Array indexer operator.
 let (@?) target i = CodeArrayIndexerExpression(target, [| i |]) :> CodeExpression
 
+/// Variable reference operator
+let (!+) = Expr.var
+
+/// Value reference operator
+let (!^) = Expr.value
+
 /// Functions to create and manipulate code attributes.
 module Attr =
     let create<'T> = CodeAttributeDeclaration(typeRef<'T>)

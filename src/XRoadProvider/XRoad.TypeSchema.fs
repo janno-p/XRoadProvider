@@ -108,6 +108,7 @@ and SimpleTypeSpec =
 
 /// Wraps `complexType` node content definition.
 and ComplexTypeContent =
+    | Empty
     | SimpleContent of SimpleContentSpec
     | ComplexContent of ComplexContentSpec
     | Particle of ComplexTypeContentSpec
@@ -300,7 +301,7 @@ module Parser =
                     node |> notExpectedIn "complexType"
                 ) (Begin, None)
             |> snd
-            |> Option.get
+            |> Option.orDefault ComplexTypeContent.Empty
         { IsAbstract = node |> readBoolean "abstract"; Content = parseChildElements() }
 
     /// Extracts complexType-s simpleContent element specification from schema definition.
