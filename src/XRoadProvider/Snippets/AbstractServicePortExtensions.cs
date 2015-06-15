@@ -193,9 +193,11 @@ private static ChunkState ReadChunkOrMarker(out byte[] chunk, System.IO.Stream s
 {
     var result = ChunkState.BufferLimit;
     var markerLength = marker != null ? marker.Length : 0;
-    var buffer = new byte[chunkSize];
+    var buffer = new byte[chunkSize + markerLength];
 
     var position = -1;
+    var markerPos = -1;
+
     while (true)
     {
         var lastByte = stream.ReadByte();
@@ -208,10 +210,17 @@ private static ChunkState ReadChunkOrMarker(out byte[] chunk, System.IO.Stream s
         position += 1;
         buffer[position] = (byte)lastByte;
 
-        if (position >= chunkSize - 1)
+        if (marker != null && markerLength > 0)
+        {
+            markerPos += 1;
+            if (lastByte != marker[markerPos])
+                markerPos = RewindMarker(markerPos, position, buffer, marker);
+        }
+
+        if (position >= chunkSize - 1 && markerPos < 0)
             break;
 
-        if (marker == null || !BufferEndsWith(buffer, marker, position))
+        if (markerLength < 1 || markerPos != (markerLength - 1))
             continue;
 
         result = ChunkState.Marker;
@@ -227,6 +236,34 @@ private static ChunkState ReadChunkOrMarker(out byte[] chunk, System.IO.Stream s
     stream.Flush();
 
     return result;
+}
+
+/// <summary>
+/// Rewind the marker start position in case new marker started while
+/// parsing marker from previous position.
+/// </summary>
+private static int RewindMarker(int markerPos, int maxPos, byte[] buffer, byte[] marker)
+{
+    var markerStart = maxPos - markerPos + 1;
+    while (true)
+    {
+        for (; markerStart <= maxPos; markerStart++)
+            if (marker[0] == buffer[markerStart])
+                break;
+
+        if (markerStart > maxPos)
+            return -1;
+
+        var pos = markerStart + 1;
+        for (; pos <= maxPos; pos++)
+            if (marker[pos - markerStart] != buffer[pos])
+                break;
+
+        if (pos > maxPos)
+            return maxPos - markerStart;
+
+        markerStart += 1;
+    }
 }
 
 /// <summary>

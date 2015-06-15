@@ -20,6 +20,7 @@ module XmlNamespace =
     let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
     let [<Literal>] Xmime = "http://www.w3.org/2005/05/xmlmime"
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
+    let [<Literal>] Xrd = "http://x-rd.net/xsd/xroad.xsd"
     let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
@@ -74,6 +75,7 @@ module Pattern =
         | XsdName "date" -> Some typeof<DateTime>
         | XsdName "dateTime" -> Some typeof<DateTime>
         | XsdName "decimal" -> Some typeof<decimal>
+        | XsdName "float" -> Some typeof<single>
         | XsdName "int" -> Some typeof<int>
         | XsdName "integer" -> Some typeof<bigint>
         | XsdName "long" -> Some typeof<int64>
@@ -143,6 +145,9 @@ let xname name = XName.Get(name)
 
 /// Helper function for generating XName-s with namespace qualifier.
 let xnsname name ns = XName.Get(name, ns)
+
+let (%!) (e: XElement) (xn: XName) = e.Element(xn)
+let (%*) (e: XElement) (xn: XName) = e.Elements(xn)
 
 /// Extracts optional attribute value from current element.
 /// Returns None if attribute is missing.
@@ -231,3 +236,111 @@ let headerMapping = function
 let fst3 (x, _, _) = x
 let snd3 (_, x, _) = x
 let trd3 (_, _, x) = x
+
+/// Globally unique identifier for Xml Schema elements and types.
+type SchemaName =
+    | SchemaElement of XName
+    | SchemaType of XName
+    member this.XName
+        with get() =
+            match this with
+            | SchemaElement(name)
+            | SchemaType(name) -> name
+
+[<AutoOpen>]
+module CodeSpec =
+    /// X-Road protocol version.
+    type XRoadProtocol =
+        | Version_20
+        | Version_30
+        | Version_31
+        | Version_40
+        /// Returns namespace value for the protocol version.
+        member this.Namespace =
+            match this with
+            | Version_20 -> XmlNamespace.Xtee
+            | Version_30 -> XmlNamespace.Xrd
+            | Version_31 -> XmlNamespace.XRoad
+            | Version_40 -> "X-Road protocol version 4.0 is not implemented."
+        /// Extracts X-Road protocol version from namespace that is used.
+        static member FromNamespace(ns) =
+            match ns with
+            | XmlNamespace.Xtee -> Version_20
+            | XmlNamespace.Xrd -> Version_30
+            | XmlNamespace.XRoad -> Version_31
+            | _ -> failwithf "Unexpected X-Road namespace value `%s`." ns
+
+    /// WSDL and SOAP binding style.
+    type BindingStyle =
+        | Document
+        | Rpc
+        static member FromNode(node, ?defValue) =
+            match node |> attr (xname "style") with
+            | Some("document") -> Document
+            | Some("rpc") -> Rpc
+            | Some(v) -> failwithf "Unknown binding style value `%s`" v
+            | None -> defaultArg defValue Document
+
+    /// Service method parameters for X-Road operations.
+    type Parameter =
+        { Name: string
+          Type: SchemaName }
+
+    /// Combines parameter for request or response.
+    type ParameterWrapper =
+        { HasMultipartContent: bool
+          Parameters: Parameter list
+          RequiredHeaders: string list }
+
+    /// Type that represents different style of message formats.
+    type MethodCall =
+        // Encoded always type
+        | RpcEncodedCall of accessorName: XName * parameters: ParameterWrapper
+        // Element directly under accessor element (named after message part name).
+        // Type becomes the schema type of part accessor element.
+        | RpcLiteralCall of accessorName: XName * parameters: ParameterWrapper
+        // Encoded uses always type attribues.
+        | DocEncodedCall of ns: XNamespace * parameters: ParameterWrapper
+        // Element directly under body.
+        // Type becomes the schema type of enclosing element (Body)
+        | DocLiteralCall of parameters: ParameterWrapper
+        member this.Accessor =
+            match this with
+            | DocEncodedCall(_) | DocLiteralCall(_) -> None
+            | RpcEncodedCall(accessor, _) | RpcLiteralCall(accessor, _) -> Some(accessor)
+        member this.Wrapper =
+            match this with
+            | DocEncodedCall(_, wrapper)
+            | DocLiteralCall(wrapper)
+            | RpcEncodedCall(_, wrapper)
+            | RpcLiteralCall(_, wrapper) -> wrapper
+        member this.IsEncoded =
+            match this with RpcEncodedCall(_) -> true | _ -> false
+        member this.RequiredHeaders =
+            this.Wrapper.RequiredHeaders
+        member this.IsMultipart =
+            this.Wrapper.HasMultipartContent
+        member this.Parameters =
+            this.Wrapper.Parameters
+
+    /// Definition for method which corresponds to single X-Road operation.
+    type ServicePortMethod =
+        { Name: string
+          Version: string option
+          InputParameters: MethodCall
+          OutputParameters: MethodCall
+          Documentation: string option }
+
+    /// Collects multiple operations into logical group.
+    type ServicePort =
+        { Name: string
+          Documentation: string option
+          Uri: string
+          Producer: string
+          Methods: ServicePortMethod list
+          Protocol: XRoadProtocol }
+
+    /// All operations defined for single producer.
+    type Service =
+        { Name: string
+          Ports: ServicePort list }

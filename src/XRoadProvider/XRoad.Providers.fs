@@ -26,6 +26,8 @@ type XRoadProducerProvider() as this =
            ProvidedStaticParameter("ProducerUri", typeof<string>)
            // Add code to handle service errors even if WSDL document doesn't explicitly define error responses.
            ProvidedStaticParameter("UndescribedFaults", typeof<bool>, false)
+           // Specify language code that is extracted as documentation tooltips.
+           ProvidedStaticParameter("LanguageCode", typeof<string>, "et")
            |]
 
     interface ITypeProvider with
@@ -34,12 +36,12 @@ type XRoadProducerProvider() as this =
             match typeWithoutArguments with
             | :? ProvidedTypeDefinition ->
                 match staticArguments with
-                | [| :? string as producerUri; :? bool as undescribedFaults |] ->
+                | [| :? string as producerUri; :? bool as undescribedFaults; :? string as languageCode |] ->
                     // Same parameter set should have same output, so caching is reasonable.
-                    let key = (String.Join(".", typeNameWithArguments), producerUri, undescribedFaults)
+                    let key = (String.Join(".", typeNameWithArguments), producerUri, undescribedFaults, languageCode)
                     match typeCache.TryGetValue(key) with
                     | false, _ ->
-                        let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, undescribedFaults)
+                        let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, undescribedFaults, languageCode)
                         typeCache.Add(key, typ)
                         typ
                     | true, typ -> typ

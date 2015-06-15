@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Snippets\AbstractServicePortExtensions.cs" />
+    <EmbeddedResource Include="Snippets\Serialization.cs" />
     <EmbeddedResource Include="Snippets/XmlBookmarkReader.cs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ProvidedTypes.fsi" />

@@ -16,12 +16,12 @@ open XRoad.ServiceDescription
 
 /// Creates method for serializing X-Road specific header elements in SOAP message.
 /// Header usage depends on operation style: rpc/encoded and document/literal styles use different names.
-let createWriteXRoadHeaderMethod (style) =
+let createWriteXRoadHeaderMethod (protocol: XRoadProtocol) =
     // Initialize namespace, header name mapping, property name mapping and namespace prefix.
     let hdrns, hdrName, propName, nsprefix =
-        match style with
-        | DocLiteral -> XmlNamespace.XRoad, headerMapping >> snd >> fst3, headerMapping >> snd >> snd3, "xrd"
-        | RpcEncoded -> XmlNamespace.Xtee, headerMapping >> fst >> fst3, headerMapping >> fst >> snd3, "xtee"
+        let select, prefix = match protocol with Version_20 -> fst, "xtee" | _ -> snd, "xrd"
+        let select = headerMapping >> select
+        protocol.Namespace, select >> fst3, select >> snd3, prefix
     let writerVar = Expr.var "writer"
     // Helper function to generate statements for serializing each header element.
     // Header names provided in `requiredHeaders` argument are always serialized, others are serialized
@@ -58,7 +58,7 @@ let createWriteXRoadHeaderMethod (style) =
     |> Meth.addStmt (writeHeaderElement (hdrName "andmekogu") (Expr.var "producerValue") "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "isikukood") (Expr.this @=> (propName "isikukood")) "WriteString")
     // This header is only available with legacy format messages:
-    |> iif (style = RpcEncoded) (fun m -> m |> Meth.addStmt (writeHeaderElement (hdrName "ametnik") (Expr.this @=> (propName "ametnik")) "WriteString"))
+    |> iif (match protocol with Version_20 -> true | _ -> false) (fun m -> m |> Meth.addStmt (writeHeaderElement (hdrName "ametnik") (Expr.this @=> (propName "ametnik")) "WriteString"))
     |> Meth.addStmt (writeHeaderElement (hdrName "id") (Expr.var "requestId") "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "nimi") (Expr.var "fullServiceName") "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "toimik") (Expr.this @=> (propName "toimik")) "WriteString")
@@ -71,60 +71,6 @@ let createWriteXRoadHeaderMethod (style) =
     |> Meth.addStmt (writeHeaderElement (hdrName "salastada") (Expr.this @=> (propName "salastada")) "WriteString")
     |> Meth.addStmt (writeHeaderElement (hdrName "salastada_sertifikaadiga") (Expr.this @=> (propName "salastada_sertifikaadiga")) "WriteString")
 
-/// Binary content types needs separate type, because it can be serialized as MIME/multipart attachment
-/// or inline base64 value depending on operation binding definition.
-let createBinaryContentType () =
-    // Property and backing field to contain binary content itself.
-    let contentField = Fld.create<Stream> "content__backing"
-    let contentProp =
-        Prop.create<Stream> "Content"
-        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        |> Prop.addGetStmt (Stmt.ret (Expr.this @=> contentField.Name))
-        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> contentField.Name) Prop.setValue)
-    // Content id to reference MIME/multipart attachments from SOAP body.
-    // This field is serialized as attribute `href`.
-    contentProp.CustomAttributes.Add(Attributes.XmlIgnore) |> ignore
-    let idField = Fld.create<string> "id__backing"
-    let idProp =
-        Prop.create<string> "Id"
-        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        |> Prop.addGetStmt (Expr.this @=> idField.Name |> Stmt.ret)
-        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> idField.Name) Prop.setValue)
-    idProp.CustomAttributes.Add(Attributes.XmlAttributeWithName "href") |> ignore
-    // Separate property to access content as byte array for inline base64 serialization.
-    // Copies stream content into binary array.
-    let valueProp =
-        Prop.create<byte[]> "Value"
-        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        |> Prop.addGetStmt (Stmt.declVarWith<MemoryStream> "temp" Expr.nil)
-        |> Prop.addGetStmt (Stmt.tryFinally
-                                [ Stmt.assign (Expr.var "temp") (Expr.inst<MemoryStream> [])
-                                  Stmt.assign (Expr.var contentField.Name @=> "Position") (Expr.value 0)
-                                  Stmt.ofExpr ((Expr.var contentField.Name @-> "CopyTo") @% [Expr.var "temp"])
-                                  Stmt.ret ((Expr.var "temp" @-> "ToArray") @% []) ]
-                                [ Stmt.ofExpr ((Expr.var "temp" @-> "Dispose") @% []) ])
-        |> Prop.addSetStmt (Stmt.assign (Expr.this @=> contentField.Name) (Expr.inst<MemoryStream> [Prop.setValue]))
-    valueProp.CustomAttributes.Add(Attributes.XmlText) |> ignore
-    // Create primary constructor which associates this instance with MIME/multipart attachment collection.
-    let ctor =
-        Ctor.create()
-        |> Ctor.setAttr MemberAttributes.Public
-        |> Ctor.addParam<IDictionary<string,Stream>> "attachments"
-        |> Ctor.addParam<string> "id"
-        |> Ctor.addStmt (Stmt.assign (Expr.this @=> idField.Name) ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "cid:{0}"; Expr.var "id"]))
-        |> Ctor.addStmt (Stmt.assign (Expr.this @=> contentField.Name) (CodeArrayIndexerExpression(Expr.var "attachments", Expr.var "id")))
-    // BinaryContent type declaration:
-    Cls.create "BinaryContent"
-    |> Cls.setAttr TypeAttributes.Public
-    |> Cls.addMember (contentField)
-    |> Cls.addMember (contentProp)
-    |> Cls.addMember (idField)
-    |> Cls.addMember (idProp)
-    |> Cls.addMember (valueProp)
-    |> Cls.addMember (ctor)
-    |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Public)
-    |> Cls.describe (Attributes.XmlType (xnsname "base64Binary" XmlNamespace.SoapEnc))
-
 /// Types which extend BinaryContent types should inherit its properties from BinaryContent runtime type also.
 /// Create overloaded constructor to match BinaryContent constructor.
 let inheritBinaryContent typ =
@@ -136,20 +82,21 @@ let inheritBinaryContent typ =
                       |> Ctor.addParam<string> "id"
                       |> Ctor.addBaseArg (Expr.var "attachments")
                       |> Ctor.addBaseArg (Expr.var "id"))
-    |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Public)
+    |> Cls.addMember (Ctor.create()
+                      |> Ctor.setAttr MemberAttributes.Public)
 
 /// Adds header element properties to given type.
-let private addHeaderProperties style portBaseTy =
-    let choose = headerMapping >> (match style with RpcEncoded -> fst | DocLiteral -> snd)
+let private addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
+    let choose = headerMapping >> (match protocol with Version_20 -> fst | _ -> snd)
     let propName = choose >> snd3
-    let docValue = choose >> trd3
+    let docValue = choose >> trd3 >> Some
     [ "asutus"; "andmekogu"; "isikukood"; "id"; "nimi"; "toimik"; "allasutus"; "amet"; "ametniknimi"; "autentija"; "makstud"; "salastada"; "salastada_sertifikaadiga"; "salastatud"; "salastatud_sertifikaadiga" ]
     |> List.fold (fun typ hdr -> typ |> createProperty<string> (propName hdr) (docValue hdr)) portBaseTy
-    |> iif (style = RpcEncoded) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
+    |> iif (match protocol with Version_20 -> true | _ -> false) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
     |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
 
 /// Builds serialization statements for writing main SOAP body element for request message in MakeServiceCall method.
-let private createSerializationStatements style =
+let private createSerializationStatements () =
     [ // Retrieve stream to write contents into:
       Stmt.assign (Expr.var("stream")) ((Expr.var "request" @-> "GetRequestStream") @% [])
       Stmt.declVarWith<StreamWriter> "sw" Expr.nil
@@ -175,15 +122,12 @@ let private createSerializationStatements style =
                 [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "sw"])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartDocument") @% [])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv])
-                  Stmt.ofExpr (if style = RpcEncoded
-                               then (Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "encodingStyle"; Expr.value XmlNamespace.SoapEnv; Expr.value XmlNamespace.SoapEnc]
-                               else Expr.empty)
+                  Stmt.condIf (Expr.var "isEncoded")
+                              [Stmt.ofExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "encodingStyle"; Expr.value XmlNamespace.SoapEnv; Expr.value XmlNamespace.SoapEnc])]
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnv])
                   Stmt.ofExpr ((Expr.var "writeHeaderAction") @%% [Expr.var "writer"])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Body"; Expr.value XmlNamespace.SoapEnv])
                   Stmt.ofExpr ((Expr.var "writeBody") @%% [Expr.var "writer"])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
                   Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndDocument") @% []) ]
                 [ Stmt.condIf (Op.isNotNull (Expr.var "writer")) [ (Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
@@ -249,7 +193,7 @@ let private createDeserializationStatements undescribedFaults =
 /// Method which handles a single service call from request serialization to response deserialization.
 /// General part is handled by method itself; individual logic for each service is injected with callback
 /// delegates which serialize and deserialize SOAP body according to their specification.
-let private createMakeServiceCallMethod undescribedFaults style =
+let private createMakeServiceCallMethod undescribedFaults =
     // Method declaration:
     Meth.create "MakeServiceCall"
     |> Meth.setAttr (MemberAttributes.Family ||| MemberAttributes.Final)
@@ -257,6 +201,7 @@ let private createMakeServiceCallMethod undescribedFaults style =
     |> Meth.typeParam "T"
     |> Meth.returnsOf (CodeTypeReference("T"))
     // Method parameters:
+    |> Meth.addParam<bool> "isEncoded"
     |> Meth.addParam<IDictionary<string,Stream>> "attachments"
     |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
     |> Meth.addParam<Action<XmlWriter>> "writeBody"
@@ -268,7 +213,7 @@ let private createMakeServiceCallMethod undescribedFaults style =
     |> Meth.addExpr (((Expr.var "request" @=> "Headers") @-> "Set") @% [Expr.value "SOAPAction"; Expr.value ""])
     // Serialize request message:
     |> Meth.addStmt (Stmt.declVarWith<Stream> "stream" Expr.nil)
-    |> Meth.addStmt (Stmt.tryFinally (createSerializationStatements style)
+    |> Meth.addStmt (Stmt.tryFinally (createSerializationStatements())
                                      [ Stmt.condIf (Op.isNotNull (Expr.var "stream"))
                                                    [(Expr.var "stream" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
     // Deserialize response message:
@@ -279,7 +224,7 @@ let private createMakeServiceCallMethod undescribedFaults style =
 
 /// Create base class for all service port defined by producer.
 /// Includes common logic for executing service request against producer adapter server.
-let makeServicePortBaseType undescribedFaults (style: OperationStyle) =
+let makeServicePortBaseType undescribedFaults protocol =
     // Create property and backing field for producer adapter server uri.
     // By default service port soap:address extension location value is used, but user can override that value.
     let addressField = Fld.create<string> "producerUri"
@@ -315,7 +260,7 @@ let makeServicePortBaseType undescribedFaults (style: OperationStyle) =
     |> Cls.addMember addressProperty
     |> Cls.addMember producerField
     |> Cls.addMember producerProperty
-    |> Cls.addMember (createMakeServiceCallMethod undescribedFaults style)
-    |> Cls.addMember (createWriteXRoadHeaderMethod style)
+    |> Cls.addMember (createMakeServiceCallMethod undescribedFaults)
+    |> Cls.addMember (createWriteXRoadHeaderMethod protocol)
     |> Cls.addMember (createTypeFromAssemblyResource("AbstractServicePortExtensions.cs"))
-    |> addHeaderProperties style
+    |> addHeaderProperties protocol

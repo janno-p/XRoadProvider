@@ -1,6 +1,7 @@
 ﻿module internal XRoad.CodeDom.Common
 
 open Microsoft.CSharp
+open Microsoft.FSharp.Core.CompilerServices
 open System
 open System.CodeDom
 open System.CodeDom.Compiler
@@ -56,6 +57,12 @@ let (@%%) target args = CodeDelegateInvokeExpression(target, args |> Array.ofLis
 /// Array indexer operator.
 let (@?) target i = CodeArrayIndexerExpression(target, [| i |]) :> CodeExpression
 
+/// Variable reference operator
+let (!+) = Expr.var
+
+/// Value reference operator
+let (!^) = Expr.value
+
 /// Functions to create and manipulate code attributes.
 module Attr =
     let create<'T> = CodeAttributeDeclaration(typeRef<'T>)
@@ -108,7 +115,6 @@ module Prop =
     let setAttr a (p: CodeMemberProperty) = p.Attributes <- a; p
     let addGetStmt (s: CodeStatement) (p: CodeMemberProperty) = p.GetStatements.Add(s) |> ignore; p
     let addSetStmt (s: CodeStatement) (p: CodeMemberProperty) = p.SetStatements.Add(s) |> ignore; p
-    let addDoc d (p: CodeMemberProperty) = p.Comments.Add(CodeCommentStatement(d, true)) |> ignore; p
     let setValue = CodePropertySetValueReferenceExpression() :> CodeExpression
     let describe a (p: CodeMemberProperty) = p.CustomAttributes.Add(a) |> ignore; p
 
@@ -179,6 +185,26 @@ module Cls =
     let describe a (t: CodeTypeDeclaration) = t.CustomAttributes.Add(a) |> ignore; t
     let setParent (p: CodeTypeReference) (t: CodeTypeDeclaration) = t.BaseTypes.Add(p) |> ignore; t
 
+module Code =
+    let comment (text: string option) (t: #CodeTypeMember) =
+        match text with
+        | Some(text) ->
+            let lines =
+                text.Split('\n')
+                |> Array.map (fun s -> s.Trim())
+                |> Array.fold (fun (b: Text.StringBuilder) line ->
+                    match line with
+                    | "" -> b.AppendLine()
+                    | x -> if b.Length > 0 && b.[b.Length - 1] <> '\n'
+                           then b.AppendFormat(" {0}", x)
+                           else b.Append(x)) (Text.StringBuilder())
+            Attr.create<TypeProviderXmlDocAttribute>
+            |> Attr.addArg (Expr.value (lines.ToString()))
+            |> t.CustomAttributes.Add
+            |> ignore
+        | None -> ()
+        t
+
 /// Functions to create and manipulate arrays.
 module Arr =
     let createOfSize<'T> (size: int) = CodeArrayCreateExpression(typeRef<'T>, size) :> CodeExpression
@@ -189,6 +215,7 @@ module Compiler =
     let buildAssembly codeNamespace =
         let codeCompileUnit = CodeCompileUnit()
         codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
+        codeCompileUnit.ReferencedAssemblies.Add(typeof<ITypeProvider>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Net.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
@@ -268,7 +295,7 @@ let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
         |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
         |> Prop.addGetStmt (Expr.this |> Expr.fldref backingField |> Stmt.ret)
         |> Prop.addSetStmt (Prop.setValue |> Stmt.assign (Expr.this |> Expr.fldref backingField))
-        |> Prop.addDoc doc
+        |> Code.comment doc
     ownerType
     |> Cls.addMember backingField
     |> Cls.addMember property
