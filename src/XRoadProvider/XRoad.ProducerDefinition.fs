@@ -556,7 +556,8 @@ module ServiceBuilder =
         |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeHeader" (Expr.code "(writer) => { //"))
         |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
         |> Meth.addExpr (Expr.code "}")
-        |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeBody" (Expr.code "(writer) => { //"))
+        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Action", typeRefName("XRoadXmlWriter"))) "writeBody" (Expr.code "(writer) => { //"))
+        |> iif (operation.InputParameters.IsMultipart) (fun x -> x |> Meth.addStmt (Stmt.assign ((Expr.var "writer" @=> "Context") @=> "IsMultipart") (Expr.value true)))
         |> ignore
 
         // Write SOAP Body element unless it is defined as parameter value type.
