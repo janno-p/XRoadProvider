@@ -78,10 +78,14 @@ let inheritBinaryContent typ =
     |> Cls.setParent (ContentType.AsCodeTypeReference())
     |> Cls.addMember (Ctor.create()
                       |> Ctor.setAttr MemberAttributes.Public
-                      |> Ctor.addParam<IDictionary<string,Stream>> "attachments"
-                      |> Ctor.addParam<string> "id"
-                      |> Ctor.addBaseArg (Expr.var "attachments")
-                      |> Ctor.addBaseArg (Expr.var "id"))
+                      |> Ctor.addParam<System.IO.Stream> "content"
+                      |> Ctor.addBaseArg (Expr.var "content"))
+    |> Cls.addMember (Ctor.create()
+                      |> Ctor.setAttr MemberAttributes.Public
+                      |> Ctor.addParam<string> "contentId"
+                      |> Ctor.addParam<System.IO.Stream> "content"
+                      |> Ctor.addBaseArg (Expr.var "contentId")
+                      |> Ctor.addBaseArg (Expr.var "content"))
     |> Cls.addMember (Ctor.create()
                       |> Ctor.setAttr MemberAttributes.Public)
 
@@ -96,65 +100,31 @@ let private addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
     |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
 
 /// Builds serialization statements for writing main SOAP body element for request message in MakeServiceCall method.
-let private createSerializationStatements () =
-    [ // Retrieve stream to write contents into:
-      Stmt.assign (Expr.var("stream")) ((Expr.var "request" @-> "GetRequestStream") @% [])
-      Stmt.declVarWith<StreamWriter> "sw" Expr.nil
-      Stmt.tryFinally
-          [ Stmt.assign (Expr.var "sw") (Expr.inst<StreamWriter> [Expr.var "stream"])
-            Stmt.declVarWith<string> "boundaryMarker" Expr.nil
-            // If there are any attachments present, MIME/multipart message has to be sent.
-            Stmt.condIf (Op.boolAnd (Op.notEquals (Expr.var "attachments") Expr.nil)
-                                    (Op.greater (Expr.var "attachments" @=> "Count") (Expr.value 0)))
-                        [ Stmt.assign (Expr.var "boundaryMarker") ((((Expr.typeRefOf<Guid> @-> "NewGuid") @% []) @-> "ToString") @% [])
-                          Stmt.assign (Expr.var "request" @=> "ContentType") ((Expr.typeRefOf<string> @-> "Format") @% [Expr.value "multipart/related; type=\"text/xml\"; start=\"test\"; boundary=\"{0}\""; Expr.var "boundaryMarker"])
-                          Stmt.ofExpr (((Expr.var "request" @=> "Headers") @-> "Add") @% [Expr.value "MIME-Version"; Expr.value "1.0"])
-                          Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
-                          Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}"; Expr.var "boundaryMarker"])
-                          Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Type: text/xml; charset=UTF-8"])
-                          Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Transfer-Encoding: 8bit"])
-                          Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-ID: <test>"])
-                          Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% []) ]
-            // Writes XML document itself.
-            // In case of MIME/multipart message it's in the first MIME container.
-            Stmt.declVarWith<XmlWriter> "writer" Expr.nil
-            Stmt.tryFinally
-                [ Stmt.assign (Expr.var("writer")) ((Expr.typeRefOf<XmlWriter> @-> "Create") @% [Expr.var "sw"])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartDocument") @% [])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv])
-                  Stmt.condIf (Expr.var "isEncoded")
-                              [Stmt.ofExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "encodingStyle"; Expr.value XmlNamespace.SoapEnv; Expr.value XmlNamespace.SoapEnc])]
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnv])
-                  Stmt.ofExpr ((Expr.var "writeHeaderAction") @%% [Expr.var "writer"])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
-                  Stmt.ofExpr ((Expr.var "writeBody") @%% [Expr.var "writer"])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
-                  Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndDocument") @% []) ]
-                [ Stmt.condIf (Op.isNotNull (Expr.var "writer")) [ (Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
-            // Write all attachments in separate containers using binary encoding.
-            Stmt.condIf (Op.boolAnd (Op.notEquals (Expr.var "attachments") Expr.nil)
-                                    (Op.greater (Expr.var "attachments" @=> "Count") (Expr.value 0)))
-                        [ Stmt.forLoop (Stmt.declVarWith<IEnumerator<KeyValuePair<string,Stream>>> "enumerator" ((Expr.var "attachments" @-> "GetEnumerator") @% []))
-                                       ((Expr.var "enumerator" @-> "MoveNext") @% [])
-                                       (Stmt.ofExpr Expr.empty)
-                                       [ Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
-                                         Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}"; Expr.var "boundaryMarker"])
-                                         Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Disposition: attachment; filename=notAnswering"])
-                                         Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Type: application/octet-stream"])
-                                         Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-Transfer-Encoding: binary"])
-                                         Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "Content-ID: <{0}>"; (Expr.var "enumerator" @=> "Current") @=> "Key"])
-                                         Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [])
-                                         Stmt.ofExpr ((Expr.var "sw" @-> "Flush") @% [])
-                                         Stmt.declVarWith<int> "bytesRead" (Expr.value 1000)
-                                         Stmt.declVarWith<byte[]> "buffer" (Arr.createOfSize<byte> 1000)
-                                         Stmt.assign (((Expr.var "enumerator" @=> "Current") @=> "Value") @=> "Position") (Expr.value 0)
-                                         Stmt.whileLoop (Op.ge (Expr.var "bytesRead") (Expr.value 1000))
-                                                        [ Stmt.assign (Expr.var "bytesRead") (((((Expr.var "enumerator" @=> "Current") @=> "Value") @-> "Read")) @% [Expr.var "buffer"; Expr.value 0; Expr.value 1000])
-                                                          Stmt.ofExpr ((Expr.var "stream" @-> "Write") @% [Expr.var "buffer"; Expr.value 0; Expr.var "bytesRead"]) ]
-                                         Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% []) ]
-                          Stmt.ofExpr ((Expr.var "sw" @-> "WriteLine") @% [Expr.value "--{0}--"; Expr.var "boundaryMarker"]) ] ]
-          [ Stmt.condIf (Op.isNotNull (Expr.var "sw")) [ (Expr.var "sw" @-> "Dispose") @% [] |> Stmt.ofExpr ] ]
-    ]
+let private createSerializationStatements serviceMethod =
+    serviceMethod
+    |> Meth.addStmt (Stmt.declVarWith<MemoryStream> "stream" Expr.nil)
+    |> Meth.addStmt (Stmt.declVarWith<StreamWriter> "sw" Expr.nil)
+    |> Meth.addStmt (Stmt.declVarRefWith (typeRefName "XRoadXmlWriter") "writer" Expr.nil)
+    |> Meth.addStmt (Stmt.tryFinally [ Stmt.assign (Expr.var "stream") (Expr.inst<MemoryStream> [])
+                                       Stmt.assign (Expr.var "sw") (Expr.inst<StreamWriter> [Expr.var "stream"])
+                                       Stmt.declVarRefWith (typeRefName "XRoadSerializerContext") "context" (Expr.instOf (typeRefName "XRoadSerializerContext") [])
+                                       Stmt.ofExpr ((Expr.var "context" @-> "AddAttachments") @% [Expr.var "attachments"])
+                                       Stmt.assign (Expr.var "writer") (Expr.instOf (typeRefName "XRoadXmlWriter") [Expr.var "sw"; Expr.var "context"])
+                                       Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartDocument") @% [])
+                                       Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv])
+                                       Stmt.condIf (Expr.var "isEncoded")
+                                                   [Stmt.ofExpr ((Expr.var "writer" @-> "WriteAttributeString") @% [Expr.value "encodingStyle"; Expr.value XmlNamespace.SoapEnv; Expr.value XmlNamespace.SoapEnc])]
+                                       Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "Header"; Expr.value XmlNamespace.SoapEnv])
+                                       Stmt.ofExpr ((Expr.var "writeHeaderAction") @%% [Expr.var "writer"])
+                                       Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
+                                       Stmt.ofExpr ((Expr.var "writeBody") @%% [Expr.var "writer"])
+                                       Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
+                                       Stmt.ofExpr ((Expr.var "writer" @-> "WriteEndDocument") @% [])
+                                       Stmt.ofExpr ((Expr.var "writer" @-> "Flush") @% [])
+                                       Stmt.ofExpr (Expr.var "SerializeXRoadMessage" @%% [Expr.var "request"; Expr.var "stream"; Expr.var "context" @=> "Attachments"]) ]
+                                     [ Stmt.condIf (Op.isNotNull (Expr.var "writer")) [ (Expr.var "writer" @-> "Dispose") @% [] |> Stmt.ofExpr ]
+                                       Stmt.condIf (Op.isNotNull (Expr.var "sw")) [ (Expr.var "sw" @-> "Dispose") @% [] |> Stmt.ofExpr ]
+                                       Stmt.condIf (Op.isNotNull (Expr.var "stream")) [ (Expr.var "stream" @-> "Dispose") @% [] |> Stmt.ofExpr ] ])
 
 /// Builds deserialization statements to extract data from request retrieved from producers adapter server.
 let private createDeserializationStatements undescribedFaults =
@@ -162,11 +132,10 @@ let private createDeserializationStatements undescribedFaults =
     let xmlReaderTypRef = if undescribedFaults then typeRefName "XmlBookmarkReader" else typeRef<XmlReader>
     // If in undescribed faults mode we need to initialize XmlBookmarkReader in place of regular XmlReader.
     let createReaderExpr =
-        let readerExpr = Expr.var "GetResponseReader" @%% [Expr.var "response"; Expr.var "responseAttachments"]
+        let readerExpr = Expr.var "GetResponseReader" @%% [Expr.var "response"]
         if undescribedFaults then Expr.instOf xmlReaderTypRef [readerExpr] else readerExpr
     // Deserialization statements:
     [ Stmt.assign (Expr.var("response")) ((Expr.var "request" @-> "GetResponse") @% [])
-      Stmt.declVarWith<IDictionary<string,Stream>> "responseAttachments" (Expr.inst<Dictionary<string,Stream>> [])
       Stmt.declVarRefWith xmlReaderTypRef "reader" Expr.nil
       Stmt.tryFinally
           [ Stmt.assign (Expr.var("reader")) createReaderExpr
@@ -185,7 +154,7 @@ let private createDeserializationStatements undescribedFaults =
                                     (Op.equals (Expr.var "reader" @=> "NamespaceURI")
                                                (Expr.value XmlNamespace.SoapEnv)))
                          [Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []]]
-            Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"; Expr.var "responseAttachments"]) ]
+            Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"]) ]
           [ Stmt.condIf (Op.isNotNull (Expr.var "reader"))
                         [(Expr.var "reader" @-> "Dispose") @% [] |> Stmt.ofExpr] ]
     ]
@@ -204,18 +173,15 @@ let private createMakeServiceCallMethod undescribedFaults =
     |> Meth.addParam<bool> "isEncoded"
     |> Meth.addParam<IDictionary<string,Stream>> "attachments"
     |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
-    |> Meth.addParam<Action<XmlWriter>> "writeBody"
-    |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, typeRef<IDictionary<string,Stream>>, CodeTypeReference("T"))) "readBody"
+    |> Meth.addParamRef (CodeTypeReference("System.Action", typeRefName "XRoadXmlWriter")) "writeBody"
+    |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, CodeTypeReference("T"))) "readBody"
     // Create request and initialize HTTP headers:
     |> Meth.addStmt (Stmt.declVarWith<WebRequest> "request" ((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))
     |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "Method") (Expr.value "POST"))
     |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "ContentType") (Expr.value "text/xml; charset=utf-8"))
     |> Meth.addExpr (((Expr.var "request" @=> "Headers") @-> "Set") @% [Expr.value "SOAPAction"; Expr.value ""])
     // Serialize request message:
-    |> Meth.addStmt (Stmt.declVarWith<Stream> "stream" Expr.nil)
-    |> Meth.addStmt (Stmt.tryFinally (createSerializationStatements())
-                                     [ Stmt.condIf (Op.isNotNull (Expr.var "stream"))
-                                                   [(Expr.var "stream" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
+    |> (fun m -> createSerializationStatements m)
     // Deserialize response message:
     |> Meth.addStmt (Stmt.declVarWith<WebResponse> "response" Expr.nil)
     |> Meth.addStmt (Stmt.tryFinally (createDeserializationStatements undescribedFaults)

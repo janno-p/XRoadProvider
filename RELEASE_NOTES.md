@@ -1,3 +1,9 @@
+#### 0.0.4-alpha - Unreleased
+
+* Improved handling of binary content.
+* Added default request uri to security server provider.
+* Fix #13: Mono too can handle binary content.
+
 #### 0.0.3-alpha - June 15 2015
 
 * Restore MIT license.

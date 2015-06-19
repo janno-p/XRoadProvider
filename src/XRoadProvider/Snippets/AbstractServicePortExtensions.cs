@@ -106,14 +106,17 @@ protected static bool MoveToElement(System.Xml.XmlReader reader, string name, st
 /// <summary>
 /// Splits response message into multipart contents (if present) and returns reader for main content.
 /// </summary>
-private static System.Xml.XmlReader GetResponseReader(System.Net.WebResponse response, System.Collections.Generic.IDictionary<string,System.IO.Stream> attachments)
+private static XRoadXmlReader GetResponseReader(System.Net.WebResponse response)
 {
     var boundaryMarker = GetBoundaryMarker(response);
     var responseStream = response.GetResponseStream();
+    var context = new XRoadSerializerContext();
 
     // When boundary marker is not present parse as regular post response.
     if (string.IsNullOrEmpty(boundaryMarker))
-        return System.Xml.XmlReader.Create(responseStream);
+        return new XRoadXmlReader(responseStream, context);
+
+    context.IsMultipart = true;
 
     var encoding = System.Text.Encoding.UTF8;
     var currentLine = (byte[])null;
@@ -147,7 +150,7 @@ private static System.Xml.XmlReader GetResponseReader(System.Net.WebResponse res
             var targetStream = new System.IO.MemoryStream();
             if (contentStream == null)
                 contentStream = targetStream;
-            else attachments.Add(id, targetStream);
+            else context.Attachments.Add(id, targetStream);
 
             currentLine = CopyContent(responseStream, targetStream, contentDecoder, encoding, contentMarker);
 
@@ -157,7 +160,7 @@ private static System.Xml.XmlReader GetResponseReader(System.Net.WebResponse res
         else currentLine = ReadLineFrom(responseStream, encoding);
     } while (!BufferStartsWith(currentLine, endMarker));
 
-    return System.Xml.XmlReader.Create(contentStream);
+    return new XRoadXmlReader(contentStream, context);
 }
 
 /// <summary>
@@ -361,5 +364,66 @@ private static byte[] CopyContent(System.IO.Stream responseStream, System.IO.Str
             return buffer;
 
         addNewLine = chunkState == ChunkState.Marker;
+    }
+}
+
+private static void SerializeXRoadMessage(System.Net.WebRequest request, System.IO.Stream xml, System.Collections.Generic.IDictionary<string, System.IO.Stream> attachments)
+{
+    var stream = request.GetRequestStream();
+    using (var writer = new System.IO.StreamWriter(stream) { NewLine = "\r\n" })
+    {
+        string boundaryMarker = null;
+
+        // If there are any attachments present, MIME/multipart message has to be sent.
+        if (attachments.Count > 0)
+        {
+            boundaryMarker = System.Guid.NewGuid().ToString();
+            request.ContentType = string.Format(@"multipart/related; type=""text/xml""; boundary=""{0}""", boundaryMarker);
+            request.Headers.Add("MIME-Version", "1.0");
+
+            writer.WriteLine();
+            writer.WriteLine("--{0}", boundaryMarker);
+            writer.WriteLine("Content-Type: text/xml; charset=UTF-8");
+            writer.WriteLine("Content-Transfer-Encoding: 8bit");
+            writer.WriteLine("Content-ID: <XML-{0}>", boundaryMarker);
+            writer.WriteLine();
+        }
+
+        // Writes XML document itself.
+        // In case of MIME/multipart message it's in the first MIME container.
+        writer.Flush();
+        WriteContent(stream, xml);
+
+        // Write all attachments in separate containers using binary encoding.
+        foreach (var attachment in attachments)
+        {
+            writer.WriteLine();
+            writer.WriteLine("--{0}", boundaryMarker);
+            writer.WriteLine("Content-Disposition: attachment; filename=notAnswering");
+            writer.WriteLine("Content-Type: application/octet-stream");
+            writer.WriteLine("Content-Transfer-Encoding: binary");
+            writer.WriteLine("Content-ID: <{0}>", attachment.Key);
+            writer.WriteLine();
+
+            writer.Flush();
+            WriteContent(stream, attachment.Value);
+            writer.WriteLine();
+        }
+
+        if (attachments.Count > 0)
+            writer.WriteLine("--{0}--", boundaryMarker);
+    }
+}
+
+private static void WriteContent(System.IO.Stream stream, System.IO.Stream content)
+{
+    int bytesRead = 1000;
+    var buffer = new byte[1000];
+
+    content.Position = 0;
+    while (bytesRead >= 1000)
+    {
+        bytesRead = content.Read(buffer, 0, 1000);
+        stream.Write(buffer, 0, bytesRead);
     }
 }

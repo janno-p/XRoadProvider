@@ -17,6 +17,9 @@ Documentation and samples can be found at the [XRoadProvider home page](http://j
 
 ## Known Issues
 
+* Underlying `XmlSerializer` needs to have access to all generated types. Because of that, type provider definitions should
+  be generated at namespace level (inside F# modules they will compile, but at the runtime you might get exceptions).
+
 ## Disclaimer
 
 This is an alpha build and as such most likely has problems that are yet undetected. That means the solution is not suitable

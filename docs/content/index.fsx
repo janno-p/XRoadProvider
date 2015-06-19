@@ -1,7 +1,7 @@
 (*** hide ***)
 // This block of code is omitted in the generated HTML documentation. Use 
 // it to define helpers that you do not want to show in the documentation.
-#I "../../bin"
+#I "../../src/XRoadProvider/bin/Debug/"
 
 (**
 XRoadProvider
@@ -38,11 +38,7 @@ This example demonstrates the use of the XRoadProvider:
 
 open XRoad.Providers
 
-// Acquire list of producer from security server.
-type SecurityServer = XRoadServer<"xxx.xxx.xx.xxx">
-
-// Initialize service interface for specific producer using details from security server.
-type Maakataster = XRoadProducer<SecurityServer.Producers.maakataster.WsdlUri>
+type Maakataster = XRoadProducer< @"C:\Work\Thesis\producers\Maakataster.wsdl">
 
 // Initialize service interface which provides access to operation methods.
 let myport = new Maakataster.myservice.myport()
@@ -60,7 +56,7 @@ request.katastritunnus <- "test"
 request.ky_max <- new Maakataster.DefinedTypes.maakataster.t_ky_max(BaseValue="001")
 
 // Execute service request against specified adapter.
-let response, _ = myport.ky(request)
+let _,response = myport.ky(request)
 
 // Display results to console.
 response |> Array.iteri (printfn "%d) %A")
@@ -69,6 +65,54 @@ response |> Array.iteri (printfn "%d) %A")
 
 As an alternative to asking service descriptions from security server, it's also possible to
 exclude security server from development process by using local WSDL definitions instead.
+
+MIME/Multipart attachment support
+---------------------------------
+
+X-Road method calls may require MIME/multipart message format in case of binary content. For
+that purpose type provider defines special type `BinaryContent` which handles attachments according
+to X-Road specification.
+
+Usage example of `BinaryContent` type:
+
+*)
+type Aktorstest = XRoadProducer< @"C:\Work\Thesis\producers\Aktorstest.wsdl">
+
+let service = Aktorstest.aktorstestService.Test()
+
+let content = new System.IO.MemoryStream([| 0uy; 1uy; 2uy; 3uy |])
+
+let request = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM()
+request.request <- Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM.requestType()
+request.request.filemtom <- Aktorstest.BinaryContent(content)
+request.request.fileName <- "file.bin"
+
+let response = service.fileUploadMTOM(request)
+
+(**
+
+Type provider for producer discovery
+------------------------------------
+
+XRoadProvider package includes separate type provider to retrieve producer information from security
+server. Resulting type contains details about all producers available and their WSDL URIs which may
+be used as parameter to `XRoadProducer` provider to initialize service interfaces.
+
+Example use of `XRoadServer` type provider:
+
+*)
+// Acquire list of producer from security server.
+type SecurityServer = XRoadServer<"xxx.xxx.xx.xxx">
+
+// Initialize service interface for specific producer using details from security server.
+type Maakataster = XRoadProducer<SecurityServer.Producers.adsv5.WsdlUri>
+
+let service = Maakataster.myservice.myport()
+
+// Use default security server end-point since WSDL has usually invalid value.
+service.ProducerUri <- SecurityServer.RequestUri
+
+(**
 
 Samples & documentation
 -----------------------

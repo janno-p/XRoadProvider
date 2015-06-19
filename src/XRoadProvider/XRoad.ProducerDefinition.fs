@@ -377,7 +377,7 @@ module ServiceBuilder =
                        (typ, Expr.instOf typ ((tuple |> List.map (fun (varName,_) -> Expr.var varName)) @ [snd inner]))
         let types =
             if isMultipart
-            then ("responseAttachments", PrimitiveType(typeof<IDictionary<string,Stream>>))::types
+            then ("reader.Context.Attachments", PrimitiveType(typeof<IDictionary<string,Stream>>))::types
             else types
         match types with
         | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
@@ -556,7 +556,8 @@ module ServiceBuilder =
         |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeHeader" (Expr.code "(writer) => { //"))
         |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
         |> Meth.addExpr (Expr.code "}")
-        |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeBody" (Expr.code "(writer) => { //"))
+        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Action", typeRefName("XRoadXmlWriter"))) "writeBody" (Expr.code "(writer) => { //"))
+        |> iif (operation.InputParameters.IsMultipart) (fun x -> x |> Meth.addStmt (Stmt.assign ((Expr.var "writer" @=> "Context") @=> "IsMultipart") (Expr.value true)))
         |> ignore
 
         // Write SOAP Body element unless it is defined as parameter value type.
@@ -628,10 +629,10 @@ module ServiceBuilder =
         // Reading body of response.
         serviceMethod
         |> Meth.returnsOf returnType
-        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, typeRef<IDictionary<string,Stream>>, returnType)) "readBody" (Expr.code "(r, responseAttachments) => { //"))
+        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
         |> Meth.addStmt (if undescribedFaults
                          then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
-                         else Stmt.declVarWith<XmlReader> "reader" (Expr.var "r"))
+                         else Stmt.declVarRefWith (typeRefName "XRoadXmlReader") "reader" (Expr.cast (typeRefName "XRoadXmlReader") (Expr.var "r")))
         |> iif readAccessorElement (fun x ->
             x |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
                                                                     (Expr.value operation.OutputParameters.Accessor.Value.LocalName))
@@ -649,7 +650,7 @@ module ServiceBuilder =
         // Multipart services have separate argument: list of MIME/multipart attachments.
         let attachmentsExpr =
             if operation.InputParameters.IsMultipart then
-                serviceMethod |> Meth.addParam<IDictionary<string,Stream>> "attachments" |> ignore
+                serviceMethod |> Meth.addOptParam<IDictionary<string,Stream>> "attachments" |> ignore
                 Expr.var "attachments"
             else Expr.nil
 
@@ -707,6 +708,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
         |> Cls.asStatic
         // Undescribed faults require looser navigation in XmlReader.
         |> iif undescribedFaults (fun x -> x |> Cls.addMember (createTypeFromAssemblyResource("XmlBookmarkReader.cs")))
+        |> iif (not undescribedFaults) (fun x -> x |> Cls.addMember (Cls.create "XmlBookmarkReader"
+                                                                     |> Cls.setParent(typeRef<XmlTextReader>)
+                                                                     |> Cls.addMember (Prop.createRef (typeRefName "XRoadXmlReader") "Reader"
+                                                                                       |> Prop.addGetStmt (Stmt.ret Expr.nil)
+                                                                                       |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final))))
         |> Cls.addMember portBaseTy
         |> Cls.addMember serviceTypesTy
         |> Cls.addMember (createTypeFromAssemblyResource("Serialization.cs"))
