@@ -132,11 +132,10 @@ let private createDeserializationStatements undescribedFaults =
     let xmlReaderTypRef = if undescribedFaults then typeRefName "XmlBookmarkReader" else typeRef<XmlReader>
     // If in undescribed faults mode we need to initialize XmlBookmarkReader in place of regular XmlReader.
     let createReaderExpr =
-        let readerExpr = Expr.var "GetResponseReader" @%% [Expr.var "response"; Expr.var "responseAttachments"]
+        let readerExpr = Expr.var "GetResponseReader" @%% [Expr.var "response"]
         if undescribedFaults then Expr.instOf xmlReaderTypRef [readerExpr] else readerExpr
     // Deserialization statements:
     [ Stmt.assign (Expr.var("response")) ((Expr.var "request" @-> "GetResponse") @% [])
-      Stmt.declVarWith<IDictionary<string,Stream>> "responseAttachments" (Expr.inst<Dictionary<string,Stream>> [])
       Stmt.declVarRefWith xmlReaderTypRef "reader" Expr.nil
       Stmt.tryFinally
           [ Stmt.assign (Expr.var("reader")) createReaderExpr
@@ -155,7 +154,7 @@ let private createDeserializationStatements undescribedFaults =
                                     (Op.equals (Expr.var "reader" @=> "NamespaceURI")
                                                (Expr.value XmlNamespace.SoapEnv)))
                          [Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []]]
-            Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"; Expr.var "responseAttachments"]) ]
+            Stmt.ret ((Expr.var "readBody") @%% [Expr.var "reader"]) ]
           [ Stmt.condIf (Op.isNotNull (Expr.var "reader"))
                         [(Expr.var "reader" @-> "Dispose") @% [] |> Stmt.ofExpr] ]
     ]
@@ -175,7 +174,7 @@ let private createMakeServiceCallMethod undescribedFaults =
     |> Meth.addParam<IDictionary<string,Stream>> "attachments"
     |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
     |> Meth.addParamRef (CodeTypeReference("System.Action", typeRefName "XRoadXmlWriter")) "writeBody"
-    |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, typeRef<IDictionary<string,Stream>>, CodeTypeReference("T"))) "readBody"
+    |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, CodeTypeReference("T"))) "readBody"
     // Create request and initialize HTTP headers:
     |> Meth.addStmt (Stmt.declVarWith<WebRequest> "request" ((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))
     |> Meth.addStmt (Stmt.assign (Expr.var "request" @=> "Method") (Expr.value "POST"))

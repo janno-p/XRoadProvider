@@ -377,7 +377,7 @@ module ServiceBuilder =
                        (typ, Expr.instOf typ ((tuple |> List.map (fun (varName,_) -> Expr.var varName)) @ [snd inner]))
         let types =
             if isMultipart
-            then ("responseAttachments", PrimitiveType(typeof<IDictionary<string,Stream>>))::types
+            then ("reader.Context.Attachments", PrimitiveType(typeof<IDictionary<string,Stream>>))::types
             else types
         match types with
         | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
@@ -629,7 +629,7 @@ module ServiceBuilder =
         // Reading body of response.
         serviceMethod
         |> Meth.returnsOf returnType
-        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, typeRef<IDictionary<string,Stream>>, returnType)) "readBody" (Expr.code "(r, responseAttachments) => { //"))
+        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
         |> Meth.addStmt (if undescribedFaults
                          then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
                          else Stmt.declVarWith<XmlReader> "reader" (Expr.var "r"))

@@ -19,6 +19,19 @@ public class XRoadSerializerContext
     }
 }
 
+public class XRoadXmlReader : System.Xml.XmlTextReader
+{
+    private readonly XRoadSerializerContext @__context;
+
+    public XRoadSerializerContext Context { get { return @__context; } }
+
+    public XRoadXmlReader(System.IO.Stream stream, XRoadSerializerContext context)
+        : base(stream)
+    {
+        this.@__context = context;
+    }
+}
+
 public class XRoadXmlWriter : System.Xml.XmlTextWriter
 {
     private readonly XRoadSerializerContext @__context;
@@ -61,7 +74,45 @@ public class BinaryContent : System.Xml.Serialization.IXmlSerializable
 
     void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader)
     {
-        throw new System.NotImplementedException(reader.LocalName);
+        var contextProvider = (reader is XmlBookmarkReader ? ((XmlBookmarkReader)reader).Reader : reader) as XRoadXmlReader;
+        var context = contextProvider.Context;
+
+        var isEmpty = reader.IsEmptyElement;
+        var contentId = reader.GetAttribute("href");
+
+        reader.ReadStartElement();
+
+        if (context.IsMultipart && !string.IsNullOrEmpty(contentId))
+        {
+            @__contentId = contentId.StartsWith("cid:") ? contentId.Substring(4) : contentId;
+            @__content = context.Attachments[@__contentId];
+        }
+
+        if (isEmpty)
+            return;
+
+        var content = new System.IO.MemoryStream();
+
+        const int BUFFER_SIZE = 1000;
+        var buffer = new byte[BUFFER_SIZE];
+        int bytesRead = 0;
+
+        do
+        {
+            bytesRead = reader.ReadContentAsBase64(buffer, 0, BUFFER_SIZE);
+            content.Write(buffer, 0, bytesRead);
+        } while (BUFFER_SIZE <= bytesRead);
+
+        if (string.IsNullOrEmpty(@__contentId))
+        {
+            content.Position = 0;
+            @__contentId = System.Convert.ToBase64String(System.Security.Cryptography.SHA1.Create().ComputeHash(content));
+
+            content.Position = 0;
+            @__content = content;
+        }
+
+        reader.ReadEndElement();
     }
 
     void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter w)

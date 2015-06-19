@@ -63,7 +63,7 @@ private class XmlBookmarkReader : System.Xml.XmlReader
     //
     // Members
     //
-    System.Xml.XmlReader reader;
+    XRoadXmlReader reader;
 
     CachedXmlNode cachedNodes;
 
@@ -76,6 +76,9 @@ private class XmlBookmarkReader : System.Xml.XmlReader
     NamespaceDecl currentNamespacesInScope;
     NamespaceDecl nextNamespacesInScope;
 
+    public XRoadSerializerContext Context { get { return reader.Context; } }
+    public XRoadXmlReader Reader { get { return reader; } }
+
     //
     // Constants
     //
@@ -84,7 +87,7 @@ private class XmlBookmarkReader : System.Xml.XmlReader
     //
     // Constructor
     //
-    public XmlBookmarkReader(System.Xml.XmlReader reader)
+    public XmlBookmarkReader(XRoadXmlReader reader)
     {
         this.reader = reader;
 
