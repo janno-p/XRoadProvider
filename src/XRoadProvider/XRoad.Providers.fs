@@ -22,13 +22,13 @@ type XRoadProducerProvider() as this =
 
     // Available parameters to use for configuring type provider instance
     let staticParameters: ParameterInfo [] =
-        [| // WSDL document location (either local file or network resource).
-           ProvidedStaticParameter("ProducerUri", typeof<string>)
-           // Add code to handle service errors even if WSDL document doesn't explicitly define error responses.
-           ProvidedStaticParameter("UndescribedFaults", typeof<bool>, false)
-           // Specify language code that is extracted as documentation tooltips.
-           ProvidedStaticParameter("LanguageCode", typeof<string>, "et")
-           |]
+        let producerUriParam = ProvidedStaticParameter("ProducerUri", typeof<string>)
+        producerUriParam.AddXmlDoc("WSDL document location (either local file or network resource).")
+        let undescribedFaultsParam = ProvidedStaticParameter("UndescribedFaults", typeof<bool>, false)
+        undescribedFaultsParam.AddXmlDoc("Generate code to handle service errors even if WSDL document doesn't explicitly define error responses.")
+        let languageCodeParam = ProvidedStaticParameter("LanguageCode", typeof<string>, "et")
+        languageCodeParam.AddXmlDoc("Specify language code that is extracted as documentation tooltips. Default value is estonian (et).")
+        [| producerUriParam; undescribedFaultsParam; languageCodeParam |]
 
     interface ITypeProvider with
         /// Called when type alias is created, generates assembly for given arguments.
@@ -82,7 +82,9 @@ type XRoadProducerProvider() as this =
 
         /// Type provider contains exactly one abstract type which allows access to type provider functionality.
         override __.GetTypes() =
-            [| ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducer", Some(typeof<obj>), IsErased=false) |]
+            let producerType = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducer", Some(typeof<obj>), IsErased=false)
+            producerType.AddXmlDoc("Type provider for generating service interfaces and data types for specific X-Road producer.")
+            [| producerType |]
 
         /// Use default namespace for type provider namespace.
         override __.NamespaceName with get() = namespaceName
@@ -102,15 +104,24 @@ type XRoadProviders() as this =
     let baseTy = typeof<obj>
 
     // Main type which provides access to producer list.
-    let serverTy = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadServer", Some baseTy)
+    let serverTy =
+        let typ = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadServer", Some baseTy)
+        typ.AddXmlDoc("Type provider which discovers available producers from specified X-Road security server.")
+        typ
 
     do
+        let serverIPParam = ProvidedStaticParameter("ServerIP", typeof<string>)
+        serverIPParam.AddXmlDoc("IP address of X-Road security server which is used for producer discovery task.")
+
         serverTy.DefineStaticParameters(
-            [ProvidedStaticParameter("ServerIP", typeof<string>)],
+            [ serverIPParam ],
             fun typeName parameterValues ->
                 let thisTy = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
                 match parameterValues with
                 | [| :? string as serverIP |] ->
+                    // Create field which holds default service endpoint for the security server.
+                    let requestUri = ProvidedLiteralField("RequestUri", typeof<string>, sprintf "http://%s/cgi-bin/consumer_proxy" serverIP)
+                    thisTy.AddMember(requestUri)
                     // Create type which holds producer list.
                     let producersTy = ProvidedTypeDefinition("Producers", Some baseTy, HideObjectMethods=true)
                     producersTy.AddXmlDoc("List of available database names registered at the security server.")
