@@ -370,7 +370,7 @@ private static byte[] CopyContent(System.IO.Stream responseStream, System.IO.Str
 private static void SerializeXRoadMessage(System.Net.WebRequest request, System.IO.Stream xml, System.Collections.Generic.IDictionary<string, System.IO.Stream> attachments)
 {
     var stream = request.GetRequestStream();
-    using (var writer = new System.IO.StreamWriter(stream))
+    using (var writer = new System.IO.StreamWriter(stream) { NewLine = "\r\n" })
     {
         string boundaryMarker = null;
 
