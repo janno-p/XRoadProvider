@@ -142,6 +142,14 @@ module Meth =
     let create name = CodeMemberMethod(Name=name)
     let setAttr a (m: CodeMemberMethod) = m.Attributes <- a; m
     let addParam<'T> name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; m
+
+    let addOptParam<'T> name (m: CodeMemberMethod) =
+        let p = CodeParameterDeclarationExpression(typeof<'T>, name)
+        p.CustomAttributes.Add(Attr.create<System.Runtime.InteropServices.OptionalAttribute>) |> ignore
+        p.CustomAttributes.Add(Attr.create<System.Runtime.InteropServices.DefaultParameterValueAttribute> |> Attr.addArg Expr.nil) |> ignore
+        m.Parameters.Add(p) |> ignore
+        m
+
     let addParamRef (typ: CodeTypeReference) name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typ, name)) |> ignore; m
     let addExpr (e: CodeExpression) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let addStmt (e: CodeStatement) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m

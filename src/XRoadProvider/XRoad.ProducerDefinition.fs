@@ -650,7 +650,7 @@ module ServiceBuilder =
         // Multipart services have separate argument: list of MIME/multipart attachments.
         let attachmentsExpr =
             if operation.InputParameters.IsMultipart then
-                serviceMethod |> Meth.addParam<IDictionary<string,Stream>> "attachments" |> ignore
+                serviceMethod |> Meth.addOptParam<IDictionary<string,Stream>> "attachments" |> ignore
                 Expr.var "attachments"
             else Expr.nil
 
