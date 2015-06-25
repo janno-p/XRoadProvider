@@ -63,6 +63,7 @@ module TypeBuilder =
             // Most of the conditions handle XmlSerializer specific attributes.
             let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional)
                                |> Code.comment (definition.Documentation)
+            let elementName = if prop.Name <> definition.Name then Some(definition.Name) else None
             if definition.IsIgnored then
                 prop |> Prop.describe Attributes.XmlIgnore |> ignore
             elif definition.IsAny then
@@ -79,7 +80,7 @@ module TypeBuilder =
                     failwith "Wrapped array should match to CollectionType."
                 | (None | Some(false)), _ ->
                     if definition.ChoiceIdentifier.IsNone then
-                        prop |> Prop.describe (Attributes.XmlElement(definition.IsNillable))
+                        prop |> Prop.describe (Attributes.XmlElement(elementName, definition.IsNillable))
                              |> ignore
                 match definition.ChoiceIdentifier with
                 | Some(identifierName) ->
@@ -384,17 +385,6 @@ module ServiceBuilder =
         | (varName, typ)::[] -> (typ.AsCodeTypeReference(), Expr.var varName)
         | many -> getReturnTypeTuple([], many)
 
-    /// Initializes overrides for multipart serialization mode.
-    let private initMultipart prefix isMultipart = seq {
-        if isMultipart then
-            yield Stmt.declVarWith<XmlAttributeOverrides> (prefix + "Overrides") (Expr.inst<XmlAttributeOverrides> [])
-            yield Stmt.declVarWith<XmlAttributes> (prefix + "Attributes") (Expr.inst<XmlAttributes> [])
-            yield Stmt.assign (Expr.var (prefix + "Attributes") @=> "XmlIgnore") (Expr.value true)
-            yield Stmt.ofExpr ((Expr.var (prefix + "Overrides") @-> "Add") @% [Expr.typeOf (typeRefName "BinaryContent"); Expr.value "Value"; Expr.var (prefix + "Attributes")])
-        else
-            yield Stmt.declVarWith<XmlAttributeOverrides> (prefix + "Overrides") Expr.nil
-        }
-
     /// Generate types and serializing statements for root entities.
     /// Returns root name and type info.
     let private findRootNameAndType (context: TypeBuilderContext) (methodCall: MethodCall) (parameter: Parameter) =
@@ -438,7 +428,6 @@ module ServiceBuilder =
     /// Create serializer code segment for given parameter.
     let private serializeParameter (context: TypeBuilderContext) (methodCall: MethodCall) serviceMethod parentNs (parameter: Parameter) =
         let serializerName = parameter.Name + "Serializer"
-        let overridesName = parameter.Name + "Overrides"
         let rootName = parameter.Name + "Root"
         // Initialize serializing
         let initSerializing schemaName (rnm, rns : string option) =
@@ -450,9 +439,6 @@ module ServiceBuilder =
             // Add new argument to method for this message part.
             let runtimeType = context.GetRuntimeType(schemaName)
             serviceMethod |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) parameter.Name |> ignore
-            // Add overrides to support multipart attachment serialization.
-            initMultipart parameter.Name methodCall.IsMultipart
-            |> Seq.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
             // Collection types need special handling for root element.
             match runtimeType with
             | CollectionType(itemType, itemName, _) ->
@@ -465,7 +451,7 @@ module ServiceBuilder =
                                                   Stmt.forLoop (Stmt.declVarWith<int> "i" (Expr.value 0))
                                                                (Op.greater (Expr.var parameter.Name @=> "Length") (Expr.var "i"))
                                                                (Stmt.assign (Expr.var "i") (Op.plus (Expr.var "i") (Expr.value 1)))
-                                                               [Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (itemType.AsCodeTypeReference()); Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ])
+                                                               [Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (itemType.AsCodeTypeReference()); Expr.nil; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ])
                                                                 Stmt.ofExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var parameter.Name @? (Expr.var "i")])]])
                 |> Meth.addExpr ((Expr.var "writer" @-> "WriteEndElement") @% [])
                 |> ignore
@@ -473,7 +459,7 @@ module ServiceBuilder =
                 initRoot rootName rnm rns (parentNs |> Option.orDefault "")
                 |> Seq.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
                 serviceMethod
-                |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (runtimeType.AsCodeTypeReference()); Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ]))
+                |> Meth.addStmt (Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf (runtimeType.AsCodeTypeReference()); Expr.nil; Arr.createOfSize<Type> 0; Expr.var rootName; Expr.nil ]))
                 |> Meth.addExpr ((Expr.var serializerName @-> "Serialize") @% [Expr.var "writer"; Expr.var parameter.Name])
                 |> ignore
         let rootName, typeName = findRootNameAndType context methodCall parameter
@@ -489,11 +475,9 @@ module ServiceBuilder =
         |> List.iteri (fun i parameter ->
             let (rootName, rootNamespace), typeName = findRootNameAndType context methodCall parameter
             let serializerName = parameter.Name + "Serializer"
-            let overridesName = parameter.Name + "Overrides"
             let rootVarName = parameter.Name + "Root"
             let runtimeType = context.GetRuntimeType(typeName)
             returnType.Add(parameter.Name, runtimeType)
-            statements.AddRange(initMultipart parameter.Name methodCall.IsMultipart)
             let deserializerCallExpr =
                 match runtimeType with
                 | CollectionType(itemType, itemName, _) ->
@@ -508,14 +492,14 @@ module ServiceBuilder =
                                       [ Stmt.assign (Expr.var (sprintf "v%d" i)) Expr.nil ]
                                       [ Stmt.declVarRefWith listType listVarName (Expr.instOf listType [])
                                         Stmt.declVarWith<XmlRootAttribute> rootVarName (Expr.inst<XmlRootAttribute> [Expr.value itemName])
-                                        Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootVarName; Expr.nil])
+                                        Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.nil; Arr.createOfSize<Type> 0; Expr.var rootVarName; Expr.nil])
                                         Stmt.whileLoop (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 4])
                                                        [Stmt.ofExpr ((Expr.var listVarName @-> "Add") @% [Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])])]
                                         Stmt.assign (Expr.var (sprintf "v%d" i)) ((Expr.var listVarName @-> "ToArray") @% []) ] ]
                 | _ ->
                     let typ = runtimeType.AsCodeTypeReference()
                     statements.AddRange(initRoot rootVarName rootName rootNamespace (parentNs |> Option.orDefault ""))
-                    [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.var overridesName; Arr.createOfSize<Type> 0; Expr.var rootVarName; Expr.nil])
+                    [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.nil; Arr.createOfSize<Type> 0; Expr.var rootVarName; Expr.nil])
                       Stmt.assign (Expr.var (sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
             let deserializeExpr =
                 if parameter.Name = "keha" && undescribedFaults then

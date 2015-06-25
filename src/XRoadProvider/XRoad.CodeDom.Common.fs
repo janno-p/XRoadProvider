@@ -90,7 +90,14 @@ module Attributes =
 
     let XmlTypeExclude = Attr.create<XmlTypeAttribute> |> Attr.addNamedArg "IncludeInSchema" (Expr.value false)
     let XmlInclude(providedTy: CodeTypeReference) = Attr.create<XmlIncludeAttribute> |> Attr.addArg (Expr.typeOf providedTy)
-    let XmlElement(isNillable) = Attr.create<XmlElementAttribute> |> addUnqualifiedForm |> addNullable isNillable
+
+    let XmlElement(name, isNillable) =
+        let attr = Attr.create<XmlElementAttribute>
+        match name with
+        | Some(name) -> attr |> Attr.addArg (Expr.value name) |> ignore
+        | None -> ()
+        attr |> addUnqualifiedForm |> addNullable isNillable
+
     let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
     let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable
     let XmlArrayItem(name, isNillable) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm |> addNullable isNillable
@@ -266,6 +273,11 @@ module String =
             if not <| CodeGenerator.IsValidLanguageIndependentIdentifier(className)
             then failwithf "invalid name %s" className
             className
+        member this.toPropertyName() =
+            let fixedName = this.Replace('.', '_')
+            if not(CodeGenerator.IsValidLanguageIndependentIdentifier(fixedName))
+            then failwith "Invalid property name `%s`." fixedName
+            fixedName
 
 /// Type abstraction for code generator.
 type RuntimeType =
@@ -310,20 +322,21 @@ let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
 
 /// Add property to given type with backing field.
 /// For optional members, extra field is added to notify if property was assigned or not.
-let addProperty (name, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration) =
+let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration) =
+    let fixedName = name.toPropertyName()
     let sf =
         if isOptional then
-            let f = Fld.create<bool> (name + "__specified")
+            let f = Fld.create<bool> (fixedName + "__specified")
                     |> Fld.describe Attributes.DebuggerBrowsable
-            let p = Prop.create<bool> (name + "Specified")
+            let p = Prop.create<bool> (fixedName + "Specified")
                     |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
                     |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
             owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
             Some(f)
         else None
-    let f = Fld.createRef (ty.AsCodeTypeReference()) (name + "__backing")
+    let f = Fld.createRef (ty.AsCodeTypeReference()) (fixedName + "__backing")
             |> Fld.describe Attributes.DebuggerBrowsable
-    let p = Prop.createRef (ty.AsCodeTypeReference()) name
+    let p = Prop.createRef (ty.AsCodeTypeReference()) fixedName
             |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
             |> Prop.addSetStmt (Stmt.assign (Expr.this @=> f.Name) (Prop.setValue))
