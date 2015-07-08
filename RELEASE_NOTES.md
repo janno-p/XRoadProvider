@@ -3,6 +3,8 @@
 * Improved handling of binary content.
 * Added default request uri to security server provider.
 * Fix #13: Mono too can handle binary content.
+* Add support for included schemas.
+* Fix relative Uri-s for imported schemas.
 
 #### 0.0.3-alpha - June 15 2015
 
