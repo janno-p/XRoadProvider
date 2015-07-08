@@ -44,7 +44,11 @@ module internal Pattern =
                      then None
                 else failwith "Not implemented: array of varying choice types."
             | Some(ComplexTypeParticle.Sequence(sequence)) ->
-                if sequence.MaxOccurs > 1u then failwith "Not implemented: array of anonymous sequence types."
+                if sequence.MaxOccurs > 1u then
+                    match sequence.Content with
+                    | [] -> None
+                    | [ SequenceContent.Element(single) ] -> Some(single)
+                    | _ -> failwith "Not implemented: array of anonymous sequence types."
                 elif sequence.MaxOccurs < 1u then None
                 else match sequence.Content with
                      | [ SequenceContent.Element(single) ] when single.MaxOccurs > 1u -> Some(single)
