@@ -2,6 +2,7 @@
 
 open System
 open System.Collections.Generic
+open System.Globalization
 open System.Xml.Linq
 
 open XRoad.Common
@@ -30,6 +31,9 @@ let readBoolean name node = readValue Boolean.Parse name false node
 
 /// Read integer value from attribute.
 let readInt name node = readValue Int32.Parse name 0 node
+
+/// Read attribute contents as decimal value.
+let readDecimal name node = readValue (fun x -> Decimal.Parse(x, CultureInfo.InvariantCulture)) name 0m node
 
 /// Read boolean value which identifies if attribute is nillable.
 let readNillable: XElement -> bool = readBoolean "nillable"
@@ -140,14 +144,15 @@ and ComplexContentSpec =
 /// Complex type content defines elements and attributes that are allowed in that type.
 and ComplexTypeContentSpec =
     { Content: ComplexTypeParticle option
-      Attributes: AttributeSpec list }
+      Attributes: AttributeSpec list
+      AttributeGroups: AttributeGroupSpec list }
 
 /// Various options to restrict simple type definitions.
 and RestrictionContent =
-    | MinExclusive
-    | MinInclusive
-    | MaxExclusive
-    | MaxInclusive
+    | MinExclusive of decimal
+    | MinInclusive of decimal
+    | MaxExclusive of decimal
+    | MaxInclusive of decimal
     | TotalDigits
     | FractionDigits
     | Length
@@ -228,32 +233,40 @@ and ChoiceContent =
     | Group
     | Sequence of SequenceSpec
 
-and Annotation = { AppInfo: XElement list }
-
 /// Wrap multiple attribute definitions into predefined group.
-type AttributeGroupSpec =
+and AttributeGroupSpec =
     { Annotation: string
       Attributes: AttributeSpec list
+      AttributeGroups: AttributeGroupSpec list
       AllowAny: bool }
+
+/// Documentation info extracted from service descriptions.
+and Annotation = { AppInfo: XElement list }
 
 /// Root type to hold definition for entire type schema.
 type SchemaNode =
     { QualifiedAttributes: bool
       QualifiedElements: bool
       TargetNamespace: XNamespace
-      Includes: Uri list
-      Imports: (XNamespace * string option) list
       Attributes: IDictionary<XName,AttributeSpec>
       Elements: IDictionary<XName,ElementSpec>
       Types: IDictionary<XName,SchemaType>
       AttributeGroups: IDictionary<XName,SchemaObject<AttributeGroupSpec>> }
+    /// Merge schema node with another defining same namespace.
+    member this.Merge(other: SchemaNode) =
+        if this.QualifiedAttributes <> other.QualifiedAttributes then
+            failwith "Same namespace has inconsistent values for qualified attributes in different schema files."
+        if this.QualifiedElements <> other.QualifiedElements then
+            failwith "Same namespace has inconsistent values for qualified elements in different schema files."
+        other.Attributes |> Seq.iter this.Attributes.Add
+        other.Elements |> Seq.iter this.Elements.Add
+        other.Types |> Seq.iter this.Types.Add
+        other.AttributeGroups |> Seq.iter this.AttributeGroups.Add
     /// Initializes empty SchemaNode from given `schema` node.
     static member FromNode(node) =
         { QualifiedAttributes = node |> isQualified (xname "attributeFormDefault")
           QualifiedElements = node |> isQualified (xname "elementFormDefault")
           TargetNamespace = node |> attrOrDefault (xname "targetNamespace") "" |> xns
-          Includes = []
-          Imports = []
           Attributes = Dictionary<_,_>()
           Elements = Dictionary<_,_>()
           Types = Dictionary<_,_>()
@@ -294,22 +307,27 @@ module Parser =
                 | Xsd "complexContent", (Begin | Annotation) ->
                     Content, Some(ComplexTypeContent.ComplexContent(parseComplexContent node))
                 | Xsd "choice", (Begin | Annotation) ->
-                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Choice(parseChoice(node))); Attributes = [] }))
+                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Choice(parseChoice(node))); Attributes = []; AttributeGroups = [] }))
                 | Xsd "group", (Begin | Annotation) ->
                     Particle, node |> notImplementedIn "complexType"
                 | Xsd "sequence", (Begin | Annotation) ->
-                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Sequence(parseSequence node)); Attributes = [] }))
+                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Sequence(parseSequence node)); Attributes = []; AttributeGroups = [] }))
                 | Xsd "all", (Begin | Annotation) ->
-                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.All(parseAll node)); Attributes = [] }))
+                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.All(parseAll node)); Attributes = []; AttributeGroups = [] }))
                 | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
                     let attribute = parseAttribute node
                     let content = match spec with
                                   | Some(ComplexTypeContent.Particle(content)) -> { content with Attributes = content.Attributes @ [attribute] }
-                                  | None -> { Content = None; Attributes = [attribute] }
+                                  | None -> { Content = None; Attributes = [attribute]; AttributeGroups = [] }
                                   | _ -> node |> notExpectedIn "complexType"
                     Attribute, Some(ComplexTypeContent.Particle(content))
                 | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
-                    Attribute, node |> notImplementedIn "complexType"
+                    let attributeGroup = parseAttributeGroup node
+                    let content = match spec with
+                                  | Some(ComplexTypeContent.Particle(content)) -> { content with AttributeGroups = content.AttributeGroups @ [attributeGroup] }
+                                  | None -> { Content = None; Attributes = []; AttributeGroups = [attributeGroup] }
+                                  | _ -> node |> notExpectedIn "complexType"
+                    Attribute, Some(ComplexTypeContent.Particle(content))
                 | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
                     Attribute, node |> notImplementedIn "complexType"
                 | _ ->
@@ -477,7 +495,7 @@ module Parser =
                 | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
                     node |> notImplementedIn "extension"
                 | _ -> node |> notExpectedIn "extension"
-                ) (Begin, { Content = None; Attributes = [] })
+                ) (Begin, { Content = None; Attributes = []; AttributeGroups = [] })
             |> snd
         { Base = node |> reqAttr (xname "base") |> parseXName node
           Content = parseChildElements() }
@@ -499,12 +517,12 @@ module Parser =
                 | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
                     Attribute, { spec with Attributes = spec.Attributes @ [parseAttribute node] }
                 | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
-                    node |> notImplementedIn "complexContent restriction"
+                    Attribute, { spec with AttributeGroups = spec.AttributeGroups @ [parseAttributeGroup node] }
                 | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
                     node |> notImplementedIn "complexContent restriction"
                 | _ ->
                     node |> notExpectedIn "complexContent restriction"
-                ) (Begin, { Content = None; Attributes = [] })
+                ) (Begin, { Content = None; Attributes = []; AttributeGroups = [] })
             |> snd
         { Base = node |> reqAttr (xname "base") |> parseXName node
           Content = parseChildElements() }
@@ -576,9 +594,17 @@ module Parser =
                 Content, { spec with Content = spec.Content @ [Enumeration(value)] }
             | Xsd "minLength", (Begin | Annotation | TypeSpec | Content) ->
                 Content, { spec with Content = spec.Content @ [MinLength(node |> readInt "value")] }
+            | Xsd "minInclusive", (Begin | Annotation | TypeSpec | Content) ->
+                Content, { spec with Content = spec.Content @ [MinInclusive(node |> readDecimal "value") ] }
+            | Xsd "maxInclusive", (Begin | Annotation | TypeSpec | Content) ->
+                Content, { spec with Content = spec.Content @ [MaxInclusive(node |> readDecimal "value") ] }
+            | Xsd "minExclusive", (Begin | Annotation | TypeSpec | Content) ->
+                Content, { spec with Content = spec.Content @ [MinExclusive(node |> readDecimal "value") ] }
+            | Xsd "maxExclusive", (Begin | Annotation | TypeSpec | Content) ->
+                Content, { spec with Content = spec.Content @ [MaxExclusive(node |> readDecimal "value") ] }
             | Xsd "pattern", (Begin | Annotation | TypeSpec | Content) ->
                 Content, { spec with Content = spec.Content @ [Pattern(node |> reqAttr(xname "value"))] }
-            | (Xsd "minExclusive" | Xsd "minInclusive" | Xsd "maxExclusive" | Xsd "maxInclusive" | Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace"), (Begin | Annotation | TypeSpec | Content) ->
+            | (Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace"), (Begin | Annotation | TypeSpec | Content) ->
                 Content, node |> notImplementedIn "simpleType restriction"
             | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | TypeSpec | Content | Attribute) ->
                 Attribute, node |> notImplementedIn "simpleType restriction"
@@ -622,53 +648,52 @@ module Parser =
             match node, state with
             | Xsd "annotation", Begin ->
                 Annotation, spec
-            | Xsd "attribute", (Begin | Attribute) ->
-                let a = parseAttribute(node)
-                Attribute, { spec with Attributes = a::spec.Attributes }
-            | Xsd "attributeGroup", (Begin | Attribute) ->
-                Attribute, node |> notImplementedIn "attributeGroup"
-            | Xsd "anyAttribute", (Begin | Attribute | Other) ->
+            | Xsd "attribute", (Begin | Annotation | Attribute) ->
+                Attribute, { spec with Attributes = (parseAttribute node)::spec.Attributes }
+            | Xsd "attributeGroup", (Begin | Annotation | Attribute) ->
+                Attribute, { spec with AttributeGroups = (parseAttributeGroup node)::spec.AttributeGroups }
+            | Xsd "anyAttribute", (Begin | Annotation | Attribute | Other) ->
                 Other, node |> notImplementedIn "attributeGroup"
             | _ -> node |> notExpectedIn "attributeGroup"
-            ) (Begin, { Annotation = ""; Attributes = []; AllowAny = false })
+            ) (Begin, { Annotation = ""; Attributes = []; AttributeGroups = []; AllowAny = false })
         |> snd
 
     /// Parses `schema` node contents and completes schemaNode definition details.
     let internal parseSchemaNode schemaNode (node: XElement) =
         node.Elements()
-        |> Seq.fold (fun (state, snode) node ->
+        |> Seq.fold (fun (state, snode, includes, imports) node ->
             match node, state with
             | Xsd "annotation", _ ->
-                state, snode
+                state, snode, includes, imports
             | Xsd "include", (Begin | Header) ->
                 let schloc = node |> reqAttr (xname "schemaLocation")
-                Header, { snode with Includes = Uri(schloc)::snode.Includes }
+                Header, snode, (schloc :: includes), imports
             | Xsd "import", (Begin | Header) ->
                 let ns = node |> attrOrDefault (xname "namespace") ""
                 let schloc = node |> attr (xname "schemaLocation")
-                Header, { snode with Imports = (xns ns, schloc)::snode.Imports }
+                Header, snode, includes, ((xns ns, schloc) :: imports)
             | Xsd "redefine", (Begin | Header) ->
                 node |> notImplementedIn "schema"
             | Xsd "complexType", _ ->
                 let name = node |> reqAttr (xname "name")
                 let typ = SchemaType.ComplexType(parseComplexType node)
                 snode.Types.Add(xnsname name snode.TargetNamespace.NamespaceName, typ)
-                TypeSpec, snode
+                TypeSpec, snode, includes, imports
             | Xsd "element", _ ->
                 let element = parseElement node
                 match element.Name with
                 | None -> failwith "`name` attribute is required if the parent element is the schema element"
                 | Some(name) -> snode.Elements.Add(xnsname name snode.TargetNamespace.NamespaceName, element)
-                TypeSpec, snode
+                TypeSpec, snode, includes, imports
             | Xsd "simpleType", _ ->
                 let name = node |> reqAttr (xname "name")
                 let typ = SchemaType.SimpleType(parseSimpleType node)
                 snode.Types.Add(xnsname name snode.TargetNamespace.NamespaceName, typ)
-                TypeSpec, snode
+                TypeSpec, snode, includes, imports
             | Xsd "attribute", _ ->
                 let attribute = parseAttribute(node)
                 snode.Attributes.Add(xnsname attribute.Name.Value snode.TargetNamespace.NamespaceName, attribute)
-                TypeSpec, snode
+                TypeSpec, snode, includes, imports
             | Xsd "attributeGroup", _ ->
                 let ag = node |> parseAttributeGroup
                 match SchemaObject<_>.FromNode(node) with
@@ -680,37 +705,60 @@ module Parser =
                                 | x -> x
                     snode.AttributeGroups.Add(xnsname ref.LocalName ns, Definition(ag))
                 | _ -> node |> notImplementedIn "schema"
-                TypeSpec, snode
+                TypeSpec, snode, includes, imports
             | (Xsd "group" | Xsd "notation"), _ -> node |> notImplementedIn "schema"
             | _ -> node |> notExpectedIn "schema"
-            ) (Begin, schemaNode)
-        |> snd
+            ) (Begin, schemaNode, [], [])
+        |> (fun (_,a,b,c) -> (a,b,c))
+
+    let fixUri (contextUri: Uri option) path =
+        match Uri.TryCreate(path, UriKind.Absolute), contextUri with
+        | (true, absUri), _ -> absUri
+        | _, Some(uri) -> match Uri.TryCreate(uri, path) with
+                          | true, absUri -> absUri
+                          | _ -> failwith "Unable to detect uri `%s` in the context of `%A`." path uri
+        | _ -> failwith "Could not resolve uri `%s`." path
 
     /// Parses all definitions in given schema node.
-    let rec private findSchemaNode (schemaLookup: Dictionary<string,SchemaNode>) node =
+    let rec private findSchemaNode (schemaUri: Uri) (schemaLookup: Dictionary<(string * string),SchemaNode>) node =
         let schemaNode = SchemaNode.FromNode(node)
         // Use previously parsed schema if present.
-        match schemaLookup.TryGetValue(schemaNode.TargetNamespace.NamespaceName) with
+        match schemaLookup.TryGetValue((schemaNode.TargetNamespace.NamespaceName, schemaUri.ToString())) with
         | false, _ ->
-            let schema = node |> parseSchemaNode schemaNode
-            schemaLookup.Add(schemaNode.TargetNamespace.NamespaceName, schema)
+            let schema, includes, imports = node |> parseSchemaNode schemaNode
+            schemaLookup.Add((schemaNode.TargetNamespace.NamespaceName, schemaUri.ToString()), schema)
             // Parse imported schemas also.
-            schema.Imports
+            imports
             |> List.filter (fun (ns, _) -> XmlNamespace.predefined |> List.exists ((=) ns.NamespaceName) |> not)
             |> List.iter (fun (ns, uri) ->
-                let document = XDocument.Load(uri |> Option.orDefault(ns.NamespaceName))
-                document.Element(xnsname "schema" XmlNamespace.Xsd)
-                |> findSchemaNode schemaLookup
-                |> ignore)
+                let path = (uri |> Option.orDefault(ns.NamespaceName)) |> fixUri (Some schemaUri)
+                let schemaNode = XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
+                                 |> findSchemaNode path schemaLookup
+                if schemaNode.TargetNamespace <> ns then
+                    failwith "Imported type schema should define same target namespace as the schema importing it.")
+            // Parse included schemas into target namespace.
+            includes
+            |> List.iter (fun uri ->
+                let path = uri |> fixUri (Some schemaUri)
+                let schemaNode = XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
+                                 |> findSchemaNode path schemaLookup
+                if schemaNode.TargetNamespace <> schema.TargetNamespace then
+                    failwith "Included type schema should define same target namespace as the schema including it.")
             schema
         | true, schema -> schema
 
     /// Parses all type schemas defined and referenced in current WSDL document.
-    let parseSchema (definitions: XElement) =
+    let parseSchema path (definitions: XElement) =
         match definitions.Element(xnsname "types" XmlNamespace.Wsdl) with
         | null -> Map.empty
         | typesNode ->
             let schemaLookup = Dictionary<_,_>()
-            typesNode.Elements(xnsname "schema" XmlNamespace.Xsd)
-            |> Seq.iter (findSchemaNode schemaLookup >> ignore)
-            schemaLookup |> Seq.map (fun kvp -> kvp.Key, kvp.Value) |> Map.ofSeq
+            let uri = fixUri None path
+            typesNode.Elements(xnsname "schema" XmlNamespace.Xsd) |> Seq.iter (findSchemaNode uri schemaLookup >> ignore)
+            schemaLookup
+            |> Seq.fold (fun (mergedSchemas: Dictionary<string,SchemaNode>) kvp ->
+                match mergedSchemas.TryGetValue (fst kvp.Key) with
+                | true, existingSchema -> existingSchema.Merge(kvp.Value)
+                | _ -> mergedSchemas.Add(fst kvp.Key, kvp.Value)
+                mergedSchemas) (Dictionary<_,_>())
+            |> Seq.map (fun kvp -> kvp.Key, kvp.Value) |> Map.ofSeq

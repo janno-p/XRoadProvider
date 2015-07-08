@@ -89,7 +89,7 @@ type internal ProducerDescription =
         let document = XDocument.Load(uri)
         let definitions = document.Element(xnsname "definitions" XmlNamespace.Wsdl)
         { Services = definitions |> ServiceDescription.parseServices languageCode
-          TypeSchemas = definitions |> TypeSchema.Parser.parseSchema }
+          TypeSchemas = definitions |> TypeSchema.Parser.parseSchema uri }
 
 /// Context keeps track of already generated types for provided types and namespaces
 /// to simplify reuse and resolve mutual dependencies between types.
