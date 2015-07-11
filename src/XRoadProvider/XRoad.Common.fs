@@ -75,11 +75,13 @@ module Pattern =
         | XsdName "date" -> Some typeof<DateTime>
         | XsdName "dateTime" -> Some typeof<DateTime>
         | XsdName "decimal" -> Some typeof<decimal>
+        | XsdName "double" -> Some typeof<double>
         | XsdName "float" -> Some typeof<single>
         | XsdName "int" -> Some typeof<int>
         | XsdName "integer" -> Some typeof<bigint>
         | XsdName "long" -> Some typeof<int64>
         | XsdName "string" -> Some typeof<string>
+        | XsdName "ID" -> Some typeof<string>
         | XsdName "NMTOKEN" -> Some typeof<string>
         | XsdName name -> failwithf "Unmapped XSD type %s" name
         | SoapEncName name -> failwithf "Unmapped SOAP-ENC type %s" name

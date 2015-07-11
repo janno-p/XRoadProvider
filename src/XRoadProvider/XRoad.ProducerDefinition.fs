@@ -185,7 +185,7 @@ module TypeBuilder =
                 if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
                 spec.Elements |> List.map (buildElementProperty context)
             | Some(ComplexTypeParticle.Sequence(spec)) ->
-                if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
+                if spec.MinOccurs > 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
                 spec.Content
                 |> List.map (fun item ->
                     match item with
