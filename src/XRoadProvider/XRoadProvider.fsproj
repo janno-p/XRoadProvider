@@ -37,7 +37,7 @@
   <ItemGroup>
     <Content Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fsi">
       <Paket>True</Paket>
-      <Link>paket-files/ProvidedTypes.fsi</Link>
+      <Link>paket-files\ProvidedTypes.fsi</Link>
     </Content>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
@@ -53,7 +53,7 @@
     <EmbeddedResource Include="Snippets\Serialization.cs" />
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fs">
       <Paket>True</Paket>
-      <Link>paket-files/ProvidedTypes.fs</Link>
+      <Link>paket-files\ProvidedTypes.fs</Link>
     </Compile>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="XRoad.Common.fs" />
