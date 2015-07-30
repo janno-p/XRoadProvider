@@ -4,7 +4,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{4E04C5A5-00B9-4D7C-8501-31B4B7389671}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>XRoadProvider</RootNamespace>
@@ -16,10 +15,9 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>.\bin\Debug</OutputPath>
+    <OutputPath>bin\Debug</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>.\bin\Debug\XRoadProvider.xml</DocumentationFile>
@@ -29,31 +27,35 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>.\bin\Release</OutputPath>
+    <OutputPath>bin\Release</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>.\bin\Release\XRoadProvider.xml</DocumentationFile>
     <OtherFlags>--warnon:1182</OtherFlags>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fsi">
+      <Paket>True</Paket>
+      <Link>paket-files/ProvidedTypes.fsi</Link>
+    </Content>
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Net" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="FSharp.Core" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Snippets\AbstractServicePortExtensions.cs" />
     <EmbeddedResource Include="Snippets\Serialization.cs" />
-    <EmbeddedResource Include="Snippets/XmlBookmarkReader.cs" />
+    <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fs">
+      <Paket>True</Paket>
+      <Link>paket-files/ProvidedTypes.fs</Link>
+    </Compile>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="ProvidedTypes.fsi" />
-    <Compile Include="ProvidedTypes.fs" />
     <Compile Include="XRoad.Common.fs" />
     <Compile Include="XRoad.ServiceDescription.fs" />
     <Compile Include="XRoad.TypeSchema.fs" />
@@ -66,6 +68,7 @@
     <Compile Include="XRoad.Providers.fs" />
     <None Include="paket.references" />
     <None Include="paket.template" />
+    <EmbeddedResource Include="Snippets\XmlBookmarkReader.cs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
