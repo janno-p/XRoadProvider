@@ -1,4 +1,7 @@
-﻿#r @"../../bin/XRoadProvider.dll"
+﻿#I @"..\..\..\src\XRoadProvider\bin\Debug"
+
+#r "XRoadProvider"
+#r "XRoadSerializer"
 
 open System.IO
 open XRoad.Providers
@@ -54,7 +57,7 @@ printfn "%s" cadr.response.faultString.BaseValue
 // List methods service
 
 let methods = port.listMethods(Aktorstest.DefinedTypes.xroad.listMethods())
-methods.response.item |> Array.iter (printfn "%s")
+methods.response |> Array.iter (printfn "%s")
 
 // File download with multipart response
 
@@ -62,7 +65,7 @@ let fd = AktorstestDto.fileDownload()
 fd.request <- AktorstestDto.fileDownload.requestType()
 fd.request.fileName <- "document.pdf"
 
-let fdr = port.fileDownload(fd)
+let fdr,attachments = port.fileDownload(fd)
 fdr.response.file.href
-let stream = resp.Attachments.[0]
-let result = resp.Result
+let stream = attachments.[fdr.response.file.href]
+
