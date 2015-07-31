@@ -529,7 +529,15 @@ module ServiceBuilder =
             Meth.create operation.Name
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Code.comment operation.Documentation
-            |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.nil; Expr.nil])
+            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
+
+        let initHdr =
+            operation.InputParameters.RequiredHeaders
+            |> List.map (fun h -> (Expr.typeRefOf<Tuple> @-> "Create") @% [Expr.inst<XmlQualifiedName> [Expr.value h]; Expr.cast typeRef<obj> (Expr.value "test")])
+            |> Arr.create<Tuple<XmlQualifiedName,obj>>
+
+        serviceMethod |> Meth.addStmt (Stmt.assign ((Expr.var "@__m") @=> "Header") initHdr) |> ignore
+        serviceMethod |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.nil]) |> ignore
 
         serviceMethod
 
@@ -725,6 +733,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
                 |> Cls.addMember producerField
                 |> Cls.addMember producerProperty
                 |> Code.comment port.Documentation
+                |> addHeaderProperties context.Protocol
             serviceTy |> Cls.addMember portTy |> ignore
 
             port.Methods

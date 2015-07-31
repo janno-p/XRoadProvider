@@ -86,7 +86,7 @@ let inheritBinaryContent typ =
                       |> Ctor.setAttr MemberAttributes.Public)
 
 /// Adds header element properties to given type.
-let private addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
+let internal addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
     let choose = headerMapping >> (match protocol with Version_20 -> fst | _ -> snd)
     let propName = choose >> snd3
     let docValue = choose >> trd3 >> Some

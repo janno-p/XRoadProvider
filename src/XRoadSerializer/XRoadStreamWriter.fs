@@ -2,7 +2,7 @@
 
 open System.Net
 open System
-open System.Xml.Linq
+open System.Xml
 open System.Collections.Generic
 open System.IO
 
@@ -26,8 +26,8 @@ type XRoadOptions(uri: string) =
     member val Uri = uri with get, set
 
 type XRoadMessage() =
-    member val Headers: (XName * obj) array = [||] with get, set
-    member val Content: (XName * obj) array = [||] with get, set
+    member val Header: (XmlQualifiedName * obj) array = [||] with get, set
+    member val Body: (XmlQualifiedName * obj) array = [||] with get, set
     member val Attachments = Dictionary<string, Stream>() with get, set
 
 type XRoadResponse(response: WebResponse) =
