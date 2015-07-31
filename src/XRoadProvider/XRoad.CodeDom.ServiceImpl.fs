@@ -5,14 +5,10 @@ open System.CodeDom
 open System.Collections.Generic
 open System.IO
 open System.Net
-open System.Reflection
-open System.Security.Cryptography
-open System.Text
 open System.Xml
 
 open XRoad.CodeDom.Common
 open XRoad.Common
-open XRoad.ServiceDescription
 
 /// Creates method for serializing X-Road specific header elements in SOAP message.
 /// Header usage depends on operation style: rpc/encoded and document/literal styles use different names.
@@ -187,46 +183,3 @@ let private createMakeServiceCallMethod undescribedFaults =
     |> Meth.addStmt (Stmt.tryFinally (createDeserializationStatements undescribedFaults)
                                      [ Stmt.condIf (Op.isNotNull (Expr.var "response"))
                                                    [(Expr.var "response" @-> "Dispose") @% [] |> Stmt.ofExpr] ])
-
-/// Create base class for all service port defined by producer.
-/// Includes common logic for executing service request against producer adapter server.
-let makeServicePortBaseType undescribedFaults protocol =
-    // Create property and backing field for producer adapter server uri.
-    // By default service port soap:address extension location value is used, but user can override that value.
-    let addressField = Fld.create<string> "producerUri"
-    let addressFieldRef = Expr.this @=> addressField.Name
-    let addressProperty = CodeMemberProperty(Name="ProducerUri", Type=CodeTypeReference(typeof<string>))
-    addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-    addressProperty.GetStatements.Add(Stmt.ret addressFieldRef) |> ignore
-    addressProperty.SetStatements.Add(Stmt.assign addressFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
-
-    // Create property and backing field for producer name.
-    // By default service port xrd/xtee:address extension producer value is used, but user can override that value.
-    let producerField = CodeMemberField(typeof<string>, "producerName")
-    let producerFieldRef = Expr.this @=> producerField.Name
-    let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
-    producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-    producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
-    producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
-
-    // Primary constructor initializes producer name and adapter server uri to default values.
-    let ctor =
-        Ctor.create()
-        |> Ctor.setAttr MemberAttributes.Family
-        |> Ctor.addParam<string> "producerUri"
-        |> Ctor.addParam<string> "producerName"
-        |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerUri") (Expr.var("producerUri")))
-        |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (Expr.var("producerName")))
-
-    // Base class declaration:
-    Cls.create "AbstractServicePort"
-    |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Abstract)
-    |> Cls.addMember ctor
-    |> Cls.addMember addressField
-    |> Cls.addMember addressProperty
-    |> Cls.addMember producerField
-    |> Cls.addMember producerProperty
-    |> Cls.addMember (createMakeServiceCallMethod undescribedFaults)
-    |> Cls.addMember (createWriteXRoadHeaderMethod protocol)
-    |> Cls.addMember (createTypeFromAssemblyResource("AbstractServicePortExtensions.cs"))
-    |> addHeaderProperties protocol

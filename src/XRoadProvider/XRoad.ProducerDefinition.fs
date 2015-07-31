@@ -11,7 +11,6 @@ open System.Xml.Serialization
 open XRoad.CodeDom.Common
 open XRoad.CodeDom.ServiceImpl
 open XRoad.Common
-open XRoad.ServiceDescription
 open XRoad.TypeSchema
 
 /// Functions and types to handle type building process.
@@ -530,7 +529,11 @@ module ServiceBuilder =
             Meth.create operation.Name
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Code.comment operation.Documentation
+            |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.nil; Expr.nil])
 
+        serviceMethod
+
+        (*
         let requiredHeadersExpr = operation.InputParameters.RequiredHeaders |> List.map (!^) |> Arr.create<string>
         let serviceName = match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name
 
@@ -644,6 +647,7 @@ module ServiceBuilder =
         // Make return statement if definition specifies result.
         let isEmptyResponse = (not operation.OutputParameters.IsMultipart) && (operation.OutputParameters.Parameters |> List.isEmpty)
         serviceMethod |> Meth.addStmt (if isEmptyResponse then Stmt.ofExpr methodCall else Stmt.ret methodCall)
+    *)
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
@@ -653,9 +657,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
 
     // Initialize type and schema element lookup context.
     let context = TypeBuilderContext.FromSchema(schema, languageCode)
-
-    // Create base type which provides access to service calls.
-    let portBaseTy = makeServicePortBaseType undescribedFaults context.Protocol
 
     // Create base type which holds types generated from all provided schema-s.
     let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
@@ -690,7 +691,6 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
         Cls.create typeNamePath.[typeNamePath.Length - 1]
         |> Cls.setAttr TypeAttributes.Public
         |> Cls.asStatic
-        |> Cls.addMember portBaseTy
         |> Cls.addMember serviceTypesTy
 
     // Create methods for all operation bindings.
@@ -699,21 +699,36 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
         let serviceTy = Cls.create service.Name |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
         service.Ports
         |> List.iter (fun port ->
-            let ctor =
-                Ctor.create()
-                |> Ctor.setAttr MemberAttributes.Public
-                |> Ctor.addBaseArg (Expr.value port.Uri)
-                |> Ctor.addBaseArg (Expr.value port.Producer)
+            // Create property and backing field for producer adapter server uri.
+            // By default service port soap:address extension location value is used, but user can override that value.
+            let addressField = Fld.create<string> "producerUri"
+            let addressFieldRef = Expr.this @=> addressField.Name
+            let addressProperty = CodeMemberProperty(Name="ProducerUri", Type=CodeTypeReference(typeof<string>))
+            addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+            addressProperty.GetStatements.Add(Stmt.ret addressFieldRef) |> ignore
+            addressProperty.SetStatements.Add(Stmt.assign addressFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
+
+            // Create property and backing field for producer name.
+            // By default service port xrd/xtee:address extension producer value is used, but user can override that value.
+            let producerField = CodeMemberField(typeof<string>, "producerName")
+            let producerFieldRef = Expr.this @=> producerField.Name
+            let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
+            producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+            producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
+            producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
+
             let portTy =
                 Cls.create port.Name
                 |> Cls.setAttr TypeAttributes.Public
-                |> Cls.setParent (typeRefName portBaseTy.Name)
-                |> Cls.addMember ctor
+                |> Cls.addMember addressField
+                |> Cls.addMember addressProperty
+                |> Cls.addMember producerField
+                |> Cls.addMember producerProperty
                 |> Code.comment port.Documentation
             serviceTy |> Cls.addMember portTy |> ignore
+
             port.Methods
-            |> List.iter (fun op -> portTy |> Cls.addMember (ServiceBuilder.build context undescribedFaults op) |> ignore)
-            )
+            |> List.iter (fun op -> portTy |> Cls.addMember (ServiceBuilder.build context undescribedFaults op) |> ignore))
         targetClass |> Cls.addMember serviceTy |> ignore
         )
 
