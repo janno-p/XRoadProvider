@@ -47,7 +47,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Snippets\AbstractServicePortExtensions.cs" />
-    <EmbeddedResource Include="Snippets\XmlBookmarkReader.cs" />
     <Content Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fsi">
       <Paket>True</Paket>
       <Link>paket-files\ProvidedTypes.fsi</Link>

@@ -15,55 +15,100 @@ module Option =
     let orDefault value opt =
         opt |> Option.fold (fun _ x -> x) value
 
-type NamespaceDecl =
-    { Prefix: string
-      NamespaceURI: string
-      ScopeCount: int
-      PreviousDecl: NamespaceDecl option }
+type NamespaceDecl(prefix: string, namespaceURI: string, previousDecl: NamespaceDecl option) =
+    member val Prefix = prefix with get
+    member val NamespaceURI = namespaceURI with get
+    member val PreviousDecl = previousDecl with get
+    member val ScopeCount = 0 with get, set
 
-type CachedXmlNode =
-    { NodeType: XmlNodeType
-      Name: string
-      LocalName: string
-      Prefix: string
-      NamespaceURI: string
-      Value: string
-      Depth: int
-      IsDefaultOrEmpty: bool
-      Next: CachedXmlNode option
-      Attributes: CachedXmlNode option
-      NamespacesInScope: NamespaceDecl option }
-    static member FromNode(reader: XmlReader, namespacesInScope, next) =
-        { NodeType = reader.NodeType
-          Name = reader.Name
-          LocalName = reader.LocalName
-          Prefix = reader.Prefix
-          NamespaceURI = reader.NamespaceURI
-          Value = reader.Value
-          Depth = reader.Depth
-          IsDefaultOrEmpty = false
-          Next = next
-          Attributes = None
-          NamespacesInScope = namespacesInScope }
+type CachedXmlNode(nodeType: XmlNodeType, name: string, localName: string, prefix: string, nsURI: string, value: string, depth: int, next: CachedXmlNode option, ns: NamespaceDecl option) =
+    new(reader: XmlReader, namespacesInScope, next) = CachedXmlNode(reader.NodeType, reader.Name, reader.LocalName, reader.Prefix, reader.NamespaceURI, reader.Value, reader.Depth, next, namespacesInScope)
+    member val NodeType = nodeType with get
+    member val Name = name with get
+    member val LocalName = localName with get
+    member val Prefix = prefix with get
+    member val NamespaceURI = nsURI with get
+    member val Value = value with get, set
+    member val Depth = depth with get, set
+    member val NamespacesInScope = ns with get, set
+    member val Next = next with get, set
+    member val IsDefaultOrEmpty = false with get, set
+    member val Attributes = Option<CachedXmlNode>.None with get, set
 
-type public XmlBookmarkReader(reader: XRoadXmlReader) =
+type public XmlBookmarkReader(reader: XRoadXmlReader) as this =
     inherit XmlReader()
-
-    let [<Literal>] MaxNodePoolCount = 128
 
     let bookmarks = Hashtable()
 
-    let currentNamespacesInScope, nextNamespacesInScope =
+    let mutable currentNamespacesInScope, nextNamespacesInScope =
         let nt = reader.NameTable
-        let cnsisc = { Prefix = nt.Add("xml"); NamespaceURI = nt.Add("http://www.w3.org/XML/1998/namespace"); ScopeCount = 0; PreviousDecl = None }
-        let cnsisc = { Prefix = nt.Add("xmlns"); NamespaceURI = nt.Add("http://www.w3.org/2000/xmlns/"); ScopeCount = 0; PreviousDecl = Some(cnsisc) }
-        let cnsisc = { Prefix = nt.Add(""); NamespaceURI = nt.Add(""); ScopeCount = 1; PreviousDecl = Some(cnsisc) }
-        cnsisc, cnsisc
+        let cnsisc = NamespaceDecl(nt.Add("xml"), nt.Add("http://www.w3.org/XML/1998/namespace"), None)
+        let cnsisc = NamespaceDecl(nt.Add("xmlns"), nt.Add("http://www.w3.org/2000/xmlns/"), Some(cnsisc))
+        let cnsisc = NamespaceDecl(nt.Add(""), nt.Add(""), Some(cnsisc))
+        cnsisc.ScopeCount <- 1
+        Some(cnsisc), Some(cnsisc)
 
-    let currentNode: CachedXmlNode option = None
-    let currentAttributeParent: CachedXmlNode option = None
-    let attributeTextValue: CachedXmlNode option = None
-    let cachedNodes: CachedXmlNode option = None
+    let mutable currentNode: CachedXmlNode option = None
+    let mutable currentAttributeParent: CachedXmlNode option = None
+    let mutable attributeTextValue: CachedXmlNode option = None
+    let mutable cachedNodes: CachedXmlNode option = None
+
+    let setCurrentNode node =
+        currentNode <- Some(node)
+        currentAttributeParent <- node.Attributes |> Option.map (fun _ -> node)
+
+    let lookupNamespace prefix namespacesInScope =
+        let rec walkNamespacesInScope (ns: NamespaceDecl option) =
+            match ns with
+            | Some(ns) ->
+                if prefix = ns.Prefix then ns.NamespaceURI
+                else walkNamespacesInScope ns.PreviousDecl
+            | None -> null
+        walkNamespacesInScope namespacesInScope
+
+    let cacheCurrentNode () =
+        let node =
+            let nodeType = reader.NodeType
+            let n = CachedXmlNode(reader, currentNamespacesInScope, None)
+            if nodeType = XmlNodeType.Element then
+                n.IsDefaultOrEmpty <- reader.IsEmptyElement
+            n
+        cachedNodes |> Option.iter (fun n -> n.Next <- Some(node))
+        cachedNodes <- Some(node);
+        if reader.MoveToFirstAttribute() then
+            let rec walkAttributes (lastAttr: CachedXmlNode option) =
+                let attr = CachedXmlNode(reader, currentNamespacesInScope, None)
+                match lastAttr with
+                | Some(lastAttr) -> lastAttr.Next <- Some(attr)
+                | None -> node.Attributes <- Some(attr)
+                if reader.MoveToNextAttribute() then
+                    walkAttributes (Some(attr))
+            walkAttributes None
+            reader.MoveToElement() |> ignore
+
+    let processNamespaces() =
+        let originalNamespaces = currentNamespacesInScope
+        match reader.NodeType with
+        | XmlNodeType.Element ->
+            if reader.MoveToFirstAttribute() then
+                let rec walkAttributes() =
+                    if reader.NamespaceURI = "http://www.w3.org/2000/xmlns/" then
+                        let prefix = if reader.Prefix.Length = 0 then "" else reader.LocalName
+                        currentNamespacesInScope <- Some(NamespaceDecl(prefix, reader.NameTable.Add(reader.Value), currentNamespacesInScope))
+                    if reader.MoveToNextAttribute() then
+                        walkAttributes()
+                reader.MoveToElement() |> ignore
+            if reader.IsEmptyElement then
+                nextNamespacesInScope <- originalNamespaces
+            else
+                nextNamespacesInScope <- currentNamespacesInScope
+                currentNamespacesInScope.Value.ScopeCount <- currentNamespacesInScope.Value.ScopeCount + 1
+        | XmlNodeType.EndElement ->
+            currentNamespacesInScope.Value.ScopeCount <- currentNamespacesInScope.Value.ScopeCount - 1
+            let rec findDecl (decl: NamespaceDecl option) =
+                if decl.Value.ScopeCount = 0 then findDecl decl.Value.PreviousDecl else decl
+            nextNamespacesInScope <- findDecl currentNamespacesInScope
+        | _ -> ()
 
     member __.Context with get() = reader.Context
 
@@ -77,720 +122,234 @@ type public XmlBookmarkReader(reader: XRoadXmlReader) =
     override __.BaseURI with get() = reader.BaseURI
     override __.IsEmptyElement with get() = currentNode |> Option.map (fun x -> x.NodeType = XmlNodeType.Element && x.IsDefaultOrEmpty) |> Option.orDefault reader.IsEmptyElement
 
+    override __.AttributeCount
+        with get() =
+            let rec countAttributes (attr: CachedXmlNode option) =
+                match attr with
+                | Some(n) -> 1 + countAttributes n.Next
+                | None -> 0
+            currentNode |> Option.map (fun x -> countAttributes x.Attributes) |> Option.orDefault reader.AttributeCount
+
+    override __.GetAttribute(name: string) =
+        currentNode
+        |> Option.map (fun _ ->
+            match currentAttributeParent |> Option.bind (fun x -> x.Attributes) with
+            | Some(attr) ->
+                match reader.NameTable.Get(name) with
+                | null -> null
+                | name ->
+                    let rec check (attr: CachedXmlNode) =
+                        if name = attr.Name then attr.Value
+                        else match attr.Next with Some(n) -> check n | None -> null
+                    check attr
+            | None -> null)
+        |> Option.orDefault (reader.GetAttribute(name))
+
+    override __.HasValue with get() = currentNode |> Option.map (fun x -> x.NodeType <> XmlNodeType.Element && x.NodeType <> XmlNodeType.EntityReference && x.NodeType <> XmlNodeType.EndEntity) |> Option.orDefault reader.HasValue
+    override __.IsDefault with get() = currentNode |> Option.map (fun x -> x.NodeType = XmlNodeType.Attribute && x.IsDefaultOrEmpty) |> Option.orDefault reader.IsDefault
+    override __.QuoteChar with get() = reader.QuoteChar
+    override __.XmlSpace with get() = reader.XmlSpace
+    override __.XmlLang with get() = reader.XmlLang
+    override __.EOF with get() = currentNode.IsNone && reader.EOF
+    override __.Item with get(i: int) = this.GetAttribute(i)
+    override __.Item with get(name: string) = this.GetAttribute(name)
+    override __.Item with get(name, namespaceURI) = this.GetAttribute(name, namespaceURI)
+
+    override __.Close() =
+        reader.Close()
+        currentNode <- None
+        currentAttributeParent <- None
+
+    override __.ReadState with get() = currentNode |> Option.map (fun _ -> ReadState.Interactive) |> Option.orDefault reader.ReadState
+    override __.NameTable with get() = reader.NameTable
+    override __.LookupNamespace(prefix) = currentNode |> Option.map (fun x -> lookupNamespace prefix x.NamespacesInScope) |> Option.orDefault (lookupNamespace prefix currentNamespacesInScope)
+    override __.CanResolveEntity with get() = reader.CanResolveEntity
+    override __.ResolveEntity() = reader.ResolveEntity()
+
+    override __.Read() =
+        let isDone =
+            if currentNode.IsSome then
+                if currentAttributeParent.IsSome then
+                    currentNode <- currentAttributeParent
+                    if attributeTextValue.IsSome then
+                        attributeTextValue.Value.Next <- None
+                if currentNode.Value.Next.IsSome then
+                    setCurrentNode(currentNode.Value.Next.Value); true
+                else currentNode <- None; false
+            else false
+        if isDone then true
+        else
+            currentNamespacesInScope <- nextNamespacesInScope
+            if not(reader.Read()) then
+                false
+            else
+                processNamespaces()
+                if bookmarks.Count > 0 then cacheCurrentNode()
+                true
+
+    override __.ReadAttributeValue() =
+        currentNode
+        |> Option.map (fun x ->
+            match x.NodeType with
+            | XmlNodeType.Attribute -> false
+            | _ ->
+                if attributeTextValue.IsNone then
+                    attributeTextValue <- Some(CachedXmlNode(XmlNodeType.Text, "", "", "", "", "", 0, None, None))
+                attributeTextValue.Value.Value <- x.Value
+                attributeTextValue.Value.Depth <- x.Depth + 1
+                attributeTextValue.Value.NamespacesInScope <- currentNamespacesInScope
+                attributeTextValue.Value.Next <- currentNode
+                currentNode <- attributeTextValue
+                true)
+        |> Option.orDefault (reader.ReadAttributeValue())
+
+    override __.MoveToElement() =
+        if currentNode.IsNone then
+            reader.MoveToElement() |> ignore
+        match currentAttributeParent with
+        | Some(_) ->
+            if currentNode.Value <> currentAttributeParent.Value then
+                currentNode <- currentAttributeParent
+                true
+            else false
+        | None -> false
+
+    override __.GetAttribute(localName, namespaceUri) =
+        currentNode
+        |> Option.map (fun _ ->
+            match currentAttributeParent |> Option.bind (fun x -> x.Attributes) with
+            | Some(attr) ->
+                match reader.NameTable.Get(localName), reader.NameTable.Get(namespaceUri) with
+                | null, _ | _, null -> null
+                | localName, namespaceUri ->
+                    let rec walkAttributes (attr: CachedXmlNode) =
+                        if localName = attr.LocalName && namespaceUri = attr.NamespaceURI then attr.Value
+                        else match attr.Next with Some(a) -> walkAttributes a | None -> null
+                    walkAttributes attr
+            | None -> null)
+        |> Option.orDefault (reader.GetAttribute(localName, namespaceUri))
+
+    override __.GetAttribute(i: int) =
+        currentNode
+        |> Option.map (fun _ ->
+            match currentAttributeParent |> Option.bind (fun x -> x.Attributes) with
+            | Some(attr) ->
+                let rec walkAttributes (attr: CachedXmlNode) index =
+                    if i = index then attr.Value
+                    else match attr.Next with Some(a) -> walkAttributes a (index + 1) | None -> failwith "Argument i out of range."
+                walkAttributes attr 0
+            | None -> failwith "Argument i out of range.")
+        |> Option.orDefault (reader.GetAttribute(i))
+
+    override __.MoveToAttribute(name: string) =
+        currentNode
+        |> Option.map (fun _ ->
+            match currentAttributeParent |> Option.bind (fun x -> x.Attributes) with
+            | Some(attr) ->
+                match reader.NameTable.Get(name) with
+                | null -> false
+                | name ->
+                    let rec walkAttributes (attr: CachedXmlNode) =
+                        if name = attr.Name then currentNode <- Some(attr); true
+                        else match attr.Next with Some(a) -> walkAttributes a | None -> false
+                    walkAttributes attr
+            | None -> false)
+        |> Option.orDefault (reader.MoveToAttribute(name))
+
+    override __.MoveToAttribute(localName, namespaceUri) =
+        currentNode
+        |> Option.map (fun _ ->
+            match currentAttributeParent |> Option.bind (fun x -> x.Attributes) with
+            | Some(attr) ->
+                match reader.NameTable.Get(localName), reader.NameTable.Get(namespaceUri) with
+                | null, _ | _, null -> false
+                | localName, namespaceUri ->
+                    let rec walkAttributes (attr: CachedXmlNode) =
+                        if localName = attr.LocalName && namespaceUri = attr.NamespaceURI then currentNode <- Some(attr); true
+                        else match attr.Next with Some(a) -> walkAttributes(a) | None -> false
+                    walkAttributes attr
+            | None -> false)
+        |> Option.orDefault (reader.MoveToAttribute(localName, namespaceUri))
+
+    override __.MoveToAttribute(i: int) =
+        currentNode
+        |> Option.map (fun _ ->
+            match currentAttributeParent |> Option.bind (fun x -> x.Attributes) with
+            | Some(attr) ->
+                let rec walkAttributes (attr: CachedXmlNode) index =
+                    if i = index then attr
+                    else match attr.Next with Some(a) -> walkAttributes a (index + 1) | None -> failwith "Argument i out of range."
+                currentNode <- Some(walkAttributes attr 0)
+            | None -> failwith "Argument i out of range.")
+        |> Option.orDefault (reader.MoveToAttribute(i) |> ignore)
+
+    override __.MoveToFirstAttribute() =
+        currentNode
+        |> Option.map (fun _ ->
+            match currentAttributeParent |> Option.bind (fun x -> x.Attributes) with
+            | Some(_) as attr -> currentNode <- attr; true
+            | None -> false)
+        |> Option.orDefault (reader.MoveToFirstAttribute())
+
+    override __.MoveToNextAttribute() =
+        currentNode
+        |> Option.map (fun node ->
+            match currentAttributeParent |> Option.bind (fun x -> x.Attributes) with
+            | Some(_) as attr ->
+                match node.NodeType with
+                | XmlNodeType.Attribute ->
+                    if node.Next.IsSome then currentNode <- currentNode.Value.Next; true
+                    else false
+                | _ ->
+                    if currentNode.Value = currentAttributeParent.Value then currentNode <- attr; true
+                    elif currentNode.Value = attributeTextValue.Value && attributeTextValue.Value.Next.Value.Next.IsSome then
+                        currentNode <- attributeTextValue.Value.Next.Value.Next
+                        attributeTextValue.Value.Next <- None
+                        true
+                    else false
+            | None -> false)
+        |> Option.orDefault (reader.MoveToNextAttribute())
+
+    member __.SetBookmark(bookmarkName) =
+        if reader.ReadState <> ReadState.Interactive then
+            failwith "A bookmark can be set only when the reader is in ReadState.Interactive."
+        if reader.NodeType = XmlNodeType.Attribute then
+            failwith "A bookmark cannot be set when the reader on an attribute"
+        if bookmarks.[bookmarkName] <> null then
+            failwith "Duplicate bookmark name."
+        let bookmarkNode =
+            match currentNode with
+            | None ->
+                match cachedNodes with
+                | Some(_) -> cachedNodes
+                | None ->
+                    assert (bookmarks.Count = 0)
+                    cacheCurrentNode()
+                    cachedNodes
+            | _ -> currentNode
+        bookmarks.Add(bookmarkName, bookmarkNode)
+
+    member __.ReturnToBookmark(bookmarkName) =
+        this.ReturnToBookmark(bookmarkName, false)
+
+    member __.ReturnToAndRemoveBookmark(bookmarkName) =
+        this.ReturnToBookmark(bookmarkName, true)
+
+    member __.ReturnToBookmark(bookmarkName, remove) =
+        match bookmarks.[bookmarkName] with
+        | :? CachedXmlNode as node ->
+            setCurrentNode node
+            if remove then bookmarks.Remove(bookmarkName)
+            cachedNodes <- None
+        | _ -> failwithf @"Bookmark ""%s"" does not exist." bookmarkName
+
+    member __.RemoveBookmark(bookmarkName) =
+        bookmarks.Remove(bookmarkName)
+        if bookmarks.Count = 0 then cachedNodes <- None
+
+    member __.RemoveAllBookmarks() =
+        bookmarks.Clear()
+        cachedNodes <- None
+
     interface IXmlBookmarkReader with
         member val Reader = reader :> XmlReader with get
-
-
-(*
-    public override bool HasValue
-    {
-        get
-        {
-            if (curNode == null)
-            {
-                return reader.HasValue;
-            }
-            else
-            {
-                return curNode.nodeType != System.Xml.XmlNodeType.Element &&
-                        curNode.nodeType != System.Xml.XmlNodeType.EntityReference &&
-                        curNode.nodeType != System.Xml.XmlNodeType.EndEntity;
-            }
-        }
-    }
-
-    public override bool IsDefault
-    {
-        get
-        {
-            if (curNode == null)
-            {
-                return reader.IsDefault;
-            }
-            else
-            {
-                return curNode.nodeType == System.Xml.XmlNodeType.Attribute && curNode.isDefaultOrEmpty;
-            }
-        }
-    }
-
-    public override char QuoteChar
-    {
-        get
-        {
-            return reader.QuoteChar;
-        }
-    }
-
-    public override System.Xml.XmlSpace XmlSpace
-    {
-        get
-        {
-            return reader.XmlSpace;
-        }
-    }
-
-    public override string XmlLang
-    {
-        get
-        {
-            return reader.XmlLang;
-        }
-    }
-
-    public override int AttributeCount
-    {
-        get
-        {
-            if (curNode == null)
-            {
-                return reader.AttributeCount;
-            }
-            CachedXmlNode attr = curNode.attributes;
-            int attrCount = 0;
-            while (attr != null)
-            {
-                attr = attr.next;
-                attrCount++;
-            }
-            return attrCount;
-        }
-    }
-
-    public override string GetAttribute(string name)
-    {
-        // forward to base reader if replaying
-        if (curNode == null)
-        {
-            return reader.GetAttribute(name);
-        }
-        // check that there are some cached attributes
-        if (curAttrParent != null && curAttrParent.attributes != null)
-        {
-            // atomize the name
-            name = reader.NameTable.Get(name);
-
-            // if the name is not in name table, there is no attribute with such name -> return 
-            if (name == null)
-            {
-                return null;
-            }
-            // iterate through attributes fo find the one with the given name
-            CachedXmlNode attr = curAttrParent.attributes;
-            do
-            {
-                if ((object)name == (object)attr.name)
-                {
-                    // found one -> return value
-                    return attr.value;
-                }
-                attr = attr.next;
-            } while (attr != null);
-        }
-        // attribute not found
-        return null;
-    }
-
-    public override string GetAttribute(string localName, string namespaceUri)
-    {
-        // forward to base reader if replaying
-        if (curNode == null)
-        {
-            return reader.GetAttribute(localName, namespaceUri);
-        }
-        // check that there are some cached attributes
-        if (curAttrParent != null && curAttrParent.attributes != null)
-        {
-            // atomize the names
-            localName = reader.NameTable.Get(localName);
-            namespaceUri = reader.NameTable.Get(namespaceUri);
-
-            // if the name is not in name table, there is no attribute with such name -> return 
-            if (localName == null || namespaceUri == null)
-            {
-                return null;
-            }
-            // iterate through attributes fo find the one with the given name
-            CachedXmlNode attr = curAttrParent.attributes;
-            do
-            {
-                if ((object)localName == (object)attr.localName && (object)namespaceUri == (object)attr.namespaceUri)
-                {
-                    // found one -> return value
-                    return attr.value;
-                }
-                attr = attr.next;
-            } while (attr != null);
-        }
-        // attribute not found
-        return null;
-    }
-
-    public override string GetAttribute(int i)
-    {
-        // forward to base reader if replaying
-        if (curNode == null)
-        {
-            return reader.GetAttribute(i);
-        }
-        // check that there are some cached attributes
-        if (curAttrParent != null && curAttrParent.attributes != null)
-        {
-            // iterate through attributes fo find one with the given index
-            CachedXmlNode attr = curAttrParent.attributes;
-            int index = 0;
-            do
-            {
-                if (i == index)
-                {
-                    // found one -> return value
-                    return attr.value;
-                }
-                attr = attr.next;
-                index++;
-            } while (attr != null);
-        }
-        throw new System.ArgumentOutOfRangeException("i");
-    }
-
-    public override string this[int i]
-    {
-        get
-        {
-            return GetAttribute(i);
-        }
-    }
-
-    public override string this[string name]
-    {
-        get
-        {
-            return GetAttribute(name);
-        }
-    }
-
-    public override string this[string name, string namespaceUri]
-    {
-        get
-        {
-            return GetAttribute(name, namespaceUri);
-        }
-    }
-
-    public override bool MoveToAttribute(string name)
-    {
-        // forward to reader if not replaying
-        if (curNode == null)
-        {
-            return reader.MoveToAttribute(name);
-        }
-        // check that there are some cached attributes
-        if (curAttrParent != null && curAttrParent.attributes != null)
-        {
-            // atomize names
-            name = reader.NameTable.Get(name);
-
-            // if the name is not in name table, there is no attribute with such name 
-            if (name == null)
-            {
-                return false;
-            }
-            // iterate through attributes fo find one with the given name
-            CachedXmlNode attr = curAttrParent.attributes;
-            do
-            {
-                if ((object)name == (object)attr.name)
-                {
-                    curNode = attr;
-                    return true;
-                }
-                attr = attr.next;
-            } while (attr != null);
-        }
-        // attribute not found
-        return false;
-    }
-
-    public override bool MoveToAttribute(string localName, string namespaceUri)
-    {
-        // forward to reader if not replaying
-        if (curNode == null)
-        {
-            return reader.MoveToAttribute(localName, namespaceUri);
-        }
-        // check that there are some cached attributes
-        if (curAttrParent != null && curAttrParent.attributes != null)
-        {
-            // atomize names
-            localName = reader.NameTable.Get(localName);
-            namespaceUri = reader.NameTable.Get(namespaceUri);
-
-            // if the name is not in name table, there is no attribute with such name 
-            if (localName == null || namespaceUri == null)
-            {
-                return false;
-            }
-            // iterate through attributes fo find one with the given name
-            CachedXmlNode attr = curAttrParent.attributes;
-            do
-            {
-                if ((object)localName == (object)attr.localName && (object)namespaceUri == (object)attr.namespaceUri)
-                {
-                    curNode = attr;
-                    return true;
-                }
-                attr = attr.next;
-            } while (attr != null);
-        }
-        // attribute not found
-        return false;
-    }
-
-    public override void MoveToAttribute(int i)
-    {
-        // forward to reader if not replaying
-        if (curNode == null)
-        {
-            reader.MoveToAttribute(i);
-            return;
-        }
-        // check that there are some cached attributes
-        if (curAttrParent != null && curAttrParent.attributes != null)
-        {
-            // iterate through attributes fo find one with the given index
-            CachedXmlNode attr = curAttrParent.attributes;
-            int index = 0;
-            do
-            {
-                if (i == index)
-                {
-                    curNode = attr;
-                    return;
-                }
-                attr = attr.next;
-                index++;
-            } while (attr != null);
-        }
-        // not found -> invalid index
-        throw new System.ArgumentOutOfRangeException("i");
-    }
-
-    public override bool MoveToFirstAttribute()
-    {
-        // forward to base reader if not replaying
-        if (curNode == null)
-        {
-            return reader.MoveToFirstAttribute();
-        }
-        // return false if there are no attributes
-        if (curAttrParent == null || curAttrParent.attributes == null)
-        {
-            return false;
-        }
-        // move to the first attribute
-        curNode = curAttrParent.attributes;
-        return true;
-    }
-
-    public override bool MoveToNextAttribute()
-    {
-        // forward to base reader if not replaying
-        if (curNode == null)
-        {
-            return reader.MoveToNextAttribute();
-        }
-        // return false if there are no attributes
-        if (curAttrParent == null || curAttrParent.attributes == null)
-        {
-            return false;
-        }
-        if (curNode.nodeType != System.Xml.XmlNodeType.Attribute)
-        {
-            // if on attribute parent, move to the first attribute
-            if (curNode == curAttrParent)
-            {
-                if (curAttrParent.attributes != null)
-                {
-                    curNode = curAttrParent.attributes;
-                    return true;
-                }
-            }
-            // if on attribute text value, move to the next attribute
-            else if (curNode == attributeTextValue)
-            {
-                CachedXmlNode nextAttr = attributeTextValue.next.next;
-                if (nextAttr != null)
-                {
-                    curNode = nextAttr;
-                    attributeTextValue.next = null;
-                    return true;
-                }
-            }
-            return false;
-        }
-        // otherwise move to the next attribute, if one exists
-        if (curNode.next != null)
-        {
-            curNode = curNode.next;
-            return true;
-        }
-        return false;
-    }
-
-    public override bool MoveToElement()
-    {
-        // forward to base reader if replaying
-        if (curNode == null)
-        {
-            reader.MoveToElement();
-        }
-        // move to attribute parent
-        if (curAttrParent != null)
-        {
-            if (curNode != curAttrParent)
-            {
-                curNode = curAttrParent;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public override bool ReadAttributeValue()
-    {
-        // forward to base reader if replaying
-        if (curNode == null)
-        {
-            return reader.ReadAttributeValue();
-        }
-
-        // return false on node type type other than attribute
-        if (curNode.nodeType != System.Xml.XmlNodeType.Attribute)
-        {
-            return false;
-        }
-
-        // setup a cached node for attribute value
-        if (attributeTextValue == null)
-        {
-            attributeTextValue = new CachedXmlNode(System.Xml.XmlNodeType.Text, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, 0, null, null);
-        }
-
-        attributeTextValue.value = curNode.value;
-        attributeTextValue.depth = curNode.depth + 1;
-        attributeTextValue.namespacesInScope = currentNamespacesInScope;
-        attributeTextValue.next = curNode;
-
-        curNode = attributeTextValue;
-        return true;
-    }
-
-    public override bool Read()
-    {
-        // have current node -> we are replaying
-        if (curNode != null)
-        {
-            // recover from iterating over attributes
-            if (curAttrParent != null)
-            {
-                curNode = curAttrParent;
-                if (attributeTextValue != null)
-                {
-                    attributeTextValue.next = null;
-                }
-            }
-            // move to next node in the list
-            if (curNode.next != null)
-            {
-                SetCurrentNode(curNode.next);
-                return true;
-            }
-            // end of cached nodes
-            else
-            {
-                curNode = null;
-            }
-        }
-
-        // pop namespace scope if previous node was an end element or an empty element
-        currentNamespacesInScope = nextNamespacesInScope;
-
-        // read next node from the reader
-        if (!reader.Read())
-        {
-            return false;
-        }
-        // save namespaces
-        ProcessNamespaces();
-
-        // have some bookmark need to cache the node
-        if (bookmarks.Count > 0)
-        {
-            CacheCurrentNode();
-        }
-        return true;
-    }
-
-    public override bool EOF
-    {
-        get
-        {
-            return curNode == null && reader.EOF;
-        }
-    }
-
-    public override void Close()
-    {
-        reader.Close();
-        curNode = null;
-        curAttrParent = null;
-    }
-
-    public override System.Xml.ReadState ReadState
-    {
-        get
-        {
-            if (curNode == null)
-            {
-                return reader.ReadState;
-            }
-            else
-            {
-                return System.Xml.ReadState.Interactive;
-            }
-        }
-    }
-
-    public override System.Xml.XmlNameTable NameTable
-    {
-        get
-        {
-            return reader.NameTable;
-        }
-    }
-
-    public override string LookupNamespace(string prefix)
-    {
-        if (curNode == null)
-        {
-            return LookupNamespace(prefix, currentNamespacesInScope);
-        }
-        else
-        {
-            return LookupNamespace(prefix, curNode.namespacesInScope);
-        }
-    }
-
-    public override bool CanResolveEntity
-    {
-        get
-        {
-            return reader.CanResolveEntity;
-        }
-    }
-
-    public override void ResolveEntity()
-    {
-        reader.ResolveEntity();
-    }
-
-    //
-    // Bookmarking methods
-    //
-    // Sets a bookmark with the given name on the current node.
-    public void SetBookmark(string bookmarkName)
-    {
-        if (reader.ReadState != System.Xml.ReadState.Interactive)
-        {
-            throw new System.InvalidOperationException("A bookmark can be set only when the reader is in ReadState.Interactive.");
-        }
-        if (reader.NodeType == System.Xml.XmlNodeType.Attribute)
-        {
-            throw new System.InvalidOperationException("A bookmark cannot be set when the reader on an attribute");
-        }
-        // check that the bookmark name is unique
-        if (bookmarks[bookmarkName] != null)
-        {
-            throw new System.ArgumentException("Duplicate bookmark name.", "bookmarkName");
-        }
-        // figure out the first node of the bookmark, start caching if we are not already doing that
-        CachedXmlNode bookmarkNode = curNode;
-        if (curNode == null)
-        {
-            if (cachedNodes != null)
-            {
-                bookmarkNode = cachedNodes;
-            }
-            else
-            {
-                System.Diagnostics.Debug.Assert(bookmarks.Count == 0, "There should be no bookmarks and no cached nodes.");
-                CacheCurrentNode();
-                bookmarkNode = cachedNodes;
-            }
-        }
-
-        // create a bookmark
-        bookmarks.Add(bookmarkName, bookmarkNode);
-    }
-
-    // Moves the reader to a node that has a bookmark with the given name.
-    public void ReturnToBookmark(string bookmarkName)
-    {
-        ReturnToBookmark(bookmarkName, false);
-    }
-
-    // This method is a combination of ReturnToBookmark and RemoveBookmark. It moves the reader back to a node 
-    // that has a bookmark with the given name and then removes the bookmark. As the reader moves ahead, the nodes 
-    // cached for this bookmark will be released for garbage collection, unless they are needed by a preceding bookmark.
-    public void ReturnToAndRemoveBookmark(string bookmarkName)
-    {
-        ReturnToBookmark(bookmarkName, true);
-    }
-
-    void ReturnToBookmark(string bookmarkName, bool remove)
-    {
-        // find the bookmark
-        CachedXmlNode bookmarkedNode = (CachedXmlNode)bookmarks[bookmarkName];
-        while (bookmarkedNode != null)
-        {
-            // found it -> restart the reader to replay from this point
-            SetCurrentNode(bookmarkedNode);
-            // remove it from the list of bookmarks
-            if (remove)
-            {
-                bookmarks.Remove(bookmarkName);
-            }
-            cachedNodes = null;
-            return;
-        }
-        throw new System.ArgumentException("Bookmark \"" + bookmarkName + "\" does not exist.", "bookmarkName");
-    }
-
-    // Removes a bookmark with the given name. The XML nodes cached for this bookmark will be released 
-    // for garbage collection unless they are needed by a preceding bookmark.
-    public void RemoveBookmark(string bookmarkName)
-    {
-        bookmarks.Remove(bookmarkName);
-        if (bookmarks.Count == 0)
-        {
-            cachedNodes = null;
-        }
-    }
-
-    // Removes all bookmarks. All cached XML nodes will be released for garbage collection.
-    public void RemoveAllBookmarks()
-    {
-        bookmarks.Clear();
-        cachedNodes = null;
-    }
-
-    //
-    // Private implementation methods
-    //
-    // Copies the properties of the current XmlReader node into a CachedXmlNode record and adds it to the list of cachedNodes
-    private void CacheCurrentNode()
-    {
-        System.Xml.XmlNodeType nt = reader.NodeType;
-
-        // cache the node
-        CachedXmlNode node = new CachedXmlNode(reader, currentNamespacesInScope, null);
-        if (nt == System.Xml.XmlNodeType.Element)
-        {
-            node.isDefaultOrEmpty = reader.IsEmptyElement;
-        }
-        if (cachedNodes != null)
-        {
-            cachedNodes.next = node;
-        }
-        cachedNodes = node;
-
-        // cache its attributes
-        if (reader.MoveToFirstAttribute())
-        {
-            CachedXmlNode lastAttr = null;
-            do
-            {
-                CachedXmlNode attr = new CachedXmlNode(reader, currentNamespacesInScope, null);
-                if (lastAttr == null)
-                {
-                    node.attributes = attr;
-                }
-                else
-                {
-                    lastAttr.next = attr;
-                }
-                lastAttr = attr;
-            } while (reader.MoveToNextAttribute());
-            reader.MoveToElement();
-        }
-    }
-
-    // Sets the current node and current attribute parent
-    void SetCurrentNode(CachedXmlNode node)
-    {
-        curNode = node;
-        curAttrParent = (node.attributes != null) ? node : null;
-    }
-
-    // On element start tag it walks though the attributes of an element to find all namespace declaration and adds them to the namespace tree.
-    // On End tag it adjusts the reference to the next namespace scope which will be applies on the next Read
-    void ProcessNamespaces()
-    {
-        NamespaceDecl originalNamespaces = currentNamespacesInScope;
-        System.Xml.XmlNodeType nodeType = reader.NodeType;
-
-        switch (nodeType)
-        {
-            case System.Xml.XmlNodeType.Element:
-                if (reader.MoveToFirstAttribute())
-                {
-                    do
-                    {
-                        if (reader.NamespaceURI == "http://www.w3.org/2000/xmlns/")
-                        {
-                            // add namespace
-                            string prefix = (reader.Prefix.Length == 0) ? string.Empty : reader.LocalName;
-                            currentNamespacesInScope = new NamespaceDecl(prefix, reader.NameTable.Add(reader.Value), currentNamespacesInScope);
-                        }
-                    } while (reader.MoveToNextAttribute());
-                    reader.MoveToElement();
-                }
-                if (reader.IsEmptyElement)
-                {
-                    nextNamespacesInScope = originalNamespaces;
-                }
-                else
-                {
-                    nextNamespacesInScope = currentNamespacesInScope;
-                    // push scope
-                    currentNamespacesInScope.scopeCount++;
-                }
-                break;
-            case System.Xml.XmlNodeType.EndElement:
-                // pop scope
-                NamespaceDecl decl = currentNamespacesInScope;
-                decl.scopeCount--;
-                while (decl.scopeCount == 0)
-                {
-                    decl = decl.previousDecl;
-                }
-                nextNamespacesInScope = decl;
-                break;
-        }
-    }
-
-    // Looks up a namespace in the list of current namespaces in scope
-    string LookupNamespace(string prefix, NamespaceDecl namespacesInScope)
-    {
-        while (namespacesInScope != null)
-        {
-            if (prefix == namespacesInScope.prefix)
-            {
-                return namespacesInScope.namespaceUri;
-            }
-            namespacesInScope = namespacesInScope.previousDecl;
-        }
-        return null;
-    }
-
-*)

@@ -129,7 +129,7 @@ let private createSerializationStatements serviceMethod =
 /// Builds deserialization statements to extract data from request retrieved from producers adapter server.
 let private createDeserializationStatements undescribedFaults =
     // Special reader class is required to support reading faults that are not defined in WSDL document.
-    let xmlReaderTypRef = if undescribedFaults then typeRefName "XmlBookmarkReader" else typeRef<XmlReader>
+    let xmlReaderTypRef = if undescribedFaults then typeRef<XRoad.XmlBookmarkReader> else typeRef<XmlReader>
     // If in undescribed faults mode we need to initialize XmlBookmarkReader in place of regular XmlReader.
     let createReaderExpr =
         let readerExpr = Expr.var "GetResponseReader" @%% [Expr.var "response"]

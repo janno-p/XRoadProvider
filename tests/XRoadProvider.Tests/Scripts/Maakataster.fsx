@@ -1,16 +1,17 @@
-﻿#r @"../../XRoadProvider/bin/Debug/XRoadProvider.dll"
+﻿#I @"..\..\..\src\XRoadProvider\bin\Debug"
+
+#r "XRoadProvider"
+#r "XRoadSerializer"
 
 open XRoad.Providers
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/Maakataster.wsdl.xml"
 
-type Maakataster = XRoadProvider<wsdlPath>
+type Maakataster = XRoadProducer<wsdlPath>
 type myport = Maakataster.myservice.myport
 
-type XteePäis = Maakataster.ServiceTypes.standardpais
-
-let xp = XteePäis()
+let xp = Maakataster.DefinedTypes.xtee.hdrstd()
 xp.andmekogu <- "maakataster"
 xp.asutus <- "10239452"
 xp.id <- "411d6755661409fed365ad8135f8210be07613da"
@@ -18,12 +19,11 @@ xp.isikukood <- "EE:PIN:abc4567"
 xp.nimi <- "maakataster.uploadMime.v1"
 xp.toimik <- "toimik"
 
-printfn "%s" myport.DefaultAddress
-printfn "%s" myport.DefaultProducer
-printfn "%O" myport.BindingStyle
-
 let service = myport()
-let a = service.ky(obj())
-let b = service.legacy1(obj())
 
-//let c = service.uploadMime(obj(), Runtime.AttachmentCollection())
+printfn "%s" service.ProducerUri
+printfn "%s" service.ProducerName
+
+let a = service.ky(Maakataster.DefinedTypes.maakataster.ky_paring())
+let b = service.legacy1([| "array"; "of"; "strings" |])
+let c = service.uploadMime(Maakataster.DefinedTypes.maakataster.mime_paring())
