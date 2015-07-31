@@ -231,6 +231,7 @@ module Compiler =
         let codeCompileUnit = CodeCompileUnit()
         codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<ITypeProvider>.Assembly.Location) |> ignore
+        codeCompileUnit.ReferencedAssemblies.Add(typeof<XRoad.BinaryContent>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Net.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
@@ -295,7 +296,7 @@ type RuntimeType =
         | PrimitiveType(typ) -> CodeTypeReference(typ)
         | ProvidedType(_,name) -> CodeTypeReference(name)
         | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
-        | ContentType -> CodeTypeReference("BinaryContent")
+        | ContentType -> CodeTypeReference(typeof<XRoad.BinaryContent>)
 
 /// Add special XmlReader class to allow seeking previous parts of XML document.
 /// Required for reading XML documents which do not comply with given schema.

@@ -4,7 +4,7 @@
  * Microsoft Corporation
  */
 
-private class XmlBookmarkReader : System.Xml.XmlReader
+private class XmlBookmarkReader : System.Xml.XmlReader, XRoad.IXmlBookmarkReader
 {
     //
     // Private types
@@ -63,7 +63,7 @@ private class XmlBookmarkReader : System.Xml.XmlReader
     //
     // Members
     //
-    XRoadXmlReader reader;
+    XRoad.XRoadXmlReader reader;
 
     CachedXmlNode cachedNodes;
 
@@ -76,8 +76,8 @@ private class XmlBookmarkReader : System.Xml.XmlReader
     NamespaceDecl currentNamespacesInScope;
     NamespaceDecl nextNamespacesInScope;
 
-    public XRoadSerializerContext Context { get { return reader.Context; } }
-    public XRoadXmlReader Reader { get { return reader; } }
+    public XRoad.XRoadSerializerContext Context { get { return reader.Context; } }
+    public XRoad.XRoadXmlReader Reader { get { return reader; } }
 
     //
     // Constants
@@ -87,7 +87,7 @@ private class XmlBookmarkReader : System.Xml.XmlReader
     //
     // Constructor
     //
-    public XmlBookmarkReader(XRoadXmlReader reader)
+    public XmlBookmarkReader(XRoad.XRoadXmlReader reader)
     {
         this.reader = reader;
 
