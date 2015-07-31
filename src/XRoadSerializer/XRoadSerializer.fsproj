@@ -4,14 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4E04C5A5-00B9-4D7C-8501-31B4B7389671}</ProjectGuid>
+    <ProjectGuid>3fb2085e-23d4-45f4-b04b-1cec3405525e</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>XRoad</RootNamespace>
-    <AssemblyName>XRoadProvider</AssemblyName>
+    <AssemblyName>XRoadSerializer</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Name>XRoadProvider</Name>
+    <Name>XRoadSerializer</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -21,7 +21,7 @@
     <OutputPath>bin\Debug</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\XRoadProvider.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\XRoadSerializer.XML</DocumentationFile>
     <OtherFlags>--warnon:1182</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -31,7 +31,7 @@
     <OutputPath>bin\Release</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\XRoadProvider.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\XRoadSerializer.XML</DocumentationFile>
     <OtherFlags>--warnon:1182</OtherFlags>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
@@ -41,42 +41,12 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Xml" />
-    <Reference Include="System.Net" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="FSharp.Core" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Snippets\AbstractServicePortExtensions.cs" />
-    <EmbeddedResource Include="Snippets\Serialization.cs" />
-    <EmbeddedResource Include="Snippets\XmlBookmarkReader.cs" />
-    <Content Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fsi">
-      <Paket>True</Paket>
-      <Link>paket-files\ProvidedTypes.fsi</Link>
-    </Content>
-    <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fs">
-      <Paket>True</Paket>
-      <Link>paket-files\ProvidedTypes.fs</Link>
-    </Compile>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="XRoad.Common.fs" />
-    <Compile Include="XRoad.ServiceDescription.fs" />
-    <Compile Include="XRoad.TypeSchema.fs" />
-    <Compile Include="XRoad.CodeDom.Common.fs" />
-    <Compile Include="XRoad.CodeDom.ServiceImpl.fs" />
-    <Compile Include="XRoad.TypeBuilderContext.fs" />
-    <Compile Include="XRoad.ProducerDefinition.fs" />
-    <Compile Include="XRoad.SecurityServer.fs" />
-    <Compile Include="XRoad.Providers.fsi" />
-    <Compile Include="XRoad.Providers.fs" />
-    <None Include="paket.references" />
-    <None Include="paket.template" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\XRoadSerializer\XRoadSerializer.fsproj">
-      <Name>XRoadSerializer</Name>
-      <Project>{3fb2085e-23d4-45f4-b04b-1cec3405525e}</Project>
-      <Private>True</Private>
-    </ProjectReference>
+    <Compile Include="XRoadXmlParser.fs" />
+    <Compile Include="XmlBookmarkReader.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

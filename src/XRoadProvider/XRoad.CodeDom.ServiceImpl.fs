@@ -104,12 +104,12 @@ let private createSerializationStatements serviceMethod =
     serviceMethod
     |> Meth.addStmt (Stmt.declVarWith<MemoryStream> "stream" Expr.nil)
     |> Meth.addStmt (Stmt.declVarWith<StreamWriter> "sw" Expr.nil)
-    |> Meth.addStmt (Stmt.declVarRefWith (typeRefName "XRoadXmlWriter") "writer" Expr.nil)
+    |> Meth.addStmt (Stmt.declVarRefWith (typeRef<XRoad.XRoadXmlWriter>) "writer" Expr.nil)
     |> Meth.addStmt (Stmt.tryFinally [ Stmt.assign (Expr.var "stream") (Expr.inst<MemoryStream> [])
                                        Stmt.assign (Expr.var "sw") (Expr.inst<StreamWriter> [Expr.var "stream"])
-                                       Stmt.declVarRefWith (typeRefName "XRoadSerializerContext") "context" (Expr.instOf (typeRefName "XRoadSerializerContext") [])
+                                       Stmt.declVarRefWith (typeRef<XRoad.XRoadSerializerContext>) "context" (Expr.instOf (typeRef<XRoad.XRoadSerializerContext>) [])
                                        Stmt.ofExpr ((Expr.var "context" @-> "AddAttachments") @% [Expr.var "attachments"])
-                                       Stmt.assign (Expr.var "writer") (Expr.instOf (typeRefName "XRoadXmlWriter") [Expr.var "sw"; Expr.var "context"])
+                                       Stmt.assign (Expr.var "writer") (Expr.instOf (typeRef<XRoad.XRoadXmlWriter>) [Expr.var "sw"; Expr.var "context"])
                                        Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartDocument") @% [])
                                        Stmt.ofExpr ((Expr.var "writer" @-> "WriteStartElement") @% [Expr.value "soapenv"; Expr.value "Envelope"; Expr.value XmlNamespace.SoapEnv])
                                        Stmt.condIf (Expr.var "isEncoded")
@@ -173,7 +173,7 @@ let private createMakeServiceCallMethod undescribedFaults =
     |> Meth.addParam<bool> "isEncoded"
     |> Meth.addParam<IDictionary<string,Stream>> "attachments"
     |> Meth.addParam<Action<XmlWriter>> "writeHeaderAction"
-    |> Meth.addParamRef (CodeTypeReference("System.Action", typeRefName "XRoadXmlWriter")) "writeBody"
+    |> Meth.addParamRef (CodeTypeReference("System.Action", typeRef<XRoad.XRoadXmlWriter>)) "writeBody"
     |> Meth.addParamRef (CodeTypeReference("System.Func", typeRef<XmlReader>, CodeTypeReference("T"))) "readBody"
     // Create request and initialize HTTP headers:
     |> Meth.addStmt (Stmt.declVarWith<WebRequest> "request" ((Expr.typeRefOf<Net.WebRequest> @-> "Create") @% [Expr.var "producerUri"]))

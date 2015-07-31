@@ -106,15 +106,15 @@ protected static bool MoveToElement(System.Xml.XmlReader reader, string name, st
 /// <summary>
 /// Splits response message into multipart contents (if present) and returns reader for main content.
 /// </summary>
-private static XRoadXmlReader GetResponseReader(System.Net.WebResponse response)
+private static XRoad.XRoadXmlReader GetResponseReader(System.Net.WebResponse response)
 {
     var boundaryMarker = GetBoundaryMarker(response);
     var responseStream = response.GetResponseStream();
-    var context = new XRoadSerializerContext();
+    var context = new XRoad.XRoadSerializerContext();
 
     // When boundary marker is not present parse as regular post response.
     if (string.IsNullOrEmpty(boundaryMarker))
-        return new XRoadXmlReader(responseStream, context);
+        return new XRoad.XRoadXmlReader(responseStream, context);
 
     context.IsMultipart = true;
 
@@ -160,7 +160,7 @@ private static XRoadXmlReader GetResponseReader(System.Net.WebResponse response)
         else currentLine = ReadLineFrom(responseStream, encoding);
     } while (!BufferStartsWith(currentLine, endMarker));
 
-    return new XRoadXmlReader(contentStream, context);
+    return new XRoad.XRoadXmlReader(contentStream, context);
 }
 
 /// <summary>

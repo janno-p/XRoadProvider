@@ -35,7 +35,9 @@ This example demonstrates the use of the XRoadProvider:
 *)
 // Reference the type provider assembly.
 #r "XRoadProvider.dll"
+#r "XRoadSerializer.dll"
 
+open XRoad
 open XRoad.Providers
 
 type Maakataster = XRoadProducer< @"C:\Work\Thesis\producers\Maakataster.wsdl">
@@ -84,7 +86,7 @@ let content = new System.IO.MemoryStream([| 0uy; 1uy; 2uy; 3uy |])
 
 let request = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM()
 request.request <- Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM.requestType()
-request.request.filemtom <- Aktorstest.BinaryContent(content)
+request.request.filemtom <- BinaryContent(content)
 request.request.fileName <- "file.bin"
 
 let response = service.fileUploadMTOM(request)

@@ -540,7 +540,7 @@ module ServiceBuilder =
         |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeHeader" (Expr.code "(writer) => { //"))
         |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
         |> Meth.addExpr (Expr.code "}")
-        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Action", typeRefName("XRoadXmlWriter"))) "writeBody" (Expr.code "(writer) => { //"))
+        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Action", typeRef<XRoad.XRoadXmlWriter>)) "writeBody" (Expr.code "(writer) => { //"))
         |> iif (operation.InputParameters.IsMultipart) (fun x -> x |> Meth.addStmt (Stmt.assign ((Expr.var "writer" @=> "Context") @=> "IsMultipart") (Expr.value true)))
         |> ignore
 
@@ -616,7 +616,7 @@ module ServiceBuilder =
         |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
         |> Meth.addStmt (if undescribedFaults
                          then Stmt.declVarRefWith (typeRefName "XmlBookmarkReader") "reader" (Expr.cast (typeRefName "XmlBookmarkReader") (Expr.var "r"))
-                         else Stmt.declVarRefWith (typeRefName "XRoadXmlReader") "reader" (Expr.cast (typeRefName "XRoadXmlReader") (Expr.var "r")))
+                         else Stmt.declVarRefWith (typeRef<XRoad.XRoadXmlReader>) "reader" (Expr.cast (typeRef<XRoad.XRoadXmlReader>) (Expr.var "r")))
         |> iif readAccessorElement (fun x ->
             x |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
                                                                     (Expr.value operation.OutputParameters.Accessor.Value.LocalName))
@@ -694,12 +694,11 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
         |> iif undescribedFaults (fun x -> x |> Cls.addMember (createTypeFromAssemblyResource("XmlBookmarkReader.cs")))
         |> iif (not undescribedFaults) (fun x -> x |> Cls.addMember (Cls.create "XmlBookmarkReader"
                                                                      |> Cls.setParent(typeRef<XmlTextReader>)
-                                                                     |> Cls.addMember (Prop.createRef (typeRefName "XRoadXmlReader") "Reader"
+                                                                     |> Cls.addMember (Prop.createRef (typeRef<XRoad.XRoadXmlReader>) "Reader"
                                                                                        |> Prop.addGetStmt (Stmt.ret Expr.nil)
                                                                                        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final))))
         |> Cls.addMember portBaseTy
         |> Cls.addMember serviceTypesTy
-        |> Cls.addMember (createTypeFromAssemblyResource("Serialization.cs"))
 
     // Create methods for all operation bindings.
     schema.Services
