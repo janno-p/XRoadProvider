@@ -523,28 +523,58 @@ module ServiceBuilder =
 
         retType, bodyStatements |> List.ofSeq
 
+    let addHeaderInitialization (protocol: XRoadProtocol) serviceName (m: CodeMemberMethod) =
+        let hdrns, hdrName, propName =
+            let select = match protocol with Version_20 -> fst | _ -> snd
+            let select = headerMapping >> select
+            protocol.Namespace, select >> fst3, select >> snd3
+        let declareWithDefaultValue name xtname defExpr (m: CodeMemberMethod) =
+            m |> Meth.addStmt (Stmt.declVar<string> name)
+              |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @=> (propName xtname)))
+                                               [Stmt.assign (Expr.var name) defExpr]
+                                               [Stmt.assign (Expr.var name) (Expr.this @=> (propName xtname))])
+        m
+        |> declareWithDefaultValue "producerValue" "andmekogu" (Expr.var "producerName")
+        |> declareWithDefaultValue "fullServiceName" "nimi" ((Expr.typeRefOf<string> @-> "Format") @% [!^ "{0}.{1}"; Expr.var "producerValue"; !^ serviceName])
+        |> ignore
+        let hdrExpr =
+            [ yield (hdrName "asutus", Expr.this @=> (propName "asutus"))
+              yield (hdrName "andmekogu", Expr.var "producerValue")
+              yield (hdrName "isikukood", Expr.this @=> (propName "isikukood"))
+
+              match protocol with
+              | Version_20 -> yield (hdrName "ametnik", Expr.this @=> (propName "ametnik"))
+              | _ -> ()
+
+              yield (hdrName "id", Expr.this @=> (propName "id"))
+              yield (hdrName "nimi", Expr.var "fullServiceName")
+              yield (hdrName "toimik", Expr.this @=> (propName "toimik"))
+              yield (hdrName "allasutus", Expr.this @=> (propName "allasutus"))
+              yield (hdrName "amet", Expr.this @=> (propName "amet"))
+              yield (hdrName "ametniknimi", Expr.this @=> (propName "ametniknimi"))
+              yield (hdrName "asynkroonne", Expr.this @=> (propName "asynkroonne"))
+              yield (hdrName "autentija", Expr.this @=> (propName "autentija"))
+              yield (hdrName "makstud", Expr.this @=> (propName "makstud"))
+              yield (hdrName "salastada", Expr.this @=> (propName "salastada"))
+              yield (hdrName "salastada_sertifikaadiga", Expr.this @=> (propName "salastada_sertifikaadiga")) ]
+            |> List.map (fun (name, exp) -> (Expr.typeRefOf<Tuple> @-> "Create") @% [Expr.inst<XmlQualifiedName> [!^ name; !^ hdrns]; Expr.cast typeRef<obj> (exp)])
+            |> Arr.create<Tuple<XmlQualifiedName,obj>>
+        m |> Meth.addStmt (Stmt.assign ((Expr.var "@__m") @=> "Header") hdrExpr)
+
     /// Build content for each individual service call method.
-    let build context undescribedFaults (operation: ServicePortMethod) =
+    let build (context: TypeBuilderContext) undescribedFaults (operation: ServicePortMethod) =
         let serviceMethod =
             Meth.create operation.Name
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Code.comment operation.Documentation
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
+            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [!^ ""]))
+            |> Meth.addStmt (Stmt.assign ((Expr.var "@__o") @=> "RequiredHeaders") (operation.InputParameters.RequiredHeaders |> List.map (!^) |> Arr.create<string>))
+            |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name)
 
-        let initHdr =
-            operation.InputParameters.RequiredHeaders
-            |> List.map (fun h -> (Expr.typeRefOf<Tuple> @-> "Create") @% [Expr.inst<XmlQualifiedName> [Expr.value h]; Expr.cast typeRef<obj> (Expr.value "test")])
-            |> Arr.create<Tuple<XmlQualifiedName,obj>>
-
-        serviceMethod |> Meth.addStmt (Stmt.assign ((Expr.var "@__m") @=> "Header") initHdr) |> ignore
-        serviceMethod |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.nil]) |> ignore
-
-        serviceMethod
+        serviceMethod |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.var "@__o"])
 
         (*
-        let requiredHeadersExpr = operation.InputParameters.RequiredHeaders |> List.map (!^) |> Arr.create<string>
-        let serviceName = match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name
-
         // CodeDom doesn't support delegates, so we have to improvise.
         serviceMethod
         |> Meth.addStmt (Stmt.declVarWith<string[]> "requiredHeaders" requiredHeadersExpr)
