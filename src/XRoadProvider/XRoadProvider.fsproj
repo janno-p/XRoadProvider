@@ -35,10 +35,6 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fsi">
-      <Paket>True</Paket>
-      <Link>paket-files\ProvidedTypes.fsi</Link>
-    </Content>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -51,6 +47,11 @@
   <ItemGroup>
     <EmbeddedResource Include="Snippets\AbstractServicePortExtensions.cs" />
     <EmbeddedResource Include="Snippets\Serialization.cs" />
+    <EmbeddedResource Include="Snippets\XmlBookmarkReader.cs" />
+    <Content Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fsi">
+      <Paket>True</Paket>
+      <Link>paket-files\ProvidedTypes.fsi</Link>
+    </Content>
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fs">
       <Paket>True</Paket>
       <Link>paket-files\ProvidedTypes.fs</Link>
@@ -68,7 +69,6 @@
     <Compile Include="XRoad.Providers.fs" />
     <None Include="paket.references" />
     <None Include="paket.template" />
-    <EmbeddedResource Include="Snippets\XmlBookmarkReader.cs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
