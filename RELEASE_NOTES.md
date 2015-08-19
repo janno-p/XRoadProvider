@@ -1,4 +1,4 @@
-#### 0.0.4-alpha - Unreleased
+#### 0.0.4-alpha - August 19 2015
 
 * Improved handling of binary content.
 * Added default request uri to security server provider.
