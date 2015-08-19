@@ -36,10 +36,10 @@
 
 
 <h1>ProvidedProperty</h1>
+<p>
+  <span>Namespace: ProviderImplementation.ProvidedTypes</span><br />
+</p>
 <div class="xmldoc">
-<p>Represents an erased provided property.</p>
-
-
 </div>
   <h3>Constructors</h3>
   <table class="table table-bordered member-list">
@@ -50,22 +50,19 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '67', 67)" onmouseover="showTip(event, '67', 67)">
+          <code onmouseout="hideTip(event, '96', 96)" onmouseover="showTip(event, '96', 96)">
             new(...)
           </code>
-          <div class="tip" id="67">
+          <div class="tip" id="96">
             <strong>Signature:</strong> (propertyName:string * propertyType:Type * parameters:ProvidedParameter list option) -&gt; ProvidedProperty<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L746-746" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L738-738" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Create a new provided type. It is not initially associated with any specific provided type definition.</p>
-
-
-
+          
         </td>
       </tr>
     </tbody>
@@ -79,256 +76,271 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '68', 68)" onmouseover="showTip(event, '68', 68)">
-            AddCustomAttribute(arg1)
+          <code onmouseout="hideTip(event, '97', 97)" onmouseover="showTip(event, '97', 97)">
+            AddCustomAttribute(attribute)
           </code>
-          <div class="tip" id="68">
-            <strong>Signature:</strong> CustomAttributeData -&gt; unit<br />
+          <div class="tip" id="97">
+            <strong>Signature:</strong> attribute:CustomAttributeData -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L771-771" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L763-763" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Add a custom attribute to the provided property definition.</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '69', 69)" onmouseover="showTip(event, '69', 69)">
+          <code onmouseout="hideTip(event, '98', 98)" onmouseover="showTip(event, '98', 98)">
             AddDefinitionLocation(...)
           </code>
-          <div class="tip" id="69">
+          <div class="tip" id="98">
             <strong>Signature:</strong> (line:int * column:int * filePath:string) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L769-769" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L761-761" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Add definition location information to the provided type definition.</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '70', 70)" onmouseover="showTip(event, '70', 70)">
-            AddObsoleteAttribute(message, isError)
+          <code onmouseout="hideTip(event, '99', 99)" onmouseover="showTip(event, '99', 99)">
+            AddObsoleteAttribute(msg, isError)
           </code>
-          <div class="tip" id="70">
-            <strong>Signature:</strong> (message:string * isError:bool option) -&gt; unit<br />
+          <div class="tip" id="99">
+            <strong>Signature:</strong> (msg:string * isError:bool option) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L768-768" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L760-760" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Add a 'System.Obsolete' attribute to this provided property</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '71', 71)" onmouseover="showTip(event, '71', 71)">
+          <code onmouseout="hideTip(event, '100', 100)" onmouseover="showTip(event, '100', 100)">
             AddXmlDoc(xmlDoc)
           </code>
-          <div class="tip" id="71">
+          <div class="tip" id="100">
             <strong>Signature:</strong> xmlDoc:string -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L767-767" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L759-759" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Add XML documentation information to this provided constructor</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '72', 72)" onmouseover="showTip(event, '72', 72)">
-            AddXmlDocComputed(xmlDocFunction)
+          <code onmouseout="hideTip(event, '101', 101)" onmouseover="showTip(event, '101', 101)">
+            AddXmlDocComputed(xmlDoc)
           </code>
-          <div class="tip" id="72">
-            <strong>Signature:</strong> (xmlDocFunction:(unit -&gt; string)) -&gt; unit<br />
+          <div class="tip" id="101">
+            <strong>Signature:</strong> (xmlDoc:(unit -&gt; string)) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L765-765" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L757-757" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Add XML documentation information to this provided constructor, where the computation of the documentation is delayed until necessary
-The documentation is re-computed  every time it is required.</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '73', 73)" onmouseover="showTip(event, '73', 73)">
-            AddXmlDocDelayed(xmlDocFunction)
+          <code onmouseout="hideTip(event, '102', 102)" onmouseover="showTip(event, '102', 102)">
+            AddXmlDocDelayed(xmlDoc)
           </code>
-          <div class="tip" id="73">
-            <strong>Signature:</strong> (xmlDocFunction:(unit -&gt; string)) -&gt; unit<br />
+          <div class="tip" id="102">
+            <strong>Signature:</strong> (xmlDoc:(unit -&gt; string)) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L766-766" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L758-758" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Add XML documentation information to this provided constructor, where the computation of the documentation is delayed until necessary</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '74', 74)" onmouseover="showTip(event, '74', 74)">
-            GetterCode()
+          <code onmouseout="hideTip(event, '103', 103)" onmouseover="showTip(event, '103', 103)">
+            DeclaringTypeImpl()
           </code>
-          <div class="tip" id="74">
-            <strong>Signature:</strong> unit -&gt; Expr list -&gt; Expr<br />
+          <div class="tip" id="103">
+            <strong>Signature:</strong> unit -&gt; Type<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L783-783" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L769-769" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Set the quotation used to compute the implementation of gets of this property.</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '75', 75)" onmouseover="showTip(event, '75', 75)">
-            GetterCode()
+          <code onmouseout="hideTip(event, '104', 104)" onmouseover="showTip(event, '104', 104)">
+            DeclaringTypeImpl()
           </code>
-          <div class="tip" id="75">
+          <div class="tip" id="104">
             <strong>Signature:</strong> unit -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L783-783" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L769-769" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Set the quotation used to compute the implementation of gets of this property.</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '76', 76)" onmouseover="showTip(event, '76', 76)">
+          <code onmouseout="hideTip(event, '105', 105)" onmouseover="showTip(event, '105', 105)">
+            GetCustomAttributesDataImpl()
+          </code>
+          <div class="tip" id="105">
+            <strong>Signature:</strong> unit -&gt; IList&lt;CustomAttributeData&gt;<br />
+                      </div>
+        </td>
+        <td class="xmldoc">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L762-762" class="github-link">
+              <img src="../content/img/github.png" class="normal" />
+              <img src="../content/img/github-blue.png" class="hover" />
+            </a>
+          
+        </td>
+      </tr>
+      <tr>
+        <td class="member-name">
+
+          <code onmouseout="hideTip(event, '106', 106)" onmouseover="showTip(event, '106', 106)">
+            GetterCode()
+          </code>
+          <div class="tip" id="106">
+            <strong>Signature:</strong> unit -&gt; Expr list -&gt; Expr<br />
+                      </div>
+        </td>
+        <td class="xmldoc">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L775-775" class="github-link">
+              <img src="../content/img/github.png" class="normal" />
+              <img src="../content/img/github-blue.png" class="hover" />
+            </a>
+          
+        </td>
+      </tr>
+      <tr>
+        <td class="member-name">
+
+          <code onmouseout="hideTip(event, '107', 107)" onmouseover="showTip(event, '107', 107)">
+            GetterCode()
+          </code>
+          <div class="tip" id="107">
+            <strong>Signature:</strong> unit -&gt; unit<br />
+                      </div>
+        </td>
+        <td class="xmldoc">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L775-775" class="github-link">
+              <img src="../content/img/github.png" class="normal" />
+              <img src="../content/img/github-blue.png" class="hover" />
+            </a>
+          
+        </td>
+      </tr>
+      <tr>
+        <td class="member-name">
+
+          <code onmouseout="hideTip(event, '108', 108)" onmouseover="showTip(event, '108', 108)">
             IsStatic()
           </code>
-          <div class="tip" id="76">
+          <div class="tip" id="108">
             <strong>Signature:</strong> unit -&gt; bool<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L780-780" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L772-772" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Get or set a flag indicating if the property is static.
-FSharp.Data addition: the getter is used by Debug.fs</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '77', 77)" onmouseover="showTip(event, '77', 77)">
+          <code onmouseout="hideTip(event, '109', 109)" onmouseover="showTip(event, '109', 109)">
             IsStatic()
           </code>
-          <div class="tip" id="77">
+          <div class="tip" id="109">
             <strong>Signature:</strong> unit -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L779-779" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L771-771" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Get or set a flag indicating if the property is static.
-FSharp.Data addition: the getter is used by Debug.fs</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '78', 78)" onmouseover="showTip(event, '78', 78)">
+          <code onmouseout="hideTip(event, '110', 110)" onmouseover="showTip(event, '110', 110)">
             SetterCode()
           </code>
-          <div class="tip" id="78">
+          <div class="tip" id="110">
             <strong>Signature:</strong> unit -&gt; Expr list -&gt; Expr<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L787-787" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L779-779" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Set the function used to compute the implementation of sets of this property.</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '79', 79)" onmouseover="showTip(event, '79', 79)">
+          <code onmouseout="hideTip(event, '111', 111)" onmouseover="showTip(event, '111', 111)">
             SetterCode()
           </code>
-          <div class="tip" id="79">
+          <div class="tip" id="111">
             <strong>Signature:</strong> unit -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L787-787" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L779-779" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Set the function used to compute the implementation of sets of this property.</p>
-
-
-
+          
         </td>
       </tr>
     </tbody>

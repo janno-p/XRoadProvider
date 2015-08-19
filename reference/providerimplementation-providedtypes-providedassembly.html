@@ -36,10 +36,10 @@
 
 
 <h1>ProvidedAssembly</h1>
+<p>
+  <span>Namespace: ProviderImplementation.ProvidedTypes</span><br />
+</p>
 <div class="xmldoc">
-<p>A provided generated assembly</p>
-
-
 </div>
   <h3>Constructors</h3>
   <table class="table table-bordered member-list">
@@ -50,15 +50,15 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '1', 1)" onmouseover="showTip(event, '1', 1)">
+          <code onmouseout="hideTip(event, '9', 9)" onmouseover="showTip(event, '9', 9)">
             new(assemblyFileName)
           </code>
-          <div class="tip" id="1">
+          <div class="tip" id="9">
             <strong>Signature:</strong> assemblyFileName:string -&gt; ProvidedAssembly<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L2453-2453" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L2445-2445" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
@@ -76,15 +76,15 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2', 2)" onmouseover="showTip(event, '2', 2)">
+          <code onmouseout="hideTip(event, '10', 10)" onmouseover="showTip(event, '10', 10)">
             AddNestedTypes(...)
           </code>
-          <div class="tip" id="2">
-            <strong>Signature:</strong> (types:ProvidedTypeDefinition list * enclosingGeneratedTypeNames:string list) -&gt; unit<br />
+          <div class="tip" id="10">
+            <strong>Signature:</strong> (providedTypeDefinitions:ProvidedTypeDefinition list * enclosingTypeNames:string list) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L2477-2477" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L2469-2469" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
@@ -94,27 +94,19 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '3', 3)" onmouseover="showTip(event, '3', 3)">
-            AddTypes(types)
+          <code onmouseout="hideTip(event, '11', 11)" onmouseover="showTip(event, '11', 11)">
+            AddTypes(providedTypeDefinitions)
           </code>
-          <div class="tip" id="3">
-            <strong>Signature:</strong> (types:ProvidedTypeDefinition list) -&gt; unit<br />
+          <div class="tip" id="11">
+            <strong>Signature:</strong> (providedTypeDefinitions:ProvidedTypeDefinition list) -&gt; unit<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L2478-2478" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L2470-2470" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Emit the given provided type definitions as part of the assembly 
-and adjust the 'Assembly' property of all provided type definitions to return that
-assembly.</p>
-
-<p>The assembly is only emitted when the Assembly property on the root type is accessed for the first time.
-The host F# compiler does this when processing a generative type declaration for the type.</p>
-
-
-
+          
         </td>
       </tr>
     </tbody>
@@ -128,22 +120,19 @@ The host F# compiler does this when processing a generative type declaration for
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '4', 4)" onmouseover="showTip(event, '4', 4)">
+          <code onmouseout="hideTip(event, '12', 12)" onmouseover="showTip(event, '12', 12)">
             RegisterGenerated(fileName)
           </code>
-          <div class="tip" id="4">
+          <div class="tip" id="12">
             <strong>Signature:</strong> fileName:string -&gt; Assembly<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L2481-2481" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L2473-2473" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Register that a given file is a provided generated assembly</p>
-
-
-
+          
         </td>
       </tr>
     </tbody>

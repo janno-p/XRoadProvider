@@ -36,14 +36,42 @@
 
 
 <h1>ProvidedSymbolType</h1>
+<p>
+  <span>Namespace: ProviderImplementation.ProvidedTypes</span><br />
+</p>
 <div class="xmldoc">
-<p>FSharp.Data addition: ProvidedSymbolType is used by AssemblyReplacer.fs
-Represents an array or other symbolic type involving a provided type as the argument.
+<p>Represents an array or other symbolic type involving a provided type as the argument.
 See the type provider spec for the methods that must be implemented.
 Note that the type provider specification does not require us to implement pointer-equality for provided types.</p>
 
 
 </div>
+  <h3>Constructors</h3>
+  <table class="table table-bordered member-list">
+    <thead>
+      <tr><td>Constructor</td><td>Description</td></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="member-name">
+
+          <code onmouseout="hideTip(event, '117', 117)" onmouseover="showTip(event, '117', 117)">
+            new(kind, args)
+          </code>
+          <div class="tip" id="117">
+            <strong>Signature:</strong> (kind:SymbolKind * args:Type list) -&gt; ProvidedSymbolType<br />
+                      </div>
+        </td>
+        <td class="xmldoc">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L948-948" class="github-link">
+              <img src="../content/img/github.png" class="normal" />
+              <img src="../content/img/github-blue.png" class="hover" />
+            </a>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
   <h3>Instance members</h3>
   <table class="table table-bordered member-list">
     <thead>
@@ -53,43 +81,63 @@ Note that the type provider specification does not require us to implement point
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '83', 83)" onmouseover="showTip(event, '83', 83)">
+          <code onmouseout="hideTip(event, '118', 118)" onmouseover="showTip(event, '118', 118)">
             Args
           </code>
-          <div class="tip" id="83">
+          <div class="tip" id="118">
             <strong>Signature:</strong> Type list<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L1088-1088" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L1080-1080" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Return the provided types used as arguments of this symbolic type</p>
-
-
-
+          
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '84', 84)" onmouseover="showTip(event, '84', 84)">
+          <code onmouseout="hideTip(event, '119', 119)" onmouseover="showTip(event, '119', 119)">
             Kind
           </code>
-          <div class="tip" id="84">
+          <div class="tip" id="119">
             <strong>Signature:</strong> SymbolKind<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/ProvidedTypes.fs#L1087-1087" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L1079-1079" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
-          <p>Returns the kind of this symbolic type</p>
+          
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>Static members</h3>
+  <table class="table table-bordered member-list">
+    <thead>
+      <tr><td>Static member</td><td>Description</td></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="member-name">
 
-
-
+          <code onmouseout="hideTip(event, '120', 120)" onmouseover="showTip(event, '120', 120)">
+            convType(parameters ty)
+          </code>
+          <div class="tip" id="120">
+            <strong>Signature:</strong> (parameters:Type list) -&gt; ty:Type -&gt; Type<br />
+                      </div>
+        </td>
+        <td class="xmldoc">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/paket-files/fsprojects/FSharp.TypeProviders.StarterPack/src/ProvidedTypes.fs#L964-964" class="github-link">
+              <img src="../content/img/github.png" class="normal" />
+              <img src="../content/img/github-blue.png" class="hover" />
+            </a>
+          
         </td>
       </tr>
     </tbody>
