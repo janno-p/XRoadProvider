@@ -20,6 +20,7 @@ xp.nimi <- "maakataster.uploadMime.v1"
 xp.toimik <- "toimik"
 
 let service = myport()
+service.ProducerUri <- "http://localhost:8001/"
 
 printfn "%s" service.ProducerUri
 printfn "%s" service.ProducerName

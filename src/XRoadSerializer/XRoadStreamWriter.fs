@@ -1,11 +1,12 @@
 ﻿namespace XRoad
 
-open System.Net
 open System
-open System.Xml
 open System.Collections.Generic
 open System.IO
+open System.Net
 open System.Security.Cryptography
+open System.Xml
+open System.Xml.Serialization
 
 module XmlNamespace =
     let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
@@ -114,7 +115,8 @@ type XRoadRequest(opt: XRoadOptions) =
 
     member __.SendMessage(msg: XRoadMessage) =
         use content = new MemoryStream()
-        use writer = XmlWriter.Create(content)
+        use sw = new StreamWriter(content)
+        use writer = new XRoadXmlWriter(sw, XRoadSerializerContext(IsMultipart = opt.IsMultipart))
         writer.WriteStartDocument()
         writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
         if opt.IsEncoded then
@@ -145,7 +147,23 @@ type XRoadRequest(opt: XRoadOptions) =
                    funContent()
                    writer.WriteEndElement()
 
-        serializeBody (fun _ -> serializeAccessor (fun _ -> ()))
+        serializeBody (fun _ ->
+            serializeAccessor (fun _ ->
+                msg.Body
+                |> Array.iter (fun (name,value) ->
+                    let name = if name = null then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name
+                    if value = null then
+                        match name.Namespace with
+                        | null | "" -> writer.WriteStartElement(name.Name)
+                        | _ -> writer.WriteStartElement(name.Name, name.Namespace)
+                        writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
+                        writer.WriteEndElement()
+                    else
+                        let root = XmlRootAttribute(name.Name)
+                        if not(String.IsNullOrEmpty(name.Namespace)) then
+                            root.Namespace <- name.Namespace
+                        let serializer = XmlSerializer(value.GetType(), root)
+                        serializer.Serialize(writer, value))))
 
         writer.WriteEndDocument()
         writer.Flush()
