@@ -7,7 +7,27 @@ open System.Collections.Generic
 open System.IO
 open System.Security.Cryptography
 
+module XmlNamespace =
+    let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
+    let [<Literal>] Mime = "http://schemas.xmlsoap.org/wsdl/mime/"
+    let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
+    let [<Literal>] SoapEnc = "http://schemas.xmlsoap.org/soap/encoding/"
+    let [<Literal>] SoapEnv = "http://schemas.xmlsoap.org/soap/envelope/"
+    let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
+    let [<Literal>] Xmime = "http://www.w3.org/2005/05/xmlmime"
+    let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
+    let [<Literal>] Xrd = "http://x-rd.net/xsd/xroad.xsd"
+    let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
+    let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
+    let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
+
 type ChunkState = BufferLimit | Marker | EndOfStream
+
+type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
+    member val Name = name with get
+    member val Value = value with get
+    member val IsRequired = required with get
 
 type XRoadStreamWriter() =
     class
@@ -27,10 +47,9 @@ type XRoadOptions(uri: string) =
     member val IsEncoded = false with get, set
     member val Protocol = XRoadProtocol.Version31 with get, set
     member val Uri = uri with get, set
-    member val RequiredHeaders = [||] with get, set
 
 type XRoadMessage() =
-    member val Header: (XmlQualifiedName * obj) array = [||] with get, set
+    member val Header: SoapHeaderValue array = [||] with get, set
     member val Body: (XmlQualifiedName * obj) array = [||] with get, set
     member val Attachments = Dictionary<string, Stream>() with get, set
 
@@ -93,8 +112,27 @@ type XRoadRequest(opt: XRoadOptions) =
     let serializeMessage (content: Stream) (attachments: IDictionary<string, Stream>) =
         serializeMultipartMessage attachments (fun s -> writeContent s content)
 
-    member __.SendMessage(_: XRoadMessage) =
-        ()
+    member __.SendMessage(msg: XRoadMessage) =
+        use content = new MemoryStream()
+        use writer = XmlWriter.Create(content)
+        writer.WriteStartDocument()
+        writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
+        if opt.IsEncoded then
+            writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
+        writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
+        msg.Header
+        |> Array.iter (fun hdr ->
+            if hdr.IsRequired || hdr.Value <> null then
+                writer.WriteStartElement(hdr.Name.Name, hdr.Name.Namespace)
+                if hdr.Value <> null then
+                    writer.WriteValue(hdr.Value)
+                writer.WriteEndElement())
+        writer.WriteEndElement()
+        writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
+        writer.WriteEndElement()
+        writer.WriteEndDocument()
+        writer.Flush()
+        serializeMessage content (dict [])
     member __.GetResponse() =
         new XRoadResponse(request.GetResponse())
 

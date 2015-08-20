@@ -523,7 +523,7 @@ module ServiceBuilder =
 
         retType, bodyStatements |> List.ofSeq
 
-    let addHeaderInitialization (protocol: XRoadProtocol) serviceName (m: CodeMemberMethod) =
+    let addHeaderInitialization (protocol: XRoadProtocol) serviceName (reqhdrs: string list) (m: CodeMemberMethod) =
         let hdrns, hdrName, propName =
             let select = match protocol with Version_20 -> fst | _ -> snd
             let select = headerMapping >> select
@@ -557,8 +557,13 @@ module ServiceBuilder =
               yield (hdrName "makstud", Expr.this @=> (propName "makstud"))
               yield (hdrName "salastada", Expr.this @=> (propName "salastada"))
               yield (hdrName "salastada_sertifikaadiga", Expr.this @=> (propName "salastada_sertifikaadiga")) ]
-            |> List.map (fun (name, exp) -> (Expr.typeRefOf<Tuple> @-> "Create") @% [Expr.inst<XmlQualifiedName> [!^ name; !^ hdrns]; Expr.cast typeRef<obj> (exp)])
-            |> Arr.create<Tuple<XmlQualifiedName,obj>>
+            |> List.map (fun (name, exp) ->
+                Expr.inst<SoapHeaderValue> [
+                    Expr.inst<XmlQualifiedName> [!^ name; !^ hdrns]
+                    Expr.cast typeRef<obj> (exp)
+                    !^ (reqhdrs |> List.exists ((=) name))
+                ])
+            |> Arr.create<SoapHeaderValue>
         m |> Meth.addStmt (Stmt.assign ((Expr.var "@__m") @=> "Header") hdrExpr)
 
     /// Build content for each individual service call method.
@@ -568,9 +573,8 @@ module ServiceBuilder =
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Code.comment operation.Documentation
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
-            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [!^ ""]))
-            |> Meth.addStmt (Stmt.assign ((Expr.var "@__o") @=> "RequiredHeaders") (operation.InputParameters.RequiredHeaders |> List.map (!^) |> Arr.create<string>))
-            |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name)
+            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [Expr.this @=> "ProducerUri"]))
+            |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
 
         serviceMethod |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.var "@__o"])
 
@@ -755,9 +759,16 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
             producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
             producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
 
+            let ctor =
+                Ctor.create()
+                |> Ctor.setAttr MemberAttributes.Public
+                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerUri") (!^ port.Uri))
+                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (!^ port.Producer))
+
             let portTy =
                 Cls.create port.Name
                 |> Cls.setAttr TypeAttributes.Public
+                |> Cls.addMember ctor
                 |> Cls.addMember addressField
                 |> Cls.addMember addressProperty
                 |> Cls.addMember producerField
