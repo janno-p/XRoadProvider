@@ -43,8 +43,9 @@ type XRoadProtocol =
     | Version31
     | Version40
 
-type XRoadOptions(uri: string) =
-    member val IsEncoded = false with get, set
+type XRoadOptions(uri: string, isEncoded: bool, isMultipart: bool) =
+    member val IsEncoded = isEncoded with get
+    member val IsMultipart = isMultipart with get
     member val Protocol = XRoadProtocol.Version31 with get, set
     member val Uri = uri with get, set
 
@@ -74,9 +75,7 @@ type XRoadRequest(opt: XRoadOptions) =
         let rec writeChunk() =
             let bytesRead = content.Read(buffer, 0, 1000)
             stream.Write(buffer, 0, bytesRead)
-            match bytesRead with
-            | 1000 -> writeChunk()
-            | _ -> ()
+            match bytesRead with 1000 -> writeChunk() | _ -> ()
         content.Position <- 0L
         writeChunk()
 

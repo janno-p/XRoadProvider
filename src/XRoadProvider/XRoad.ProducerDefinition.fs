@@ -573,7 +573,7 @@ module ServiceBuilder =
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Code.comment operation.Documentation
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
-            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [Expr.this @=> "ProducerUri"]))
+            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart]))
             |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
 
         serviceMethod |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.var "@__o"])
