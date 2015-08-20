@@ -528,18 +528,10 @@ module ServiceBuilder =
             let select = match protocol with Version_20 -> fst | _ -> snd
             let select = headerMapping >> select
             protocol.Namespace, select >> fst3, select >> snd3
-        let declareWithDefaultValue name xtname defExpr (m: CodeMemberMethod) =
-            m |> Meth.addStmt (Stmt.declVar<string> name)
-              |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.this @=> (propName xtname)))
-                                               [Stmt.assign (Expr.var name) defExpr]
-                                               [Stmt.assign (Expr.var name) (Expr.this @=> (propName xtname))])
-        m
-        |> declareWithDefaultValue "producerValue" "andmekogu" (Expr.var "producerName")
-        |> declareWithDefaultValue "fullServiceName" "nimi" ((Expr.typeRefOf<string> @-> "Format") @% [!^ "{0}.{1}"; Expr.var "producerValue"; !^ serviceName])
-        |> ignore
+        m |> Meth.addStmt (Stmt.declVarWith<string> "producer" ((Expr.this @-> "GetProducer") @% [Expr.this @=> propName "asutus"])) |> ignore
         let hdrExpr =
             [ yield (hdrName "asutus", Expr.this @=> (propName "asutus"))
-              yield (hdrName "andmekogu", Expr.var "producerValue")
+              yield (hdrName "andmekogu", Expr.var "producer")
               yield (hdrName "isikukood", Expr.this @=> (propName "isikukood"))
 
               match protocol with
@@ -547,7 +539,7 @@ module ServiceBuilder =
               | _ -> ()
 
               yield (hdrName "id", Expr.this @=> (propName "id"))
-              yield (hdrName "nimi", Expr.var "fullServiceName")
+              yield (hdrName "nimi", (Expr.this @-> "GetServiceName") @% [Expr.var "producer"; !^ serviceName; Expr.this @=> propName "nimi"])
               yield (hdrName "toimik", Expr.this @=> (propName "toimik"))
               yield (hdrName "allasutus", Expr.this @=> (propName "allasutus"))
               yield (hdrName "amet", Expr.this @=> (propName "amet"))
@@ -581,10 +573,6 @@ module ServiceBuilder =
         (*
         // CodeDom doesn't support delegates, so we have to improvise.
         serviceMethod
-        |> Meth.addStmt (Stmt.declVarWith<string[]> "requiredHeaders" requiredHeadersExpr)
-        |> Meth.addStmt (Stmt.declVarWith<Action<XmlWriter>> "writeHeader" (Expr.code "(writer) => { //"))
-        |> Meth.addExpr ((Expr.parent @-> "WriteHeader") @% [Expr.var "writer"; Expr.value serviceName; Expr.var "requiredHeaders"])
-        |> Meth.addExpr (Expr.code "}")
         |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Action", typeRef<XRoad.XRoadXmlWriter>)) "writeBody" (Expr.code "(writer) => { //"))
         |> iif (operation.InputParameters.IsMultipart) (fun x -> x |> Meth.addStmt (Stmt.assign ((Expr.var "writer" @=> "Context") @=> "IsMultipart") (Expr.value true)))
         |> ignore
@@ -691,6 +679,16 @@ module ServiceBuilder =
         serviceMethod |> Meth.addStmt (if isEmptyResponse then Stmt.ofExpr methodCall else Stmt.ret methodCall)
     *)
 
+/// Adds header element properties to given type.
+let private addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
+    let choose = headerMapping >> (match protocol with Version_20 -> fst | _ -> snd)
+    let propName = choose >> snd3
+    let docValue = choose >> trd3 >> Some
+    [ "asutus"; "andmekogu"; "isikukood"; "id"; "nimi"; "toimik"; "allasutus"; "amet"; "ametniknimi"; "autentija"; "makstud"; "salastada"; "salastada_sertifikaadiga"; "salastatud"; "salastatud_sertifikaadiga" ]
+    |> List.fold (fun typ hdr -> typ |> createProperty<string> (propName hdr) (docValue hdr)) portBaseTy
+    |> iif (match protocol with Version_20 -> true | _ -> false) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
+    |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
+
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
 let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, languageCode) =
@@ -759,6 +757,26 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
             producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
             producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
 
+            let getProducerMeth =
+                Meth.create "GetProducer"
+                |> Meth.setAttr MemberAttributes.Private
+                |> Meth.addParam<string> "value"
+                |> Meth.returns<string>
+                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.var "value"))
+                                                 [Stmt.ret (Expr.this @=> "producerName")]
+                                                 [Stmt.ret (Expr.var "value")])
+
+            let getServiceNameMeth =
+                Meth.create "GetServiceName"
+                |> Meth.setAttr MemberAttributes.Private
+                |> Meth.addParam<string> "producer"
+                |> Meth.addParam<string> "serviceName"
+                |> Meth.addParam<string> "value"
+                |> Meth.returns<string>
+                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.var "value"))
+                                                 [Stmt.ret ((Expr.typeRefOf<string> @-> "Format") @% [!^ "{0}.{1}"; Expr.var "producer"; Expr.var "serviceName"])]
+                                                 [Stmt.ret (Expr.var "value")])
+
             let ctor =
                 Ctor.create()
                 |> Ctor.setAttr MemberAttributes.Public
@@ -773,6 +791,8 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
                 |> Cls.addMember addressProperty
                 |> Cls.addMember producerField
                 |> Cls.addMember producerProperty
+                |> Cls.addMember getProducerMeth
+                |> Cls.addMember getServiceNameMeth
                 |> Code.comment port.Documentation
                 |> addHeaderProperties context.Protocol
             serviceTy |> Cls.addMember portTy |> ignore

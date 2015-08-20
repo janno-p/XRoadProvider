@@ -29,16 +29,6 @@ let inheritBinaryContent typ =
     |> Cls.addMember (Ctor.create()
                       |> Ctor.setAttr MemberAttributes.Public)
 
-/// Adds header element properties to given type.
-let internal addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
-    let choose = headerMapping >> (match protocol with Version_20 -> fst | _ -> snd)
-    let propName = choose >> snd3
-    let docValue = choose >> trd3 >> Some
-    [ "asutus"; "andmekogu"; "isikukood"; "id"; "nimi"; "toimik"; "allasutus"; "amet"; "ametniknimi"; "autentija"; "makstud"; "salastada"; "salastada_sertifikaadiga"; "salastatud"; "salastatud_sertifikaadiga" ]
-    |> List.fold (fun typ hdr -> typ |> createProperty<string> (propName hdr) (docValue hdr)) portBaseTy
-    |> iif (match protocol with Version_20 -> true | _ -> false) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
-    |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
-
 /// Builds deserialization statements to extract data from request retrieved from producers adapter server.
 let private createDeserializationStatements undescribedFaults =
     // Special reader class is required to support reading faults that are not defined in WSDL document.
