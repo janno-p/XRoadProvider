@@ -582,20 +582,30 @@ module ServiceBuilder =
     *)
 
     let addBodyInitialization methodCall m =
-        let instQN (nm: XName) = Expr.inst<XmlQualifiedName> [!^ nm.LocalName; !^ nm.NamespaceName]
+        let instQN (nm: string) (ns: string) = Expr.inst<XmlQualifiedName> [!^ nm; !^ ns]
         match methodCall with
-        | DocEncodedCall(_) ->
-            ()
+        | DocEncodedCall(enc,pw) ->
+            let stmt =
+                pw.Parameters
+                |> List.map (fun p -> Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name enc.NamespaceName; Expr.nil])
+                |> Arr.create<Tuple<XmlQualifiedName,obj>>
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
         | DocLiteralCall({ Parameters = [{ Type = SchemaName.SchemaType(_) }] }) ->
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [Expr.nil; Expr.nil]])) |> ignore
         | DocLiteralCall(_) ->
             ()
-        | RpcEncodedCall(acc,_) ->
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc)) |> ignore
+        | RpcEncodedCall(acc,pw) ->
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
+            let stmt =
+                pw.Parameters
+                |> List.map (fun p -> Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name]; Expr.nil])
+                |> Arr.create<Tuple<XmlQualifiedName,obj>>
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
         | RpcLiteralCall(acc,{ Parameters = [{ Type = SchemaName.SchemaType(_) }] }) ->
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc; Expr.nil]])) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc.LocalName acc.NamespaceName; Expr.nil]])) |> ignore
         | RpcLiteralCall(acc,_) ->
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc)) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
+            ()
         m
 
     /// Build content for each individual service call method.
