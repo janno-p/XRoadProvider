@@ -53,6 +53,7 @@ type XRoadMessage() =
     member val Header: SoapHeaderValue array = [||] with get, set
     member val Body: (XmlQualifiedName * obj) array = [||] with get, set
     member val Attachments = Dictionary<string, Stream>() with get, set
+    member val Accessor: XmlQualifiedName = null with get, set
 
 type XRoadResponse(response: WebResponse) =
     member __.RetrieveMessage(): XRoadMessage =
@@ -129,8 +130,23 @@ type XRoadRequest(opt: XRoadOptions) =
                     writer.WriteValue(generateNonce())
                 writer.WriteEndElement())
         writer.WriteEndElement()
-        writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
-        writer.WriteEndElement()
+
+        let serializeBody funContent =
+            match msg.Body with
+            | [| (null, _) |] -> funContent()
+            | _ -> writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
+                   funContent()
+                   writer.WriteEndElement()
+
+        let serializeAccessor funContent =
+            match msg.Accessor with
+            | null -> funContent()
+            | _ -> writer.WriteStartElement(msg.Accessor.Name, msg.Accessor.Namespace)
+                   funContent()
+                   writer.WriteEndElement()
+
+        serializeBody (fun _ -> serializeAccessor (fun _ -> ()))
+
         writer.WriteEndDocument()
         writer.Flush()
         serializeMessage content (dict [])

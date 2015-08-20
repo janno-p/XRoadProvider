@@ -6,6 +6,7 @@ open System.Collections.Generic
 open System.IO
 open System.Reflection
 open System.Xml
+open System.Xml.Linq
 open System.Xml.Serialization
 
 open XRoad.CodeDom.Common
@@ -558,17 +559,55 @@ module ServiceBuilder =
             |> Arr.create<SoapHeaderValue>
         m |> Meth.addStmt (Stmt.assign ((Expr.var "@__m") @=> "Header") hdrExpr)
 
+    (*
+    /// Generate types and serializing statements for root entities.
+    /// Returns root name and type info.
+    let private findRootNameAndType (context: TypeBuilderContext) (methodCall: MethodCall) (parameter: Parameter) =
+        match methodCall, parameter.Type with
+        | DocEncodedCall(_), SchemaName.SchemaType(_) // TODO: Encoding namespace for part name?
+        | RpcEncodedCall(_), SchemaName.SchemaType(_) -> (Some(parameter.Name), None), parameter.Type
+        | DocLiteralCall(_), SchemaName.SchemaType(_) -> (Some("Body"), Some(XmlNamespace.Soap)), parameter.Type
+        | RpcLiteralCall(_), SchemaName.SchemaType(_) -> (Some(methodCall.Accessor.Value.LocalName), Some(methodCall.Accessor.Value.NamespaceName)), parameter.Type
+        | DocLiteralCall(_), SchemaName.SchemaElement(elementName) ->
+            match context.GetElementDefinition(context.GetElementSpec(elementName)) with
+            | _, Definition(_) -> (None, None), (SchemaElement(elementName))
+            | _, Name(name) -> (Some(elementName.LocalName), Some(elementName.NamespaceName)), SchemaType(name)
+            | _ -> failwith "never"
+        | RpcLiteralCall(_), SchemaName.SchemaElement(elementName) ->
+            match context.GetElementDefinition(context.GetElementSpec(elementName)) with
+            | _, Definition(_) -> (None, None), (SchemaElement(elementName))
+            | _, Name(name) -> (Some(elementName.LocalName), Some(elementName.NamespaceName)), SchemaType(name)
+            | _ -> failwith "never"
+        | _ -> failwith "never"
+    *)
+
+    let addBodyInitialization methodCall m =
+        let instQN (nm: XName) = Expr.inst<XmlQualifiedName> [!^ nm.LocalName; !^ nm.NamespaceName]
+        match methodCall with
+        | DocEncodedCall(_) ->
+            ()
+        | DocLiteralCall({ Parameters = [{ Type = SchemaName.SchemaType(_) }] }) ->
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [Expr.nil; Expr.nil]])) |> ignore
+        | DocLiteralCall(_) ->
+            ()
+        | RpcEncodedCall(acc,_) ->
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc)) |> ignore
+        | RpcLiteralCall(acc,{ Parameters = [{ Type = SchemaName.SchemaType(_) }] }) ->
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc; Expr.nil]])) |> ignore
+        | RpcLiteralCall(acc,_) ->
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc)) |> ignore
+        m
+
     /// Build content for each individual service call method.
     let build (context: TypeBuilderContext) undescribedFaults (operation: ServicePortMethod) =
-        let serviceMethod =
-            Meth.create operation.Name
-            |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-            |> Code.comment operation.Documentation
-            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
-            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart]))
-            |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
-
-        serviceMethod |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.var "@__o"])
+        Meth.create operation.Name
+        |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+        |> Code.comment operation.Documentation
+        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
+        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart]))
+        |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
+        |> addBodyInitialization operation.InputParameters
+        |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.var "@__o"])
 
         (*
         // CodeDom doesn't support delegates, so we have to improvise.
@@ -576,40 +615,6 @@ module ServiceBuilder =
         |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Action", typeRef<XRoad.XRoadXmlWriter>)) "writeBody" (Expr.code "(writer) => { //"))
         |> iif (operation.InputParameters.IsMultipart) (fun x -> x |> Meth.addStmt (Stmt.assign ((Expr.var "writer" @=> "Context") @=> "IsMultipart") (Expr.value true)))
         |> ignore
-
-        // Write SOAP Body element unless it is defined as parameter value type.
-        let writeSoapBody =
-            match operation.InputParameters with
-            | DocLiteralCall(wr) ->
-                match wr.Parameters with
-                | [p] ->
-                    match p.Type with
-                    | SchemaName.SchemaType(_) -> false
-                    | SchemaName.SchemaElement(_) -> true
-                | _ -> true
-            | _ -> true
-        if writeSoapBody then
-            serviceMethod
-            |> Meth.addExpr ((!+ "writer" @-> "WriteStartElement") @% [!^ "Body"; !^ XmlNamespace.SoapEnv])
-            |> iif (operation.InputParameters.Accessor.IsSome) (fun m -> m |> Meth.addExpr ((!+ "writer" @-> "WriteAttributeString") @% [!^ "xmlns"; !^ "acc"; Expr.nil; !^ operation.InputParameters.Accessor.Value.NamespaceName]))
-            |> ignore
-
-        // Write accessor element unless it is defined as parameter value type or method call uses document style.
-        let writeAccessorElement =
-            match operation.InputParameters with
-            | RpcLiteralCall(_,w) ->
-                match w.Parameters with
-                | [p] ->
-                    match p.Type with
-                    | SchemaName.SchemaType(_) -> false
-                    | SchemaName.SchemaElement(_) -> true
-                | _ -> true
-            | RpcEncodedCall(_) -> true
-            | _ -> false
-        if writeAccessorElement then
-            match operation.InputParameters.Accessor with
-            | Some(acc) -> serviceMethod |> Meth.addExpr ((!+ "writer" @-> "WriteStartElement") @% [!^ acc.LocalName; !^ acc.NamespaceName]) |> ignore
-            | None -> ()
 
         // Create separate serializer for each parameter.
         let parentNs = if writeAccessorElement then operation.InputParameters.Accessor |> Option.map (fun x -> x.NamespaceName)
