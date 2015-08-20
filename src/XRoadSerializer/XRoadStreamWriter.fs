@@ -126,6 +126,8 @@ type XRoadRequest(opt: XRoadOptions) =
                 writer.WriteStartElement(hdr.Name.Name, hdr.Name.Namespace)
                 if hdr.Value <> null then
                     writer.WriteValue(hdr.Value)
+                elif hdr.Name.Name = "id" && (hdr.Name.Namespace = XmlNamespace.XRoad || hdr.Name.Namespace = XmlNamespace.Xtee) then
+                    writer.WriteValue(generateNonce())
                 writer.WriteEndElement())
         writer.WriteEndElement()
         writer.WriteStartElement("Body", XmlNamespace.SoapEnv)

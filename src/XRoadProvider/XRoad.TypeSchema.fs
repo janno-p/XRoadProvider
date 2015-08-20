@@ -729,7 +729,7 @@ module Parser =
             schemaLookup.Add((schemaNode.TargetNamespace.NamespaceName, schemaUri.ToString()), schema)
             // Parse imported schemas also.
             imports
-            |> List.filter (fun (ns, _) -> XmlNamespace.predefined |> List.exists ((=) ns.NamespaceName) |> not)
+            |> List.filter (fun (ns, _) -> predefinedNamespaces |> List.exists ((=) ns.NamespaceName) |> not)
             |> List.iter (fun (ns, uri) ->
                 let path = (uri |> Option.orDefault(ns.NamespaceName)) |> fixUri (Some schemaUri)
                 let schemaNode = XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
