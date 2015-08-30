@@ -1,5 +1,9 @@
 ﻿namespace XRoad
 
+open FSharp.Core
+open System
+open System.Collections.Concurrent
+open System.Reflection.Emit
 open System.Xml
 
 [<RequireQualifiedAccessAttribute>]
@@ -18,7 +22,11 @@ module XmlNamespace =
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
+type TypeMap = { Serializer: XmlWriter * obj -> unit }
+
 type Serializer() =
+    static let typeMaps = ConcurrentDictionary<Type, TypeMap>()
+
     member __.Deserialize(_: XmlReader) : 'T =
         null
     member __.Serialize(writer: XmlWriter, value: obj, rootName: XmlQualifiedName) =
@@ -27,5 +35,17 @@ type Serializer() =
         | _ -> writer.WriteStartElement(rootName.Name, rootName.Namespace)
         match value with
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
-        | _ -> ()
+        | _ ->
+            let typeMap =
+                match typeMaps.TryGetValue(value.GetType()) with
+                | true, typeMap ->
+                    typeMap
+                | false, _ ->
+                    let f = DynamicMethod("f", typeof<Void>, [|typeof<XmlWriter>; typeof<obj>|])
+                    let il = f.GetILGenerator()
+                    il.Emit(OpCodes.Ret)
+                    let d = f.CreateDelegate(typeof<Action<XmlWriter * obj>>) :?> Action<XmlWriter * obj>
+                    let tmap = { Serializer = FuncConvert.ToFSharpFunc(d) }
+                    typeMaps.GetOrAdd(value.GetType(), tmap)
+            typeMap.Serializer(writer, value)
         writer.WriteEndElement()
