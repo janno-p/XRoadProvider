@@ -2,12 +2,18 @@
 
 open FsUnit
 open NUnit.Framework
+open System
 open System.IO
 open System.Text
 open System.Xml
 open XRoad
+open XRoad.Attributes
 
 module TestType =
+    type UnserializableType() =
+        member val Value = 10 with get, set
+
+    [<XRoadType>]
     type SimpleType() =
         member val Value = 13 with get, set
 
@@ -38,3 +44,13 @@ let [<Test>] ``serialize null value`` () =
 let [<Test>] ``write qualified root name`` () =
     let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace"))
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-16""?><root xmlns=""urn:some-namespace"" />"
+
+let [<Test>] ``serializing unserializable type`` () =
+    TestDelegate(fun _ -> TestType.UnserializableType() |> serialize' |> ignore)
+    |> should (throwWithMessage "Type `XRoadSerializer.Tests.Serialization+TestType+UnserializableType` is not serializable.") typeof<Exception>
+
+let [<Test>] ``serialize string value`` () =
+    "string value" |> serialize' |> should equal @"<?xml version=""1.0"" encoding=""utf-16""?><keha>string value</keha>"
+
+let [<Test>] ``serialize integer value`` () =
+    32 |> serialize' |> should equal @"<?xml version=""1.0"" encoding=""utf-16""?><keha>32</keha>"

@@ -5,6 +5,7 @@ open System
 open System.Collections.Concurrent
 open System.Reflection.Emit
 open System.Xml
+open XRoad.Attributes
 
 [<RequireQualifiedAccessAttribute>]
 module XmlNamespace =
@@ -27,6 +28,10 @@ type TypeMap = { Serializer: XmlWriter * obj -> unit }
 type Serializer() =
     static let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
+    static do
+        typeMaps.TryAdd(typeof<string>, { Serializer = fun (wr, v) -> wr.WriteValue(v) }) |> ignore
+        typeMaps.TryAdd(typeof<int32>, { Serializer = fun (wr, v) -> wr.WriteValue(v) }) |> ignore
+
     member __.Deserialize(_: XmlReader) : 'T =
         null
     member __.Serialize(writer: XmlWriter, value: obj, rootName: XmlQualifiedName) =
@@ -36,16 +41,23 @@ type Serializer() =
         match value with
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
         | _ ->
+            let typ = value.GetType()
             let typeMap =
-                match typeMaps.TryGetValue(value.GetType()) with
+                match typeMaps.TryGetValue(typ) with
                 | true, typeMap ->
                     typeMap
                 | false, _ ->
-                    let f = DynamicMethod("f", typeof<Void>, [|typeof<XmlWriter>; typeof<obj>|])
-                    let il = f.GetILGenerator()
-                    il.Emit(OpCodes.Ret)
-                    let d = f.CreateDelegate(typeof<Action<XmlWriter * obj>>) :?> Action<XmlWriter * obj>
-                    let tmap = { Serializer = FuncConvert.ToFSharpFunc(d) }
-                    typeMaps.GetOrAdd(value.GetType(), tmap)
+                    let attr = typ.GetCustomAttributes(typeof<XRoadTypeAttribute>, false)
+                               |> Array.map (fun a -> a :?> XRoadTypeAttribute)
+                               |> Array.tryFind (fun _ -> true)
+                    match attr with
+                    | Some(_) ->
+                        let f = DynamicMethod("f", typeof<Void>, [|typeof<XmlWriter>; typeof<obj>|])
+                        let il = f.GetILGenerator()
+                        il.Emit(OpCodes.Ret)
+                        let d = f.CreateDelegate(typeof<Action<XmlWriter * obj>>) :?> Action<XmlWriter * obj>
+                        let tmap = { Serializer = FuncConvert.ToFSharpFunc(d) }
+                        typeMaps.GetOrAdd(typ, tmap)
+                    | None -> failwithf "Type `%s` is not serializable." typ.FullName
             typeMap.Serializer(writer, value)
         writer.WriteEndElement()
