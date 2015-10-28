@@ -4,11 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>3fb2085e-23d4-45f4-b04b-1cec3405525e</ProjectGuid>
+    <ProjectGuid>{3FB2085E-23D4-45F4-B04B-1CEC3405525E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>XRoad</RootNamespace>
     <AssemblyName>XRoadSerializer</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Name>XRoadSerializer</Name>

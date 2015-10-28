@@ -560,7 +560,7 @@ module ServiceBuilder =
         m
 
     /// Build content for each individual service call method.
-    let build (context: TypeBuilderContext) undescribedFaults (operation: ServicePortMethod) =
+    let build (context: TypeBuilderContext) _ (operation: ServicePortMethod) =
         Meth.create operation.Name
         |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
         |> Code.comment operation.Documentation

@@ -716,8 +716,8 @@ module Parser =
         | (true, absUri), _ -> absUri
         | _, Some(uri) -> match Uri.TryCreate(uri, path) with
                           | true, absUri -> absUri
-                          | _ -> failwith "Unable to detect uri `%s` in the context of `%A`." path uri
-        | _ -> failwith "Could not resolve uri `%s`." path
+                          | _ -> failwithf "Unable to detect uri `%s` in the context of `%A`." path uri
+        | _ -> failwithf "Could not resolve uri `%s`." path
 
     /// Parses all definitions in given schema node.
     let rec private findSchemaNode (schemaUri: Uri) (schemaLookup: Dictionary<(string * string),SchemaNode>) node =

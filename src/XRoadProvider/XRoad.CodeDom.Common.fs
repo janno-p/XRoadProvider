@@ -277,7 +277,7 @@ module String =
         member this.toPropertyName() =
             let fixedName = this.Replace('.', '_')
             if not(CodeGenerator.IsValidLanguageIndependentIdentifier(fixedName))
-            then failwith "Invalid property name `%s`." fixedName
+            then failwithf "Invalid property name `%s`." fixedName
             fixedName
 
 /// Type abstraction for code generator.

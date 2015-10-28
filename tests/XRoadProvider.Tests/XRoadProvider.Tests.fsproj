@@ -9,7 +9,6 @@
     <OutputType>Library</OutputType>
     <RootNamespace>XRoadProvider.Tests</RootNamespace>
     <AssemblyName>XRoadProvider.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
     <Name>XRoadProvider.Tests</Name>
     <TargetFrameworkProfile />
@@ -87,6 +86,10 @@
       <Name>XRoadProvider</Name>
       <Project>{4E04C5A5-00B9-4D7C-8501-31B4B7389671}</Project>
       <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\XRoadSerializer\XRoadSerializer.fsproj">
+      <Project>{3FB2085E-23D4-45F4-B04B-1CEC3405525E}</Project>
+      <Name>XRoadSerializer</Name>
     </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

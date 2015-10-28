@@ -189,7 +189,7 @@ type internal TypeBuilderContext =
         member this.GetSchemaType(name: XName) =
             match this.Types.TryFind(name.ToString()) with
             | Some(schemaType) -> schemaType
-            | None -> failwith "Invalid reference: global type `%A` was not found in current context." name
+            | None -> failwithf "Invalid reference: global type `%A` was not found in current context." name
 
         /// Resolves real type definition from lookup by following the XML schema references if present.
         /// Returns value of type definitions which actually contains definition, not references other definition.

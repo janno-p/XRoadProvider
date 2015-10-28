@@ -23,14 +23,15 @@ module XmlNamespace =
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
-type TypeMap = { Serializer: XmlWriter * obj -> unit }
+type SerializerDelegate = delegate of XmlWriter * obj -> unit
+type TypeMap = { Serializer: SerializerDelegate }
 
 type Serializer() =
     static let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
     static do
-        typeMaps.TryAdd(typeof<string>, { Serializer = fun (wr, v) -> wr.WriteValue(v) }) |> ignore
-        typeMaps.TryAdd(typeof<int32>, { Serializer = fun (wr, v) -> wr.WriteValue(v) }) |> ignore
+        typeMaps.TryAdd(typeof<string>, { Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }) |> ignore
+        typeMaps.TryAdd(typeof<int32>, { Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }) |> ignore
 
     member __.Deserialize(_: XmlReader) : 'T =
         null
@@ -52,12 +53,12 @@ type Serializer() =
                                |> Array.tryFind (fun _ -> true)
                     match attr with
                     | Some(_) ->
-                        let f = DynamicMethod("f", typeof<Void>, [|typeof<XmlWriter>; typeof<obj>|])
+                        let f = DynamicMethod("DynamicSerialize", null, [| typeof<XmlWriter>; typeof<obj> |])
                         let il = f.GetILGenerator()
                         il.Emit(OpCodes.Ret)
-                        let d = f.CreateDelegate(typeof<Action<XmlWriter * obj>>) :?> Action<XmlWriter * obj>
-                        let tmap = { Serializer = FuncConvert.ToFSharpFunc(d) }
+                        let d = f.CreateDelegate(typeof<SerializerDelegate>) :?> SerializerDelegate
+                        let tmap = { Serializer = d }
                         typeMaps.GetOrAdd(typ, tmap)
                     | None -> failwithf "Type `%s` is not serializable." typ.FullName
-            typeMap.Serializer(writer, value)
+            typeMap.Serializer.Invoke(writer, value)
         writer.WriteEndElement()
