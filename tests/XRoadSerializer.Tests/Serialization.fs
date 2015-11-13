@@ -15,7 +15,9 @@ module TestType =
 
     [<XRoadType>]
     type SimpleType() =
+        [<XRoadElement>]
         member val Value = 13 with get, set
+        member val IgnoredValue = true with get, set
 
 let serialize qn value =
     let serializer = Serializer()
@@ -35,7 +37,7 @@ let [<Test>] ``initializes new serializer`` () =
 
 let [<Test>] ``can serialize simple value`` () =
     let result = TestType.SimpleType() |> serialize'
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-16""?><keha />"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-16""?><keha><Value>13</Value></keha>"
 
 let [<Test>] ``serialize null value`` () =
     let result = (null: string) |> serialize'
@@ -43,7 +45,7 @@ let [<Test>] ``serialize null value`` () =
 
 let [<Test>] ``write qualified root name`` () =
     let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace"))
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-16""?><root xmlns=""urn:some-namespace"" />"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-16""?><root xmlns=""urn:some-namespace""><Value>13</Value></root>"
 
 let [<Test>] ``serializing unserializable type`` () =
     TestDelegate(fun _ -> TestType.UnserializableType() |> serialize' |> ignore)

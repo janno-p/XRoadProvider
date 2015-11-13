@@ -1,3 +1,7 @@
+#### 0.0.5-alpha - Unreleased
+
+* ...
+
 #### 0.0.4-alpha - August 19 2015
 
 * Improved handling of binary content.

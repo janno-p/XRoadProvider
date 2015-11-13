@@ -179,7 +179,7 @@ let private validateEncodedParameters (parameters: Parameter list) messageName =
 
 /// Read operation message and its parts definitions from document.
 /// http://www.w3.org/TR/wsdl#_abstract-v
-let private parseOperationMessage style (protocol: XRoadProtocol) (binding: XElement) definitions abstractDef ns =
+let private parseOperationMessage style (protocol: XRoadProtocol) (binding: XElement) definitions abstractDef opName ns =
     let msgName = abstractDef |> reqAttr (xname "name")
     let abstractParts = abstractDef |> parseAbstractParts msgName
     // Walk through message parts explicitly referenced in operation binding.
@@ -191,7 +191,7 @@ let private parseOperationMessage style (protocol: XRoadProtocol) (binding: XEle
             part.EncodingStyle
             |> Option.map (fun enc ->
                 match enc with
-                | XmlNamespace.SoapEnc -> xnsname msgName (part.Namespace |> Option.orDefault ns)
+                | XmlNamespace.SoapEnc -> xnsname opName (part.Namespace |> Option.orDefault ns)
                 | _ -> failwithf "Unknown encoding style `%s` for `%s` operation SOAP:body." enc msgName)
         | None -> failwithf "X-Road operation binding `%s` doesn't define SOAP:body." msgName
     // Build service parameters.
@@ -217,7 +217,7 @@ let private parseOperationMessage style (protocol: XRoadProtocol) (binding: XEle
     | Document, Some(value) -> DocEncodedCall(value.Namespace, parameterWrapper)
     | Document, None -> DocLiteralCall parameterWrapper
     | Rpc, Some(value) -> RpcEncodedCall(value, parameterWrapper)
-    | Rpc, None -> RpcLiteralCall(xnsname msgName ns, parameterWrapper)
+    | Rpc, None -> RpcLiteralCall(xnsname opName ns, parameterWrapper)
 
 /// Parse operation binding and bind to abstract message definitions.
 /// http://www.w3.org/TR/wsdl#_bindings
@@ -245,7 +245,7 @@ let private parseOperation languageCode operation portType definitions style ns 
     let parseParameters direction =
         let message = abstractDesc |> parseMessageName direction |> findMessageElement definitions
         let bindingElement = (operation %! xnsname direction XmlNamespace.Wsdl)
-        parseOperationMessage style protocol bindingElement definitions message ns
+        parseOperationMessage style protocol bindingElement definitions message name ns
     // Combine abstract and concrete part information about service implementation.
     { Name = name
       Version = version

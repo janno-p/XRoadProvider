@@ -26,7 +26,7 @@ module XmlNamespace =
 type SerializerDelegate = delegate of XmlWriter * obj -> unit
 type TypeMap = { Serializer: SerializerDelegate }
 
-type Serializer() =
+type Serializer() as this =
     static let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
     static do
@@ -35,30 +35,35 @@ type Serializer() =
 
     member __.Deserialize(_: XmlReader) : 'T =
         null
+
     member __.Serialize(writer: XmlWriter, value: obj, rootName: XmlQualifiedName) =
         match rootName.Namespace with
         | null | "" -> writer.WriteStartElement(rootName.Name)
         | _ -> writer.WriteStartElement(rootName.Name, rootName.Namespace)
+        this.SerializeObject(writer, value)
+        writer.WriteEndElement()
+
+    member private __.SerializeObject(writer: XmlWriter, value: obj) =
         match value with
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
         | _ ->
             let typ = value.GetType()
             let typeMap =
                 match typeMaps.TryGetValue(typ) with
-                | true, typeMap ->
-                    typeMap
-                | false, _ ->
-                    let attr = typ.GetCustomAttributes(typeof<XRoadTypeAttribute>, false)
-                               |> Array.map (fun a -> a :?> XRoadTypeAttribute)
-                               |> Array.tryFind (fun _ -> true)
-                    match attr with
-                    | Some(_) ->
-                        let f = DynamicMethod("DynamicSerialize", null, [| typeof<XmlWriter>; typeof<obj> |])
-                        let il = f.GetILGenerator()
-                        il.Emit(OpCodes.Ret)
-                        let d = f.CreateDelegate(typeof<SerializerDelegate>) :?> SerializerDelegate
-                        let tmap = { Serializer = d }
-                        typeMaps.GetOrAdd(typ, tmap)
-                    | None -> failwithf "Type `%s` is not serializable." typ.FullName
+                | true, typeMap -> typeMap
+                | false, _ -> this.BuildTypeMap(typ)
             typeMap.Serializer.Invoke(writer, value)
-        writer.WriteEndElement()
+
+    member private __.BuildTypeMap(typ: Type) =
+        let attr = typ.GetCustomAttributes(typeof<XRoadTypeAttribute>, false)
+                    |> Array.map (fun a -> a :?> XRoadTypeAttribute)
+                    |> Array.tryFind (fun _ -> true)
+        match attr with
+        | Some(_) ->
+            let f = DynamicMethod("DynamicSerialize", null, [| typeof<XmlWriter>; typeof<obj> |])
+            let il = f.GetILGenerator()
+            il.Emit(OpCodes.Ret)
+            let d = f.CreateDelegate(typeof<SerializerDelegate>) :?> SerializerDelegate
+            let tmap = { Serializer = d }
+            typeMaps.GetOrAdd(typ, tmap)
+        | None -> failwithf "Type `%s` is not serializable." typ.FullName
