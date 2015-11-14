@@ -104,6 +104,7 @@ type XRoadRequest(opt: XRoadOptions) =
         use writer = new XRoadXmlWriter(sw, XRoadSerializerContext(IsMultipart = opt.IsMultipart))
         writer.WriteStartDocument()
         writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
+        writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
         if opt.IsEncoded then
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)

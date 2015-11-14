@@ -24,7 +24,12 @@ let serialize qn value =
     use stream = new MemoryStream()
     use sw = new StreamWriter(stream, Encoding.UTF8)
     use writer = XmlWriter.Create(sw)
+    writer.WriteStartDocument()
+    writer.WriteStartElement("wrapper")
+    writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
     serializer.Serialize(writer, value, qn)
+    writer.WriteEndElement()
+    writer.WriteEndDocument()
     writer.Flush()
     sw.Flush()
     stream.Position <- 0L
@@ -39,22 +44,22 @@ let [<Test>] ``initializes new serializer`` () =
 
 let [<Test; Ignore>] ``can serialize simple value`` () =
     let result = TestType.SimpleType() |> serialize'
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><keha><Value>13</Value></keha>"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value></keha></wrapper>"
 
 let [<Test>] ``serialize null value`` () =
     let result = (null: string) |> serialize'
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><keha p1:nil=""true"" xmlns:p1=""http://www.w3.org/2001/XMLSchema-instance"" />"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:nil=""true"" /></wrapper>"
 
 let [<Test; Ignore>] ``write qualified root name`` () =
     let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace"))
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><root xmlns=""urn:some-namespace""><Value>13</Value></root>"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value></root></wrapper>"
 
 let [<Test>] ``serializing unserializable type`` () =
     TestDelegate(fun _ -> TestType.UnserializableType() |> serialize' |> ignore)
     |> should (throwWithMessage "Type `XRoadSerializer.Tests.Serialization+TestType+UnserializableType` is not serializable.") typeof<Exception>
 
 let [<Test>] ``serialize string value`` () =
-    "string value" |> serialize' |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><keha>string value</keha>"
+    "string value" |> serialize' |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>string value</keha></wrapper>"
 
 let [<Test>] ``serialize integer value`` () =
-    32 |> serialize' |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><keha>32</keha>"
+    32 |> serialize' |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>32</keha></wrapper>"

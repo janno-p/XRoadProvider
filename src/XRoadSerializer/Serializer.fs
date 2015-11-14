@@ -17,6 +17,7 @@ module XmlNamespace =
     let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
     let [<Literal>] Xmime = "http://www.w3.org/2005/05/xmlmime"
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
+    let [<Literal>] Xmlns = "http://www.w3.org/2000/xmlns/";
     let [<Literal>] Xrd = "http://x-rd.net/xsd/xroad.xsd"
     let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
