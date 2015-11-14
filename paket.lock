@@ -1,21 +1,22 @@
+FRAMEWORK: NET45
 NUGET
   remote: https://nuget.org/api/v2
   specs:
     FAKE (4.9.1)
-    FSharp.Compiler.Service (1.4.0.6)
-    FSharp.Core (4.0.0.1)
+    FSharp.Compiler.Service (1.4.0.6) - framework: net45
+    FSharp.Core (4.0.0.1) - framework: net45
     FSharp.Formatting (2.12.0)
       FSharp.Compiler.Service (1.4.0.6)
       FSharpVSPowerTools.Core (2.1.0)
-    FSharpVSPowerTools.Core (2.1.0)
+    FSharpVSPowerTools.Core (2.1.0) - framework: net45
       FSharp.Compiler.Service (>= 1.4.0.6)
     FsUnit (1.4.0.0)
       FSharp.Core (>= 3.1.2.5)
       NUnit (2.6.4)
-    Microsoft.Bcl (1.1.10)
+    Microsoft.Bcl (1.1.10) - framework: net45
       Microsoft.Bcl.Build (>= 1.0.14)
-    Microsoft.Bcl.Build (1.0.21)
-    Microsoft.Net.Http (2.2.29)
+    Microsoft.Bcl.Build (1.0.21) - framework: net45
+    Microsoft.Net.Http (2.2.29) - framework: net45
       Microsoft.Bcl (>= 1.1.10)
       Microsoft.Bcl.Build (>= 1.0.14)
     NuGet.CommandLine (2.8.6)

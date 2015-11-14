@@ -1,10 +1,12 @@
-[![Issue Stats](http://issuestats.com/github/janno-p/XRoadProvider/badge/issue)](http://issuestats.com/github/janno-p/XRoadProvider)
-[![Issue Stats](http://issuestats.com/github/janno-p/XRoadProvider/badge/pr)](http://issuestats.com/github/janno-p/XRoadProvider)
-
-# XRoadProvider [![NuGet Status](http://img.shields.io/nuget/v/XRoadProvider.svg?style=flat)](https://www.nuget.org/packages/XRoadProvider/)
+# XRoadProvider
 
 A library containing collection of F# type providers to support easier integration with service providers over
 [X-Road](http://x-road.eu) infrastructure.
+
+[![Mono build status](https://img.shields.io/travis/janno-p/XRoadProvider/master.svg?label=Mono build)]()  
+[![Windows build status](https://img.shields.io/appveyor/ci/janno-p/xroadprovider/master.svg?label=Windows build)]()  
+[![Version](http://img.shields.io/nuget/v/XRoadProvider.svg?label=Current version)](https://www.nuget.org/packages/XRoadProvider/)  
+[![Downloads](https://img.shields.io/nuget/dt/XRoadProvider.svg?label=Downloads)]()
 
 ## Documentation
 
