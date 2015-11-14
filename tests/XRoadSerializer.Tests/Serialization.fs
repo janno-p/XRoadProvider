@@ -13,7 +13,7 @@ module TestType =
     type UnserializableType() =
         member val Value = 10 with get, set
 
-    [<XRoadType>]
+    [<XRoadType(LayoutKind.Sequence)>]
     type SimpleType() =
         [<XRoadElement>]
         member val Value = 13 with get, set
