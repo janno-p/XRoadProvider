@@ -14,13 +14,8 @@ Documentation and samples can be found at the [XRoadProvider home page](http://j
 
 ## Building
 
-* Mono: Run `build.sh`
-* Windows: Run `build.cmd`
-
-## Known Issues
-
-* Underlying `XmlSerializer` needs to have access to all generated types. Because of that, type provider definitions should
-  be generated at namespace level (inside F# modules they will compile, but at the runtime you might get exceptions).
+* Mono: Run `$ ./build.sh`
+* Windows: Run `> build.cmd`
 
 ## Disclaimer
 
