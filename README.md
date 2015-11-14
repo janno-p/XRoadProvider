@@ -3,10 +3,10 @@
 A library containing collection of F# type providers to support easier integration with service providers over
 [X-Road](http://x-road.eu) infrastructure.
 
-[![Mono build status](https://img.shields.io/travis/janno-p/XRoadProvider/master.svg?label=Mono build)]()  
-[![Windows build status](https://img.shields.io/appveyor/ci/janno-p/xroadprovider/master.svg?label=Windows build)]()  
+[![Mono build status](https://img.shields.io/travis/janno-p/XRoadProvider/master.svg?label=Mono build)](https://travis-ci.org/janno-p/XRoadProvider/)  
+[![Windows build status](https://img.shields.io/appveyor/ci/janno-p/xroadprovider/master.svg?label=Windows build)](https://ci.appveyor.com/project/janno-p/xroadprovider)  
 [![Version](http://img.shields.io/nuget/v/XRoadProvider.svg?label=Current version)](https://www.nuget.org/packages/XRoadProvider/)  
-[![Downloads](https://img.shields.io/nuget/dt/XRoadProvider.svg?label=Downloads)]()
+[![Downloads](https://img.shields.io/nuget/dt/XRoadProvider.svg?label=Downloads)](https://www.nuget.org/stats/packages/XRoadProvider?groupby=Version)
 
 ## Documentation
 

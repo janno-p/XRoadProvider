@@ -3,7 +3,7 @@ init:
 build_script:
   - cmd: build.cmd RunTests
 test: off
-version: {build}
+version: "{build}"
 artifacts:
   - path: bin
     name: bin
