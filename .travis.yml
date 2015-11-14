@@ -1,6 +1,9 @@
 language: csharp
+mono:
+  - latest
+  - alpha
 
-sudo: false  # use the new container-based Travis infrastructure 
+sudo: false
 
-script: 
-  - ./build.sh All
+script:
+  - ./build.sh RunTests

@@ -37,7 +37,7 @@ let [<Test>] ``initializes new serializer`` () =
     let serializer = Serializer()
     serializer |> should not' (equal null)
 
-let [<Test>] ``can serialize simple value`` () =
+let [<Test; Ignore>] ``can serialize simple value`` () =
     let result = TestType.SimpleType() |> serialize'
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><keha><Value>13</Value></keha>"
 
@@ -45,7 +45,7 @@ let [<Test>] ``serialize null value`` () =
     let result = (null: string) |> serialize'
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><keha p1:nil=""true"" xmlns:p1=""http://www.w3.org/2001/XMLSchema-instance"" />"
 
-let [<Test>] ``write qualified root name`` () =
+let [<Test; Ignore>] ``write qualified root name`` () =
     let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace"))
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><root xmlns=""urn:some-namespace""><Value>13</Value></root>"
 
