@@ -55,6 +55,9 @@
       <Paket>True</Paket>
       <Link>paket-files\ProvidedTypes.fs</Link>
     </Compile>
+    <Compile Include="..\ProductInfo.fs">
+      <Link>ProductInfo.fs</Link>
+    </Compile>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="XRoad.Common.fs" />
     <Compile Include="XRoad.ServiceDescription.fs" />
