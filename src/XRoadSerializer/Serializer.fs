@@ -3,6 +3,7 @@
 open FSharp.Core
 open System
 open System.Collections.Concurrent
+open System.Reflection
 open System.Reflection.Emit
 open System.Xml
 open XRoad.Attributes
@@ -34,6 +35,10 @@ type Serializer() as this =
         typeMaps.TryAdd(typeof<string>, { Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }) |> ignore
         typeMaps.TryAdd(typeof<int32>, { Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }) |> ignore
 
+    static let xmlWriteStartElement = typeof<XmlWriter>.GetMethod("WriteStartElement", [| typeof<string> |])
+    static let xmlWriteEndElement = typeof<XmlWriter>.GetMethod("WriteEndElement", [| |])
+    static let xmlWriteValue = typeof<XmlWriter>.GetMethod("WriteValue", [| typeof<obj> |])
+
     member __.Deserialize(_: XmlReader) : 'T =
         null
 
@@ -63,8 +68,33 @@ type Serializer() as this =
         | Some(_) ->
             let f = DynamicMethod("DynamicSerialize", null, [| typeof<XmlWriter>; typeof<obj> |])
             let il = f.GetILGenerator()
+
+            typ.GetProperties()
+            |> Array.choose (fun p ->
+                match p.GetCustomAttribute<XRoadElementAttribute>() with
+                | null -> None
+                | attr -> Some(p, attr))
+            |> Array.iter (fun (p,_) -> this.BuildPropertySerialization(il, p))
+
             il.Emit(OpCodes.Ret)
             let d = f.CreateDelegate(typeof<SerializerDelegate>) :?> SerializerDelegate
             let tmap = { Serializer = d }
             typeMaps.GetOrAdd(typ, tmap)
         | None -> failwithf "Type `%s` is not serializable." typ.FullName
+
+    member private __.BuildPropertySerialization(il: ILGenerator, property: PropertyInfo) =
+        il.Emit(OpCodes.Nop)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldstr, property.Name)
+        il.Emit(OpCodes.Callvirt, xmlWriteStartElement)
+        il.Emit(OpCodes.Nop)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Castclass, property.DeclaringType)
+        il.Emit(OpCodes.Callvirt, property.GetGetMethod())
+        il.Emit(OpCodes.Box, property.PropertyType)
+        il.Emit(OpCodes.Callvirt, xmlWriteValue)
+        il.Emit(OpCodes.Nop)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, xmlWriteEndElement)
+        il.Emit(OpCodes.Nop)

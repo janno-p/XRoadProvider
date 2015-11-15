@@ -42,7 +42,7 @@ let [<Test>] ``initializes new serializer`` () =
     let serializer = Serializer()
     serializer |> should not' (equal null)
 
-let [<Test; Ignore>] ``can serialize simple value`` () =
+let [<Test>] ``can serialize simple value`` () =
     let result = TestType.SimpleType() |> serialize'
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value></keha></wrapper>"
 
@@ -50,7 +50,7 @@ let [<Test>] ``serialize null value`` () =
     let result = (null: string) |> serialize'
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:nil=""true"" /></wrapper>"
 
-let [<Test; Ignore>] ``write qualified root name`` () =
+let [<Test>] ``write qualified root name`` () =
     let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace"))
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value></root></wrapper>"
 
