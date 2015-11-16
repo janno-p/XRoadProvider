@@ -3,6 +3,7 @@
 open FSharp.Core
 open System
 open System.Collections.Concurrent
+open System.Numerics
 open System.Reflection
 open System.Reflection.Emit
 open System.Xml
@@ -94,6 +95,9 @@ type Serializer() as this =
         il.Emit(OpCodes.Callvirt, property.GetGetMethod())
         il.Emit(OpCodes.Box, property.PropertyType)
         if property.PropertyType.GetCustomAttribute<XRoadTypeAttribute>() |> isNull then
+            if property.PropertyType = typeof<BigInteger> then
+                il.Emit(OpCodes.Callvirt, typeof<obj>.GetMethod("ToString", [| |]))
+                il.Emit(OpCodes.Box, typeof<string>)
             il.Emit(OpCodes.Callvirt, xmlWriteValue)
         else
             let tmap = this.GetTypeMap(property.PropertyType)

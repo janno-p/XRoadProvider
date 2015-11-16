@@ -17,6 +17,8 @@ module TestType =
     type ComplexType() =
         [<XRoadElement>]
         member val String = "test" with get, set
+        [<XRoadElement>]
+        member val BigInteger = 100I with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type SimpleType() =
@@ -51,7 +53,7 @@ let [<Test>] ``initializes new serializer`` () =
 
 let [<Test>] ``can serialize simple value`` () =
     let result = TestType.SimpleType() |> serialize'
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String></ComplexValue></keha></wrapper>"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue></keha></wrapper>"
 
 let [<Test>] ``serialize null value`` () =
     let result = (null: string) |> serialize'
@@ -59,7 +61,7 @@ let [<Test>] ``serialize null value`` () =
 
 let [<Test>] ``write qualified root name`` () =
     let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace"))
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String></ComplexValue></root></wrapper>"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue></root></wrapper>"
 
 let [<Test>] ``serializing unserializable type`` () =
     TestDelegate(fun _ -> TestType.UnserializableType() |> serialize' |> ignore)
