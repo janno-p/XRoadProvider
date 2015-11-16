@@ -82,7 +82,6 @@ module Attributes =
     let DebuggerBrowsable = Attr.create<DebuggerBrowsableAttribute> |> Attr.addArg (Expr.enumValue<DebuggerBrowsableState> "Never")
     let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
     let XmlAttributeWithName (name: string) = Attr.create<XmlAttributeAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm
-    let XmlText = Attr.create<XmlTextAttribute>
     let XmlTypeExclude = Attr.create<XmlTypeAttribute> |> Attr.addNamedArg "IncludeInSchema" (Expr.value false)
     let XmlInclude(providedTy: CodeTypeReference) = Attr.create<XmlIncludeAttribute> |> Attr.addArg (Expr.typeOf providedTy)
     let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
@@ -107,6 +106,8 @@ module Attributes =
         name
         |> Option.fold (fun attr n -> attr |> Attr.addArg (Expr.value n)) Attr.create<XRoadElementAttribute>
         |> addNullable isNillable
+
+    let xrdContent = Attr.create<XRoadContentAttribute>
 
 /// Functions to create and manipulate type fields.
 module Fld =

@@ -72,9 +72,9 @@ type Serializer() as this =
 
             typ.GetProperties()
             |> Array.choose (fun p ->
-                match p.GetCustomAttribute<XRoadElementAttribute>() with
-                | null -> None
-                | attr -> Some(p, attr))
+                if p.GetCustomAttribute<XRoadElementAttribute>() |> isNull && p.GetCustomAttribute<XRoadContentAttribute>() |> isNull
+                then None
+                else Some(p, attr))
             |> Array.iter (fun (p,_) -> this.BuildPropertySerialization(il, p))
 
             il.Emit(OpCodes.Ret)
@@ -84,11 +84,13 @@ type Serializer() as this =
         | None -> failwithf "Type `%s` is not serializable." typ.FullName
 
     member private __.BuildPropertySerialization(il: ILGenerator, property: PropertyInfo) =
+        let isSubElement = property.GetCustomAttribute<XRoadContentAttribute>() |> isNull
         il.Emit(OpCodes.Nop)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, property.Name)
-        il.Emit(OpCodes.Callvirt, xmlWriteStartElement)
-        il.Emit(OpCodes.Nop)
+        if isSubElement then
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldstr, property.Name)
+            il.Emit(OpCodes.Callvirt, xmlWriteStartElement)
+            il.Emit(OpCodes.Nop)
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, property.DeclaringType)
@@ -103,6 +105,7 @@ type Serializer() as this =
             let tmap = this.GetTypeMap(property.PropertyType)
             il.Emit(OpCodes.Call, tmap |> snd)
         il.Emit(OpCodes.Nop)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, xmlWriteEndElement)
-        il.Emit(OpCodes.Nop)
+        if isSubElement then
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, xmlWriteEndElement)
+            il.Emit(OpCodes.Nop)

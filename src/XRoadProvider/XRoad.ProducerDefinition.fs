@@ -127,7 +127,7 @@ module TypeBuilder =
             providedTy |> Code.comment (annotationToText context annotation) |> ignore
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | PrimitiveType(_) as rtyp ->
-                providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.XmlText |> ignore
+                providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.xrdContent |> ignore
             | ContentType ->
                 providedTy |> inheritBinaryContent |> ignore
             | _ ->
@@ -150,7 +150,7 @@ module TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
-                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.XmlText |> ignore
+                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.xrdContent |> ignore
                         Some(spec.Content)
                     | _ ->
                         failwith "ComplexType-s simpleContent should not extend complex types."

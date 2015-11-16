@@ -14,6 +14,11 @@ module TestType =
         member val Value = 10 with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
+    type WithContent() =
+        [<XRoadContent>]
+        member val ContentValue = true with get, set
+
+    [<XRoadType(LayoutKind.Sequence)>]
     type ComplexType() =
         [<XRoadElement>]
         member val String = "test" with get, set
@@ -26,6 +31,8 @@ module TestType =
         member val Value = 13 with get, set
         [<XRoadElement>]
         member val ComplexValue = ComplexType() with get, set
+        [<XRoadElement>]
+        member val SubContent = WithContent() with get, set
         member val IgnoredValue = true with get, set
 
 let serialize qn value =
@@ -53,7 +60,7 @@ let [<Test>] ``initializes new serializer`` () =
 
 let [<Test>] ``can serialize simple value`` () =
     let result = TestType.SimpleType() |> serialize'
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue></keha></wrapper>"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></keha></wrapper>"
 
 let [<Test>] ``serialize null value`` () =
     let result = (null: string) |> serialize'
@@ -61,7 +68,7 @@ let [<Test>] ``serialize null value`` () =
 
 let [<Test>] ``write qualified root name`` () =
     let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace"))
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue></root></wrapper>"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></wrapper>"
 
 let [<Test>] ``serializing unserializable type`` () =
     TestDelegate(fun _ -> TestType.UnserializableType() |> serialize' |> ignore)
