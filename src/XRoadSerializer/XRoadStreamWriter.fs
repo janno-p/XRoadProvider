@@ -6,7 +6,6 @@ open System.IO
 open System.Net
 open System.Security.Cryptography
 open System.Xml
-open System.Xml.Serialization
 
 type ChunkState = BufferLimit | Marker | EndOfStream
 
@@ -137,19 +136,7 @@ type XRoadRequest(opt: XRoadOptions) =
             serializeAccessor (fun _ ->
                 msg.Body
                 |> Array.iter (fun (name,value) ->
-                    let name = if name = null then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name
-                    if value = null then
-                        match name.Namespace with
-                        | null | "" -> writer.WriteStartElement(name.Name)
-                        | _ -> writer.WriteStartElement(name.Name, name.Namespace)
-                        writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
-                        writer.WriteEndElement()
-                    else
-                        let root = XmlRootAttribute(name.Name)
-                        if not(String.IsNullOrEmpty(name.Namespace)) then
-                            root.Namespace <- name.Namespace
-                        let serializer = XmlSerializer(value.GetType(), root)
-                        serializer.Serialize(writer, value))))
+                    Serializer().Serialize(writer, value, if isNull name then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name))))
 
         writer.WriteEndDocument()
         writer.Flush()

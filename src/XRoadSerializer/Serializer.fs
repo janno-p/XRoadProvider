@@ -29,11 +29,11 @@ type SerializerDelegate = delegate of XmlWriter * obj -> unit
 type TypeMap = { Serializer: SerializerDelegate }
 
 type Serializer() as this =
-    static let typeMaps = ConcurrentDictionary<Type, TypeMap>()
+    static let typeMaps = ConcurrentDictionary<Type, TypeMap * DynamicMethod>()
 
     static do
-        typeMaps.TryAdd(typeof<string>, { Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }) |> ignore
-        typeMaps.TryAdd(typeof<int32>, { Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }) |> ignore
+        typeMaps.TryAdd(typeof<string>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
+        typeMaps.TryAdd(typeof<int32>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
 
     static let xmlWriteStartElement = typeof<XmlWriter>.GetMethod("WriteStartElement", [| typeof<string> |])
     static let xmlWriteEndElement = typeof<XmlWriter>.GetMethod("WriteEndElement", [| |])
@@ -52,13 +52,12 @@ type Serializer() as this =
     member private __.SerializeObject(writer: XmlWriter, value: obj) =
         match value with
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
-        | _ ->
-            let typ = value.GetType()
-            let typeMap =
-                match typeMaps.TryGetValue(typ) with
-                | true, typeMap -> typeMap
-                | false, _ -> this.BuildTypeMap(typ)
-            typeMap.Serializer.Invoke(writer, value)
+        | _ -> (this.GetTypeMap(value.GetType()) |> fst).Serializer.Invoke(writer, value)
+
+    member private __.GetTypeMap(typ) =
+        match typeMaps.TryGetValue(typ) with
+        | true, typeMap -> typeMap
+        | false, _ -> this.BuildTypeMap(typ)
 
     member private __.BuildTypeMap(typ: Type) =
         let attr = typ.GetCustomAttributes(typeof<XRoadTypeAttribute>, false)
@@ -66,7 +65,8 @@ type Serializer() as this =
                     |> Array.tryFind (fun _ -> true)
         match attr with
         | Some(_) ->
-            let f = DynamicMethod("DynamicSerialize", null, [| typeof<XmlWriter>; typeof<obj> |])
+            let methodName = sprintf "%s_DynamicSerialize" typ.FullName
+            let f = DynamicMethod(methodName, null, [| typeof<XmlWriter>; typeof<obj> |])
             let il = f.GetILGenerator()
 
             typ.GetProperties()
@@ -79,7 +79,7 @@ type Serializer() as this =
             il.Emit(OpCodes.Ret)
             let d = f.CreateDelegate(typeof<SerializerDelegate>) :?> SerializerDelegate
             let tmap = { Serializer = d }
-            typeMaps.GetOrAdd(typ, tmap)
+            typeMaps.GetOrAdd(typ, (tmap, f))
         | None -> failwithf "Type `%s` is not serializable." typ.FullName
 
     member private __.BuildPropertySerialization(il: ILGenerator, property: PropertyInfo) =
@@ -93,7 +93,11 @@ type Serializer() as this =
         il.Emit(OpCodes.Castclass, property.DeclaringType)
         il.Emit(OpCodes.Callvirt, property.GetGetMethod())
         il.Emit(OpCodes.Box, property.PropertyType)
-        il.Emit(OpCodes.Callvirt, xmlWriteValue)
+        if property.PropertyType.GetCustomAttribute<XRoadTypeAttribute>() |> isNull then
+            il.Emit(OpCodes.Callvirt, xmlWriteValue)
+        else
+            let tmap = this.GetTypeMap(property.PropertyType)
+            il.Emit(OpCodes.Call, tmap |> snd)
         il.Emit(OpCodes.Nop)
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Callvirt, xmlWriteEndElement)

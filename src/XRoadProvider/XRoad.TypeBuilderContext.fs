@@ -165,8 +165,8 @@ type internal TypeBuilderContext =
                 | _ ->
                     let attr =
                         match name with
-                        | SchemaElement(_) -> Attributes.XmlRoot name.XName.LocalName name.XName.NamespaceName
-                        | SchemaType(_) -> Attributes.XmlType name.XName
+                        | SchemaElement(_) -> Attributes.xrdType name.XName
+                        | SchemaType(_) -> Attributes.xrdType name.XName
                     let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
                     nstyp |> Cls.addMember typ |> ignore
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)

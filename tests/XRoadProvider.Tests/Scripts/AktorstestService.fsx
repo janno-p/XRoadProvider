@@ -1,4 +1,4 @@
-﻿#I @"..\..\..\src\XRoadProvider\bin\Debug"
+﻿#I @"../../../src/XRoadProvider/bin/Debug"
 
 #r "XRoadProvider"
 #r "XRoadSerializer"
@@ -26,6 +26,7 @@ printfn "Using producer name: %s" port.ProducerName
 port.Consumer <- "10239452"
 port.UserId <- "EE:PIN:abc4567"
 
+(*
 // File upload with multipart request
 
 let fup = AktorstestDto.fileUpload()
@@ -36,7 +37,9 @@ let fupr = port.fileUpload(fup)
 
 printfn "%s" fupr.response.faultCode.BaseValue
 printfn "%s" fupr.response.faultString.BaseValue
+//*)
 
+//(*
 // Change address service
 
 let cad = AktorstestDto.changeAddress()
@@ -51,14 +54,18 @@ cad.request.isikukood <- "30101010001"
 
 let cadr = port.changeAddress(cad)
 
-printfn "%s" cadr.response.faultCode.BaseValue
-printfn "%s" cadr.response.faultString.BaseValue
+//printfn "%s" cadr.response.faultCode.BaseValue
+//printfn "%s" cadr.response.faultString.BaseValue
+//*)
 
+(*
 // List methods service
 
 let methods = port.listMethods(Aktorstest.DefinedTypes.xroad.listMethods())
 methods.response |> Array.iter (printfn "%s")
+//*)
 
+(*
 // File download with multipart response
 
 let fd = AktorstestDto.fileDownload()
@@ -68,4 +75,4 @@ fd.request.fileName <- "document.pdf"
 let fdr,attachments = port.fileDownload(fd)
 fdr.response.file.href
 let stream = attachments.[fdr.response.file.href]
-
+//*)

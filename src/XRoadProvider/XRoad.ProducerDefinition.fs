@@ -80,7 +80,7 @@ module TypeBuilder =
                     failwith "Wrapped array should match to CollectionType."
                 | (None | Some(false)), _ ->
                     if definition.ChoiceIdentifier.IsNone then
-                        prop |> Prop.describe (Attributes.XmlElement(elementName, definition.IsNillable))
+                        prop |> Prop.describe (Attributes.xrdElement(elementName, definition.IsNillable))
                              |> ignore
                 match definition.ChoiceIdentifier with
                 | Some(identifierName) ->
@@ -250,7 +250,7 @@ module TypeBuilder =
                     IsWrappedArray = Some(true) }
             | _, Reference(_) -> failwith "never"
         | Definition(def) ->
-            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public
+            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType())
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then
