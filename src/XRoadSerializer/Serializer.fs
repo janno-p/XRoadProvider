@@ -96,12 +96,13 @@ type Serializer() as this =
             il.Emit(OpCodes.Callvirt, xmlWriteStartElement)
             il.Emit(OpCodes.Nop)
         let endLabel =
-            if property.PropertyType.IsClass || Nullable.GetUnderlyingType(property.PropertyType) <> null then
+            if property.PropertyType.IsClass || Nullable.GetUnderlyingType(property.PropertyType) |> isNull |> not then
                 let lbl1 = il.DefineLabel()
                 il.Emit(OpCodes.Ldarg_1)
                 il.Emit(OpCodes.Castclass, property.DeclaringType)
                 il.Emit(OpCodes.Callvirt, property.GetGetMethod())
-                il.Emit(OpCodes.Box, property.PropertyType)
+                if property.PropertyType.IsValueType then
+                    il.Emit(OpCodes.Box, property.PropertyType)
                 il.Emit(OpCodes.Ldnull)
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Ldc_I4_0)
@@ -124,9 +125,7 @@ type Serializer() as this =
                 else
                     il.Emit(OpCodes.Ldstr, "Not nullable property `{0}` of type `{1}` has null value.")
                     il.Emit(OpCodes.Ldstr, property.Name)
-                    il.Emit(OpCodes.Box, typeof<string>)
                     il.Emit(OpCodes.Ldstr, property.DeclaringType.FullName)
-                    il.Emit(OpCodes.Box, typeof<string>)
                     il.Emit(OpCodes.Call, typeof<String>.GetMethod("Format", [| typeof<string>; typeof<obj>; typeof<obj> |]))
                     il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                     il.Emit(OpCodes.Throw)
@@ -137,11 +136,11 @@ type Serializer() as this =
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, property.DeclaringType)
         il.Emit(OpCodes.Callvirt, property.GetGetMethod())
-        il.Emit(OpCodes.Box, property.PropertyType)
+        if property.PropertyType.IsValueType then
+            il.Emit(OpCodes.Box, property.PropertyType)
         if property.PropertyType.GetCustomAttribute<XRoadTypeAttribute>() |> isNull then
             if property.PropertyType = typeof<BigInteger> then
                 il.Emit(OpCodes.Callvirt, typeof<obj>.GetMethod("ToString", [| |]))
-                il.Emit(OpCodes.Box, typeof<string>)
             il.Emit(OpCodes.Callvirt, xmlWriteValue)
         else
             let tmap = this.GetTypeMap(property.PropertyType)
