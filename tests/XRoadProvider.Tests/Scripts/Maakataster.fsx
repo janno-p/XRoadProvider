@@ -1,4 +1,4 @@
-﻿#I @"..\..\..\src\XRoadProvider\bin\Debug"
+﻿#I @"../../../src/XRoadProvider/bin/Debug"
 
 #r "XRoadProvider"
 #r "XRoadSerializer"
