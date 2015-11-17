@@ -252,6 +252,12 @@ module CodeSpec =
         | Version_30
         | Version_31
         | Version_40
+        member this.Name =
+            match this with
+            | Version_20 -> "Version20"
+            | Version_30 -> "Version30"
+            | Version_31 -> "Version31"
+            | Version_40 -> "Version40"
         /// Returns namespace value for the protocol version.
         member this.Namespace =
             match this with

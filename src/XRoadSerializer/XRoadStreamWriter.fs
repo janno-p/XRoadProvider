@@ -23,15 +23,31 @@ type XRoadStreamReader() =
     end
 
 type XRoadProtocol =
-    | Version20
-    | Version30
-    | Version31
-    | Version40
+    | Version20 = 0
+    | Version30 = 1
+    | Version31 = 2
+    | Version40 = 3
 
-type XRoadOptions(uri: string, isEncoded: bool, isMultipart: bool) =
+[<AutoOpen>]
+module private XRoadProtocolExtensions =
+    let protocolPrefix = function
+        | XRoadProtocol.Version20 -> "xtee"
+        | XRoadProtocol.Version30
+        | XRoadProtocol.Version31 -> "xrd"
+        | XRoadProtocol.Version40 -> failwith "Not implemented v4.0"
+        | x -> failwithf "Invalid XRoadProtocol value `%A`" x
+
+    let protocolNamespace = function
+        | XRoadProtocol.Version20 -> XmlNamespace.Xtee
+        | XRoadProtocol.Version30 -> XmlNamespace.Xrd
+        | XRoadProtocol.Version31 -> XmlNamespace.XRoad
+        | XRoadProtocol.Version40 -> failwith "Not implemented v4.0"
+        | x -> failwithf "Invalid XRoadProtocol value `%A`" x
+
+type XRoadOptions(uri: string, isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol) =
     member val IsEncoded = isEncoded with get
     member val IsMultipart = isMultipart with get
-    member val Protocol = XRoadProtocol.Version31 with get, set
+    member val Protocol = protocol with get, set
     member val Uri = uri with get, set
 
 type XRoadMessage() =
@@ -104,6 +120,8 @@ type XRoadRequest(opt: XRoadOptions) =
         writer.WriteStartDocument()
         writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
         writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
+        writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, protocolNamespace opt.Protocol)
+        match msg.Accessor with | null -> () | acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace)
         if opt.IsEncoded then
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
@@ -111,7 +129,7 @@ type XRoadRequest(opt: XRoadOptions) =
         |> Array.iter (fun hdr ->
             if hdr.IsRequired || hdr.Value <> null then
                 writer.WriteStartElement(hdr.Name.Name, hdr.Name.Namespace)
-                if hdr.Value <> null then
+                if not (hdr.Value |> isNull) then
                     writer.WriteValue(hdr.Value)
                 elif hdr.Name.Name = "id" && (hdr.Name.Namespace = XmlNamespace.XRoad || hdr.Name.Namespace = XmlNamespace.Xtee) then
                     writer.WriteValue(generateNonce())
