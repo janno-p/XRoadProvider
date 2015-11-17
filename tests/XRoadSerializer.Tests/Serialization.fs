@@ -90,3 +90,7 @@ let [<Test>] ``serialize integer value`` () =
 let [<Test>] ``serialize nullable values`` () =
     let result = TestType.WithNullableMembers() |> serialize'
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>13</Value1><Value2 xsi:nil=""true"" /></keha></wrapper>"
+
+let [<Test>] ``serialize not nullable as null`` () =
+    TestDelegate (fun _ -> TestType.ComplexType(String = null) |> serialize' |> ignore)
+    |> should (throwWithMessage "Not nullable property `String` of type `XRoadSerializer.Tests.Serialization+TestType+ComplexType` has null value.") typeof<Exception>
