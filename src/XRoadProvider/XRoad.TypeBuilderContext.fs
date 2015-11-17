@@ -87,9 +87,11 @@ type internal ProducerDescription =
     /// Load producer definition from given uri location.
     static member Load(uri: string, languageCode) =
         let document = XDocument.Load(uri)
-        let definitions = document.Element(xnsname "definitions" XmlNamespace.Wsdl)
-        { Services = definitions |> ServiceDescription.parseServices languageCode
-          TypeSchemas = definitions |> TypeSchema.Parser.parseSchema uri }
+        match document.Element(xnsname "definitions" XmlNamespace.Wsdl) with
+        | null -> failwithf "Uri `%s` refers to invalid WSDL document (`definitions` element not found)." uri
+        | definitions ->
+            { Services = definitions |> ServiceDescription.parseServices languageCode
+              TypeSchemas = definitions |> TypeSchema.Parser.parseSchema uri }
 
 /// Context keeps track of already generated types for provided types and namespaces
 /// to simplify reuse and resolve mutual dependencies between types.

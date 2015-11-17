@@ -39,6 +39,7 @@ type Serializer() as this =
     static let xmlWriteStartElement = typeof<XmlWriter>.GetMethod("WriteStartElement", [| typeof<string> |])
     static let xmlWriteEndElement = typeof<XmlWriter>.GetMethod("WriteEndElement", [| |])
     static let xmlWriteValue = typeof<XmlWriter>.GetMethod("WriteValue", [| typeof<obj> |])
+    static let xmlWriteAttributeString = typeof<XmlWriter>.GetMethod("WriteAttributeString", [| typeof<string>; typeof<string>; typeof<string> |])
 
     member __.Deserialize(_: XmlReader) : 'T =
         null
@@ -84,13 +85,42 @@ type Serializer() as this =
         | None -> failwithf "Type `%s` is not serializable." typ.FullName
 
     member private __.BuildPropertySerialization(il: ILGenerator, property: PropertyInfo) =
-        let isSubElement = property.GetCustomAttribute<XRoadContentAttribute>() |> isNull
+        let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
+        let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
+        let isContent = contentAttribute |> Option.fold (fun _ _ -> true) false
+        let isNullable = elementAttribute |> Option.fold (fun _ x -> x.IsNullable) false
         il.Emit(OpCodes.Nop)
-        if isSubElement then
+        if not isContent then
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldstr, property.Name)
             il.Emit(OpCodes.Callvirt, xmlWriteStartElement)
             il.Emit(OpCodes.Nop)
+        let endLabel =
+            if isNullable then
+                let lbl1 = il.DefineLabel()
+                let lbl2 = il.DefineLabel()
+                il.Emit(OpCodes.Ldarg_1)
+                il.Emit(OpCodes.Castclass, property.DeclaringType)
+                il.Emit(OpCodes.Callvirt, property.GetGetMethod())
+                il.Emit(OpCodes.Box, property.PropertyType)
+                il.Emit(OpCodes.Ldnull)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Brtrue_S, lbl1)
+                il.Emit(OpCodes.Nop)
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Ldstr, "nil")
+                il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+                il.Emit(OpCodes.Ldstr, "true")
+                il.Emit(OpCodes.Callvirt, xmlWriteAttributeString)
+                il.Emit(OpCodes.Nop)
+                il.Emit(OpCodes.Nop)
+                il.Emit(OpCodes.Br_S, lbl2)
+                il.MarkLabel(lbl1)
+                il.Emit(OpCodes.Nop)
+                Some(lbl2)
+            else None
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, property.DeclaringType)
@@ -105,7 +135,8 @@ type Serializer() as this =
             let tmap = this.GetTypeMap(property.PropertyType)
             il.Emit(OpCodes.Call, tmap |> snd)
         il.Emit(OpCodes.Nop)
-        if isSubElement then
+        match endLabel with | Some(lbl) -> il.Emit(OpCodes.Nop); il.MarkLabel(lbl) | None -> ()
+        if not isContent then
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Callvirt, xmlWriteEndElement)
             il.Emit(OpCodes.Nop)

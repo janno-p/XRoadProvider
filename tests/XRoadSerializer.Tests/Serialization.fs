@@ -35,6 +35,13 @@ module TestType =
         member val SubContent = WithContent() with get, set
         member val IgnoredValue = true with get, set
 
+    [<XRoadType(LayoutKind.Sequence)>]
+    type WithNullableMembers() =
+        [<XRoadElement(IsNullable=true)>]
+        member val Value1 = Nullable(13) with get, set
+        [<XRoadElement(IsNullable=true)>]
+        member val Value2 = Nullable() with get, set
+
 let serialize qn value =
     let serializer = Serializer()
     use stream = new MemoryStream()
@@ -79,3 +86,7 @@ let [<Test>] ``serialize string value`` () =
 
 let [<Test>] ``serialize integer value`` () =
     32 |> serialize' |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>32</keha></wrapper>"
+
+let [<Test>] ``serialize nullable values`` () =
+    let result = TestType.WithNullableMembers() |> serialize'
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>13</Value1><Value2 xsi:nil=""true"" /></keha></wrapper>"
