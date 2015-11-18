@@ -6,7 +6,7 @@ nuget FSharp.Formatting
 nuget FsUnit
 nuget NuGet.CommandLine
 nuget NUnit 
-nuget NUnit.Runners
+nuget NUnit.Runners < 3.0.0
 nuget SourceLink.Fake
 nuget Unquote
 
