@@ -150,10 +150,9 @@ type Serializer() as this =
         let typeMap = if property.PropertyType.GetCustomAttribute<XRoadTypeAttribute>() |> (isNull >> not)
                       then Some(this.GetTypeMap(property.PropertyType))
                       else None
-        let generator' = IL.generate il property typeMap
         let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
         let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
-        generator'
+        IL.generate il property typeMap
             (fun writer propValue serializer ->
                 let propertyName = property.Name
                 let typeName = property.DeclaringType.FullName
@@ -180,5 +179,4 @@ type Serializer() as this =
                         (%contentExpr)
                         (%writer).WriteEndElement()
                      @>
-                else contentExpr
-                )
+                else contentExpr)
