@@ -1,6 +1,8 @@
 ﻿namespace XRoad
 
 open FSharp.Core
+open FSharp.Quotations
+open FSharp.Quotations.Patterns
 open System
 open System.Collections.Concurrent
 open System.Numerics
@@ -26,6 +28,24 @@ module XmlNamespace =
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
+module private IL =
+    let generate (il: ILGenerator) (f: Expr<XmlWriter> -> Expr<obj> -> Expr) =
+        let writer = Expr<XmlWriter>.GlobalVar("w")
+        let value = Expr<obj>.GlobalVar("o")
+        let expr = f writer value
+        let rec genIL expr =
+            match expr with
+            | Call(Some(instExpr), mi, argsExpr) when instExpr = (upcast writer) ->
+                il.Emit(OpCodes.Ldarg_0)
+                argsExpr |> List.iter (fun argExpr ->
+                    match argExpr with
+                    | Value(value, typ) when typ = typeof<string> -> il.Emit(OpCodes.Ldstr, unbox<string> value)
+                    | _ -> failwithf "Unimplemented expression: %A" argExpr)
+                il.Emit(OpCodes.Callvirt, mi)
+                il.Emit(OpCodes.Nop)
+            | _ -> failwithf "Unimplemented expression: %A" expr
+        genIL expr
+
 type SerializerDelegate = delegate of XmlWriter * obj -> unit
 type TypeMap = { Serializer: SerializerDelegate }
 
@@ -36,10 +56,7 @@ type Serializer() as this =
         typeMaps.TryAdd(typeof<string>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
         typeMaps.TryAdd(typeof<int32>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
 
-    static let xmlWriteStartElement = typeof<XmlWriter>.GetMethod("WriteStartElement", [| typeof<string> |])
-    static let xmlWriteEndElement = typeof<XmlWriter>.GetMethod("WriteEndElement", [| |])
     static let xmlWriteValue = typeof<XmlWriter>.GetMethod("WriteValue", [| typeof<obj> |])
-    static let xmlWriteAttributeString = typeof<XmlWriter>.GetMethod("WriteAttributeString", [| typeof<string>; typeof<string>; typeof<string> |])
 
     member __.Deserialize(_: XmlReader) : 'T =
         null
@@ -85,16 +102,15 @@ type Serializer() as this =
         | None -> failwithf "Type `%s` is not serializable." typ.FullName
 
     member private __.BuildPropertySerialization(il: ILGenerator, property: PropertyInfo) =
+        let generator' = IL.generate il
         let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
         let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
         let isContent = contentAttribute |> Option.fold (fun _ _ -> true) false
         let isNullable = elementAttribute |> Option.fold (fun _ x -> x.IsNullable) false
         il.Emit(OpCodes.Nop)
         if not isContent then
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldstr, property.Name)
-            il.Emit(OpCodes.Callvirt, xmlWriteStartElement)
-            il.Emit(OpCodes.Nop)
+            generator' (fun writer _ -> let propertyName = property.Name
+                                        <@@ (%writer).WriteStartElement(propertyName) @@>)
         let endLabel =
             if property.PropertyType.IsClass || Nullable.GetUnderlyingType(property.PropertyType) |> isNull |> not then
                 let lbl1 = il.DefineLabel()
@@ -111,12 +127,7 @@ type Serializer() as this =
                 if isNullable then
                     let lbl2 = il.DefineLabel()
                     il.Emit(OpCodes.Nop)
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Ldstr, "nil")
-                    il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-                    il.Emit(OpCodes.Ldstr, "true")
-                    il.Emit(OpCodes.Callvirt, xmlWriteAttributeString)
-                    il.Emit(OpCodes.Nop)
+                    generator' (fun writer _ -> <@@ (%writer).WriteAttributeString("nil", XmlNamespace.Xsi, "true") @@>)
                     il.Emit(OpCodes.Nop)
                     il.Emit(OpCodes.Br_S, lbl2)
                     il.MarkLabel(lbl1)
@@ -148,6 +159,4 @@ type Serializer() as this =
         il.Emit(OpCodes.Nop)
         match endLabel with | Some(lbl) -> il.Emit(OpCodes.Nop); il.MarkLabel(lbl) | None -> ()
         if not isContent then
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, xmlWriteEndElement)
-            il.Emit(OpCodes.Nop)
+            generator' (fun writer _ -> <@@ (%writer).WriteEndElement() @@>)
