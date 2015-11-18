@@ -133,25 +133,11 @@ Target "RunTests" (fun _ ->
 // the ability to step through the source code of external libraries https://github.com/ctaggart/SourceLink
 
 Target "SourceLink" (fun _ ->
-    let baseUrl = sprintf "%s/%s/{0}/%%var2%%" gitRaw (project.ToLower())
-    use repo = new GitRepo(__SOURCE_DIRECTORY__)
-
-    let addAssemblyInfo (projFileName:String) =
-        match projFileName with
-        | Fsproj -> (projFileName, "**/AssemblyInfo.fs")
-        | Csproj -> (projFileName, "**/AssemblyInfo.cs")
-        | Vbproj -> (projFileName, "**/AssemblyInfo.vb")
-
+    let baseUrl = sprintf "%s/%s/{0}/%%var2%%" gitRaw project
     !! "src/**/*.??proj"
-    |> Seq.map addAssemblyInfo
-    |> Seq.iter (fun (projFile, assemblyInfo) ->
+    |> Seq.iter (fun projFile ->
         let proj = VsProj.LoadRelease projFile
-        logfn "source linking %s" proj.OutputFilePdb
-        let files = proj.CompilesNotLinked -- assemblyInfo
-        repo.VerifyChecksums files
-        proj.VerifyPdbChecksums files
-        proj.CreateSrcSrv baseUrl repo.Commit (repo.Paths files)
-        Pdbstr.exec proj.OutputFilePdb proj.OutputFilePdbSrcSrv
+        SourceLink.Index proj.CompilesNotLinked proj.OutputFilePdb __SOURCE_DIRECTORY__ baseUrl
     )
 )
 

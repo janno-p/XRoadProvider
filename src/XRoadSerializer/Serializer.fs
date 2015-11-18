@@ -152,6 +152,12 @@ type Serializer() as this =
                       else None
         let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
         let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
+
+        let subTypes =
+            property.PropertyType.Assembly.GetTypes()
+            |> Array.filter (fun x -> x.IsSubclassOf(property.PropertyType))
+            |> Array.map (fun x -> (x, this.GetTypeMap(x)))
+
         IL.generate il property typeMap
             (fun writer propValue serializer ->
                 let propertyName = property.Name
