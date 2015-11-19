@@ -8,16 +8,17 @@
     },
     "taskSelector": "/t:",
     "showOutput": "silent",
-    "problemMatcher": "$msCompile",
     "tasks": [
         {
             "taskName": "build",
+            "problemMatcher": "$msCompile",
             "args": [
                 "/p:Configuration=Debug"
             ]
         },
         {
             "taskName": "rebuild",
+            "problemMatcher": "$msCompile",
             "args": [
                 "/p:Configuration=Debug",
                 "/t:Rebuild"

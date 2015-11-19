@@ -133,7 +133,7 @@ type Serializer() as this =
             let f = DynamicMethod(methodName, null, [| typeof<XmlWriter>; typeof<obj> |])
             let il = f.GetILGenerator()
 
-            typ.GetProperties()
+            typ.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
             |> Array.choose (fun p ->
                 if p.GetCustomAttribute<XRoadElementAttribute>() |> isNull && p.GetCustomAttribute<XRoadContentAttribute>() |> isNull
                 then None
