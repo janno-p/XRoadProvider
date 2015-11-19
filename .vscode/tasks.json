@@ -1,25 +1,27 @@
 {
-	"version": "0.1.0",
-	"command": "xbuild",
-	"taskSelector": "/t:",
-	"showOutput": "silent",
-	"tasks": [
-		{
-			"taskName": "build",
-			"showOutput": "silent",
-			"problemMatcher": "$msCompile",
-			"args": [
-				"/p:Configuration=Debug"
-			]
-		},
-		{
-			"taskName": "rebuild",
-			"showOutput": "silent",
-			"problemMatcher": "$msCompile",
-			"args": [
-				"/p:Configuration=Debug",
-				"/p:Target=Rebuild"
-			]
-		}
-	]
+    "version": "0.1.0",
+    "windows": {
+        "command": "msbuild"
+    },
+    "linux": {
+        "command": "xbuild"
+    },
+    "taskSelector": "/t:",
+    "showOutput": "silent",
+    "problemMatcher": "$msCompile",
+    "tasks": [
+        {
+            "taskName": "build",
+            "args": [
+                "/p:Configuration=Debug"
+            ]
+        },
+        {
+            "taskName": "rebuild",
+            "args": [
+                "/p:Configuration=Debug",
+                "/t:Rebuild"
+            ]
+        }
+    ]
 }
