@@ -48,6 +48,11 @@ module TestType =
         [<XRoadElement>]
         member val OwnElement = "test" with get, set
 
+    [<XRoadType(LayoutKind.Sequence)>]
+    type UseBaseClass() =
+        [<XRoadElement>]
+        member val Member = ExtendedType() :> ComplexType with get, set
+
 let serialize qn value =
     let serializer = Serializer()
     use stream = new MemoryStream()
@@ -103,4 +108,8 @@ let [<Test>] ``serialize not nullable as null`` () =
 
 let [<Test>] ``serialize extended type with base type contents`` () =
     let result = TestType.ExtendedType() |> serialize'
-    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><OwnElement>test</OwnElement></keha></wrapper>"
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"
+
+let [<Test; Ignore>] ``serialize base type when subtype is used`` () =
+    let result = TestType.UseBaseClass() |> serialize'
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Member><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></keha></wrapper>"

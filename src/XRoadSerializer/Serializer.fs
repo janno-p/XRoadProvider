@@ -32,8 +32,25 @@ module XmlNamespace =
 type SerializerDelegate = delegate of XmlWriter * obj -> unit
 type TypeMap = { Serializer: SerializerDelegate }
 
-module private IL =
-    let generate (il: ILGenerator) (property: PropertyInfo) (tmap: (TypeMap * DynamicMethod) option) (f: Expr<XmlWriter> -> Expr<obj> -> Expr<XmlWriter * obj -> unit> -> Expr<unit>) =
+type Serializer() as this =
+    static let typeMaps = ConcurrentDictionary<Type, TypeMap * DynamicMethod>()
+
+    static do
+        typeMaps.TryAdd(typeof<string>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
+        typeMaps.TryAdd(typeof<int32>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
+
+    let getTypeMap (typ: Type) =
+        match typ.GetCustomAttribute<XRoadTypeAttribute>() with
+        | null -> None
+        | _ -> Some(this.GetTypeMap(typ))
+
+    let generate (il: ILGenerator) (property: PropertyInfo) (f: Expr<XmlWriter> -> Expr<obj> -> Expr<XmlWriter * obj -> unit> -> Expr<unit>) =
+        let typeMap = getTypeMap property.PropertyType
+        
+//        let subTypes =
+//            property.PropertyType.Assembly.GetTypes()
+//            |> Array.filter (fun x -> x.IsSubclassOf(property.PropertyType))
+//            |> Array.map (fun x -> (x, this.GetTypeMap(x)))
         let writer = Expr.GlobalVar("w")
         let value = Expr.GlobalVar("o")
         let serializer = Expr.GlobalVar("s")
@@ -58,7 +75,7 @@ module private IL =
             match expr with
             | Application(targetExpr, NewTuple(argsExpr)) when targetExpr = (serializer :> Expr) ->
                 genArg argsExpr
-                il.Emit(OpCodes.Call, tmap |> Option.get |> snd)
+                il.Emit(OpCodes.Call, typeMap |> Option.get |> snd :> MethodInfo)
                 il.Emit(OpCodes.Nop)
             | Call(Some(instExpr), mi, argsExpr) ->
                 genArg (instExpr :: argsExpr)
@@ -96,13 +113,6 @@ module private IL =
             | _ -> failwithf "Unimplemented expression: %A" expr
         genIL expr
 
-type Serializer() as this =
-    static let typeMaps = ConcurrentDictionary<Type, TypeMap * DynamicMethod>()
-
-    static do
-        typeMaps.TryAdd(typeof<string>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
-        typeMaps.TryAdd(typeof<int32>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
-
     member __.Deserialize(_: XmlReader) : 'T =
         null
 
@@ -133,6 +143,17 @@ type Serializer() as this =
             let f = DynamicMethod(methodName, null, [| typeof<XmlWriter>; typeof<obj> |])
             let il = f.GetILGenerator()
 
+            let rec callBase (typ: Type) =
+                match getTypeMap typ.BaseType with
+                | Some(_, mi) ->
+                    callBase typ.BaseType
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Ldarg_1)
+                    il.Emit(OpCodes.Call, mi)
+                    il.Emit(OpCodes.Nop)
+                | None -> ()
+            callBase typ
+
             typ.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
             |> Array.choose (fun p ->
                 if p.GetCustomAttribute<XRoadElementAttribute>() |> isNull && p.GetCustomAttribute<XRoadContentAttribute>() |> isNull
@@ -147,18 +168,9 @@ type Serializer() as this =
         | None -> failwithf "Type `%s` is not serializable." typ.FullName
 
     member private __.BuildPropertySerialization(il: ILGenerator, property: PropertyInfo) =
-        let typeMap = if property.PropertyType.GetCustomAttribute<XRoadTypeAttribute>() |> (isNull >> not)
-                      then Some(this.GetTypeMap(property.PropertyType))
-                      else None
         let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
         let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
-
-        let subTypes =
-            property.PropertyType.Assembly.GetTypes()
-            |> Array.filter (fun x -> x.IsSubclassOf(property.PropertyType))
-            |> Array.map (fun x -> (x, this.GetTypeMap(x)))
-
-        IL.generate il property typeMap
+        generate il property
             (fun writer propValue serializer ->
                 let propertyName = property.Name
                 let typeName = property.DeclaringType.FullName
