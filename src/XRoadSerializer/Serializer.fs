@@ -93,20 +93,43 @@ type Serializer() as this =
             | Application(targetExpr, NewTuple(_)) when targetExpr = (attributes :> Expr) ->
                 match subTypes with
                 | [] -> ()
-                | _ ->  let lbl = il.DefineLabel()
-                        genArg [value]
-                        il.Emit(OpCodes.Call, objGetType)
-                        il.Emit(OpCodes.Callvirt, typeGetFullName)
-                        il.Emit(OpCodes.Ldstr, property.PropertyType.FullName)
-                        il.Emit(OpCodes.Callvirt, stringEquals)
-                        il.Emit(OpCodes.Ldc_I4_0)
-                        il.Emit(OpCodes.Ceq)
-                        il.Emit(OpCodes.Brtrue_S, lbl)
-                        il.Emit(OpCodes.Nop)
-//                        genIL <@ (%writer).WriteStartAttribute("type", XmlNamespace.Xsi)
-//                                 (%writer).WriteQualifiedName((%value).GetType().Name, "ns")
-//                                 (%writer).WriteEndAttribute() @>
-                        il.MarkLabel(lbl)
+                | _ ->
+                    let conditionEnd = il.DefineLabel()
+                    let rec genSubType (lbl: Label option) subTypes =
+                        match subTypes with
+                        | [] -> ()
+                        | x::xs ->
+                            match lbl with Some(lbl) -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop) | None -> ()
+                            let lbl = match xs with [] -> conditionEnd | _ -> il.DefineLabel()
+                            genArg [value]
+                            il.Emit(OpCodes.Call, objGetType)
+                            il.Emit(OpCodes.Callvirt, typeGetFullName)
+                            il.Emit(OpCodes.Ldstr, x.Type.FullName)
+                            il.Emit(OpCodes.Callvirt, stringEquals)
+                            il.Emit(OpCodes.Ldc_I4_0)
+                            il.Emit(OpCodes.Ceq)
+                            il.Emit(OpCodes.Brtrue_S, lbl)
+                            il.Emit(OpCodes.Nop)
+                            genIL <@ (%writer).WriteStartAttribute("type", XmlNamespace.Xsi) @>
+                            let attr = x.Type.GetCustomAttribute<XRoadTypeAttribute>()
+                            let typeName = match attr.Name with null | "" -> x.Type.Name | name -> name
+                            match attr.Namespace with
+                            | null | "" -> genIL <@ (%writer).WriteString(typeName) @>
+                            | ns -> genIL <@ (%writer).WriteQualifiedName(typeName, ns) @>
+                            genIL <@ (%writer).WriteEndAttribute() @>
+                            il.Emit(OpCodes.Br, conditionEnd)
+                            genSubType (Some lbl) xs
+                    genArg [value]
+                    il.Emit(OpCodes.Call, objGetType)
+                    il.Emit(OpCodes.Callvirt, typeGetFullName)
+                    il.Emit(OpCodes.Ldstr, property.PropertyType.FullName)
+                    il.Emit(OpCodes.Callvirt, stringEquals)
+                    il.Emit(OpCodes.Ldc_I4_0)
+                    il.Emit(OpCodes.Ceq)
+                    il.Emit(OpCodes.Brfalse, conditionEnd)
+                    il.Emit(OpCodes.Nop)
+                    subTypes |> genSubType None
+                    il.MarkLabel(conditionEnd)
             | Application(targetExpr, NewTuple(argsExpr)) when targetExpr = (serializer :> Expr) ->
                 match subTypes with
                 | [] ->
