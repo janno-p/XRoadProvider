@@ -53,6 +53,34 @@ module TestType =
         [<XRoadElement>]
         member val Member = ExtendedType() :> ComplexType with get, set
 
+    [<AbstractClass; XRoadType(LayoutKind.Sequence)>]
+    type AbstractBase() =
+        [<XRoadElement>]
+        member val BaseValue = "test" with get, set
+
+    [<XRoadType(LayoutKind.Sequence)>]
+    type Concrete1() =
+        inherit AbstractBase()
+        [<XRoadElement>]
+        member val SubValue1 = "test2" with get, set
+
+    [<XRoadType(LayoutKind.Sequence)>]
+    type Concrete2() =
+        inherit AbstractBase()
+        [<XRoadElement>]
+        member val SubValue2 = "test3" with get, set
+
+    [<XRoadType(LayoutKind.Sequence)>]
+    type Concrete3() =
+        inherit AbstractBase()
+        [<XRoadElement>]
+        member val SubValue3 = "test2" with get, set
+
+    [<XRoadType(LayoutKind.Sequence)>]
+    type Referrer() =
+        [<XRoadElement>]
+        member val Reference = Concrete1() :> AbstractBase with get, set
+
 let serialize qn value =
     let serializer = Serializer()
     use stream = new MemoryStream()
@@ -110,6 +138,10 @@ let [<Test>] ``serialize extended type with base type contents`` () =
     let result = TestType.ExtendedType() |> serialize'
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"
 
-let [<Test; Ignore>] ``serialize base type when subtype is used`` () =
+let [<Test>] ``serialize base type when subtype is used`` () =
     let result = TestType.UseBaseClass() |> serialize'
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Member><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></keha></wrapper>"
+
+let [<Test>] ``serialize abstract base type when subtype is used`` () =
+    let result = TestType.Referrer() |> serialize'
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Reference><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></keha></wrapper>"

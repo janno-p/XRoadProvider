@@ -59,6 +59,10 @@ type Serializer() as this =
         | [] -> []
         | xs -> orderTypes [typ] xs |> List.choose (getTypeMap) |> List.filter (fun x -> not x.Type.IsAbstract)
 
+    static let objGetType = typeof<obj>.GetMethod("GetType", [| |])
+    static let typeGetFullName = typeof<Type>.GetProperty("FullName").GetGetMethod()
+    static let stringEquals = typeof<String>.GetMethod("Equals", [| typeof<string> |])
+
     let generate (il: ILGenerator) (property: PropertyInfo) (f: Expr<XmlWriter> -> Expr<obj> -> Expr<XmlWriter * obj -> unit> -> Expr<unit>) =
         let typeMap = getTypeMap property.PropertyType
         let subTypes = getSubTypes property.PropertyType
@@ -85,9 +89,36 @@ type Serializer() as this =
                 argsExpr |> List.iter (genSingleArg)
             match expr with
             | Application(targetExpr, NewTuple(argsExpr)) when targetExpr = (serializer :> Expr) ->
-                genArg argsExpr
-                il.Emit(OpCodes.Call, typeMap.Value.Method.Value)
-                il.Emit(OpCodes.Nop)
+                match subTypes with
+                | [] ->
+                    genArg argsExpr
+                    il.Emit(OpCodes.Call, typeMap.Value.Method.Value)
+                    il.Emit(OpCodes.Nop)
+                | _ ->
+                    let conditionEnd = il.DefineLabel()
+                    let rec genSubType (lbl: Label option) subTypes =
+                        match subTypes with
+                        | [] -> ()
+                        | x::xs ->
+                            match lbl with Some(lbl) -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop) | None -> ()
+                            let lbl = match xs with [] -> conditionEnd | _ -> il.DefineLabel()
+                            genArg [value]
+                            il.Emit(OpCodes.Call, objGetType)
+                            il.Emit(OpCodes.Callvirt, typeGetFullName)
+                            il.Emit(OpCodes.Ldstr, x.Type.FullName)
+                            il.Emit(OpCodes.Callvirt, stringEquals)
+                            il.Emit(OpCodes.Ldc_I4_0)
+                            il.Emit(OpCodes.Ceq)
+                            il.Emit(OpCodes.Brtrue_S, lbl)
+                            il.Emit(OpCodes.Nop)
+                            genArg argsExpr
+                            il.Emit(OpCodes.Call, x.Method.Value)
+                            il.Emit(OpCodes.Nop)
+                            il.Emit(OpCodes.Nop)
+                            il.Emit(OpCodes.Br, conditionEnd)
+                            genSubType (Some lbl) xs
+                    subTypes |> genSubType None
+                    il.MarkLabel(conditionEnd)
             | Call(Some(instExpr), mi, argsExpr) ->
                 genArg (instExpr :: argsExpr)
                 il.Emit(OpCodes.Callvirt, mi)
@@ -109,7 +140,7 @@ type Serializer() as this =
                 genIL condExpr
                 il.Emit(OpCodes.Brtrue_S, lbl1)
                 genIL trueExpr
-                il.Emit(OpCodes.Br_S, lbl2)
+                il.Emit(OpCodes.Br, lbl2)
                 il.MarkLabel(lbl1)
                 il.Emit(OpCodes.Nop)
                 genIL falseExpr
