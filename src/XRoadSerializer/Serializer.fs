@@ -30,27 +30,38 @@ module XmlNamespace =
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
 type SerializerDelegate = delegate of XmlWriter * obj -> unit
-type TypeMap = { Serializer: SerializerDelegate }
+type TypeMap = { Type: Type; Serializer: SerializerDelegate; Method: MethodInfo option }
 
 type Serializer() as this =
-    static let typeMaps = ConcurrentDictionary<Type, TypeMap * DynamicMethod>()
+    static let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
     static do
-        typeMaps.TryAdd(typeof<string>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
-        typeMaps.TryAdd(typeof<int32>, ({ Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)) }, null)) |> ignore
+        typeMaps.TryAdd(typeof<string>, ({ Type = typeof<string>; Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)); Method = None })) |> ignore
+        typeMaps.TryAdd(typeof<int32>, ({ Type = typeof<int32>; Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)); Method = None })) |> ignore
 
     let getTypeMap (typ: Type) =
         match typ.GetCustomAttribute<XRoadTypeAttribute>() with
         | null -> None
         | _ -> Some(this.GetTypeMap(typ))
 
+    let getSubTypes (typ: Type) =
+        let subTypes =
+            typ.Assembly.GetTypes()
+            |> Array.filter (fun x -> x.IsSubclassOf(typ))
+            |> List.ofArray
+        let rec orderTypes (ordered: Type list) (unordered: Type list) =
+            let next, rem = unordered |> List.partition (fun x -> ordered |> List.exists ((=) x.BaseType))
+            let newOrdered = next @ ordered
+            match rem with
+            | [] -> newOrdered
+            | _ -> orderTypes newOrdered rem
+        match subTypes with
+        | [] -> []
+        | xs -> orderTypes [typ] xs |> List.choose (getTypeMap) |> List.filter (fun x -> not x.Type.IsAbstract)
+
     let generate (il: ILGenerator) (property: PropertyInfo) (f: Expr<XmlWriter> -> Expr<obj> -> Expr<XmlWriter * obj -> unit> -> Expr<unit>) =
         let typeMap = getTypeMap property.PropertyType
-        
-//        let subTypes =
-//            property.PropertyType.Assembly.GetTypes()
-//            |> Array.filter (fun x -> x.IsSubclassOf(property.PropertyType))
-//            |> Array.map (fun x -> (x, this.GetTypeMap(x)))
+        let subTypes = getSubTypes property.PropertyType
         let writer = Expr.GlobalVar("w")
         let value = Expr.GlobalVar("o")
         let serializer = Expr.GlobalVar("s")
@@ -75,7 +86,7 @@ type Serializer() as this =
             match expr with
             | Application(targetExpr, NewTuple(argsExpr)) when targetExpr = (serializer :> Expr) ->
                 genArg argsExpr
-                il.Emit(OpCodes.Call, typeMap |> Option.get |> snd :> MethodInfo)
+                il.Emit(OpCodes.Call, typeMap.Value.Method.Value)
                 il.Emit(OpCodes.Nop)
             | Call(Some(instExpr), mi, argsExpr) ->
                 genArg (instExpr :: argsExpr)
@@ -126,9 +137,9 @@ type Serializer() as this =
     member private __.SerializeObject(writer: XmlWriter, value: obj) =
         match value with
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
-        | _ -> (this.GetTypeMap(value.GetType()) |> fst).Serializer.Invoke(writer, value)
+        | _ -> this.GetTypeMap(value.GetType()).Serializer.Invoke(writer, value)
 
-    member private __.GetTypeMap(typ) =
+    member private __.GetTypeMap(typ) : TypeMap =
         match typeMaps.TryGetValue(typ) with
         | true, typeMap -> typeMap
         | false, _ -> this.BuildTypeMap(typ)
@@ -145,13 +156,13 @@ type Serializer() as this =
 
             let rec callBase (typ: Type) =
                 match getTypeMap typ.BaseType with
-                | Some(_, mi) ->
+                | Some({ Method = Some(mi) }) ->
                     callBase typ.BaseType
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Ldarg_1)
                     il.Emit(OpCodes.Call, mi)
                     il.Emit(OpCodes.Nop)
-                | None -> ()
+                | _ -> ()
             callBase typ
 
             typ.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
@@ -163,8 +174,8 @@ type Serializer() as this =
 
             il.Emit(OpCodes.Ret)
             let d = f.CreateDelegate(typeof<SerializerDelegate>) :?> SerializerDelegate
-            let tmap = { Serializer = d }
-            typeMaps.GetOrAdd(typ, (tmap, f))
+            let tmap = { Type = typ; Serializer = d; Method = Some(upcast f) }
+            typeMaps.GetOrAdd(typ, tmap)
         | None -> failwithf "Type `%s` is not serializable." typ.FullName
 
     member private __.BuildPropertySerialization(il: ILGenerator, property: PropertyInfo) =
