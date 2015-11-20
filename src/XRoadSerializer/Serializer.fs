@@ -63,13 +63,14 @@ type Serializer() as this =
     static let typeGetFullName = typeof<Type>.GetProperty("FullName").GetGetMethod()
     static let stringEquals = typeof<String>.GetMethod("Equals", [| typeof<string> |])
 
-    let generate (il: ILGenerator) (property: PropertyInfo) (f: Expr<XmlWriter> -> Expr<obj> -> Expr<XmlWriter * obj -> unit> -> Expr<unit>) =
+    let generate (il: ILGenerator) (property: PropertyInfo) (f: Expr<XmlWriter> -> Expr<obj> -> Expr<XmlWriter * obj -> unit> -> Expr<XmlWriter * obj -> unit> -> Expr<unit>) =
         let typeMap = getTypeMap property.PropertyType
         let subTypes = getSubTypes property.PropertyType
         let writer = Expr.GlobalVar("w")
         let value = Expr.GlobalVar("o")
         let serializer = Expr.GlobalVar("s")
-        let expr = f writer value serializer
+        let attributes = Expr.GlobalVar("a")
+        let expr = f writer value serializer attributes
         let rec genIL expr =
             let genArg (argsExpr: Expr list) =
                 let rec genSingleArg (argExpr: Expr) =
@@ -85,9 +86,27 @@ type Serializer() as this =
                     | Value(value, typ) when typ = typeof<string> -> il.Emit(OpCodes.Ldstr, unbox<string> value)
                     | Coerce(e, _) -> genSingleArg e
                     | Call(_) -> genIL argExpr
+                    | PropertyGet(_) -> genIL argExpr
                     | _ -> failwithf "Unimplemented expression: %A (%A)" argExpr expr
                 argsExpr |> List.iter (genSingleArg)
             match expr with
+            | Application(targetExpr, NewTuple(_)) when targetExpr = (attributes :> Expr) ->
+                match subTypes with
+                | [] -> ()
+                | _ ->  let lbl = il.DefineLabel()
+                        genArg [value]
+                        il.Emit(OpCodes.Call, objGetType)
+                        il.Emit(OpCodes.Callvirt, typeGetFullName)
+                        il.Emit(OpCodes.Ldstr, property.PropertyType.FullName)
+                        il.Emit(OpCodes.Callvirt, stringEquals)
+                        il.Emit(OpCodes.Ldc_I4_0)
+                        il.Emit(OpCodes.Ceq)
+                        il.Emit(OpCodes.Brtrue_S, lbl)
+                        il.Emit(OpCodes.Nop)
+//                        genIL <@ (%writer).WriteStartAttribute("type", XmlNamespace.Xsi)
+//                                 (%writer).WriteQualifiedName((%value).GetType().Name, "ns")
+//                                 (%writer).WriteEndAttribute() @>
+                        il.MarkLabel(lbl)
             | Application(targetExpr, NewTuple(argsExpr)) when targetExpr = (serializer :> Expr) ->
                 match subTypes with
                 | [] ->
@@ -152,6 +171,10 @@ type Serializer() as this =
             | Sequential(expr1, expr2) ->
                 genIL expr1
                 genIL expr2
+            | PropertyGet(Some(targetExpr), pi, argsExpr) ->
+                genArg (targetExpr::argsExpr)
+                il.Emit(OpCodes.Callvirt, pi.GetGetMethod())
+                il.Emit(OpCodes.Nop)
             | _ -> failwithf "Unimplemented expression: %A" expr
         genIL expr
 
@@ -213,7 +236,7 @@ type Serializer() as this =
         let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
         let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
         generate il property
-            (fun writer propValue serializer ->
+            (fun writer propValue serializer attributes ->
                 let propertyName = property.Name
                 let typeName = property.DeclaringType.FullName
                 let nullExpr =
@@ -230,7 +253,9 @@ type Serializer() as this =
                     if property.PropertyType.IsClass || Nullable.GetUnderlyingType(property.PropertyType) |> (isNull >> not) then
                         <@
                             if (%propValue) = null then (%nullExpr)
-                            else (%serializeExpr)
+                            else
+                                (%attributes)((%writer), (%propValue))
+                                (%serializeExpr)
                         @>
                     else serializeExpr
                 if contentAttribute |> Option.fold (fun _ _ -> true) false |> not then
