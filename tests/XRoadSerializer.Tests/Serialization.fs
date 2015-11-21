@@ -70,7 +70,7 @@ module TestType =
         [<XRoadElement>]
         member val SubValue2 = "test3" with get, set
 
-    [<XRoadType(LayoutKind.Sequence)>]
+    [<XRoadType("ConcreteTypeName", LayoutKind.Sequence, Namespace="testns")>]
     type Concrete3() =
         inherit AbstractBase()
         [<XRoadElement>]
@@ -81,7 +81,7 @@ module TestType =
         [<XRoadElement>]
         member val Reference = Concrete1() :> AbstractBase with get, set
 
-let serialize qn value =
+let serialize qn (nslist: (string * string) list) value =
     let serializer = Serializer()
     use stream = new MemoryStream()
     use sw = new StreamWriter(stream, Encoding.UTF8)
@@ -89,6 +89,7 @@ let serialize qn value =
     writer.WriteStartDocument()
     writer.WriteStartElement("wrapper")
     writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
+    nslist |> List.iter (fun (pr,ns) -> writer.WriteAttributeString("xmlns", pr, XmlNamespace.Xmlns, ns))
     serializer.Serialize(writer, value, qn)
     writer.WriteEndElement()
     writer.WriteEndDocument()
@@ -98,7 +99,7 @@ let serialize qn value =
     use sr = new StreamReader(stream, Encoding.UTF8)
     sr.ReadToEnd()
 
-let serialize' v = serialize (XmlQualifiedName("keha")) v
+let serialize' v = serialize (XmlQualifiedName("keha")) [] v
 
 let [<Test>] ``initializes new serializer`` () =
     let serializer = Serializer()
@@ -113,7 +114,7 @@ let [<Test>] ``serialize null value`` () =
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:nil=""true"" /></wrapper>"
 
 let [<Test>] ``write qualified root name`` () =
-    let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace"))
+    let result = TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace")) []
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></wrapper>"
 
 let [<Test>] ``serializing unserializable type`` () =
@@ -145,3 +146,7 @@ let [<Test>] ``serialize base type when subtype is used`` () =
 let [<Test>] ``serialize abstract base type when subtype is used`` () =
     let result = TestType.Referrer() |> serialize'
     result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></keha></wrapper>"
+
+let [<Test>] ``serialize abstract base type when subtype is used (with explicit name and namespace)`` () =
+    let result = TestType.Referrer(Reference=TestType.Concrete3()) |> serialize (XmlQualifiedName("keha")) ["t", "testns"]
+    result |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:t=""testns""><keha><Reference xsi:type=""t:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></keha></wrapper>"
