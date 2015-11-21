@@ -202,7 +202,7 @@ type Serializer() as this =
         genIL expr
 
     member __.Deserialize(_: XmlReader) : 'T =
-        null
+        Unchecked.defaultof<'T>
 
     member __.Serialize(writer: XmlWriter, value: obj, rootName: XmlQualifiedName) =
         match rootName.Namespace with

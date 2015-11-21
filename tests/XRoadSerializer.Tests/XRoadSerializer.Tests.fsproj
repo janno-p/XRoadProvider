@@ -59,7 +59,7 @@
   -->
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Serialization.fs" />
+    <Compile Include="SerializerTest.fs" />
     <None Include="paket.references" />
     <Content Include="App.config" />
   </ItemGroup>

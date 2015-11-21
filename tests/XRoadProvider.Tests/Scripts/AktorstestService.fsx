@@ -14,15 +14,7 @@ type AktorstestDto = Aktorstest.DefinedTypes.aktorstest
 
 let port = Aktorstest.aktorstestService.Test()
 
-printfn "Default port address: %s" port.ProducerUri
-printfn "Default producer name: %s" port.ProducerName
-//printfn "XRoad request format: %A" testPort.RequestFormat
-
 port.ProducerUri <- "http://localhost:8001/"
-
-printfn "Using port address: %s" port.ProducerUri
-printfn "Using producer name: %s" port.ProducerName
-
 port.Consumer <- "10239452"
 port.UserId <- "EE:PIN:abc4567"
 
