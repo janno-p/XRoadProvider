@@ -157,7 +157,7 @@ module Serialization =
         TestType.Referrer(Reference=TestType.Concrete3()) |> serialize (XmlQualifiedName("keha")) ["t", "testns"] |> should equal TestXml.AbstractBaseTypeExplicitName
 
 module Deserialization =
-    let deserialize (rootName: XmlQualifiedName) xml : 'T =
+    let deserialize<'T> (rootName: XmlQualifiedName) xml : 'T =
         let serializer = Serializer()
         use sr = new StringReader(xml)
         use reader = XmlReader.Create(sr)
@@ -173,3 +173,9 @@ module Deserialization =
 
     let [<Test>] ``deserialize null value`` () =
         TestXml.NullValue |> deserialize'<string> |> should equal null
+
+    let [<Test>] ``deserialize string value`` () =
+        TestXml.StringValue |> deserialize'<string> |> should equal "string value"
+
+    let [<Test>] ``deserialize integer value`` () =
+        TestXml.IntegerValue |> deserialize'<int> |> should equal 32

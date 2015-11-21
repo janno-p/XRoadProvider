@@ -29,15 +29,28 @@ module XmlNamespace =
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
+type DeserializerDelegate = delegate of XmlReader -> obj
 type SerializerDelegate = delegate of XmlWriter * obj -> unit
-type TypeMap = { Type: Type; Serializer: SerializerDelegate; Method: MethodInfo option }
+
+type TypeMap =
+    { Type: Type
+      Deserializer: DeserializerDelegate
+      Serializer: SerializerDelegate
+      DeserializerMethod: MethodInfo option
+      SerializerMethod: MethodInfo option }
+    static member ForSystemType<'T>(deserializer: XmlReader -> obj, serializer: XmlWriter -> obj -> unit) =
+        { Type = typeof<'T>
+          Deserializer = DeserializerDelegate(deserializer)
+          Serializer = SerializerDelegate(serializer)
+          DeserializerMethod = None
+          SerializerMethod = None }
 
 type Serializer() as this =
     static let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
     static do
-        typeMaps.TryAdd(typeof<string>, ({ Type = typeof<string>; Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)); Method = None })) |> ignore
-        typeMaps.TryAdd(typeof<int32>, ({ Type = typeof<int32>; Serializer = SerializerDelegate(fun wr v -> wr.WriteValue(v)); Method = None })) |> ignore
+        typeMaps.TryAdd(typeof<string>, TypeMap.ForSystemType<string>((fun r -> r.ReadElementString() |> box), (fun wr v -> wr.WriteValue(v)))) |> ignore
+        typeMaps.TryAdd(typeof<int32>, TypeMap.ForSystemType<int32>((fun r -> XmlConvert.ToInt32(r.ReadElementString()) |> box), (fun wr v -> wr.WriteValue(v)))) |> ignore
 
     let getTypeMap (typ: Type) =
         match typ.GetCustomAttribute<XRoadTypeAttribute>() with
@@ -134,7 +147,7 @@ type Serializer() as this =
                 match subTypes with
                 | [] ->
                     genArg argsExpr
-                    il.Emit(OpCodes.Call, typeMap.Value.Method.Value)
+                    il.Emit(OpCodes.Call, typeMap.Value.SerializerMethod.Value)
                     il.Emit(OpCodes.Nop)
                 | _ ->
                     let conditionEnd = il.DefineLabel()
@@ -154,7 +167,7 @@ type Serializer() as this =
                             il.Emit(OpCodes.Brtrue_S, lbl)
                             il.Emit(OpCodes.Nop)
                             genArg argsExpr
-                            il.Emit(OpCodes.Call, x.Method.Value)
+                            il.Emit(OpCodes.Call, x.SerializerMethod.Value)
                             il.Emit(OpCodes.Nop)
                             il.Emit(OpCodes.Nop)
                             il.Emit(OpCodes.Br, conditionEnd)
@@ -201,8 +214,8 @@ type Serializer() as this =
             | _ -> failwithf "Unimplemented expression: %A" expr
         genIL expr
 
-    member __.Deserialize(_: XmlReader) : 'T =
-        Unchecked.defaultof<'T>
+    member __.Deserialize<'T>(reader: XmlReader) : 'T =
+        this.DeserializeObject<'T>(reader)
 
     member __.Serialize(writer: XmlWriter, value: obj, rootName: XmlQualifiedName) =
         match rootName.Namespace with
@@ -210,6 +223,11 @@ type Serializer() as this =
         | _ -> writer.WriteStartElement(rootName.Name, rootName.Namespace)
         this.SerializeObject(writer, value)
         writer.WriteEndElement()
+
+    member private __.DeserializeObject<'T>(reader: XmlReader) : 'T =
+        match reader.GetAttribute("nil", XmlNamespace.Xsi) |> Option.ofObj |> Option.map (fun x -> x.ToLower()) with
+        | Some("true") | Some("1") -> Unchecked.defaultof<'T>
+        | _ -> this.GetTypeMap(typeof<'T>).Deserializer.Invoke(reader) |> unbox<'T>
 
     member private __.SerializeObject(writer: XmlWriter, value: obj) =
         match value with
@@ -233,7 +251,7 @@ type Serializer() as this =
 
             let rec callBase (typ: Type) =
                 match getTypeMap typ.BaseType with
-                | Some({ Method = Some(mi) }) ->
+                | Some({ SerializerMethod = Some(mi) }) ->
                     callBase typ.BaseType
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Ldarg_1)
@@ -241,18 +259,19 @@ type Serializer() as this =
                     il.Emit(OpCodes.Nop)
                 | _ -> ()
             callBase typ
-
             typ.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
             |> Array.choose (fun p ->
                 if p.GetCustomAttribute<XRoadElementAttribute>() |> isNull && p.GetCustomAttribute<XRoadContentAttribute>() |> isNull
                 then None
                 else Some(p, attr))
             |> Array.iter (fun (p,_) -> this.BuildPropertySerialization(il, p))
-
             il.Emit(OpCodes.Ret)
-            let d = f.CreateDelegate(typeof<SerializerDelegate>) :?> SerializerDelegate
-            let tmap = { Type = typ; Serializer = d; Method = Some(upcast f) }
-            typeMaps.GetOrAdd(typ, tmap)
+
+            typeMaps.GetOrAdd(typ, { Type = typ
+                                     Deserializer = DeserializerDelegate((fun _ -> failwith "not implemented"))
+                                     Serializer = f.CreateDelegate(typeof<SerializerDelegate>) :?> SerializerDelegate
+                                     DeserializerMethod = None
+                                     SerializerMethod = Some(upcast f) })
         | None -> failwithf "Type `%s` is not serializable." typ.FullName
 
     member private __.BuildPropertySerialization(il: ILGenerator, property: PropertyInfo) =
