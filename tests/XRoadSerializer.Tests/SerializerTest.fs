@@ -184,6 +184,12 @@ module Deserialization =
     let [<Test>] ``deserialize simple value`` () =
         let result = TestXml.SimpleValue |> deserialize'<TestType.SimpleType>
         result |> should not' (be Null)
+        result.Value |> should equal 13
+        result.ComplexValue |> should not' (be Null)
+        result.ComplexValue.BigInteger |> should equal 100I
+        result.ComplexValue.String |> should equal "test"
+        result.SubContent |> should not' (be Null)
+        result.SubContent.ContentValue |> should equal true
 
     let [<Test>] ``deserialize abstract type`` () =
         TestDelegate (fun _ -> TestXml.AbstractType |> deserialize'<TestType.AbstractBase> |> ignore)
