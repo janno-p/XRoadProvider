@@ -13,6 +13,7 @@ open XRoad.Attributes
 module TestXml =
     let [<Literal>] AbstractBaseType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></keha></wrapper>"
     let [<Literal>] AbstractBaseTypeExplicitName = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:t=""testns""><keha><Reference xsi:type=""t:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></keha></wrapper>"
+    let [<Literal>] AbstractType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
     let [<Literal>] ExtendedType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Member xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></keha></wrapper>"
     let [<Literal>] IntegerValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>32</keha></wrapper>"
     let [<Literal>] NullableValues = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>13</Value1><Value2 xsi:nil=""true"" /></keha></wrapper>"
@@ -172,10 +173,18 @@ module Deserialization =
     let deserialize'<'T> xml : 'T = deserialize (XmlQualifiedName("keha")) xml
 
     let [<Test>] ``deserialize null value`` () =
-        TestXml.NullValue |> deserialize'<string> |> should equal null
+        TestXml.NullValue |> deserialize'<string> |> should be Null
 
     let [<Test>] ``deserialize string value`` () =
         TestXml.StringValue |> deserialize'<string> |> should equal "string value"
 
     let [<Test>] ``deserialize integer value`` () =
         TestXml.IntegerValue |> deserialize'<int> |> should equal 32
+
+    let [<Test>] ``deserialize simple value`` () =
+        let result = TestXml.SimpleValue |> deserialize'<TestType.SimpleType>
+        result |> should not' (be Null)
+
+    let [<Test>] ``deserialize abstract type`` () =
+        TestDelegate (fun _ -> TestXml.AbstractType |> deserialize'<TestType.AbstractBase> |> ignore)
+        |> should (throwWithMessage "Cannot deserialize abstract type `XRoadSerializer.Tests.SerializerTest+TestType+AbstractBase`.") typeof<Exception>
