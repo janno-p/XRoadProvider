@@ -6,7 +6,6 @@ open System.Collections.Generic
 open System.IO
 open System.Reflection
 open System.Xml
-open System.Xml.Linq
 open System.Xml.Serialization
 
 open XRoad.CodeDom.Common
@@ -58,8 +57,7 @@ module TypeBuilder =
 
     /// Build property declarations from property definitions and add them to owner type.
     let private addTypeProperties definitions ownerTy =
-        definitions
-        |> List.iter (fun definition ->
+        let addTypePropertiesFromDefinition definition =
             // Most of the conditions handle XmlSerializer specific attributes.
             let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional)
                                |> Code.comment (definition.Documentation)
@@ -90,7 +88,8 @@ module TypeBuilder =
                                                 |> ignore)
                 | None -> ()
             // Add extra types to owner type declaration.
-            definition.AddedTypes |> List.iter (fun x -> ownerTy |> Cls.addMember x |> ignore))
+            definition.AddedTypes |> List.iter (fun x -> ownerTy |> Cls.addMember x |> ignore)
+        definitions |> List.iter (addTypePropertiesFromDefinition)
 
     /// Create definition of property that accepts any element not defined in schema.
     let private buildAnyProperty () =
@@ -186,9 +185,8 @@ module TypeBuilder =
                 spec.Elements |> List.map (buildElementProperty context)
             | Some(ComplexTypeParticle.Sequence(spec)) ->
                 if spec.MinOccurs > 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
-                spec.Content
-                |> List.map (fun item ->
-                    match item with
+                let collectSequenceProperties content =
+                    match content with
                     | SequenceContent.Choice(cspec) ->
                         collectChoiceProperties choiceNameGenerator context cspec
                     | SequenceContent.Element(spec) ->
@@ -198,8 +196,8 @@ module TypeBuilder =
                     | SequenceContent.Any ->
                         [ buildAnyProperty() ]
                     | SequenceContent.Group ->
-                        failwith "Not implemented: group in complexType sequence.")
-                |> List.collect (id)
+                        failwith "Not implemented: group in complexType sequence."
+                spec.Content |> List.map (collectSequenceProperties) |> List.collect (id)
             | Some(ComplexTypeParticle.Choice(cspec)) ->
                 collectChoiceProperties choiceNameGenerator context cspec
             | Some(ComplexTypeParticle.Group) ->
@@ -382,9 +380,10 @@ module ServiceBuilder =
             else types
         match types with
         | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
-        | (varName, typ)::[] -> (typ.AsCodeTypeReference(), Expr.var varName)
+        | [(varName, typ)] -> (typ.AsCodeTypeReference(), Expr.var varName)
         | many -> getReturnTypeTuple([], many)
 
+    (*
     /// Generate types and serializing statements for root entities.
     /// Returns root name and type info.
     let private findRootNameAndType (context: TypeBuilderContext) (methodCall: MethodCall) (parameter: Parameter) =
@@ -475,10 +474,11 @@ module ServiceBuilder =
         bodyStatements.Add(Stmt.ret returnExpr)
 
         retType, bodyStatements |> List.ofSeq
+    *)
 
     let addHeaderInitialization (protocol: XRoadProtocol) serviceName (reqhdrs: string list) (m: CodeMemberMethod) =
         let hdrns, hdrName, propName =
-            let select = match protocol with Version_20 -> fst | _ -> snd
+            let select = match protocol with Version20 -> fst | _ -> snd
             let select = headerMapping >> select
             protocol.Namespace, select >> fst3, select >> snd3
         m |> Meth.addStmt (Stmt.declVarWith<string> "producer" ((Expr.this @-> "GetProducer") @% [Expr.this @=> propName "asutus"])) |> ignore
@@ -488,7 +488,7 @@ module ServiceBuilder =
               yield (hdrName "isikukood", Expr.this @=> (propName "isikukood"))
 
               match protocol with
-              | Version_20 -> yield (hdrName "ametnik", Expr.this @=> (propName "ametnik"))
+              | Version20 -> yield (hdrName "ametnik", Expr.this @=> (propName "ametnik"))
               | _ -> ()
 
               yield (hdrName "id", Expr.this @=> (propName "id"))
@@ -510,28 +510,26 @@ module ServiceBuilder =
         let instQN (nm: string) (ns: string) =
             Expr.inst<XmlQualifiedName> [!^ nm; !^ ns]
         let addParameter (context: TypeBuilderContext) (parameter: Parameter) m =
-            let runtimeType = context.GetRuntimeType(parameter.Type)
-            m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) parameter.Name |> ignore
+            let runtimeType = context.GetRuntimeType(match parameter.Type with Some(typeName) -> SchemaType(typeName) | None -> SchemaElement(parameter.Name))
+            m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) parameter.Name.LocalName |> ignore
         match methodCall with
         | DocEncodedCall(enc,pw) ->
             let stmt =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name enc.NamespaceName; Expr.var p.Name])
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name.LocalName enc.NamespaceName; Expr.var p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
-        | DocLiteralCall({ Parameters = [{ Type = SchemaName.SchemaType(_) } as p] }) ->
+        | DocLiteralCall({ Parameters = [{ Type = Some(_) } as p] }) ->
             m |> addParameter context p
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [Expr.nil; Expr.var p.Name]])) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [Expr.nil; Expr.var p.Name.LocalName]])) |> ignore
         | DocLiteralCall(pw) ->
             let stmt =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    match p.Type with
-                    | SchemaName.SchemaElement(name) -> Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN name.LocalName name.NamespaceName; Expr.var p.Name]
-                    | SchemaName.SchemaType(_) -> failwith "never")
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name.LocalName p.Name.NamespaceName; Expr.var p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
         | RpcEncodedCall(acc,pw) ->
@@ -540,21 +538,19 @@ module ServiceBuilder =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name]; Expr.var p.Name])
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name]; Expr.var p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
-        | RpcLiteralCall(acc,{ Parameters = [{ Type = SchemaName.SchemaType(_) } as p] }) ->
+        | RpcLiteralCall(acc,{ Parameters = [{ Type = Some(_) } as p] }) ->
             m |> addParameter context p
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc.LocalName acc.NamespaceName; Expr.var p.Name]])) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc.LocalName acc.NamespaceName; Expr.var p.Name.LocalName]])) |> ignore
         | RpcLiteralCall(acc,pw) ->
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
             let stmt =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    match p.Type with
-                    | SchemaName.SchemaElement(name) -> Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ name.LocalName]; Expr.var p.Name]
-                    | SchemaName.SchemaType(_) -> failwith "never")
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name.LocalName]; Expr.var p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
         m
@@ -628,12 +624,12 @@ module ServiceBuilder =
 
 /// Adds header element properties to given type.
 let private addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
-    let choose = headerMapping >> (match protocol with Version_20 -> fst | _ -> snd)
+    let choose = headerMapping >> (match protocol with Version20 -> fst | _ -> snd)
     let propName = choose >> snd3
     let docValue = choose >> trd3 >> Some
     [ "asutus"; "andmekogu"; "isikukood"; "id"; "nimi"; "toimik"; "allasutus"; "amet"; "ametniknimi"; "autentija"; "makstud"; "salastada"; "salastada_sertifikaadiga"; "salastatud"; "salastatud_sertifikaadiga" ]
     |> List.fold (fun typ hdr -> typ |> createProperty<string> (propName hdr) (docValue hdr)) portBaseTy
-    |> iif (match protocol with Version_20 -> true | _ -> false) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
+    |> iif (match protocol with Version20 -> true | _ -> false) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
     |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
 
 /// Builds all types, namespaces and services for give producer definition.

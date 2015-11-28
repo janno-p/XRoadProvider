@@ -165,16 +165,13 @@ let private partitionMessageParts (abstractParts: Map<_,_>)  bodyPart contentPar
 
 /// Check if literal part of message is correct.
 let private validateLiteralParameters (parameters: Parameter list) messageName =
-    let typeCount =
-        parameters
-        |> List.filter (fun p -> match p.Type with SchemaType(_) -> true | _ -> false)
-        |> List.length
+    let typeCount = parameters |> List.choose (fun x -> x.Type) |> List.length
     if typeCount > 1 || (typeCount = 1 && parameters.Length > 1)
     then failwithf "Literal operation message `%s` should have at most exactly one type reference in part definitions." messageName
 
 /// Check if encoded part of message is correct.
 let private validateEncodedParameters (parameters: Parameter list) messageName =
-    if parameters |> List.filter (fun p -> match p.Type with SchemaElement(_) -> true | _ -> false) |> List.length > 0
+    if parameters |> List.filter (fun x -> x.Type.IsNone) |> List.length > 0
     then failwithf "Encoded operation message `%s` should not have element references in part definitions." messageName
 
 /// Read operation message and its parts definitions from document.
@@ -201,7 +198,8 @@ let private parseOperationMessage style (protocol: XRoadProtocol) (binding: XEle
         expectedBodyParts
         |> List.map (fun partName ->
             match abstractParts.TryFind partName with
-            | Some(typeName) -> { Name = partName; Type = typeName }
+            | Some(SchemaElement(name)) -> { Name = name; Type = None }
+            | Some(SchemaType(name)) -> { Name = XName.Get(partName); Type = Some(name) }
             | None -> failwithf "Message `%s` does not contain part `%s`." msgName partName)
     // Service request input or output parameters.
     let parameterWrapper =

@@ -248,29 +248,29 @@ type SchemaName =
 module CodeSpec =
     /// X-Road protocol version.
     type XRoadProtocol =
-        | Version_20
-        | Version_30
-        | Version_31
-        | Version_40
+        | Version20
+        | Version30
+        | Version31
+        | Version40
         member this.Name =
             match this with
-            | Version_20 -> "Version20"
-            | Version_30 -> "Version30"
-            | Version_31 -> "Version31"
-            | Version_40 -> "Version40"
+            | Version20 -> "Version20"
+            | Version30 -> "Version30"
+            | Version31 -> "Version31"
+            | Version40 -> "Version40"
         /// Returns namespace value for the protocol version.
         member this.Namespace =
             match this with
-            | Version_20 -> XmlNamespace.Xtee
-            | Version_30 -> XmlNamespace.Xrd
-            | Version_31 -> XmlNamespace.XRoad
-            | Version_40 -> "X-Road protocol version 4.0 is not implemented."
+            | Version20 -> XmlNamespace.Xtee
+            | Version30 -> XmlNamespace.Xrd
+            | Version31 -> XmlNamespace.XRoad
+            | Version40 -> "X-Road protocol version 4.0 is not implemented."
         /// Extracts X-Road protocol version from namespace that is used.
         static member FromNamespace(ns) =
             match ns with
-            | XmlNamespace.Xtee -> Version_20
-            | XmlNamespace.Xrd -> Version_30
-            | XmlNamespace.XRoad -> Version_31
+            | XmlNamespace.Xtee -> Version20
+            | XmlNamespace.Xrd -> Version30
+            | XmlNamespace.XRoad -> Version31
             | _ -> failwithf "Unexpected X-Road namespace value `%s`." ns
 
     /// WSDL and SOAP binding style.
@@ -286,8 +286,8 @@ module CodeSpec =
 
     /// Service method parameters for X-Road operations.
     type Parameter =
-        { Name: string
-          Type: SchemaName }
+        { Name: XName
+          Type: XName option }
 
     /// Combines parameter for request or response.
     type ParameterWrapper =
