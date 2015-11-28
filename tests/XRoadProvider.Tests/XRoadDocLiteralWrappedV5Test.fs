@@ -41,7 +41,7 @@ module XRoadDocLiteralWrappedV5Test =
         test <@ operation.OutputParameters.IsMultipart = false @>
         test <@ operation.OutputParameters.Accessor.IsNone @>
         let context = TypeBuilderContext.FromSchema(schema, "et")
-        let expectedProtocol = XRoad.Common.CodeSpec.XRoadProtocol.Version_31
+        let expectedProtocol = XRoad.Common.CodeSpec.XRoadProtocol.Version31
         test <@ context.Protocol = expectedProtocol @>
 
     [<Test>]
