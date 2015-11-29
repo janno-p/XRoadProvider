@@ -9,7 +9,6 @@ open System.Xml.Linq
 
 open XRoad.CodeDom.Common
 open XRoad.Common
-open XRoad.ServiceDescription
 open XRoad.TypeSchema
 
 [<AutoOpen>]
@@ -151,7 +150,7 @@ type internal TypeBuilderContext =
                 match name with
                 | SchemaElement(xname) ->
                     match this.GetElementSpec(xname) with
-                    | { Type = Name(typeName) } -> SchemaType(typeName)
+                    | ({ Type = Name(typeName) } : ElementSpec) -> SchemaType(typeName)
                     | _ -> name
                 | _ -> name
             match this.CachedTypes.TryGetValue(resolvedName) with
