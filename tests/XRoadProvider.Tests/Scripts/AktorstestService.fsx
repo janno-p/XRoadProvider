@@ -46,6 +46,7 @@ cad.request.isikukood <- "30101010001"
 
 let cadr = port.changeAddress(cad)
 
+printfn "%A" cadr
 //printfn "%s" cadr.response.faultCode.BaseValue
 //printfn "%s" cadr.response.faultString.BaseValue
 //*)

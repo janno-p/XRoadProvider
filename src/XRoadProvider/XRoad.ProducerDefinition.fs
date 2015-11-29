@@ -6,7 +6,6 @@ open System.Collections.Generic
 open System.IO
 open System.Reflection
 open System.Xml
-open System.Xml.Serialization
 
 open XRoad.CodeDom.Common
 open XRoad.CodeDom.ServiceImpl
@@ -383,99 +382,6 @@ module ServiceBuilder =
         | [(varName, typ)] -> (typ.AsCodeTypeReference(), Expr.var varName)
         | many -> getReturnTypeTuple([], many)
 
-    (*
-    /// Generate types and serializing statements for root entities.
-    /// Returns root name and type info.
-    let private findRootNameAndType (context: TypeBuilderContext) (methodCall: MethodCall) (parameter: Parameter) =
-        match methodCall, parameter.Type with
-        | DocEncodedCall(_), SchemaName.SchemaType(_) // TODO: Encoding namespace for part name?
-        | RpcEncodedCall(_), SchemaName.SchemaType(_) -> (Some(parameter.Name), None), parameter.Type
-        | DocLiteralCall(_), SchemaName.SchemaType(_) -> (Some("Body"), Some(XmlNamespace.Soap)), parameter.Type
-        | RpcLiteralCall(_), SchemaName.SchemaType(_) -> (Some(methodCall.Accessor.Value.LocalName), Some(methodCall.Accessor.Value.NamespaceName)), parameter.Type
-        | DocLiteralCall(_), SchemaName.SchemaElement(elementName) ->
-            match context.GetElementDefinition(context.GetElementSpec(elementName)) with
-            | _, Definition(_) -> (None, None), (SchemaElement(elementName))
-            | _, Name(name) -> (Some(elementName.LocalName), Some(elementName.NamespaceName)), SchemaType(name)
-            | _ -> failwith "never"
-        | RpcLiteralCall(_), SchemaName.SchemaElement(elementName) ->
-            match context.GetElementDefinition(context.GetElementSpec(elementName)) with
-            | _, Definition(_) -> (None, None), (SchemaElement(elementName))
-            | _, Name(name) -> (Some(elementName.LocalName), Some(elementName.NamespaceName)), SchemaType(name)
-            | _ -> failwith "never"
-        | _ -> failwith "never"
-
-    /// Initialize root attribute override for this method parameter.
-    let initRoot varName name ns parentNs = seq {
-        match name with
-        | Some(v) ->
-            yield Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.value v])
-            match ns with
-            | Some(v) when v <> parentNs -> yield Stmt.assign (Expr.var varName @=> "Namespace") (Expr.value v)
-            | _ -> ()
-        | None ->
-            yield Stmt.declVarWith<XmlRootAttribute> varName (Expr.inst<XmlRootAttribute> [Expr.nil])
-        }
-
-    /// Create deserializer code segment for given parameter.
-    let private buildDeserialization (context: TypeBuilderContext) undescribedFaults (methodCall: MethodCall) parentNs : CodeTypeReference * CodeStatement list =
-        let statements = List<CodeStatement>()
-        let returnType = List<string * RuntimeType>()
-
-        // Create separate deserializer calls for each output parameter.
-        methodCall.Parameters
-        |> List.iteri (fun i parameter ->
-            let (rootName, rootNamespace), typeName = findRootNameAndType context methodCall parameter
-            let serializerName = parameter.Name + "Serializer"
-            let rootVarName = parameter.Name + "Root"
-            let runtimeType = context.GetRuntimeType(typeName)
-            returnType.Add(parameter.Name, runtimeType)
-            let deserializerCallExpr =
-                match runtimeType with
-                | CollectionType(itemType, itemName, _) ->
-                    let listType = CodeTypeReference("System.Collections.Generic.List", itemType.AsCodeTypeReference())
-                    let nullVarName = sprintf "v%dNull" i
-                    let listVarName = sprintf "v%dList" i
-                    let typ = itemType.AsCodeTypeReference()
-                    [ Stmt.declVarWith<string> nullVarName ((Expr.var "reader" @-> "GetAttribute") @% [Expr.value "nil"; Expr.value XmlNamespace.Xsi])
-                      Stmt.condIfElse (Op.boolAnd (Op.isNotNull (Expr.var nullVarName))
-                                                  (Op.equals ((((Expr.var nullVarName @-> "ToLower") @% []) @-> "Replace") @% [Expr.value "true"; Expr.value "1"])
-                                                             (Expr.value "1")))
-                                      [ Stmt.assign (Expr.var (sprintf "v%d" i)) Expr.nil ]
-                                      [ Stmt.declVarRefWith listType listVarName (Expr.instOf listType [])
-                                        Stmt.declVarWith<XmlRootAttribute> rootVarName (Expr.inst<XmlRootAttribute> [Expr.value itemName])
-                                        Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.nil; Arr.createOfSize<Type> 0; Expr.var rootVarName; Expr.nil])
-                                        Stmt.whileLoop (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 4])
-                                                       [Stmt.ofExpr ((Expr.var listVarName @-> "Add") @% [Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])])]
-                                        Stmt.assign (Expr.var (sprintf "v%d" i)) ((Expr.var listVarName @-> "ToArray") @% []) ] ]
-                | _ ->
-                    let typ = runtimeType.AsCodeTypeReference()
-                    statements.AddRange(initRoot rootVarName rootName rootNamespace (parentNs |> Option.orDefault ""))
-                    [ Stmt.declVarWith<XmlSerializer> serializerName (Expr.inst<XmlSerializer> [Expr.typeOf typ; Expr.nil; Arr.createOfSize<Type> 0; Expr.var rootVarName; Expr.nil])
-                      Stmt.assign (Expr.var (sprintf "v%d" i)) (Expr.cast typ ((Expr.var serializerName @-> "Deserialize") @% [Expr.var "reader"])) ]
-            let deserializeExpr =
-                if parameter.Name = "keha" && undescribedFaults then
-                    [ Stmt.ofExpr((Expr.var "reader" @-> "SetBookmark") @% [Expr.value "keha"])
-                      Stmt.condIfElse (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.value "faultCode"; Expr.value ""; Expr.value 4])
-                                      [ Stmt.ofExpr ((Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"])
-                                        Stmt.throw<Exception> [(Expr.var "reader" @-> "ReadInnerXml") @% []] ]
-                                      (Stmt.ofExpr ((Expr.var "reader" @-> "ReturnToAndRemoveBookmark") @% [Expr.value "keha"]) :: deserializerCallExpr) ]
-                else deserializerCallExpr
-            statements.Add(Stmt.condIf (Op.equals (Expr.var "reader" @=> "LocalName")
-                                                    (Expr.value parameter.Name))
-                                        deserializeExpr))
-
-        // Build return type and expression which returns the value.
-        let retType, returnExpr = makeReturnType methodCall.IsMultipart (returnType |> Seq.mapi (fun i (_,rt) -> (sprintf "v%d" i), rt) |> List.ofSeq)
-
-        // Build body part of deserialization block.
-        let bodyStatements = List<_>()
-        bodyStatements.AddRange(returnType |> Seq.mapi (fun i (_,runtimeType) -> Stmt.declVarRefWith (runtimeType.AsCodeTypeReference()) (sprintf "v%d" i) Expr.nil))
-        bodyStatements.Add(Stmt.whileLoop (Expr.var "MoveToElement" @%% [Expr.var "reader"; Expr.nil; Expr.nil; Expr.value 3]) (statements |> List.ofSeq))
-        bodyStatements.Add(Stmt.ret returnExpr)
-
-        retType, bodyStatements |> List.ofSeq
-    *)
-
     let addHeaderInitialization (protocol: XRoadProtocol) serviceName (reqhdrs: string list) (m: CodeMemberMethod) =
         let hdrns, hdrName, propName =
             let select = match protocol with Version20 -> fst | _ -> snd
@@ -520,10 +426,10 @@ module ServiceBuilder =
                     m |> addParameter context p
                     Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name.LocalName enc.NamespaceName; Expr.var p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
         | DocLiteralCall({ Parameters = [{ Type = Some(_) } as p] }) ->
             m |> addParameter context p
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [Expr.nil; Expr.var p.Name.LocalName]])) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [Expr.nil; Expr.var p.Name.LocalName]]))
         | DocLiteralCall(pw) ->
             let stmt =
                 pw.Parameters
@@ -531,7 +437,7 @@ module ServiceBuilder =
                     m |> addParameter context p
                     Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name.LocalName p.Name.NamespaceName; Expr.var p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
         | RpcEncodedCall(acc,pw) ->
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
             let stmt =
@@ -540,10 +446,10 @@ module ServiceBuilder =
                     m |> addParameter context p
                     Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name]; Expr.var p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
         | RpcLiteralCall(acc,{ Parameters = [{ Type = Some(_) } as p] }) ->
             m |> addParameter context p
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc.LocalName acc.NamespaceName; Expr.var p.Name.LocalName]])) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc.LocalName acc.NamespaceName; Expr.var p.Name.LocalName]]))
         | RpcLiteralCall(acc,pw) ->
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
             let stmt =
@@ -552,8 +458,24 @@ module ServiceBuilder =
                     m |> addParameter context p
                     Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name.LocalName]; Expr.var p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt) |> ignore
-        m
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
+
+    let addResponseInitialization (context: TypeBuilderContext) methodCall m =
+        let createTuple (items: (System.Xml.Linq.XName * RuntimeType) list) =
+            m |> Meth.returns<obj> |> ignore
+            Expr.nil
+        match methodCall with
+        | DocEncodedCall(encodingNamespace, wrapper) -> m
+        | DocLiteralCall({ Parameters = [{ Type = Some(_) } as parameter] }) -> m
+        | DocLiteralCall(wrapper) ->
+            let resultExpr =
+                wrapper.Parameters
+                |> List.map (fun parameter -> (parameter.Name, context.GetRuntimeType(SchemaElement(parameter.Name))))
+                |> createTuple
+            m |> Meth.addStmt (Stmt.ret resultExpr)
+        | RpcEncodedCall(accessorName, wrapper) -> m
+        | RpcLiteralCall(accessorName, { Parameters = [{ Type = Some(_) } as parameter] }) -> m
+        | RpcLiteralCall(accessorName, wrapper) -> m
 
     /// Build content for each individual service call method.
     let build (context: TypeBuilderContext) _ (operation: ServicePortMethod) =
@@ -564,63 +486,8 @@ module ServiceBuilder =
         |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> context.Protocol.Name]))
         |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
         |> addBodyInitialization context operation.InputParameters
-        |> Meth.addExpr ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.var "@__o"])
-
-        (*
-        // Read accessor element unless it is defined as parameter value type or method call uses document style.
-        let readAccessorElement =
-            match operation.OutputParameters with
-            | RpcLiteralCall(_,w) ->
-                match w.Parameters with
-                | [p] ->
-                    match p.Type with
-                    | SchemaName.SchemaType(_) -> false
-                    | SchemaName.SchemaElement(_) -> true
-                | _ -> true
-            | RpcEncodedCall(_) -> true
-            | _ -> false
-
-        // Build output parameters deserialization expressions.
-        let parentNs = if readAccessorElement then operation.OutputParameters.Accessor |> Option.map (fun x -> x.NamespaceName)
-                       //elif writeSoapBody then Some(XmlNamespace.Soap)
-                       else Some(XmlNamespace.Soap)
-        let returnType, deserializeExpr = buildDeserialization context undescribedFaults operation.OutputParameters parentNs
-
-        // Reading body of response.
-        serviceMethod
-        |> Meth.returnsOf returnType
-        |> Meth.addStmt (Stmt.declVarRefWith (CodeTypeReference("System.Func", typeRef<XmlReader>, returnType)) "readBody" (Expr.code "(r) => { //"))
-        |> Meth.addStmt (if undescribedFaults
-                         then Stmt.declVarRefWith (typeRef<XRoad.XmlBookmarkReader>) "reader" (Expr.cast (typeRef<XRoad.XmlBookmarkReader>) (Expr.var "r"))
-                         else Stmt.declVarRefWith (typeRef<XRoad.XRoadXmlReader>) "reader" (Expr.cast (typeRef<XRoad.XRoadXmlReader>) (Expr.var "r")))
-        |> iif readAccessorElement (fun x ->
-            x |> Meth.addStmt (Stmt.condIf (Op.boolOr (Op.notEquals (Expr.var "reader" @=> "LocalName")
-                                                                    (Expr.value operation.OutputParameters.Accessor.Value.LocalName))
-                                                      (Op.notEquals (Expr.var "reader" @=> "NamespaceURI")
-                                                                    (Expr.value operation.OutputParameters.Accessor.Value.NamespaceName)))
-                                           [Stmt.throw<Exception> [Expr.value "Invalid response message."]]))
-        |> ignore
-
-        // Deserialize main content.
-        deserializeExpr |> List.iter (fun s -> serviceMethod |> Meth.addStmt s |> ignore)
-
-        // Finish delegate block.
-        serviceMethod |> Meth.addExpr (Expr.code "}") |> ignore
-
-        // Multipart services have separate argument: list of MIME/multipart attachments.
-        let attachmentsExpr =
-            if operation.InputParameters.IsMultipart then
-                serviceMethod |> Meth.addOptParam<IDictionary<string,Stream>> "attachments" |> ignore
-                Expr.var "attachments"
-            else Expr.nil
-
-        // Execute base class service call method with custom serialization delegates.
-        let methodCall = ((Expr.parent @-> "MakeServiceCall") @<> [returnType]) @% [!^ operation.InputParameters.IsEncoded; attachmentsExpr; Expr.var "writeHeader"; Expr.var "writeBody"; Expr.var "readBody"]
-
-        // Make return statement if definition specifies result.
-        let isEmptyResponse = (not operation.OutputParameters.IsMultipart) && (operation.OutputParameters.Parameters |> List.isEmpty)
-        serviceMethod |> Meth.addStmt (if isEmptyResponse then Stmt.ofExpr methodCall else Stmt.ret methodCall)
-    *)
+        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.var "@__o"]))
+        |> addResponseInitialization context operation.OutputParameters
 
 /// Adds header element properties to given type.
 let private addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
