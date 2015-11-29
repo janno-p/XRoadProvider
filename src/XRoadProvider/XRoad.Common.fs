@@ -243,6 +243,10 @@ type SchemaName =
             match this with
             | SchemaElement(name)
             | SchemaType(name) -> name
+    override this.ToString() =
+        match this with
+        | SchemaElement(name) -> sprintf "SchemaElement(%A)" name
+        | SchemaType(name) -> sprintf "SchemaType(%A)" name
 
 [<AutoOpen>]
 module CodeSpec =

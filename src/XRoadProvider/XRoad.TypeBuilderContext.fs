@@ -137,6 +137,30 @@ type internal TypeBuilderContext =
                 typ
             | true, typ -> typ
 
+        /// Get runtime type from cached types if exists; otherwise create the type.
+        member this.GetOrCreateType(name: SchemaName) =
+            match this.CachedTypes.TryGetValue(name) with
+            | true, info -> info
+            | _ -> let info = this.CreateType(name)
+                   this.CachedTypes.Add(name, info)
+                   info
+
+        /// Get runtime type from cached types if exists.
+        member this.GetRuntimeType(name: SchemaName) =
+            let resolvedName =
+                match name with
+                | SchemaElement(xname) ->
+                    match this.GetElementSpec(xname) with
+                    | { Type = Name(typeName) } -> SchemaType(typeName)
+                    | _ -> name
+                | _ -> name
+            match this.CachedTypes.TryGetValue(resolvedName) with
+            | true, typeInfo -> typeInfo
+            | _ -> match resolvedName.XName with
+                   | BinaryType(_) -> ContentType
+                   | SystemType(typ) -> PrimitiveType(typ)
+                   | _ -> failwithf "Invalid type name `%A`: type not found in cache." resolvedName
+
         /// Generates new RuntimeType instance depending on given type:
         /// xsd:base64Binary and xsd:hexBinary types represent ContentType.
         /// Types that are mapped to system types represent PrimitiveType value.
@@ -172,14 +196,6 @@ type internal TypeBuilderContext =
                     let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
                     nstyp |> Cls.addMember typ |> ignore
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
-
-        /// Get runtime type from cached types if exists; otherwise create the type.
-        member this.GetRuntimeType(name: SchemaName) =
-            match this.CachedTypes.TryGetValue(name) with
-            | true, info -> info
-            | _ -> let info = this.CreateType(name)
-                   this.CachedTypes.Add(name, info)
-                   info
 
         /// Finds element specification from schema-level element lookup.
         member this.GetElementSpec(name: XName) =

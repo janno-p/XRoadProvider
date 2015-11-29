@@ -644,6 +644,20 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
     // Create base type which holds types generated from all provided schema-s.
     let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
 
+    // Create stubs for each type before building them, because of circular dependencies.
+    schema.TypeSchemas
+    |> Map.toList
+    |> List.iter (fun (_,typeSchema) ->
+        typeSchema.Types
+        |> Seq.map (fun kvp -> SchemaType(kvp.Key))
+        |> Seq.append (
+            typeSchema.Elements
+            |> Seq.choose (fun kvp ->
+                match kvp.Value.Type with
+                | Definition(_) -> Some(SchemaElement(kvp.Key))
+                | _ -> None))
+        |> Seq.iter (context.GetOrCreateType >> ignore))
+
     // Build all global types for each type schema definition.
     schema.TypeSchemas
     |> Map.toSeq
