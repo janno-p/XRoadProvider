@@ -55,6 +55,11 @@ type XRoadMessage() =
     member val Body: (XmlQualifiedName * obj) array = [||] with get, set
     member val Attachments = Dictionary<string, Stream>() with get, set
     member val Accessor: XmlQualifiedName = null with get, set
+    member this.GetPart(name) =
+        this.Body
+        |> Array.tryFind (fst >> ((=) name))
+        |> Option.map (snd)
+        |> Option.fold (fun _ x -> x) null
 
 type XRoadResponse(response: WebResponse) =
     member __.RetrieveMessage(): XRoadMessage =

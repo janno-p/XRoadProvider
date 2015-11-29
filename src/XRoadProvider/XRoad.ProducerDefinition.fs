@@ -462,8 +462,15 @@ module ServiceBuilder =
 
     let addResponseInitialization (context: TypeBuilderContext) methodCall m =
         let createTuple (items: (System.Xml.Linq.XName * RuntimeType) list) =
-            m |> Meth.returns<obj> |> ignore
-            Expr.nil
+            match items with
+            | [] ->
+                Expr.empty
+            | [(name,typ)] ->
+                m |> Meth.returnsOf (typ.AsCodeTypeReference()) |> ignore
+                (((!+ "@__r") @-> "GetPart") @% [Expr.inst<XmlQualifiedName> [!^ name.LocalName; !^ name.NamespaceName]]) |> Expr.cast (typ.AsCodeTypeReference())
+            | _ ->
+                m |> Meth.returns<obj> |> ignore
+                Expr.nil
         match methodCall with
         | DocEncodedCall(encodingNamespace, wrapper) -> m
         | DocLiteralCall({ Parameters = [{ Type = Some(_) } as parameter] }) -> m
