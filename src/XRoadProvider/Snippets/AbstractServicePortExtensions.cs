@@ -7,31 +7,6 @@
  */
 
 /// <summary>
-/// Extracts boundary marker value from MIME/multipart header.
-/// Returns null if response is not MIME/multipart content-type.
-/// </summary>
-private static string GetBoundaryMarker(System.Net.WebResponse response)
-{
-    if (response == null || response.ContentType == null)
-        return null;
-
-    // Multipart content type is a string value which starts with `multipart/related`
-    // and contains ';'-separated values describing current message.
-
-    var parts = response.ContentType.Split(';');
-    if (parts[0].Trim() != "multipart/related")
-        return null;
-
-    // Boundary marker is given in format `boundary="boundary-marker-value"`
-
-    for (var i = 1; i < parts.Length; i++)
-        if (parts[i].Trim().StartsWith("boundary="))
-            return parts[i].Trim().Substring(9).Trim('"');
-
-    return null;
-}
-
-/// <summary>
 /// Helper method to compare byte buffer content against value.
 /// </summary>
 private static bool BufferStartsWith(byte[] buffer, byte[] value)
@@ -139,84 +114,6 @@ private static XRoad.XRoadXmlReader GetResponseReader(System.Net.WebResponse res
     } while (!BufferStartsWith(currentLine, endMarker));
 
     return new XRoad.XRoadXmlReader(contentStream, context);
-}
-
-/// <summary>
-/// Reads next line from the stream using specified encoding.
-/// </summary>
-private static byte[] ReadLineFrom(System.IO.Stream stream, System.Text.Encoding encoding)
-{
-    var marker = encoding.GetBytes("\r\n");
-
-    const int bufferSize = 1024;
-    var chunk = new byte[0];
-
-    while (true)
-    {
-        byte[] buffer;
-        var chunkState = ReadChunkOrMarker(out buffer, stream, bufferSize, marker);
-
-        System.Array.Resize(ref chunk, chunk.Length + buffer.Length);
-        System.Array.Copy(buffer, chunk, buffer.Length);
-
-        if (chunkState == ChunkState.EndOfStream || chunkState == ChunkState.Marker)
-            break;
-    }
-
-    return chunk;
-}
-
-/// <summary>
-/// Reads given number of bytes from the stream.
-/// Can return smaller buffer if specified marker is reached.
-/// </summary>
-private static ChunkState ReadChunkOrMarker(out byte[] chunk, System.IO.Stream stream, int chunkSize, byte[] marker)
-{
-    var result = ChunkState.BufferLimit;
-    var markerLength = marker != null ? marker.Length : 0;
-    var buffer = new byte[chunkSize + markerLength];
-
-    var position = -1;
-    var markerPos = -1;
-
-    while (true)
-    {
-        var lastByte = stream.ReadByte();
-        if (lastByte == -1)
-        {
-            result = ChunkState.EndOfStream;
-            break;
-        }
-
-        position += 1;
-        buffer[position] = (byte)lastByte;
-
-        if (marker != null && markerLength > 0)
-        {
-            markerPos += 1;
-            if (lastByte != marker[markerPos])
-                markerPos = RewindMarker(markerPos, position, buffer, marker);
-        }
-
-        if (position >= chunkSize - 1 && markerPos < 0)
-            break;
-
-        if (markerLength < 1 || markerPos != (markerLength - 1))
-            continue;
-
-        result = ChunkState.Marker;
-        break;
-    }
-
-    if (result == ChunkState.Marker)
-        position -= markerLength;
-
-    chunk = new byte[position + 1];
-    System.Array.Copy(buffer, chunk, position + 1);
-
-    stream.Flush();
-
-    return result;
 }
 
 /// <summary>

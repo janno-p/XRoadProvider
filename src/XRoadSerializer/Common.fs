@@ -1,5 +1,9 @@
 ﻿namespace XRoad
 
+open System.Collections.Generic
+open System.IO
+open System.Xml
+
 [<RequireQualifiedAccessAttribute>]
 module XmlNamespace =
     let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
@@ -16,3 +20,19 @@ module XmlNamespace =
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
     let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
+
+type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
+    member val Name = name with get
+    member val Value = value with get
+    member val IsRequired = required with get
+
+type XRoadMessage() =
+    member val Header: SoapHeaderValue array = [||] with get, set
+    member val Body: (XmlQualifiedName * obj) array = [||] with get, set
+    member val Attachments = Dictionary<string, Stream>() with get, set
+    member val Accessor: XmlQualifiedName = null with get, set
+    member this.GetPart(name) =
+        this.Body
+        |> Array.tryFind (fst >> ((=) name))
+        |> Option.map (snd)
+        |> Option.fold (fun _ x -> x) null

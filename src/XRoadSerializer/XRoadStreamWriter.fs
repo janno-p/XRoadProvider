@@ -7,13 +7,6 @@ open System.Net
 open System.Security.Cryptography
 open System.Xml
 
-type ChunkState = BufferLimit | Marker | EndOfStream
-
-type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
-    member val Name = name with get
-    member val Value = value with get
-    member val IsRequired = required with get
-
 type XRoadStreamWriter() =
     class
     end
@@ -49,24 +42,6 @@ type XRoadOptions(uri: string, isEncoded: bool, isMultipart: bool, protocol: XRo
     member val IsMultipart = isMultipart with get
     member val Protocol = protocol with get, set
     member val Uri = uri with get, set
-
-type XRoadMessage() =
-    member val Header: SoapHeaderValue array = [||] with get, set
-    member val Body: (XmlQualifiedName * obj) array = [||] with get, set
-    member val Attachments = Dictionary<string, Stream>() with get, set
-    member val Accessor: XmlQualifiedName = null with get, set
-    member this.GetPart(name) =
-        this.Body
-        |> Array.tryFind (fst >> ((=) name))
-        |> Option.map (snd)
-        |> Option.fold (fun _ x -> x) null
-
-type XRoadResponse(response: WebResponse) =
-    member __.RetrieveMessage(): XRoadMessage =
-        XRoadMessage()
-    interface IDisposable with
-        member __.Dispose() =
-            (response :> IDisposable).Dispose()
 
 type XRoadRequest(opt: XRoadOptions) =
     let request = WebRequest.Create(opt.Uri, Method="POST", ContentType="text/xml; charset=utf-8")
