@@ -1,6 +1,7 @@
 ﻿namespace XRoad
 
 open System
+open System.Collections.Generic
 open System.IO
 open System.Net
 open System.Text
@@ -25,6 +26,9 @@ module private Response =
                 x
             | Some(x) -> x
         member __.Flush() = stream.Flush()
+        interface IDisposable with
+            member __.Dispose() =
+                stream.Dispose()
 
     let getBoundaryMarker (response: WebResponse) =
         let parseMultipartContentType (contentType: string) =
@@ -45,7 +49,7 @@ module private Response =
     let cr = Convert.ToInt32('\r')
     let lf = Convert.ToInt32('\n')
 
-    let readChunkOrLine (buffer: byte array) (stream: PeekStream) =
+    let readChunkOrLine (buffer: byte []) (stream: PeekStream) =
         let rec addByte pos =
             if pos >= chunkSize then (ChunkState.Limit, pos)
             else
@@ -63,7 +67,7 @@ module private Response =
         result
 
     let readLine stream =
-        let mutable line = [| |] : byte array
+        let mutable line = [| |] : byte []
         let buffer = Array.zeroCreate<byte>(chunkSize)
         let rec readChunk () =
             let (state, chunkSize) = stream |> readChunkOrLine buffer
@@ -74,22 +78,71 @@ module private Response =
             | ChunkState.NewLine -> ()
         line
 
-    let rec extractMultipartContentHeader () =
-        ()
+    let extractMultipartContentHeaders (stream: PeekStream) =
+        let rec getHeaders () = seq {
+            match Encoding.ASCII.GetString(stream |> readLine).Trim() with
+            | null | "" -> ()
+            | line ->
+                match line.Split([| ':' |], 2) with
+                | [| name |] -> yield (name.Trim(), "")
+                | [| name; content |] -> yield (name.Trim(), content.Trim())
+                | _ -> failwith "never"
+                yield! getHeaders() }
+        getHeaders() |> Map.ofSeq
+
+    let base64Decoder (encoding: Encoding) (encodedBytes: byte []) =
+        match encodedBytes with
+        | null | [| |] -> [| |]
+        | _ ->
+            let chars = encoding.GetChars(encodedBytes)
+            Convert.FromBase64CharArray(chars, 0, chars.Length)
+
+    let getDecoder (contentEncoding: string) =
+        match contentEncoding.ToLower() with
+        | "base64" -> Some(base64Decoder)
+        | "quoted-printable" | "7bit" | "8bit" | "binary" | _ -> None
+        | _ -> failwithf "No decoder implemented for content transfer encoding `%s`." contentEncoding
+
+    let startsWith (value: byte []) (buffer: byte []) =
+        let rec compare i =
+            if value.[i] = buffer.[i] then
+                if i = 0 then true else compare (i - 1)
+            else false
+        if buffer |> isNull || value |> isNull || value.Length > buffer.Length then false
+        else compare (value.Length - 1)
 
     let parseMessage (response: WebResponse) =
-        let stream = response.GetResponseStream()
         match response |> getBoundaryMarker with
         | Some(boundaryMarker) ->
+            use stream = new PeekStream(response.GetResponseStream())
+            let contents = List<string option * Stream>()
             let contentMarker = Encoding.ASCII.GetBytes(sprintf "--%s" boundaryMarker)
-            let endMarker = Encoding.ASCII.GetBytes(sprintf "--%s" boundaryMarker)
-            let rec parseContent () =
+            let endMarker = Encoding.ASCII.GetBytes(sprintf "--%s--" boundaryMarker)
+            let (|Content|End|Separator|) line =
+                if line |> startsWith endMarker then End
+                elif line |> startsWith contentMarker then Content
+                else Separator
+            let parseContentPart () =
+                let headers = stream |> extractMultipartContentHeaders
+                let contentId = headers |> Map.tryFind("content-id") |> Option.map (fun x -> x.Trim().Trim('<', '>'))
+                let decoder = headers |> Map.tryFind("content-transfer-encoding") |> Option.bind (getDecoder)
+                let contentStream = new MemoryStream()
+                contents.Add(contentId, upcast contentStream)
+
                 ()
-            match parseContent() with
-//            | xml::attachments ->
-//                XmlReader.Create("")
+            let rec parseContent () =
+                match stream |> readLine with
+                | Content -> parseContentPart()
+                             parseContent()
+                | End -> ()
+                | Separator -> parseContent()
+            parseContent()
+            match contents |> Seq.toList with
+            | xml::attachments ->
+                XmlReader.Create(snd xml)
             | _ -> failwith "Invalid multipart response message: no content."
-        | None -> XmlReader.Create(stream)
+        | None ->
+            XmlReader.Create(response.GetResponseStream())
 
 type XRoadResponse(response: WebResponse) =
     member __.RetrieveMessage(): XRoadMessage =
