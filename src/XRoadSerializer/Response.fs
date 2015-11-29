@@ -100,7 +100,7 @@ module private Response =
     let getDecoder (contentEncoding: string) =
         match contentEncoding.ToLower() with
         | "base64" -> Some(base64Decoder)
-        | "quoted-printable" | "7bit" | "8bit" | "binary" | _ -> None
+        | "quoted-printable" | "7bit" | "8bit" | "binary" -> None
         | _ -> failwithf "No decoder implemented for content transfer encoding `%s`." contentEncoding
 
     let startsWith (value: byte []) (buffer: byte []) =
@@ -111,7 +111,7 @@ module private Response =
         if buffer |> isNull || value |> isNull || value.Length > buffer.Length then false
         else compare (value.Length - 1)
 
-    let parseMessage (response: WebResponse) =
+    let parseResponse (response: WebResponse) =
         match response |> getBoundaryMarker with
         | Some(boundaryMarker) ->
             use stream = new PeekStream(response.GetResponseStream())
@@ -122,31 +122,63 @@ module private Response =
                 if line |> startsWith endMarker then End
                 elif line |> startsWith contentMarker then Content
                 else Separator
+            let buffer = Array.zeroCreate<byte>(chunkSize)
+            let rec copyChunk addNewLine encoding (decoder: (Encoding -> byte[] -> byte[]) option) (contentStream: Stream) =
+                let (state,size) = stream |> readChunkOrLine buffer
+                if buffer |> startsWith endMarker then false
+                elif buffer |> startsWith contentMarker then true
+                elif state = ChunkState.EndOfStream then failwith "Unexpected end of multipart stream."
+                else
+                    if decoder.IsNone && addNewLine then contentStream.Write([| 13uy; 10uy |], 0, 2)
+                    let (decodedBuffer,size) = decoder |> Option.fold (fun (buf,_) func -> let buf = buf |> func encoding
+                                                                                           (buf,buf.Length)) (buffer,size)
+                    contentStream.Write(decodedBuffer, 0, size)
+                    match state with EndOfStream -> false | _ -> copyChunk (state = ChunkState.NewLine) encoding decoder contentStream
             let parseContentPart () =
                 let headers = stream |> extractMultipartContentHeaders
                 let contentId = headers |> Map.tryFind("content-id") |> Option.map (fun x -> x.Trim().Trim('<', '>'))
                 let decoder = headers |> Map.tryFind("content-transfer-encoding") |> Option.bind (getDecoder)
                 let contentStream = new MemoryStream()
                 contents.Add(contentId, upcast contentStream)
-
-                ()
+                copyChunk false Encoding.UTF8 decoder contentStream
             let rec parseContent () =
                 match stream |> readLine with
-                | Content -> parseContentPart()
-                             parseContent()
+                | Content -> if parseContentPart() then parseContent() else ()
                 | End -> ()
                 | Separator -> parseContent()
             parseContent()
-            match contents |> Seq.toList with
-            | xml::attachments ->
-                XmlReader.Create(snd xml)
-            | _ -> failwith "Invalid multipart response message: no content."
-        | None ->
-            XmlReader.Create(response.GetResponseStream())
+            contents |> Seq.toList
+        | None -> [(None, response.GetResponseStream())]
+
+    type XmlReader with
+        member this.MoveToElement(depth, name, ns) =
+            let isElement () = this.Depth = depth && this.LocalName = name && this.NamespaceURI = ns
+            let rec findElement () =
+                if isElement() then true
+                elif this.Read() then
+                    if this.Depth < depth then false
+                    else findElement()
+                else false
+            isElement() || findElement()
+
+open Response
 
 type XRoadResponse(response: WebResponse) =
     member __.RetrieveMessage(): XRoadMessage =
-        XRoadMessage()
+        let message = XRoadMessage()
+        let reader =
+            match Response.parseResponse(response) with
+            | [(_,xml)] -> xml
+            | (_,xml)::attachments ->
+                attachments |> List.iter (fun (id,stream) -> message.Attachments.Add(id.Value, stream))
+                xml
+            | _ -> failwith "Invalid multipart response message: no content."
+            |> XmlReader.Create
+        if not (reader.MoveToElement(0, "Envelope", XmlNamespace.SoapEnv)) then
+            failwith "Soap envelope element was not found in response message."
+        if not (reader.MoveToElement(1, "Body", XmlNamespace.SoapEnv)) then
+            failwith "Soap body element was not found in response message."
+        message
     interface IDisposable with
         member __.Dispose() =
             (response :> IDisposable).Dispose()

@@ -510,12 +510,24 @@ do
     createSystemTypeMap<Nullable<int32>>
         (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
         (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsInt()) @>)
+    createSystemTypeMap<int64>
+        (fun w v -> <@ (%w).WriteValue(%v) @>)
+        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsLong()) @>)
+    createSystemTypeMap<Nullable<int64>>
+        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
+        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsLong()) @>)
     createSystemTypeMap<BigInteger>
         (fun w v -> <@ (%w).WriteValue((%v).ToString()) @>)
         (fun r -> <@ ignore((%r).Read()); box(BigInteger((%r).ReadContentAsDecimal())) @>)
     createSystemTypeMap<Nullable<BigInteger>>
         (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue((%v).ToString()) @>)
         (fun r -> <@ ignore((%r).Read()); box(BigInteger((%r).ReadContentAsDecimal())) @>)
-    createSystemTypeMap<string>
+    createSystemTypeMap<DateTime>
         (fun w v -> <@ (%w).WriteValue(%v) @>)
+        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsDateTime()) @>)
+    createSystemTypeMap<Nullable<DateTime>>
+        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
+        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsDateTime()) @>)
+    createSystemTypeMap<string>
+        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
         (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsString()) @>)
