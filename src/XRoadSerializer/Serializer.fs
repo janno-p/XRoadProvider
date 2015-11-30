@@ -15,7 +15,10 @@ open XRoad.DynamicMethods
 
 type Serializer() as this =
     member __.Deserialize<'T>(reader: XmlReader) : 'T =
-        this.DeserializeObject<'T>(reader)
+        this.DeserializeObject(reader, typeof<'T>) |> Option.fold (fun _ x -> unbox x) Unchecked.defaultof<'T>
+
+    member __.Deserialize(reader: XmlReader, typ) =
+        this.DeserializeObject(reader, typ) |> Option.fold (fun _ x -> x) null
 
     member __.Serialize(writer: XmlWriter, value: obj, rootName: XmlQualifiedName) =
         match rootName.Namespace with
@@ -24,14 +27,12 @@ type Serializer() as this =
         this.SerializeObject(writer, value)
         writer.WriteEndElement()
 
-    member private __.DeserializeObject<'T>(reader: XmlReader) : 'T =
+    member private __.DeserializeObject(reader, typ) =
         match reader.GetAttribute("nil", XmlNamespace.Xsi) |> Option.ofObj |> Option.map (fun x -> x.ToLower()) with
-        | Some("true") | Some("1") -> Unchecked.defaultof<'T>
-        | _ -> match getTypeMap(typeof<'T>).Deserialize(reader) with
-               | null -> Unchecked.defaultof<'T>
-               | value -> value |> unbox<'T>
+        | Some("true") | Some("1") -> None
+        | _ -> Some(getTypeMap(typ).Deserialize(reader))
 
-    member private __.SerializeObject(writer: XmlWriter, value: obj) =
+    member private __.SerializeObject(writer, value) =
         match value with
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
         | _ -> getTypeMap(value.GetType()).Serialize(writer, value) |> ignore

@@ -21,6 +21,8 @@ let typeRefName name = CodeTypeReference(name: string)
 /// Applies function to argument if condition is met.
 let iif condition f x = if condition then x |> f else x
 
+let forall args f x = args |> List.iter (f x); x
+
 /// Functions to simplify handling of code expressions.
 module Expr =
     let value x = CodePrimitiveExpression(x) :> CodeExpression

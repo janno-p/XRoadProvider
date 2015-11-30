@@ -163,7 +163,7 @@ module private Response =
 
 open Response
 
-type XRoadResponse(response: WebResponse) =
+type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
     member __.RetrieveMessage(): XRoadMessage =
         let message = XRoadMessage()
         let reader =
@@ -178,6 +178,16 @@ type XRoadResponse(response: WebResponse) =
             failwith "Soap envelope element was not found in response message."
         if not (reader.MoveToElement(1, "Body", XmlNamespace.SoapEnv)) then
             failwith "Soap body element was not found in response message."
+        // TODO: Check unexpected fault
+        let serializer = Serializer()
+        let rec findElements (parameters: List<_>) =
+            if reader.Depth = 2 && reader.NodeType = XmlNodeType.Element then
+                let qualifiedName = XmlQualifiedName(reader.LocalName, reader.NamespaceURI)
+                parameters.Add(qualifiedName, serializer.Deserialize(reader, options.Types.[qualifiedName]))
+            if not (reader.Read()) || reader.Depth < 2 then parameters.ToArray()
+            else findElements parameters
+        reader.Read() |> ignore
+        message.Body <- findElements(List<_>())
         message
     interface IDisposable with
         member __.Dispose() =

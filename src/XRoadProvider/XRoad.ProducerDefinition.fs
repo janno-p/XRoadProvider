@@ -439,7 +439,7 @@ module ServiceBuilder =
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
         | RpcEncodedCall(acc,pw) ->
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__reqOpt" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
             let stmt =
                 pw.Parameters
                 |> List.map (fun p ->
@@ -451,7 +451,7 @@ module ServiceBuilder =
             m |> addParameter context p
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc.LocalName acc.NamespaceName; Expr.var p.Name.LocalName]]))
         | RpcLiteralCall(acc,pw) ->
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
+            m |> Meth.addStmt (Stmt.assign (Expr.var "@__reqOpt" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
             let stmt =
                 pw.Parameters
                 |> List.map (fun p ->
@@ -460,9 +460,24 @@ module ServiceBuilder =
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
             m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
 
-    let addResponseInitialization (context: TypeBuilderContext) methodCall m =
-        let createTuple (items: (System.Xml.Linq.XName * RuntimeType) list) =
-            match items with
+    let getResponseSpec (context: TypeBuilderContext) methodCall =
+        match methodCall with
+        | DocEncodedCall(encodingNamespace, wrapper) ->
+            ((None: System.Xml.Linq.XName option), [])
+        | DocLiteralCall({ Parameters = [{ Type = Some(_) } as parameter] }) ->
+            (None, [])
+        | DocLiteralCall(wrapper) ->
+            (None, wrapper.Parameters |> List.map (fun parameter -> (parameter.Name, context.GetRuntimeType(SchemaElement(parameter.Name)))))
+        | RpcEncodedCall(accessorName, wrapper) ->
+            (None, [])
+        | RpcLiteralCall(accessorName, { Parameters = [{ Type = Some(_) } as parameter] }) ->
+            (None, [])
+        | RpcLiteralCall(accessorName, wrapper) ->
+            (None, [])
+
+    let createTuple (parameters: (System.Xml.Linq.XName * RuntimeType) list) m =
+        let expr =
+            match parameters with
             | [] ->
                 Expr.empty
             | [(name,typ)] ->
@@ -471,30 +486,24 @@ module ServiceBuilder =
             | _ ->
                 m |> Meth.returns<obj> |> ignore
                 Expr.nil
-        match methodCall with
-        | DocEncodedCall(encodingNamespace, wrapper) -> m
-        | DocLiteralCall({ Parameters = [{ Type = Some(_) } as parameter] }) -> m
-        | DocLiteralCall(wrapper) ->
-            let resultExpr =
-                wrapper.Parameters
-                |> List.map (fun parameter -> (parameter.Name, context.GetRuntimeType(SchemaElement(parameter.Name))))
-                |> createTuple
-            m |> Meth.addStmt (Stmt.ret resultExpr)
-        | RpcEncodedCall(accessorName, wrapper) -> m
-        | RpcLiteralCall(accessorName, { Parameters = [{ Type = Some(_) } as parameter] }) -> m
-        | RpcLiteralCall(accessorName, wrapper) -> m
+        m |> Meth.addStmt (Stmt.ret expr)
 
     /// Build content for each individual service call method.
     let build (context: TypeBuilderContext) _ (operation: ServicePortMethod) =
+        let (responseAccessor,parameters) = getResponseSpec context operation.OutputParameters
         Meth.create operation.Name
         |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
         |> Code.comment operation.Documentation
         |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
-        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadOptions> "@__o" (Expr.inst<XRoad.XRoadOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> context.Protocol.Name]))
+        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> context.Protocol.Name]))
+        |> Meth.addStmt (Stmt.declVarWith<Dictionary<XmlQualifiedName, Type>> "@__p" (Expr.inst<Dictionary<XmlQualifiedName, Type>> []))
+        |> forall parameters (fun m (nm,tp) -> m |> Meth.addExpr ((!+ "@__p" @-> "Add") @% [Expr.inst<XmlQualifiedName> [!^ nm.LocalName; !^ nm.NamespaceName]; Expr.typeOf(tp.AsCodeTypeReference())]) |> ignore)
+        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> context.Protocol.Name; !+ "@__p"]))
         |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
         |> addBodyInitialization context operation.InputParameters
-        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [Expr.var "@__m"; Expr.var "@__o"]))
-        |> addResponseInitialization context operation.OutputParameters
+        |> iif (responseAccessor.IsSome) (fun x -> x |> Meth.addStmt (Stmt.assign (Expr.var "@__respOpt" @=> "Accessor") (Expr.inst<XmlQualifiedName> [!^ responseAccessor.Value.LocalName; !^ responseAccessor.Value.NamespaceName])))
+        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [!+ "@__m"; !+ "@__reqOpt"; !+ "@__respOpt"]))
+        |> createTuple parameters
 
 /// Adds header element properties to given type.
 let private addHeaderProperties (protocol: XRoadProtocol) portBaseTy =

@@ -15,35 +15,7 @@ type XRoadStreamReader() =
     class
     end
 
-type XRoadProtocol =
-    | Version20 = 0
-    | Version30 = 1
-    | Version31 = 2
-    | Version40 = 3
-
-[<AutoOpen>]
-module private XRoadProtocolExtensions =
-    let protocolPrefix = function
-        | XRoadProtocol.Version20 -> "xtee"
-        | XRoadProtocol.Version30
-        | XRoadProtocol.Version31 -> "xrd"
-        | XRoadProtocol.Version40 -> failwith "Not implemented v4.0"
-        | x -> failwithf "Invalid XRoadProtocol value `%A`" x
-
-    let protocolNamespace = function
-        | XRoadProtocol.Version20 -> XmlNamespace.Xtee
-        | XRoadProtocol.Version30 -> XmlNamespace.Xrd
-        | XRoadProtocol.Version31 -> XmlNamespace.XRoad
-        | XRoadProtocol.Version40 -> failwith "Not implemented v4.0"
-        | x -> failwithf "Invalid XRoadProtocol value `%A`" x
-
-type XRoadOptions(uri: string, isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol) =
-    member val IsEncoded = isEncoded with get
-    member val IsMultipart = isMultipart with get
-    member val Protocol = protocol with get, set
-    member val Uri = uri with get, set
-
-type XRoadRequest(opt: XRoadOptions) =
+type XRoadRequest(opt: XRoadRequestOptions) =
     let request = WebRequest.Create(opt.Uri, Method="POST", ContentType="text/xml; charset=utf-8")
     do request.Headers.Set("SOAPAction", "")
 
@@ -101,7 +73,11 @@ type XRoadRequest(opt: XRoadOptions) =
         writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
         writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
         writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, protocolNamespace opt.Protocol)
-        match msg.Accessor with | null -> () | acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace)
+        msg.Body
+        |> Array.map (fun (nm,_) -> nm.Namespace)
+        |> Set.ofArray
+        |> Seq.iteri (fun i ns -> writer.WriteAttributeString("xmlns", sprintf "ns%d" i, XmlNamespace.Xmlns, ns))
+        match opt.Accessor with | null -> () | acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace)
         if opt.IsEncoded then
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
@@ -124,9 +100,9 @@ type XRoadRequest(opt: XRoadOptions) =
                    writer.WriteEndElement()
 
         let serializeAccessor funContent =
-            match msg.Accessor with
+            match opt.Accessor with
             | null -> funContent()
-            | _ -> writer.WriteStartElement(msg.Accessor.Name, msg.Accessor.Namespace)
+            | _ -> writer.WriteStartElement(opt.Accessor.Name, opt.Accessor.Namespace)
                    funContent()
                    writer.WriteEndElement()
 
@@ -139,12 +115,12 @@ type XRoadRequest(opt: XRoadOptions) =
         writer.WriteEndDocument()
         writer.Flush()
         serializeMessage content (dict [])
-    member __.GetResponse() =
-        new XRoadResponse(request.GetResponse())
+    member __.GetResponse(options) =
+        new XRoadResponse(request.GetResponse(), options)
 
 type public XRoadUtil =
-    static member MakeServiceCall(message, options) =
-        let request = new XRoadRequest(options)
+    static member MakeServiceCall(message, requestOptions, responseOptions) =
+        let request = new XRoadRequest(requestOptions)
         request.SendMessage(message)
-        use response = request.GetResponse()
+        use response = request.GetResponse(responseOptions)
         response.RetrieveMessage()
