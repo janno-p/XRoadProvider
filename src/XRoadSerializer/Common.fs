@@ -72,3 +72,4 @@ type XRoadResponseOptions(isEncoded: bool, isMultipart: bool, protocol: XRoadPro
     member val Protocol = protocol with get
     member val Types = types with get
     member val Accessor: XmlQualifiedName = null with get, set
+    member val ExpectUnexpected = false with get, set
