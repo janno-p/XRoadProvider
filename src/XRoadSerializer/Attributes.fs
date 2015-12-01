@@ -28,3 +28,9 @@ type XRoadElementAttribute(name: string) =
 [<AttributeUsage(AttributeTargets.Property)>]
 type XRoadContentAttribute() =
     inherit Attribute()
+
+[<AllowNullLiteral>]
+[<AttributeUsage(AttributeTargets.Class)>]
+type XRoadChoiceAttribute([<ParamArray>] alternatives: string []) =
+    inherit Attribute()
+    member val Alternatives = alternatives with get

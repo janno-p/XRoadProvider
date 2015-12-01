@@ -4,6 +4,7 @@ open FsUnit
 open NUnit.Framework
 open System
 open System.IO
+open System.Runtime.InteropServices
 open System.Text
 open System.Xml
 open XRoad
@@ -14,6 +15,8 @@ module TestXml =
     let [<Literal>] AbstractBaseType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></keha></wrapper>"
     let [<Literal>] AbstractBaseTypeExplicitName = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:t=""testns""><keha><Reference xsi:type=""t:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></keha></wrapper>"
     let [<Literal>] AbstractType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
+    let [<Literal>] Choice1Of2 = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Choice1Element>test</Choice1Element></keha></wrapper>"
+    let [<Literal>] Choice2Of2 = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Choice2Element>test</Choice2Element></keha></wrapper>"
     let [<Literal>] ExtendedType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Member xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></keha></wrapper>"
     let [<Literal>] IntegerValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>32</keha></wrapper>"
     let [<Literal>] NullableValues = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>13</Value1><Value2 xsi:nil=""true"" /></keha></wrapper>"
@@ -95,6 +98,30 @@ module TestType =
         [<XRoadElement>]
         member val Reference = Concrete1() :> AbstractBase with get, set
 
+    [<AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
+    type Choice1() =
+        [<XRoadElement>]
+        member val Choice1Element = "test" with get, set
+
+    [<AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
+    type Choice2() =
+        [<XRoadElement>]
+        member val Choice2Element = "test" with get, set
+
+    [<XRoadType(LayoutKind.Choice)>]
+    [<XRoadChoice("Choice1", "Choice2")>]
+    type TestChoice private (id: int, v: obj) =
+        member __.TryGetChoice1([<Out>] value: Choice1 byref) =
+            if id = 1 then value <- unbox v
+            else value <- null
+            id = 1
+        member __.TryGetChoice2([<Out>] value: Choice2 byref) =
+            if id = 2 then value <- unbox v
+            else value <- null
+            id = 2
+        static member NewChoice1(value: Choice1) = TestChoice(1, value)
+        static member NewChoice2(value: Choice2) = TestChoice(2, value)
+
 module Serialization =
     let serialize qn (nslist: (string * string) list) value =
         let serializer = Serializer()
@@ -157,6 +184,16 @@ module Serialization =
     let [<Test>] ``serialize abstract base type when subtype is used (with explicit name and namespace)`` () =
         TestType.Referrer(Reference=TestType.Concrete3()) |> serialize (XmlQualifiedName("keha")) ["t", "testns"] |> should equal TestXml.AbstractBaseTypeExplicitName
 
+    let [<Test; Ignore>] ``serialize choice type 1`` () =
+        TestType.TestChoice.NewChoice1(TestType.Choice1())
+        |> serialize'
+        |> should equal TestXml.Choice1Of2
+
+    let [<Test; Ignore>] ``serialize choice type 2`` () =
+        TestType.TestChoice.NewChoice2(TestType.Choice2())
+        |> serialize'
+        |> should equal TestXml.Choice2Of2
+
 module Deserialization =
     let deserialize<'T> (rootName: XmlQualifiedName) xml : 'T =
         let serializer = Serializer()
@@ -194,3 +231,25 @@ module Deserialization =
     let [<Test>] ``deserialize abstract type`` () =
         TestDelegate (fun _ -> TestXml.AbstractType |> deserialize'<TestType.AbstractBase> |> ignore)
         |> should (throwWithMessage "Cannot deserialize abstract type `XRoadSerializer.Tests.SerializerTest+TestType+AbstractBase`.") typeof<Exception>
+
+    let [<Test; Ignore>] ``deserialize choice type 1`` () =
+        let result = TestXml.Choice1Of2 |> deserialize'<TestType.TestChoice>
+        result |> should not' (be Null)
+        let (success, value) = result.TryGetChoice1()
+        success |> should equal true
+        value |> should not' (be Null)
+        value.Choice1Element |> should equal "test"
+        let (success, value) = result.TryGetChoice2()
+        success |> should equal false
+        value |> should be Null
+
+    let [<Test; Ignore>] ``deserialize choice type 2`` () =
+        let result = TestXml.Choice2Of2 |> deserialize'<TestType.TestChoice>
+        result |> should not' (be Null)
+        let (success, value) = result.TryGetChoice1()
+        success |> should equal false
+        value |> should be Null
+        let (success, value) = result.TryGetChoice2()
+        success |> should equal true
+        value |> should not' (be Null)
+        value.Choice2Element |> should equal "test"
