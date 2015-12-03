@@ -108,7 +108,6 @@ module TestType =
         [<XRoadElement>]
         member val Choice2Element = "test" with get, set
 
-    [<XRoadType(LayoutKind.Choice)>]
     [<XRoadChoice("Choice1", "Choice2")>]
     type TestChoice private (id: int, v: obj) =
         member __.TryGetChoice1([<Out>] value: Choice1 byref) =

@@ -1,16 +1,7 @@
 ﻿namespace XRoad
 
 open FSharp.Core
-open FSharp.Quotations
-open FSharp.Quotations.DerivedPatterns
-open FSharp.Quotations.Patterns
-open System
-open System.Collections.Concurrent
-open System.Numerics
-open System.Reflection
-open System.Reflection.Emit
 open System.Xml
-open XRoad.Attributes
 open XRoad.DynamicMethods
 
 type Serializer() as this =

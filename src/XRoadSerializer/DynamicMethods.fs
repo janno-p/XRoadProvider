@@ -160,16 +160,33 @@ let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
         il.Emit(OpCodes.Br, markReturn)
         il.MarkLabel(lbl3)
 
-        // var instance = new T();
         let instance = il.DeclareLocal(mainType.Type)
-        il.Emit(OpCodes.Newobj, mainType.Type.GetConstructor([| |]))
-        il.Emit(OpCodes.Stloc, instance)
+
+        match mainType.Type.GetCustomAttribute<XRoadChoiceAttribute>() with
+        | null ->
+            // var instance = new T();
+            il.Emit(OpCodes.Newobj, mainType.Type.GetConstructor([| |]))
+            il.Emit(OpCodes.Stloc, instance)
+        | attr ->
+            let paramInfo, methInfo =
+                match mainType.Type.GetMethod("New" + attr.Alternatives.[0]) with
+                | null -> failwithf "Could not find initializer method for type `%A`." mainType.Type.FullName
+                | mi ->
+                    match mi.GetParameters() with
+                    | [| p |] -> p, mi
+                    | _ ->  failwithf "Could not find initializer method for type `%A`." mainType.Type.FullName
+            // var instance = ChoiceType.NewChoice(new P());
+            il.Emit(OpCodes.Newobj, paramInfo.ParameterType.GetConstructor([| |]))
+            il.Emit(OpCodes.Call, methInfo)
+            il.Emit(OpCodes.Stloc, instance)
 
         // TODO: deserialize attributes
 
         // Deserialize content
         let attr = mainType.Type.GetCustomAttribute<XRoadTypeAttribute>()
         match attr.Layout with
+        | LayoutKind.Choice ->
+            ()
         | LayoutKind.Sequence ->
             typeMaps
             |> List.rev
@@ -219,6 +236,8 @@ let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (pro
     | _ ->
         let attr = typeMap.Type.GetCustomAttribute<XRoadTypeAttribute>()
         match attr.Layout with
+        | LayoutKind.Choice ->
+            ()
         | LayoutKind.Sequence ->
             properties
             |> List.iter (fun (property, propTypeMap) ->
@@ -281,17 +300,80 @@ let rec createTypeMap (typ: Type) =
         let deserializeContentMethod = createDeserializeContentMethod typ
         let serializerMethod = createSerializerMethod typ
         if typeMaps.TryAdd(typ, TypeMap.Create(typ, (upcast deserializerMethod, upcast deserializeContentMethod), serializerMethod)) then
-            createSerializerMethodBody (serializerMethod.GetILGenerator()) typ
-            createDeserializerMethodBody (deserializerMethod.GetILGenerator()) (findBaseTypes typ)
-            let properties =
-                typ.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
-                |> Array.filter (fun p -> p.GetCustomAttribute<XRoadElementAttribute>() |> isNull |> not ||
-                                          p.GetCustomAttribute<XRoadContentAttribute>() |> isNull |> not)
-                |> Array.map (fun p -> (p, getTypeMap p.PropertyType))
-                |> Array.sortBy (fun (p,_) -> p.MetadataToken)
-                |> Array.toList
-            createDeserializeContentMethodBody (deserializeContentMethod.GetILGenerator()) (getTypeMap typ) properties
+            match typ.GetCustomAttribute<XRoadChoiceAttribute>() with
+            | null ->
+                createSerializerMethodBody (serializerMethod.GetILGenerator()) typ
+                createDeserializerMethodBody (deserializerMethod.GetILGenerator()) (findBaseTypes typ)
+                let properties =
+                    typ.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
+                    |> Array.filter (fun p -> p.GetCustomAttribute<XRoadElementAttribute>() |> isNull |> not ||
+                                              p.GetCustomAttribute<XRoadContentAttribute>() |> isNull |> not)
+                    |> Array.map (fun p -> (p, getTypeMap p.PropertyType))
+                    |> Array.sortBy (fun (p,_) -> p.MetadataToken)
+                    |> Array.toList
+                createDeserializeContentMethodBody (deserializeContentMethod.GetILGenerator()) (getTypeMap typ) properties
+            | attr ->
+                createChoiceTypeSerializers (serializerMethod.GetILGenerator())
+                                            (deserializerMethod.GetILGenerator())
+                                            (deserializeContentMethod.GetILGenerator())
+                                            attr
+                                            typ
         typeMaps.[typ]
+
+and createChoiceTypeSerializers ilSer ilDeser ilDeserContent attr choiceType =
+    let conditionEnd = ilSer.DefineLabel()
+    attr.Alternatives
+    |> Array.mapi (fun i name ->
+        let typ =
+            match choiceType.GetMethod("New" + name, BindingFlags.Public ||| BindingFlags.Static) with
+            | null -> failwithf "Type `%s` should define public static method `New%s`." choiceType.FullName name
+            | mi -> match mi.GetParameters() with
+                    | [| pi |] -> pi.ParameterType
+                    | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." choiceType.FullName name
+        (name, i + 1, typ))
+    |> Array.groupBy (fun (_,_,typ) -> typ)
+    |> Array.iter (fun (typ, values) ->
+        ())
+    ilSer.MarkLabel(conditionEnd)
+    ilSer.Emit(OpCodes.Ret)
+    ilDeser.Emit(OpCodes.Ldnull)
+    ilDeser.Emit(OpCodes.Ret)
+    ilDeserContent.Emit(OpCodes.Ldnull)
+    ilDeserContent.Emit(OpCodes.Ret)
+
+and emitSerializerParam (typeMap: TypeMap) (subTypes: TypeMap list) emitWriterParam emitValueParam (il: ILGenerator) =
+    match subTypes with
+    | [] ->
+        emitWriterParam()
+        emitValueParam()
+        il.Emit(OpCodes.Call, typeMap.Serialization)
+        il.Emit(OpCodes.Nop)
+    | _ ->
+        let conditionEnd = il.DefineLabel()
+        let rec genSubType (lbl: Label option) subTypes =
+            match subTypes with
+            | [] -> ()
+            | x::xs ->
+                lbl |> Option.iter (fun lbl -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop))
+                let lbl = match xs with [] -> conditionEnd | _ -> il.DefineLabel()
+                emitValueParam()
+                il.Emit(OpCodes.Call, objGetType)
+                il.Emit(OpCodes.Callvirt, typeGetFullName)
+                il.Emit(OpCodes.Ldstr, x.Type.FullName)
+                il.Emit(OpCodes.Callvirt, stringEquals)
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Brtrue_S, lbl)
+                il.Emit(OpCodes.Nop)
+                emitWriterParam()
+                emitValueParam()
+                il.Emit(OpCodes.Call, x.Serialization)
+                il.Emit(OpCodes.Nop)
+                il.Emit(OpCodes.Nop)
+                il.Emit(OpCodes.Br, conditionEnd)
+                genSubType (Some lbl) xs
+        subTypes |> genSubType None
+        il.MarkLabel(conditionEnd)
 
 and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
     let writer: Expr<XmlWriter> = Expr.GlobalVar("w")
@@ -307,6 +389,8 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
     let emitPropertySerialization (il: ILGenerator) (property: PropertyInfo) =
         let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
         let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
+        let choiceAttribute = property.PropertyType.GetCustomAttribute<XRoadChoiceAttribute>() |> Option.ofObj
+
         let propertyName = property.Name
         let typeName = property.DeclaringType.FullName
 
@@ -314,27 +398,25 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
         let attributes: Expr<unit> = Expr.GlobalVar("a")
 
         let contentExpr =
-            if property.PropertyType.IsClass || Nullable.GetUnderlyingType(property.PropertyType) |> (isNull >> not) then
-                if elementAttribute |> Option.fold (fun _ x -> x.IsNullable) false then
-                    <@ (%attributes)
+            if choiceAttribute.IsSome || (property.PropertyType.IsValueType && Nullable.GetUnderlyingType(property.PropertyType) |> isNull) then
+                <@ (%serializer) @>
+            elif elementAttribute |> Option.fold (fun _ x -> x.IsNullable) false then
+                <@ (%attributes)
+                   (%serializer) @>
+            else
+                <@ if (%value) = null then
+                       raise (Exception(String.Format("Not nullable property `{0}` of type `{1}` has null value.", propertyName, typeName)))
+                   else
+                       (%attributes)
                        (%serializer) @>
-                else
-                    <@
-                        if (%value) = null then
-                            raise (Exception(String.Format("Not nullable property `{0}` of type `{1}` has null value.", propertyName, typeName)))
-                        else
-                            (%attributes)
-                            (%serializer)
-                        @>
-            else <@ (%serializer) @>
+
         let expr =
-            if contentAttribute |> Option.fold (fun _ _ -> true) false |> not then
-                <@
-                    (%writer).WriteStartElement(propertyName)
-                    (%contentExpr)
-                    (%writer).WriteEndElement()
-                    @>
-            else contentExpr
+            if contentAttribute.IsSome || choiceAttribute.IsSome then
+                contentExpr
+            else
+                <@ (%writer).WriteStartElement(propertyName)
+                   (%contentExpr)
+                   (%writer).WriteEndElement() @>
 
         let typeMap = getTypeMap property.PropertyType
         let subTypes = findSubTypes property.PropertyType
@@ -347,39 +429,6 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
             il.Emit(OpCodes.Callvirt, property.GetGetMethod())
             if property.PropertyType.IsValueType then
                 il.Emit(OpCodes.Box, property.PropertyType)
-        let emitSerializerParam() =
-            match subTypes with
-            | [] ->
-                emitWriterParam()
-                emitValueParam()
-                il.Emit(OpCodes.Call, typeMap.Serialization)
-                il.Emit(OpCodes.Nop)
-            | _ ->
-                let conditionEnd = il.DefineLabel()
-                let rec genSubType (lbl: Label option) subTypes =
-                    match subTypes with
-                    | [] -> ()
-                    | x::xs ->
-                        lbl |> Option.iter (fun lbl -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop))
-                        let lbl = match xs with [] -> conditionEnd | _ -> il.DefineLabel()
-                        emitValueParam()
-                        il.Emit(OpCodes.Call, objGetType)
-                        il.Emit(OpCodes.Callvirt, typeGetFullName)
-                        il.Emit(OpCodes.Ldstr, x.Type.FullName)
-                        il.Emit(OpCodes.Callvirt, stringEquals)
-                        il.Emit(OpCodes.Ldc_I4_0)
-                        il.Emit(OpCodes.Ceq)
-                        il.Emit(OpCodes.Brtrue_S, lbl)
-                        il.Emit(OpCodes.Nop)
-                        emitWriterParam()
-                        emitValueParam()
-                        il.Emit(OpCodes.Call, x.Serialization)
-                        il.Emit(OpCodes.Nop)
-                        il.Emit(OpCodes.Nop)
-                        il.Emit(OpCodes.Br, conditionEnd)
-                        genSubType (Some lbl) xs
-                subTypes |> genSubType None
-                il.MarkLabel(conditionEnd)
         let rec emitAttributesParam() =
             match subTypes with
             | [] -> ()
@@ -423,7 +472,7 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
         and generate' x = generate il (fun arg -> match arg with
                                                   | e when e = (upcast value) -> emitValueParam(); Some(-1)
                                                   | e when e = (upcast writer) -> emitWriterParam(); Some(-1)
-                                                  | e when e = (upcast serializer) -> emitSerializerParam(); Some(-1)
+                                                  | e when e = (upcast serializer) -> emitSerializerParam typeMap subTypes emitWriterParam emitValueParam il; Some(-1)
                                                   | e when e = (upcast attributes) -> emitAttributesParam(); Some(-1)
                                                   | _ -> None) x
 
