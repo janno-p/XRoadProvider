@@ -1,5 +1,7 @@
 ﻿module XRoadSerializer.Tests.SerializerTest
 
+#nowarn "1104"
+
 open FsUnit
 open NUnit.Framework
 open System
@@ -109,15 +111,18 @@ module TestType =
         member val Choice2Element = "test" with get, set
 
     [<XRoadChoice("Choice1", "Choice2")>]
-    type TestChoice private (id: int, v: obj) =
-        member __.TryGetChoice1([<Out>] value: Choice1 byref) =
-            if id = 1 then value <- unbox v
+    type TestChoice =
+        val private ``@__id``: int
+        val private ``@__value``: obj
+        private new(id, value: obj) = { ``@__id`` = id; ``@__value`` = value }
+        member this.TryGetChoice1([<Out>] value: Choice1 byref) =
+            if this.``@__id`` = 1 then value <- unbox this.``@__value``
             else value <- null
-            id = 1
-        member __.TryGetChoice2([<Out>] value: Choice2 byref) =
-            if id = 2 then value <- unbox v
+            this.``@__id`` = 1
+        member this.TryGetChoice2([<Out>] value: Choice2 byref) =
+            if this.``@__id`` = 2 then value <- unbox this.``@__value``
             else value <- null
-            id = 2
+            this.``@__id`` = 2
         static member NewChoice1(value: Choice1) = TestChoice(1, value)
         static member NewChoice2(value: Choice2) = TestChoice(2, value)
 
@@ -183,12 +188,12 @@ module Serialization =
     let [<Test>] ``serialize abstract base type when subtype is used (with explicit name and namespace)`` () =
         TestType.Referrer(Reference=TestType.Concrete3()) |> serialize (XmlQualifiedName("keha")) ["t", "testns"] |> should equal TestXml.AbstractBaseTypeExplicitName
 
-    let [<Test; Ignore>] ``serialize choice type 1`` () =
+    let [<Test>] ``serialize choice type 1`` () =
         TestType.TestChoice.NewChoice1(TestType.Choice1())
         |> serialize'
         |> should equal TestXml.Choice1Of2
 
-    let [<Test; Ignore>] ``serialize choice type 2`` () =
+    let [<Test>] ``serialize choice type 2`` () =
         TestType.TestChoice.NewChoice2(TestType.Choice2())
         |> serialize'
         |> should equal TestXml.Choice2Of2

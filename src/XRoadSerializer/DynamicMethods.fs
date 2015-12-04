@@ -105,7 +105,7 @@ let getMethodInfo expr =
     | PropertyGet(_, pi, _) -> pi.GetGetMethod()
     | _ -> failwith "Must be method call expression"
 
-let createSerializerMethod (typ: Type) = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj> |])
+let createSerializerMethod (typ: Type) skipVisibility = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj> |], (skipVisibility: bool))
 let createDeserializerMethod (typ: Type) = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader> |])
 let createDeserializeContentMethod (typ: Type) = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj> |])
 
@@ -296,12 +296,13 @@ let rec createTypeMap (typ: Type) =
     match typ.GetCustomAttribute<XRoadTypeAttribute>() with
     | null -> failwithf "Type `%s` is not serializable." typ.FullName
     | _ ->
+        let choiceAttribute = typ.GetCustomAttribute<XRoadChoiceAttribute>() |> Option.ofObj
         let deserializerMethod = createDeserializerMethod typ
         let deserializeContentMethod = createDeserializeContentMethod typ
-        let serializerMethod = createSerializerMethod typ
+        let serializerMethod = createSerializerMethod typ choiceAttribute.IsSome
         if typeMaps.TryAdd(typ, TypeMap.Create(typ, (upcast deserializerMethod, upcast deserializeContentMethod), serializerMethod)) then
-            match typ.GetCustomAttribute<XRoadChoiceAttribute>() with
-            | null ->
+            match choiceAttribute with
+            | None ->
                 createSerializerMethodBody (serializerMethod.GetILGenerator()) typ
                 createDeserializerMethodBody (deserializerMethod.GetILGenerator()) (findBaseTypes typ)
                 let properties =
@@ -312,7 +313,7 @@ let rec createTypeMap (typ: Type) =
                     |> Array.sortBy (fun (p,_) -> p.MetadataToken)
                     |> Array.toList
                 createDeserializeContentMethodBody (deserializeContentMethod.GetILGenerator()) (getTypeMap typ) properties
-            | attr ->
+            | Some(attr) ->
                 createChoiceTypeSerializers (serializerMethod.GetILGenerator())
                                             (deserializerMethod.GetILGenerator())
                                             (deserializeContentMethod.GetILGenerator())
@@ -321,7 +322,31 @@ let rec createTypeMap (typ: Type) =
         typeMaps.[typ]
 
 and createChoiceTypeSerializers ilSer ilDeser ilDeserContent attr choiceType =
+    let idField = choiceType.GetField("@__id", BindingFlags.Instance ||| BindingFlags.NonPublic)
+    let valueField = choiceType.GetField("@__value", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let conditionEnd = ilSer.DefineLabel()
+    let rec genSerialization (label: Label option) (alternatives: (Type * (string * int * Type) []) list) =
+        match alternatives with
+        | [] -> ()
+        | (typ,x)::xs ->
+            label |> Option.iter (fun label -> ilSer.MarkLabel(label); ilSer.Emit(OpCodes.Nop))
+            let label = match xs with [] -> conditionEnd | _ -> ilSer.DefineLabel()
+            x |> Array.iter (fun (_,i,_) ->
+                ilSer.Emit(OpCodes.Ldarg_1)
+                ilSer.Emit(OpCodes.Castclass, choiceType)
+                ilSer.Emit(OpCodes.Ldfld, idField)
+                ilSer.Emit(OpCodes.Ldc_I4_S, i)
+                ilSer.Emit(OpCodes.Ceq)
+                ilSer.Emit(OpCodes.Brfalse, label)
+                ilSer.Emit(OpCodes.Nop))
+            ilSer.Emit(OpCodes.Ldarg_0)
+            ilSer.Emit(OpCodes.Ldarg_1)
+            ilSer.Emit(OpCodes.Castclass, choiceType)
+            ilSer.Emit(OpCodes.Ldfld, valueField)
+            ilSer.Emit(OpCodes.Call, (getTypeMap typ).Serialization)
+            ilSer.Emit(OpCodes.Nop)
+            ilSer.Emit(OpCodes.Br_S, conditionEnd)
+            genSerialization (Some label) xs
     attr.Alternatives
     |> Array.mapi (fun i name ->
         let typ =
@@ -332,8 +357,8 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent attr choiceType =
                     | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." choiceType.FullName name
         (name, i + 1, typ))
     |> Array.groupBy (fun (_,_,typ) -> typ)
-    |> Array.iter (fun (typ, values) ->
-        ())
+    |> Array.toList
+    |> genSerialization None
     ilSer.MarkLabel(conditionEnd)
     ilSer.Emit(OpCodes.Ret)
     ilDeser.Emit(OpCodes.Ldnull)
@@ -526,7 +551,7 @@ and findBaseTypes (typ: Type) =
     |> List.choose (id)
 
 let createSystemTypeMap<'T> (writerExpr: Expr<XmlWriter> -> Expr<obj> -> Expr<unit>) (readerExpr: Expr<XmlReader> -> Expr<obj>) =
-    let serializerMethod = createSerializerMethod typeof<'T>
+    let serializerMethod = createSerializerMethod typeof<'T> false
     let deserializerMethod = createDeserializerMethod typeof<'T>
     let reader: Expr<XmlReader> = Expr.GlobalVar("r")
     let writer: Expr<XmlWriter> = Expr.GlobalVar("w")
