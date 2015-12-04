@@ -111,6 +111,7 @@ let createDeserializeContentMethod (typ: Type) = DynamicMethod(sprintf "%s_Deser
 
 let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
     let mainType = typeMaps.Head
+    let typeAttribute = mainType.Type.GetCustomAttribute<XRoadTypeAttribute>()
     if mainType.Type.IsAbstract then
         // throw new Exception(string.Format("Cannot deserialize abstract type `{0}`.", typ.FullName));
         il.Emit(OpCodes.Ldstr, "Cannot deserialize abstract type `{0}`.")
@@ -162,12 +163,9 @@ let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
 
         let instance = il.DeclareLocal(mainType.Type)
 
-        match mainType.Type.GetCustomAttribute<XRoadChoiceAttribute>() with
-        | null ->
-            // var instance = new T();
-            il.Emit(OpCodes.Newobj, mainType.Type.GetConstructor([| |]))
-            il.Emit(OpCodes.Stloc, instance)
-        | attr ->
+        match typeAttribute.Layout with
+        | LayoutKind.Choice ->
+            (*
             let paramInfo, methInfo =
                 match mainType.Type.GetMethod("New" + attr.Alternatives.[0]) with
                 | null -> failwithf "Could not find initializer method for type `%A`." mainType.Type.FullName
@@ -178,6 +176,12 @@ let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
             // var instance = ChoiceType.NewChoice(new P());
             il.Emit(OpCodes.Newobj, paramInfo.ParameterType.GetConstructor([| |]))
             il.Emit(OpCodes.Call, methInfo)
+            *)
+            il.Emit(OpCodes.Ldnull)
+            il.Emit(OpCodes.Stloc, instance)
+        | _ ->
+            // var instance = new T();
+            il.Emit(OpCodes.Newobj, mainType.Type.GetConstructor([| |]))
             il.Emit(OpCodes.Stloc, instance)
 
         // TODO: deserialize attributes
@@ -295,14 +299,15 @@ let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (pro
 let rec createTypeMap (typ: Type) =
     match typ.GetCustomAttribute<XRoadTypeAttribute>() with
     | null -> failwithf "Type `%s` is not serializable." typ.FullName
-    | _ ->
-        let choiceAttribute = typ.GetCustomAttribute<XRoadChoiceAttribute>() |> Option.ofObj
+    | typeAttribute ->
         let deserializerMethod = createDeserializerMethod typ
         let deserializeContentMethod = createDeserializeContentMethod typ
-        let serializerMethod = createSerializerMethod typ choiceAttribute.IsSome
+        let serializerMethod = createSerializerMethod typ (typeAttribute.Layout = LayoutKind.Choice)
         if typeMaps.TryAdd(typ, TypeMap.Create(typ, (upcast deserializerMethod, upcast deserializeContentMethod), serializerMethod)) then
-            match choiceAttribute with
-            | None ->
+            match typeAttribute.Layout with
+            | LayoutKind.Choice ->
+                createChoiceTypeSerializers (serializerMethod.GetILGenerator()) (deserializerMethod.GetILGenerator()) (deserializeContentMethod.GetILGenerator()) typ
+            | _ ->
                 createSerializerMethodBody (serializerMethod.GetILGenerator()) typ
                 createDeserializerMethodBody (deserializerMethod.GetILGenerator()) (findBaseTypes typ)
                 let properties =
@@ -313,25 +318,19 @@ let rec createTypeMap (typ: Type) =
                     |> Array.sortBy (fun (p,_) -> p.MetadataToken)
                     |> Array.toList
                 createDeserializeContentMethodBody (deserializeContentMethod.GetILGenerator()) (getTypeMap typ) properties
-            | Some(attr) ->
-                createChoiceTypeSerializers (serializerMethod.GetILGenerator())
-                                            (deserializerMethod.GetILGenerator())
-                                            (deserializeContentMethod.GetILGenerator())
-                                            attr
-                                            typ
         typeMaps.[typ]
 
-and createChoiceTypeSerializers ilSer ilDeser ilDeserContent attr choiceType =
+and createChoiceTypeSerializers ilSer ilDeser ilDeserContent choiceType =
     let idField = choiceType.GetField("@__id", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let valueField = choiceType.GetField("@__value", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let conditionEnd = ilSer.DefineLabel()
-    let rec genSerialization (label: Label option) (alternatives: (Type * (string * int * Type) []) list) =
+    let rec genSerialization (label: Label option) (alternatives: (Type * (string * int * Type) list) list) =
         match alternatives with
         | [] -> ()
         | (typ,x)::xs ->
             label |> Option.iter (fun label -> ilSer.MarkLabel(label); ilSer.Emit(OpCodes.Nop))
             let label = match xs with [] -> conditionEnd | _ -> ilSer.DefineLabel()
-            x |> Array.iter (fun (_,i,_) ->
+            x |> List.iter (fun (_,i,_) ->
                 ilSer.Emit(OpCodes.Ldarg_1)
                 ilSer.Emit(OpCodes.Castclass, choiceType)
                 ilSer.Emit(OpCodes.Ldfld, idField)
@@ -347,17 +346,17 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent attr choiceType =
             ilSer.Emit(OpCodes.Nop)
             ilSer.Emit(OpCodes.Br_S, conditionEnd)
             genSerialization (Some label) xs
-    attr.Alternatives
-    |> Array.mapi (fun i name ->
+    choiceType.GetCustomAttributes<XRoadChoiceOptionAttribute>()
+    |> Seq.mapi (fun i attr ->
         let typ =
-            match choiceType.GetMethod("New" + name, BindingFlags.Public ||| BindingFlags.Static) with
-            | null -> failwithf "Type `%s` should define public static method `New%s`." choiceType.FullName name
+            match choiceType.GetMethod("New" + attr.Name, BindingFlags.Public ||| BindingFlags.Static) with
+            | null -> failwithf "Type `%s` should define public static method `New%s`." choiceType.FullName attr.Name
             | mi -> match mi.GetParameters() with
                     | [| pi |] -> pi.ParameterType
-                    | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." choiceType.FullName name
-        (name, i + 1, typ))
-    |> Array.groupBy (fun (_,_,typ) -> typ)
-    |> Array.toList
+                    | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." choiceType.FullName attr.Name
+        (attr.Name, attr.Id, typ))
+    |> Seq.toList
+    |> List.groupBy (fun (_,_,typ) -> typ)
     |> genSerialization None
     ilSer.MarkLabel(conditionEnd)
     ilSer.Emit(OpCodes.Ret)
@@ -414,7 +413,10 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
     let emitPropertySerialization (il: ILGenerator) (property: PropertyInfo) =
         let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
         let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
-        let choiceAttribute = property.PropertyType.GetCustomAttribute<XRoadChoiceAttribute>() |> Option.ofObj
+
+        let isChoice = property.PropertyType.GetCustomAttribute<XRoadTypeAttribute>()
+                       |> Option.ofObj
+                       |> Option.fold (fun _ attr -> attr.Layout = LayoutKind.Choice) false
 
         let propertyName = property.Name
         let typeName = property.DeclaringType.FullName
@@ -423,7 +425,7 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
         let attributes: Expr<unit> = Expr.GlobalVar("a")
 
         let contentExpr =
-            if choiceAttribute.IsSome || (property.PropertyType.IsValueType && Nullable.GetUnderlyingType(property.PropertyType) |> isNull) then
+            if isChoice || (property.PropertyType.IsValueType && Nullable.GetUnderlyingType(property.PropertyType) |> isNull) then
                 <@ (%serializer) @>
             elif elementAttribute |> Option.fold (fun _ x -> x.IsNullable) false then
                 <@ (%attributes)
@@ -436,7 +438,7 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
                        (%serializer) @>
 
         let expr =
-            if contentAttribute.IsSome || choiceAttribute.IsSome then
+            if contentAttribute.IsSome || isChoice then
                 contentExpr
             else
                 <@ (%writer).WriteStartElement(propertyName)

@@ -30,7 +30,9 @@ type XRoadContentAttribute() =
     inherit Attribute()
 
 [<AllowNullLiteral>]
-[<AttributeUsage(AttributeTargets.Class)>]
-type XRoadChoiceAttribute([<ParamArray>] alternatives: string []) =
-    inherit XRoadTypeAttribute(LayoutKind.Choice)
-    member val Alternatives = alternatives with get
+[<AttributeUsage(AttributeTargets.Class, AllowMultiple=true)>]
+type XRoadChoiceOptionAttribute(id: int, name: string, isElement: bool) =
+    inherit Attribute()
+    member val Id = id with get
+    member val Name = name with get
+    member val IsElement = isElement with get

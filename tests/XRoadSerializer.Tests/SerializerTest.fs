@@ -110,7 +110,9 @@ module TestType =
         [<XRoadElement>]
         member val Choice2Element = "test" with get, set
 
-    [<XRoadChoice("Choice1", "Choice2")>]
+    [<XRoadType(LayoutKind.Choice)>]
+    [<XRoadChoiceOption(1, "Choice1", false)>]
+    [<XRoadChoiceOption(2, "Choice2", false)>]
     type TestChoice =
         val private ``@__id``: int
         val private ``@__value``: obj
