@@ -260,7 +260,7 @@ module Deserialization =
         success |> should equal false
         value |> should be Null
 
-    let [<Test; Ignore>] ``deserialize choice type 2`` () =
+    let [<Test>] ``deserialize choice type 2`` () =
         let result = TestXml.Choice2Of2 |> deserialize'<TestType.TestChoice>
         result |> should not' (be Null)
         let (success, value) = result.TryGetChoice1()

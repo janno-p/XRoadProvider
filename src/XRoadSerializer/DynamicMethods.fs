@@ -312,10 +312,10 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
     let valueField = choiceType.GetField("@__value", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let conditionEnd = ilSer.DefineLabel()
     let markReturn = ilDeser.DefineLabel()
-    let rec genSerialization (label: Label option) (options: (XRoadChoiceOptionAttribute * Type) list) =
+    let rec genSerialization (label: Label option) (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
         match options with
         | [] -> ()
-        | (attr,typ)::xs ->
+        | (attr,typ,_)::xs ->
             label |> Option.iter (fun label -> ilSer.MarkLabel(label); ilSer.Emit(OpCodes.Nop))
             let label = match xs with [] -> conditionEnd | _ -> ilSer.DefineLabel()
             ilSer.Emit(OpCodes.Ldarg_1)
@@ -340,39 +340,47 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                 ilSer.Emit(OpCodes.Ldarg_0)
                 ilSer.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlWriter).WriteEndElement() @>)
             genSerialization (Some label) xs
-    let rec genDeserialization (options: (XRoadChoiceOptionAttribute * Type) list) =
+    let rec genDeserialization (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
         match options with
         | [] ->
             ilDeser.Emit(OpCodes.Ldnull)
             ilDeser.Emit(OpCodes.Br_S, markReturn)
-        | (attr,typ)::xs ->
+        | (attr,typ,mi)::xs ->
             let label = ilDeser.DefineLabel()
             let typeMap = getTypeMap typ
             if attr.IsElement then
                 ilDeser.Emit(OpCodes.Ldarg_0)
                 ilDeser.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                ilDeser.Emit(OpCodes.Call, getMethodInfo <@ Console.WriteLine("") @>)
+                ilDeser.Emit(OpCodes.Ldarg_0)
+                ilDeser.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
                 ilDeser.Emit(OpCodes.Ldstr, attr.Name)
                 ilDeser.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                ilDeser.Emit(OpCodes.Brfalse_S, label)
+                ilDeser.Emit(OpCodes.Ldarg_0)
+                ilDeser.Emit(OpCodes.Call, typeMap.Deserialization.Root)
+                if typeMap.Type.IsValueType
+                then ilDeser.Emit(OpCodes.Unbox_Any, typeMap.Type)
+                else ilDeser.Emit(OpCodes.Castclass, typeMap.Type)
+                ilDeser.Emit(OpCodes.Call, mi)
             else
                 ilDeser.Emit(OpCodes.Ldarg_0)
                 ilDeser.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
-            ilDeser.Emit(OpCodes.Brfalse_S, label)
-
-            ilDeser.Emit(OpCodes.Ldnull)
-
+                ilDeser.Emit(OpCodes.Brfalse_S, label)
+                ilDeser.Emit(OpCodes.Ldnull)
             ilDeser.Emit(OpCodes.Br_S, markReturn)
             ilDeser.MarkLabel(label)
             ilDeser.Emit(OpCodes.Nop)
             genDeserialization xs
     choiceType.GetCustomAttributes<XRoadChoiceOptionAttribute>()
     |> Seq.map (fun attr ->
-        let typ =
+        let (typ, mi) =
             match choiceType.GetMethod("New" + attr.Name, BindingFlags.Public ||| BindingFlags.Static) with
             | null -> failwithf "Type `%s` should define public static method `New%s`." choiceType.FullName attr.Name
             | mi -> match mi.GetParameters() with
-                    | [| pi |] -> pi.ParameterType
+                    | [| pi |] -> (pi.ParameterType, mi)
                     | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." choiceType.FullName attr.Name
-        (attr, typ))
+        (attr, typ, mi))
     |> Seq.toList
     |> (fun x -> genSerialization None x
                  genDeserialization x)
