@@ -27,6 +27,7 @@ module TestXml =
     let [<Literal>] SimpleValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></keha></wrapper>"
     let [<Literal>] StringValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>string value</keha></wrapper>"
     let [<Literal>] SubTypeWithBaseTypeMembers = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"
+    let [<Literal>] WithChoiceSample = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></keha></wrapper>"
 
 module TestType =
     type UnserializableType() =
@@ -128,6 +129,13 @@ module TestType =
         static member NewChoice1(value: Choice1) = TestChoice(1, value)
         static member NewChoice2(value: Choice2) = TestChoice(2, value)
 
+    [<XRoadType(LayoutKind.Sequence)>]
+    type WithChoice() =
+        [<XRoadElement>]
+        member val NotAChoice = "tere" with get, set
+        [<XRoadElement>]
+        member val IsAChoice = TestChoice.NewChoice1(Choice1()) with get, set
+
 module Serialization =
     let serialize qn (nslist: (string * string) list) value =
         let serializer = Serializer()
@@ -200,6 +208,9 @@ module Serialization =
         |> serialize'
         |> should equal TestXml.Choice2Of2
 
+    let [<Test>] ``serialize inner choice element`` () =
+        TestType.WithChoice() |> serialize' |> should equal TestXml.WithChoiceSample
+
 module Deserialization =
     let deserialize<'T> (rootName: XmlQualifiedName) xml : 'T =
         let serializer = Serializer()
@@ -259,3 +270,16 @@ module Deserialization =
         success |> should equal true
         value |> should not' (be Null)
         value.Choice2Element |> should equal "test"
+
+    let [<Test; Ignore>] ``deserialize inner choice element`` () =
+        let result = TestXml.WithChoiceSample |> deserialize'<TestType.WithChoice>
+        result |> should not' (be Null)
+        result.NotAChoice |> should equal "tere"
+        result.IsAChoice |> should not' (be Null)
+        let (success, value) = result.IsAChoice.TryGetChoice1()
+        success |> should equal true
+        value |> should not' (be Null)
+        value.Choice1Element |> should equal "test"
+        let (success, value) = result.IsAChoice.TryGetChoice2()
+        success |> should equal false
+        value |> should be Null

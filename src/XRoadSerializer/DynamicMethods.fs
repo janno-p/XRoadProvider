@@ -254,23 +254,25 @@ let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (pro
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, markLoopStart)
 
-                // reader.LocalName != property.Name
-                let markDeserialize = il.DefineLabel()
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
-                il.Emit(OpCodes.Ldstr, property.Name)
-                il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
-                il.Emit(OpCodes.Brtrue_S, markDeserialize)
-                il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
-                il.Emit(OpCodes.Ldstr, property.Name)
-                il.Emit(OpCodes.Call, getMethodInfo <@ String.Format("", "", "") @>)
-                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                il.Emit(OpCodes.Throw)
+                let attr = propTypeMap.Type.GetCustomAttribute<XRoadTypeAttribute>()
+                if attr |> isNull || attr.Layout <> LayoutKind.Choice then
+                    // reader.LocalName != property.Name
+                    let markDeserialize = il.DefineLabel()
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, property.Name)
+                    il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                    il.Emit(OpCodes.Brtrue_S, markDeserialize)
+                    il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, property.Name)
+                    il.Emit(OpCodes.Call, getMethodInfo <@ String.Format("", "", "") @>)
+                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                    il.Emit(OpCodes.Throw)
+                    il.MarkLabel(markDeserialize)
 
                 // Deserialize property
-                il.MarkLabel(markDeserialize)
                 emitDeserialization property propTypeMap
                 )
         | _ -> failwith "Not implemented"
