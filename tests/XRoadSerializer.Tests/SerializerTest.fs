@@ -27,7 +27,8 @@ module TestXml =
     let [<Literal>] SimpleValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></keha></wrapper>"
     let [<Literal>] StringValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>string value</keha></wrapper>"
     let [<Literal>] SubTypeWithBaseTypeMembers = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"
-    let [<Literal>] WithChoiceSample = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></keha></wrapper>"
+    let [<Literal>] WithChoice1Sample = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></keha></wrapper>"
+    let [<Literal>] WithChoice2Sample = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice2><Choice2Element>test</Choice2Element></Choice2></keha></wrapper>"
 
 module TestType =
     type UnserializableType() =
@@ -208,8 +209,13 @@ module Serialization =
         |> serialize'
         |> should equal TestXml.Choice2Of2
 
-    let [<Test>] ``serialize inner choice element`` () =
-        TestType.WithChoice() |> serialize' |> should equal TestXml.WithChoiceSample
+    let [<Test>] ``serialize inner choice 1 element`` () =
+        TestType.WithChoice() |> serialize' |> should equal TestXml.WithChoice1Sample
+
+    let [<Test>] ``serialize inner choice 2 element`` () =
+        let value = TestType.WithChoice()
+        value.IsAChoice <- TestType.TestChoice.NewChoice2(TestType.Choice2())
+        value |> serialize' |> should equal TestXml.WithChoice2Sample
 
 module Deserialization =
     let deserialize<'T> (rootName: XmlQualifiedName) xml : 'T =
@@ -271,8 +277,8 @@ module Deserialization =
         value |> should not' (be Null)
         value.Choice2Element |> should equal "test"
 
-    let [<Test; Ignore>] ``deserialize inner choice element`` () =
-        let result = TestXml.WithChoiceSample |> deserialize'<TestType.WithChoice>
+    let [<Test; Ignore>] ``deserialize inner choice 1 element`` () =
+        let result = TestXml.WithChoice1Sample |> deserialize'<TestType.WithChoice>
         result |> should not' (be Null)
         result.NotAChoice |> should equal "tere"
         result.IsAChoice |> should not' (be Null)
@@ -283,3 +289,16 @@ module Deserialization =
         let (success, value) = result.IsAChoice.TryGetChoice2()
         success |> should equal false
         value |> should be Null
+
+    let [<Test>] ``deserialize inner choice 2 element`` () =
+        let result = TestXml.WithChoice2Sample |> deserialize'<TestType.WithChoice>
+        result |> should not' (be Null)
+        result.NotAChoice |> should equal "tere"
+        result.IsAChoice |> should not' (be Null)
+        let (success, value) = result.IsAChoice.TryGetChoice1()
+        success |> should equal false
+        value |> should be Null
+        let (success, value) = result.IsAChoice.TryGetChoice2()
+        success |> should equal true
+        value |> should not' (be Null)
+        value.Choice2Element |> should equal "test"
