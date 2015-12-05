@@ -7,6 +7,7 @@ open System.IO
 open System.Reflection
 open System.Xml
 
+open XRoad.Attributes
 open XRoad.CodeDom.Common
 open XRoad.CodeDom.ServiceImpl
 open XRoad.Common
@@ -34,9 +35,7 @@ module TypeBuilder =
           IsAttribute: bool
           IsAny: bool
           IsIgnored: bool
-          // Choice element specific attributes:
-          ChoiceIdentifier: string option
-          ChoiceElements: PropertyDefinition list
+          // Documentation tooltips
           Documentation: string option }
         /// Initializes default property with name and optional value.
         static member Create(name, isOptional, doc) =
@@ -50,8 +49,6 @@ module TypeBuilder =
               IsAttribute = false
               IsAny = false
               IsIgnored = false
-              ChoiceIdentifier = None
-              ChoiceElements = []
               Documentation = doc }
 
     /// Build property declarations from property definitions and add them to owner type.
@@ -76,16 +73,7 @@ module TypeBuilder =
                 | Some(true), _ ->
                     failwith "Wrapped array should match to CollectionType."
                 | (None | Some(false)), _ ->
-                    if definition.ChoiceIdentifier.IsNone then
-                        prop |> Prop.describe (Attributes.xrdElement(elementName, definition.IsNillable))
-                             |> ignore
-                match definition.ChoiceIdentifier with
-                | Some(identifierName) ->
-                    prop |> Prop.describe (Attributes.XmlChoiceIdentifier(identifierName)) |> ignore
-                    definition.ChoiceElements
-                    |> List.iter (fun x -> prop |> Prop.describe (Attributes.XmlElement2(x.Name, x.Type.AsCodeTypeReference()))
-                                                |> ignore)
-                | None -> ()
+                    prop |> Prop.describe (Attributes.xrdElement(elementName, definition.IsNillable)) |> ignore
             // Add extra types to owner type declaration.
             definition.AddedTypes |> List.iter (fun x -> ownerTy |> Cls.addMember x |> ignore)
         definitions |> List.iter (addTypePropertiesFromDefinition)
@@ -106,6 +94,12 @@ module TypeBuilder =
             |> List.tryFind (fst >> ((=) context.LanguageCode))
             |> Option.map snd)
 
+    let nameGenerator name =
+        let num = ref 0
+        (fun () ->
+            num := !num + 1
+            sprintf "%s%d" name !num)
+
     /// Populate generated type declaration with properties specified in type schema definition.
     let rec build (context: TypeBuilderContext) runtimeType schemaType =
         // Extract type declaration from runtime type definition.
@@ -114,11 +108,7 @@ module TypeBuilder =
             | ProvidedType(decl, name) -> decl, name
             | _ -> failwith "Only generated types are accepted as arguments!"
         // Generates unique type name for every choice element.
-        let choiceNameGenerator =
-            let num = ref 0
-            (fun () ->
-                num := !num + 1
-                sprintf "Choice%d" !num)
+        let choiceNameGenerator = nameGenerator "Choice"
         // Parse schema definition and add all properties that are defined.
         match schemaType with
         | SimpleType(SimpleTypeSpec.Restriction(spec, annotation)) ->
@@ -158,7 +148,6 @@ module TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | ProvidedType(baseDecl,_) as baseTy ->
                         providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
-                        baseDecl |> Cls.describe (Attributes.XmlInclude(typeRefName providedTypeName)) |> ignore
                     | _ ->
                         failwithf "Only complex types can be inherited! (%A)" spec.Base
                     Some(spec.Content)
@@ -247,7 +236,7 @@ module TypeBuilder =
                     IsWrappedArray = Some(true) }
             | _, Reference(_) -> failwith "never"
         | Definition(def) ->
-            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType())
+            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then
@@ -281,17 +270,37 @@ module TypeBuilder =
 
     /// Create property definitions for choice element specification.
     and private collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition list =
-        match buildChoiceMembers spec context with
-        | [] -> []
-        | [ _ ] -> failwith "Not implemented: single option choice should be treated as regular sequence."
-        | options ->
-            // New unique name for choice properties and types.
-            let choiceName = choiceNameGenerator()
-            // Create enumeration type for options.
-            let choiceEnum =
-                Cls.createEnum (choiceName + "Type")
-                |> Cls.setAttr TypeAttributes.Public
-                |> Cls.describe Attributes.XmlTypeExclude
+        let choiceName = choiceNameGenerator()
+        let choiceType =
+            Cls.create (choiceName + "Type")
+            |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Sealed)
+            |> Cls.describe (Attributes.xrdDefType LayoutKind.Choice)
+
+        let optionNameGenerator = nameGenerator (sprintf "%sOption" choiceName)
+
+        spec.Content
+        |> List.iteri (fun i choiceContent ->
+            match choiceContent with
+            | ChoiceContent.Any ->
+                failwith "Not implemented: any in choice."
+            | ChoiceContent.Choice(_) ->
+                failwith "Not implemented: choice in choice."
+            | ChoiceContent.Element(spec) ->
+                choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) spec.Name.Value true) |> ignore
+            | ChoiceContent.Group ->
+                failwith "Not implemented: group in choice."
+            | ChoiceContent.Sequence(spec) ->
+                let optionName = optionNameGenerator()
+                choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName false) |> ignore
+            )
+
+        let choiceProperty =
+            let prop = PropertyDefinition.Create(choiceName, false, None)
+            { prop with Type = ProvidedType(choiceType, choiceType.Name); AddedTypes = [choiceType] }
+
+        [choiceProperty]
+
+        (*
             let isArray = options |> List.map (List.length) |> List.max > 1
             let enumNameType =
                 let rt = ProvidedType(choiceEnum, choiceEnum.Name)
@@ -324,6 +333,7 @@ module TypeBuilder =
                 let prop = PropertyDefinition.Create(choiceName + (if isArray then "Items" else"Item"), false, None)
                 { prop with Type = choiceItemType; ChoiceIdentifier = Some(choiceTypeProp.Name); ChoiceElements = choiceElements }
             [ choiceTypeProp; choiceItemProp ]
+        *)
 
     /// Extract property definitions for all the elements defined in sequence element.
     and private buildSequenceMembers context (spec: SequenceSpec) =
@@ -340,22 +350,6 @@ module TypeBuilder =
                 failwith "Not implemented: group in sequence."
             | SequenceContent.Sequence(_) ->
                 failwith "Not implemented: sequence in sequence.")
-
-    /// Extract property definitions for all the elements defined in choice element.
-    and private buildChoiceMembers (spec: ChoiceSpec) context =
-        spec.Content
-        |> List.map (
-            function
-            | ChoiceContent.Any ->
-                failwith "Not implemented: any in choice."
-            | ChoiceContent.Choice(_) ->
-                failwith "Not implemented: choice in choice."
-            | ChoiceContent.Element(espec) ->
-                [ buildElementProperty context espec ]
-            | ChoiceContent.Group ->
-                failwith "Not implemented: group in choice."
-            | ChoiceContent.Sequence(sspec) ->
-                buildSequenceMembers context sspec)
 
 /// Functions and types to handle building methods for services and operation bindings.
 module ServiceBuilder =

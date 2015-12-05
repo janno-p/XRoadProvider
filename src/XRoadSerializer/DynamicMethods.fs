@@ -313,17 +313,21 @@ let rec createTypeMap (typ: Type) =
                     |> Array.sortBy (fun (p,_) -> p.MetadataToken)
                     |> Array.toList
                 createDeserializeContentMethodBody (deserializeContentMethod.GetILGenerator()) (getTypeMap typ) properties
-                createMatchType (matchTypeMethod.GetILGenerator()) properties.Head
+                createMatchType (matchTypeMethod.GetILGenerator()) (properties |> List.tryHead)
         typeMaps.[typ]
 
-and createMatchType il (propertyInfo, propertyMap) =
-    il.Emit(OpCodes.Ldarg_0)
-    if not (propertyMap.Attribute |> isNull) && propertyMap.Attribute.Layout = LayoutKind.Choice then
-        il.Emit(OpCodes.Call, propertyMap.Deserialization.MatchType)
-    else
-        il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
-        il.Emit(OpCodes.Ldstr, propertyInfo.Name)
-        il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+and createMatchType il property =
+    match property with
+    | Some(propertyInfo, propertyMap) ->
+        il.Emit(OpCodes.Ldarg_0)
+        if not (propertyMap.Attribute |> isNull) && propertyMap.Attribute.Layout = LayoutKind.Choice then
+            il.Emit(OpCodes.Call, propertyMap.Deserialization.MatchType)
+        else
+            il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+            il.Emit(OpCodes.Ldstr, propertyInfo.Name)
+            il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+    | None ->
+        il.Emit(OpCodes.Ldc_I4_0)
     il.Emit(OpCodes.Ret)
 
 and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType =

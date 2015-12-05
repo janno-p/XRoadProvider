@@ -85,31 +85,27 @@ module Attributes =
     let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
     let XmlAttributeWithName (name: string) = Attr.create<XmlAttributeAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm
     let XmlTypeExclude = Attr.create<XmlTypeAttribute> |> Attr.addNamedArg "IncludeInSchema" (Expr.value false)
-    let XmlInclude(providedTy: CodeTypeReference) = Attr.create<XmlIncludeAttribute> |> Attr.addArg (Expr.typeOf providedTy)
     let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
     let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable
     let XmlArrayItem(name, isNillable) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm |> addNullable isNillable
     let XmlIgnore = Attr.create<XmlIgnoreAttribute>
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
-    let XmlEnum name = Attr.create<XmlEnumAttribute> |> Attr.addArg (Expr.value name)
-    let XmlChoiceIdentifier name = Attr.create<XmlChoiceIdentifierAttribute> |> Attr.addArg (Expr.value name)
 
-    let xrdDefType() =
+    let xrdDefType (layout: LayoutKind) =
+        Attr.create<XRoadTypeAttribute> |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
+    let xrdType (typeName: XName) (layout: LayoutKind) =
         Attr.create<XRoadTypeAttribute>
-        |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> "Sequence")
-
-    let xrdType(typeName: XName) =
-        Attr.create<XRoadTypeAttribute>
-        |> Attr.addArg (Expr.value typeName.LocalName)
-        |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> "Sequence")
-        |> Attr.addNamedArg "Namespace" (Expr.value typeName.NamespaceName)
-
+        |> Attr.addArg (!^ typeName.LocalName)
+        |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
+        |> Attr.addNamedArg "Namespace" (!^ typeName.NamespaceName)
     let xrdElement(name, isNillable) =
         name
-        |> Option.fold (fun attr n -> attr |> Attr.addArg (Expr.value n)) Attr.create<XRoadElementAttribute>
+        |> Option.fold (fun attr n -> attr |> Attr.addArg (!^ n)) Attr.create<XRoadElementAttribute>
         |> addNullable isNillable
-
-    let xrdContent = Attr.create<XRoadContentAttribute>
+    let xrdContent =
+        Attr.create<XRoadContentAttribute>
+    let xrdChoiceOption (id: int) (name: string) (isElement: bool) =
+        Attr.create<XRoadChoiceOptionAttribute> |> Attr.addArg (!^ id) |> Attr.addArg (!^ name) |> Attr.addArg (!^ isElement)
 
 /// Functions to create and manipulate type fields.
 module Fld =

@@ -7,6 +7,7 @@ open System.Reflection
 open System.Text.RegularExpressions
 open System.Xml.Linq
 
+open XRoad.Attributes
 open XRoad.CodeDom.Common
 open XRoad.Common
 open XRoad.TypeSchema
@@ -190,8 +191,8 @@ type internal TypeBuilderContext =
                 | _ ->
                     let attr =
                         match name with
-                        | SchemaElement(_) -> Attributes.xrdType name.XName
-                        | SchemaType(_) -> Attributes.xrdType name.XName
+                        | SchemaElement(_) -> Attributes.xrdType name.XName LayoutKind.Sequence
+                        | SchemaType(_) -> Attributes.xrdType name.XName LayoutKind.Sequence
                     let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
                     nstyp |> Cls.addMember typ |> ignore
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
