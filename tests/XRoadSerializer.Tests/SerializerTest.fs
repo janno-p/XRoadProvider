@@ -255,7 +255,7 @@ module Deserialization =
         TestDelegate (fun _ -> TestXml.AbstractType |> deserialize'<TestType.AbstractBase> |> ignore)
         |> should (throwWithMessage "Cannot deserialize abstract type `XRoadSerializer.Tests.SerializerTest+TestType+AbstractBase`.") typeof<Exception>
 
-    let [<Test; Ignore>] ``deserialize choice type 1`` () =
+    let [<Test>] ``deserialize choice type 1`` () =
         let result = TestXml.Choice1Of2 |> deserialize'<TestType.TestChoice>
         result |> should not' (be Null)
         let (success, value) = result.TryGetChoice1()
@@ -277,7 +277,7 @@ module Deserialization =
         value |> should not' (be Null)
         value.Choice2Element |> should equal "test"
 
-    let [<Test; Ignore>] ``deserialize inner choice 1 element`` () =
+    let [<Test>] ``deserialize inner choice 1 element`` () =
         let result = TestXml.WithChoice1Sample |> deserialize'<TestType.WithChoice>
         result |> should not' (be Null)
         result.NotAChoice |> should equal "tere"

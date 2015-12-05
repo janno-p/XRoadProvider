@@ -115,7 +115,7 @@ let getMethodInfo expr =
 let createMatchTypeMethod (typ: Type) = DynamicMethod(sprintf "%s_MatchType" typ.FullName, typeof<bool>, [| typeof<XmlReader> |])
 let createSerializerMethod (typ: Type) skipVisibility = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj> |], (skipVisibility: bool))
 let createDeserializerMethod (typ: Type) = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader> |])
-let createDeserializeContentMethod (typ: Type) = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj> |])
+let createDeserializeContentMethod (typ: Type) = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj>; typeof<bool> |])
 
 let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
     let mainType = typeMaps.Head
@@ -181,6 +181,7 @@ let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
         |> List.iter (fun typeMap ->
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldloc, instance)
+            il.Emit(OpCodes.Ldc_I4_0)
             il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
             il.Emit(OpCodes.Nop))
 
@@ -190,14 +191,6 @@ let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
         il.Emit(OpCodes.Ret)
 
 let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (properties: (PropertyInfo * TypeMap) list) =
-    // var varDepth = reader.Depth + 1;
-    let varDepth = il.DeclareLocal(typeof<int>)
-    il.Emit(OpCodes.Ldarg_0)
-    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).Depth @>)
-    il.Emit(OpCodes.Ldc_I4_1)
-    il.Emit(OpCodes.Add)
-    il.Emit(OpCodes.Stloc, varDepth)
-
     let (|ContentProperty|_|) (properties: (PropertyInfo * TypeMap) list) =
         match properties with
         | [(prop,_) as x] ->
@@ -220,12 +213,28 @@ let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (pro
     | ContentProperty(property,propTypeMap) ->
         emitDeserialization property propTypeMap
     | _ ->
+        let varDepth = il.DeclareLocal(typeof<int>)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).Depth @>)
+        il.Emit(OpCodes.Stloc, varDepth)
+
+        let label = il.DefineLabel()
+        let skipLabel = il.DefineLabel()
+        il.Emit(OpCodes.Ldarg_2)
+        il.Emit(OpCodes.Brfalse_S, label)
+        il.Emit(OpCodes.Br, skipLabel)
+        il.MarkLabel(label)
+        il.Emit(OpCodes.Ldloc, varDepth)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Add)
+        il.Emit(OpCodes.Stloc, varDepth)
+
         match typeMap.Attribute.Layout with
         | LayoutKind.Choice ->
             ()
         | LayoutKind.Sequence ->
             properties
-            |> List.iter (fun (property, propTypeMap) ->
+            |> List.iteri (fun i (property, propTypeMap) ->
                 let markLoopStart = il.DefineLabel()
                 let markSuccess = il.DefineLabel()
 
@@ -240,6 +249,8 @@ let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (pro
                 il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                 il.Emit(OpCodes.Throw)
                 il.MarkLabel(markSuccess)
+
+                if i = 0 then il.MarkLabel(skipLabel)
 
                 // reader.Depth != depth
                 il.Emit(OpCodes.Ldarg_0)
@@ -302,16 +313,23 @@ let rec createTypeMap (typ: Type) =
                     |> Array.sortBy (fun (p,_) -> p.MetadataToken)
                     |> Array.toList
                 createDeserializeContentMethodBody (deserializeContentMethod.GetILGenerator()) (getTypeMap typ) properties
-                let il = matchTypeMethod.GetILGenerator()
-                il.Emit(OpCodes.Ldc_I4_0)
-                il.Emit(OpCodes.Ret)
+                createMatchType (matchTypeMethod.GetILGenerator()) properties.Head
         typeMaps.[typ]
+
+and createMatchType il (propertyInfo, propertyMap) =
+    il.Emit(OpCodes.Ldarg_0)
+    if not (propertyMap.Attribute |> isNull) && propertyMap.Attribute.Layout = LayoutKind.Choice then
+        il.Emit(OpCodes.Call, propertyMap.Deserialization.MatchType)
+    else
+        il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+        il.Emit(OpCodes.Ldstr, propertyInfo.Name)
+        il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+    il.Emit(OpCodes.Ret)
 
 and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType =
     let idField = choiceType.GetField("@__id", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let valueField = choiceType.GetField("@__value", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let conditionEnd = ilSer.DefineLabel()
-    let markReturn = ilDeser.DefineLabel()
     let rec genSerialization (label: Label option) (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
         match options with
         | [] -> ()
@@ -340,38 +358,76 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                 ilSer.Emit(OpCodes.Ldarg_0)
                 ilSer.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlWriter).WriteEndElement() @>)
             genSerialization (Some label) xs
-    let rec genDeserialization (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
-        match options with
-        | [] ->
-            ilDeser.Emit(OpCodes.Ldnull)
-            ilDeser.Emit(OpCodes.Br_S, markReturn)
-        | (attr,typ,mi)::xs ->
-            let label = ilDeser.DefineLabel()
-            let typeMap = getTypeMap typ
-            if attr.IsElement then
-                ilDeser.Emit(OpCodes.Ldarg_0)
-                ilDeser.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
-                ilDeser.Emit(OpCodes.Call, getMethodInfo <@ Console.WriteLine("") @>)
-                ilDeser.Emit(OpCodes.Ldarg_0)
-                ilDeser.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
-                ilDeser.Emit(OpCodes.Ldstr, attr.Name)
-                ilDeser.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
-                ilDeser.Emit(OpCodes.Brfalse_S, label)
-                ilDeser.Emit(OpCodes.Ldarg_0)
-                ilDeser.Emit(OpCodes.Call, typeMap.Deserialization.Root)
-                if typeMap.Type.IsValueType
-                then ilDeser.Emit(OpCodes.Unbox_Any, typeMap.Type)
-                else ilDeser.Emit(OpCodes.Castclass, typeMap.Type)
-                ilDeser.Emit(OpCodes.Call, mi)
-            else
-                ilDeser.Emit(OpCodes.Ldarg_0)
-                ilDeser.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
-                ilDeser.Emit(OpCodes.Brfalse_S, label)
-                ilDeser.Emit(OpCodes.Ldnull)
-            ilDeser.Emit(OpCodes.Br_S, markReturn)
-            ilDeser.MarkLabel(label)
-            ilDeser.Emit(OpCodes.Nop)
-            genDeserialization xs
+    let genDeserialization options =
+        let il = ilDeser
+        let markReturn = il.DefineLabel()
+        let rec generate (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
+            match options with
+            | [] ->
+                il.Emit(OpCodes.Ldnull)
+                il.Emit(OpCodes.Br_S, markReturn)
+            | (attr,typ,mi)::options ->
+                let label = il.DefineLabel()
+                let typeMap = getTypeMap typ
+                if attr.IsElement then
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, attr.Name)
+                    il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                    il.Emit(OpCodes.Brfalse_S, label)
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Call, typeMap.Deserialization.Root)
+                    if typeMap.Type.IsValueType
+                    then il.Emit(OpCodes.Unbox_Any, typeMap.Type)
+                    else il.Emit(OpCodes.Castclass, typeMap.Type)
+                else
+                    let instance = il.DeclareLocal(typeMap.Type)
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
+                    il.Emit(OpCodes.Brfalse_S, label)
+                    il.Emit(OpCodes.Newobj, typeMap.Type.GetConstructor([| |]))
+                    il.Emit(OpCodes.Stloc, instance)
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Ldloc, instance)
+                    il.Emit(OpCodes.Ldc_I4_1)
+                    il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
+                    il.Emit(OpCodes.Ldloc, instance)
+                il.Emit(OpCodes.Call, mi)
+                il.Emit(OpCodes.Br_S, markReturn)
+                il.MarkLabel(label)
+                il.Emit(OpCodes.Nop)
+                generate options
+        generate options
+        il.MarkLabel(markReturn)
+        il.Emit(OpCodes.Ret)
+    let genMatch options =
+        let il = ilMatch
+        let markReturn = il.DefineLabel()
+        let rec generate (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
+            match options with
+            | [] ->
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Br_S, markReturn)
+            | (attr,typ,_)::options ->
+                let label = il.DefineLabel()
+                let typeMap = getTypeMap typ
+                if attr.IsElement then
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, attr.Name)
+                    il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                else
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
+                il.Emit(OpCodes.Brfalse_S, label)
+                il.Emit(OpCodes.Ldc_I4_1)
+                il.Emit(OpCodes.Br, markReturn)
+                il.MarkLabel(label)
+                il.Emit(OpCodes.Nop)
+                generate options
+        generate options
+        il.MarkLabel(markReturn)
+        il.Emit(OpCodes.Ret)
     choiceType.GetCustomAttributes<XRoadChoiceOptionAttribute>()
     |> Seq.map (fun attr ->
         let (typ, mi) =
@@ -383,15 +439,11 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
         (attr, typ, mi))
     |> Seq.toList
     |> (fun x -> genSerialization None x
-                 genDeserialization x)
+                 genDeserialization x
+                 genMatch x)
     ilSer.MarkLabel(conditionEnd)
     ilSer.Emit(OpCodes.Ret)
-    ilDeser.MarkLabel(markReturn)
-    ilDeser.Emit(OpCodes.Ret)
-    ilDeserContent.Emit(OpCodes.Ldnull)
     ilDeserContent.Emit(OpCodes.Ret)
-    ilMatch.Emit(OpCodes.Ldc_I4_0)
-    ilMatch.Emit(OpCodes.Ret)
 
 and emitSerializerParam (typeMap: TypeMap) (subTypes: TypeMap list) emitWriterParam emitValueParam (il: ILGenerator) =
     match subTypes with
