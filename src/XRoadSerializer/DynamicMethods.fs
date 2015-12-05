@@ -15,10 +15,15 @@ open XRoad.Attributes
 type DeserializerDelegate = delegate of XmlReader -> obj
 type SerializerDelegate = delegate of XmlWriter * obj -> unit
 
+type Deserialization =
+    { Root: MethodInfo
+      Content: MethodInfo
+      MatchType: MethodInfo }
+
 type TypeMap =
     { Type: Type
       DeserializeDelegate: Lazy<DeserializerDelegate>
-      Deserialization: MethodInfo * MethodInfo
+      Deserialization: Deserialization
       SerializeDelegate: Lazy<SerializerDelegate>
       Serialization: MethodInfo }
     member this.Serialize(writer: XmlWriter, value: obj) =
@@ -28,7 +33,7 @@ type TypeMap =
     static member Create(typ, deserialization, serialization) =
         { Type = typ
           Deserialization = deserialization
-          DeserializeDelegate = lazy ((fst deserialization).CreateDelegate(typeof<DeserializerDelegate>) |> unbox)
+          DeserializeDelegate = lazy (deserialization.Root.CreateDelegate(typeof<DeserializerDelegate>) |> unbox)
           Serialization = serialization
           SerializeDelegate = lazy (serialization.CreateDelegate(typeof<SerializerDelegate>) |> unbox) }
 
@@ -105,13 +110,13 @@ let getMethodInfo expr =
     | PropertyGet(_, pi, _) -> pi.GetGetMethod()
     | _ -> failwith "Must be method call expression"
 
+let createMatchTypeMethod (typ: Type) = DynamicMethod(sprintf "%s_MatchType" typ.FullName, typeof<bool>, [| typeof<XmlReader> |])
 let createSerializerMethod (typ: Type) skipVisibility = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj> |], (skipVisibility: bool))
 let createDeserializerMethod (typ: Type) = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader> |])
 let createDeserializeContentMethod (typ: Type) = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj> |])
 
 let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
     let mainType = typeMaps.Head
-    let typeAttribute = mainType.Type.GetCustomAttribute<XRoadTypeAttribute>()
     if mainType.Type.IsAbstract then
         // throw new Exception(string.Format("Cannot deserialize abstract type `{0}`.", typ.FullName));
         il.Emit(OpCodes.Ldstr, "Cannot deserialize abstract type `{0}`.")
@@ -161,46 +166,21 @@ let createDeserializerMethodBody (il: ILGenerator) (typeMaps: TypeMap list) =
         il.Emit(OpCodes.Br, markReturn)
         il.MarkLabel(lbl3)
 
+        // var instance = new T();
         let instance = il.DeclareLocal(mainType.Type)
-
-        match typeAttribute.Layout with
-        | LayoutKind.Choice ->
-            (*
-            let paramInfo, methInfo =
-                match mainType.Type.GetMethod("New" + attr.Alternatives.[0]) with
-                | null -> failwithf "Could not find initializer method for type `%A`." mainType.Type.FullName
-                | mi ->
-                    match mi.GetParameters() with
-                    | [| p |] -> p, mi
-                    | _ ->  failwithf "Could not find initializer method for type `%A`." mainType.Type.FullName
-            // var instance = ChoiceType.NewChoice(new P());
-            il.Emit(OpCodes.Newobj, paramInfo.ParameterType.GetConstructor([| |]))
-            il.Emit(OpCodes.Call, methInfo)
-            *)
-            il.Emit(OpCodes.Ldnull)
-            il.Emit(OpCodes.Stloc, instance)
-        | _ ->
-            // var instance = new T();
-            il.Emit(OpCodes.Newobj, mainType.Type.GetConstructor([| |]))
-            il.Emit(OpCodes.Stloc, instance)
+        il.Emit(OpCodes.Newobj, mainType.Type.GetConstructor([| |]))
+        il.Emit(OpCodes.Stloc, instance)
 
         // TODO: deserialize attributes
 
         // Deserialize content
-        let attr = mainType.Type.GetCustomAttribute<XRoadTypeAttribute>()
-        match attr.Layout with
-        | LayoutKind.Choice ->
-            ()
-        | LayoutKind.Sequence ->
-            typeMaps
-            |> List.rev
-            |> List.iter (fun typeMap ->
-                let (_,mi) = typeMap.Deserialization
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Ldloc, instance)
-                il.Emit(OpCodes.Call, mi)
-                il.Emit(OpCodes.Nop))
-        | _ -> failwith "Not implemented!"
+        typeMaps
+        |> List.rev
+        |> List.iter (fun typeMap ->
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldloc, instance)
+            il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
+            il.Emit(OpCodes.Nop))
 
         // return instance;
         il.Emit(OpCodes.Ldloc, instance)
@@ -228,7 +208,7 @@ let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (pro
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, typeMap.Type)
         il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Call, propTypeMap.Deserialization |> fst)
+        il.Emit(OpCodes.Call, propTypeMap.Deserialization.Root)
         if propTypeMap.Type.IsValueType
         then il.Emit(OpCodes.Unbox_Any, propTypeMap.Type)
         else il.Emit(OpCodes.Castclass, propTypeMap.Type)
@@ -303,10 +283,12 @@ let rec createTypeMap (typ: Type) =
         let deserializerMethod = createDeserializerMethod typ
         let deserializeContentMethod = createDeserializeContentMethod typ
         let serializerMethod = createSerializerMethod typ (typeAttribute.Layout = LayoutKind.Choice)
-        if typeMaps.TryAdd(typ, TypeMap.Create(typ, (upcast deserializerMethod, upcast deserializeContentMethod), serializerMethod)) then
+        let matchTypeMethod = createMatchTypeMethod typ
+        let deserialization = { Root = deserializerMethod; Content = deserializeContentMethod; MatchType = matchTypeMethod }
+        if typeMaps.TryAdd(typ, TypeMap.Create(typ, deserialization, serializerMethod)) then
             match typeAttribute.Layout with
             | LayoutKind.Choice ->
-                createChoiceTypeSerializers (serializerMethod.GetILGenerator()) (deserializerMethod.GetILGenerator()) (deserializeContentMethod.GetILGenerator()) typ
+                createChoiceTypeSerializers (serializerMethod.GetILGenerator()) (deserializerMethod.GetILGenerator()) (deserializeContentMethod.GetILGenerator()) (matchTypeMethod.GetILGenerator()) typ
             | _ ->
                 createSerializerMethodBody (serializerMethod.GetILGenerator()) typ
                 createDeserializerMethodBody (deserializerMethod.GetILGenerator()) (findBaseTypes typ)
@@ -318,9 +300,12 @@ let rec createTypeMap (typ: Type) =
                     |> Array.sortBy (fun (p,_) -> p.MetadataToken)
                     |> Array.toList
                 createDeserializeContentMethodBody (deserializeContentMethod.GetILGenerator()) (getTypeMap typ) properties
+                let il = matchTypeMethod.GetILGenerator()
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Ret)
         typeMaps.[typ]
 
-and createChoiceTypeSerializers ilSer ilDeser ilDeserContent choiceType =
+and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType =
     let idField = choiceType.GetField("@__id", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let valueField = choiceType.GetField("@__value", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let conditionEnd = ilSer.DefineLabel()
@@ -369,6 +354,8 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent choiceType =
     ilDeser.Emit(OpCodes.Ret)
     ilDeserContent.Emit(OpCodes.Ldnull)
     ilDeserContent.Emit(OpCodes.Ret)
+    ilMatch.Emit(OpCodes.Ldc_I4_0)
+    ilMatch.Emit(OpCodes.Ret)
 
 and emitSerializerParam (typeMap: TypeMap) (subTypes: TypeMap list) emitWriterParam emitValueParam (il: ILGenerator) =
     match subTypes with
@@ -576,7 +563,8 @@ let createSystemTypeMap<'T> (writerExpr: Expr<XmlWriter> -> Expr<obj> -> Expr<un
              (fun e -> if e = (upcast reader) then il.Emit(OpCodes.Ldarg_0); Some(-1) else None)
              (readerExpr reader)
     il.Emit(OpCodes.Ret)
-    typeMaps.TryAdd(typeof<'T>, TypeMap.Create(typeof<'T>, (upcast deserializerMethod, null), serializerMethod)) |> ignore
+    let deserialization = { Root = deserializerMethod; Content = null; MatchType = null }
+    typeMaps.TryAdd(typeof<'T>, TypeMap.Create(typeof<'T>, deserialization, serializerMethod)) |> ignore
 
 do
     createSystemTypeMap<bool>
