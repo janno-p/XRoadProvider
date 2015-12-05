@@ -22,6 +22,7 @@ type Deserialization =
 
 type TypeMap =
     { Type: Type
+      Attribute: XRoadTypeAttribute
       DeserializeDelegate: Lazy<DeserializerDelegate>
       Deserialization: Deserialization
       SerializeDelegate: Lazy<SerializerDelegate>
@@ -32,6 +33,7 @@ type TypeMap =
         this.DeserializeDelegate.Value.Invoke(reader)
     static member Create(typ, deserialization, serialization) =
         { Type = typ
+          Attribute = typ.GetCustomAttribute<XRoadTypeAttribute>()
           Deserialization = deserialization
           DeserializeDelegate = lazy (deserialization.Root.CreateDelegate(typeof<DeserializerDelegate>) |> unbox)
           Serialization = serialization
@@ -218,8 +220,7 @@ let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (pro
     | ContentProperty(property,propTypeMap) ->
         emitDeserialization property propTypeMap
     | _ ->
-        let attr = typeMap.Type.GetCustomAttribute<XRoadTypeAttribute>()
-        match attr.Layout with
+        match typeMap.Attribute.Layout with
         | LayoutKind.Choice ->
             ()
         | LayoutKind.Sequence ->
@@ -254,8 +255,7 @@ let createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (pro
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, markLoopStart)
 
-                let attr = propTypeMap.Type.GetCustomAttribute<XRoadTypeAttribute>()
-                if attr |> isNull || attr.Layout <> LayoutKind.Choice then
+                if propTypeMap.Attribute |> isNull || propTypeMap.Attribute.Layout <> LayoutKind.Choice then
                     // reader.LocalName != property.Name
                     let markDeserialize = il.DefineLabel()
                     il.Emit(OpCodes.Ldarg_0)
@@ -311,6 +311,7 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
     let idField = choiceType.GetField("@__id", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let valueField = choiceType.GetField("@__value", BindingFlags.Instance ||| BindingFlags.NonPublic)
     let conditionEnd = ilSer.DefineLabel()
+    let markReturn = ilDeser.DefineLabel()
     let rec genSerialization (label: Label option) (options: (XRoadChoiceOptionAttribute * Type) list) =
         match options with
         | [] -> ()
@@ -339,6 +340,30 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                 ilSer.Emit(OpCodes.Ldarg_0)
                 ilSer.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlWriter).WriteEndElement() @>)
             genSerialization (Some label) xs
+    let rec genDeserialization (options: (XRoadChoiceOptionAttribute * Type) list) =
+        match options with
+        | [] ->
+            ilDeser.Emit(OpCodes.Ldnull)
+            ilDeser.Emit(OpCodes.Br_S, markReturn)
+        | (attr,typ)::xs ->
+            let label = ilDeser.DefineLabel()
+            let typeMap = getTypeMap typ
+            if attr.IsElement then
+                ilDeser.Emit(OpCodes.Ldarg_0)
+                ilDeser.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                ilDeser.Emit(OpCodes.Ldstr, attr.Name)
+                ilDeser.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+            else
+                ilDeser.Emit(OpCodes.Ldarg_0)
+                ilDeser.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
+            ilDeser.Emit(OpCodes.Brfalse_S, label)
+
+            ilDeser.Emit(OpCodes.Ldnull)
+
+            ilDeser.Emit(OpCodes.Br_S, markReturn)
+            ilDeser.MarkLabel(label)
+            ilDeser.Emit(OpCodes.Nop)
+            genDeserialization xs
     choiceType.GetCustomAttributes<XRoadChoiceOptionAttribute>()
     |> Seq.map (fun attr ->
         let typ =
@@ -349,10 +374,11 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                     | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." choiceType.FullName attr.Name
         (attr, typ))
     |> Seq.toList
-    |> genSerialization None
+    |> (fun x -> genSerialization None x
+                 genDeserialization x)
     ilSer.MarkLabel(conditionEnd)
     ilSer.Emit(OpCodes.Ret)
-    ilDeser.Emit(OpCodes.Ldnull)
+    ilDeser.MarkLabel(markReturn)
     ilDeser.Emit(OpCodes.Ret)
     ilDeserContent.Emit(OpCodes.Ldnull)
     ilDeserContent.Emit(OpCodes.Ret)
@@ -471,9 +497,8 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
                         il.Emit(OpCodes.Brtrue_S, lbl)
                         il.Emit(OpCodes.Nop)
                         generate' <@ (%writer).WriteStartAttribute("type", XmlNamespace.Xsi) @>
-                        let attr = x.Type.GetCustomAttribute<XRoadTypeAttribute>()
-                        let typeName = match attr.Name with null | "" -> x.Type.Name | name -> name
-                        match attr.Namespace with
+                        let typeName = match x.Attribute.Name with null | "" -> x.Type.Name | name -> name
+                        match x.Attribute.Namespace with
                         | null | "" -> generate' <@ (%writer).WriteString(typeName) @>
                         | ns -> generate' <@ (%writer).WriteQualifiedName(typeName, ns) @>
                         generate' <@ (%writer).WriteEndAttribute() @>
