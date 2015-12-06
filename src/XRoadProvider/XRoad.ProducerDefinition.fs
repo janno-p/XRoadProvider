@@ -270,33 +270,76 @@ module TypeBuilder =
 
     /// Create property definitions for choice element specification.
     and private collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition list =
+        let idField = Fld.create<int> "__id"
+        let valueField = Fld.create<obj> "__value"
+
+        let ctor =
+            Ctor.create()
+            |> Ctor.setAttr MemberAttributes.Private
+            |> Ctor.addParam<int> "id"
+            |> Ctor.addParam<obj> "value"
+            |> Ctor.addStmt (Stmt.assign (Expr.this @=> "__id") (!+ "id"))
+            |> Ctor.addStmt (Stmt.assign (Expr.this @=> "__value") (!+ "value"))
+
         let choiceName = choiceNameGenerator()
         let choiceType =
             Cls.create (choiceName + "Type")
             |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Sealed)
             |> Cls.describe (Attributes.xrdDefType LayoutKind.Choice)
+            |> Cls.addMembers [idField; valueField; ctor]
+
+        let choiceRuntimeType = ProvidedType(choiceType, choiceType.Name)
+
+        let createOptionType name (propList: PropertyDefinition list) =
+            let optionType =
+                Cls.create (name + "Type")
+                |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+            optionType |> addTypeProperties propList
+            optionType
+
+        let addTryMethod () =
+            ()
+
+        let addNewMethod id (name: string) (runtimeType: RuntimeType) =
+            let newMethod =
+                Meth.create (sprintf "New%s%s" (if Char.IsLower(name.[0]) then "_" else "") name)
+                |> Meth.setAttr (MemberAttributes.Static ||| MemberAttributes.Public)
+                |> Meth.returnsOf (choiceRuntimeType.AsCodeTypeReference())
+                |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) "value"
+                |> Meth.addStmt (Stmt.ret (Expr.instOf (choiceRuntimeType.AsCodeTypeReference()) [!^ id; !+ "value"]))
+            choiceType |> Cls.addMember(newMethod) |> ignore
 
         let optionNameGenerator = nameGenerator (sprintf "%sOption" choiceName)
 
-        spec.Content
-        |> List.iteri (fun i choiceContent ->
-            match choiceContent with
-            | ChoiceContent.Any ->
-                failwith "Not implemented: any in choice."
-            | ChoiceContent.Choice(_) ->
-                failwith "Not implemented: choice in choice."
-            | ChoiceContent.Element(spec) ->
-                choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) spec.Name.Value true) |> ignore
-            | ChoiceContent.Group ->
-                failwith "Not implemented: group in choice."
-            | ChoiceContent.Sequence(spec) ->
-                let optionName = optionNameGenerator()
-                choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName false) |> ignore
-            )
+        let addedTypes =
+            spec.Content
+            |> List.mapi (fun i x -> (i, x))
+            |> List.choose (fun (i, choiceContent) ->
+                match choiceContent with
+                | ChoiceContent.Any ->
+                    failwith "Not implemented: any in choice."
+                | ChoiceContent.Choice(_) ->
+                    failwith "Not implemented: choice in choice."
+                | ChoiceContent.Element(spec) ->
+                    let prop = buildElementProperty context spec
+                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name true) |> ignore
+                    addNewMethod (i + 1) prop.Name prop.Type
+                    None
+                | ChoiceContent.Group ->
+                    failwith "Not implemented: group in choice."
+                | ChoiceContent.Sequence(spec) ->
+                    let props = buildSequenceMembers context spec
+                    let optionName = optionNameGenerator()
+                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName false) |> ignore
+                    let optionType = createOptionType optionName props
+                    let optionRuntimeType = ProvidedType(optionType, optionType.Name)
+                    addNewMethod (i + 1) optionName optionRuntimeType
+                    Some(optionType)
+                )
 
         let choiceProperty =
             let prop = PropertyDefinition.Create(choiceName, false, None)
-            { prop with Type = ProvidedType(choiceType, choiceType.Name); AddedTypes = [choiceType] }
+            { prop with Type = choiceRuntimeType; AddedTypes = choiceType::addedTypes }
 
         [choiceProperty]
 

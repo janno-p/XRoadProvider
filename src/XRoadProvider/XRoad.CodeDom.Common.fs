@@ -197,6 +197,7 @@ module Cls =
         c
 
     let addMember m (c: CodeTypeDeclaration) = c.Members.Add(m) |> ignore; c
+    let addMembers ms (c: CodeTypeDeclaration) = c.Members.AddRange(ms |> List.toArray); c
     let describe a (t: CodeTypeDeclaration) = t.CustomAttributes.Add(a) |> ignore; t
     let setParent (p: CodeTypeReference) (t: CodeTypeDeclaration) = t.BaseTypes.Add(p) |> ignore; t
 

@@ -1,7 +1,5 @@
 ﻿module XRoadSerializer.Tests.SerializerTest
 
-#nowarn "1104"
-
 open FsUnit
 open NUnit.Framework
 open System
@@ -20,6 +18,7 @@ module TestXml =
     let [<Literal>] Choice1Of2 = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Choice1Element>test</Choice1Element></keha></wrapper>"
     let [<Literal>] Choice2Of2 = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Choice2><Choice2Element>test</Choice2Element></Choice2></keha></wrapper>"
     let [<Literal>] ExtendedType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Member xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></keha></wrapper>"
+    let [<Literal>] InnerAbstractBase = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Ref><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></Ref></keha></wrapper>"
     let [<Literal>] IntegerValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>32</keha></wrapper>"
     let [<Literal>] NullableValues = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>13</Value1><Value2 xsi:nil=""true"" /></keha></wrapper>"
     let [<Literal>] NullValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:nil=""true"" /></wrapper>"
@@ -116,17 +115,17 @@ module TestType =
     [<XRoadChoiceOption(1, "Choice1", false)>]
     [<XRoadChoiceOption(2, "Choice2", true)>]
     type TestChoice =
-        val private ``@__id``: int
-        val private ``@__value``: obj
-        private new(id, value: obj) = { ``@__id`` = id; ``@__value`` = value }
+        val private __id: int
+        val private __value: obj
+        private new(id, value: obj) = { __id = id; __value = value }
         member this.TryGetChoice1([<Out>] value: Choice1 byref) =
-            if this.``@__id`` = 1 then value <- unbox this.``@__value``
+            if this.__id = 1 then value <- unbox this.__value
             else value <- null
-            this.``@__id`` = 1
+            this.__id = 1
         member this.TryGetChoice2([<Out>] value: Choice2 byref) =
-            if this.``@__id`` = 2 then value <- unbox this.``@__value``
+            if this.__id = 2 then value <- unbox this.__value
             else value <- null
-            this.``@__id`` = 2
+            this.__id = 2
         static member NewChoice1(value: Choice1) = TestChoice(1, value)
         static member NewChoice2(value: Choice2) = TestChoice(2, value)
 
@@ -136,6 +135,11 @@ module TestType =
         member val NotAChoice = "tere" with get, set
         [<XRoadElement>]
         member val IsAChoice = TestChoice.NewChoice1(Choice1()) with get, set
+
+    [<XRoadType(LayoutKind.Sequence)>]
+    type InnerReferrer() =
+        [<XRoadElement>]
+        member val Ref = Referrer() with get, set
 
 module Serialization =
     let serialize qn (nslist: (string * string) list) value =
@@ -198,6 +202,9 @@ module Serialization =
 
     let [<Test>] ``serialize abstract base type when subtype is used (with explicit name and namespace)`` () =
         TestType.Referrer(Reference=TestType.Concrete3()) |> serialize (XmlQualifiedName("keha")) ["t", "testns"] |> should equal TestXml.AbstractBaseTypeExplicitName
+
+    let [<Test>] ``serialize inner abstract base type`` () =
+        TestType.InnerReferrer() |> serialize' |> should equal TestXml.InnerAbstractBase
 
     let [<Test>] ``serialize choice type 1`` () =
         TestType.TestChoice.NewChoice1(TestType.Choice1())
@@ -302,3 +309,9 @@ module Deserialization =
         success |> should equal true
         value |> should not' (be Null)
         value.Choice2Element |> should equal "test"
+
+    let [<Test>] ``deserialize inner reference to abstract base type`` () =
+        let result = TestXml.InnerAbstractBase |> deserialize'<TestType.InnerReferrer>
+        result |> should not' (be Null)
+        result.Ref |> should not' (be Null)
+        result.Ref.Reference |> should be instanceOfType<TestType.Concrete1>

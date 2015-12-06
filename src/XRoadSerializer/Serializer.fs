@@ -30,11 +30,8 @@ type Serializer() as this =
         | Some("true") | Some("1") -> None
         | _ ->
             let typeMap = getTypeMap(typ)
-            if not (typeMap.Attribute |> isNull) && typeMap.Attribute.Layout = LayoutKind.Choice then
-                if skipRoot reader.Depth reader
-                then Some(typeMap.Deserialize(reader))
-                else None
-            else Some(getTypeMap(typ).Deserialize(reader))
+            if not (typeMap.Attribute |> isNull) && typeMap.Attribute.Layout = LayoutKind.Choice && not (skipRoot reader.Depth reader) then None
+            else Some(typeMap.Deserialize(reader))
 
     member private __.SerializeObject(writer, value) =
         match value with
