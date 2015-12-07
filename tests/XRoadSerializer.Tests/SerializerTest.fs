@@ -28,6 +28,8 @@ module TestXml =
     let [<Literal>] SubTypeWithBaseTypeMembers = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"
     let [<Literal>] WithChoice1Sample = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></keha></wrapper>"
     let [<Literal>] WithChoice2Sample = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice2><Choice2Element>test</Choice2Element></Choice2></keha></wrapper>"
+    let [<Literal>] EmptyString = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice /><Choice1Element>test</Choice1Element></keha></wrapper>"
+    let [<Literal>] NullString = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice xsi:nil=""true"" /><Choice1Element>test</Choice1Element></keha></wrapper>"
 
 module TestType =
     type UnserializableType() =
@@ -322,3 +324,21 @@ module Deserialization =
         result.Value1 |> should not' (be Null)
         result.Value1 |> should equal 13
         result.Value2 |> should be Null
+
+    let [<Test>] ``deserialize empty string`` () =
+        let result = TestXml.EmptyString |> deserialize'<TestType.WithChoice>
+        result |> should not' (be Null)
+        result.NotAChoice |> should equal ""
+        result.IsAChoice |> should not' (be Null)
+        let (success, value) = result.IsAChoice.TryGetChoice1()
+        success |> should equal true
+        value |> should not' (be Null)
+
+    let [<Test>] ``deserialize null string`` () =
+        let result = TestXml.NullString |> deserialize'<TestType.WithChoice>
+        result |> should not' (be Null)
+        result.NotAChoice |> should be Null
+        result.IsAChoice |> should not' (be Null)
+        let (success, value) = result.IsAChoice.TryGetChoice1()
+        success |> should equal true
+        value |> should not' (be Null)

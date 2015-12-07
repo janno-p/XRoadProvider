@@ -810,16 +810,20 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
             let labelRead = il.DefineLabel()
             let labelRet = il.DefineLabel()
             let labelCast = il.DefineLabel()
-            if isNullable then
+            if isNullable || typ.IsClass then
                 emitNullCheck il labelRet
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
             il.Emit(OpCodes.Brfalse_S, labelRead)
-            il.Emit(OpCodes.Ldtoken, typeof<'X>)
-            il.Emit(OpCodes.Call, !@ <@ Type.GetTypeFromHandle(RuntimeTypeHandle()) @>)
-            il.Emit(OpCodes.Call, !@ <@ Activator.CreateInstance(typeof<int>) @>)
-            il.Emit(OpCodes.Unbox_Any, typeof<'X>)
-            il.Emit(OpCodes.Br_S, labelCast)
+            if typ = typeof<string> then
+                il.Emit(OpCodes.Ldstr, "")
+                il.Emit(OpCodes.Br_S, labelRet)
+            else
+                il.Emit(OpCodes.Ldtoken, typeof<'X>)
+                il.Emit(OpCodes.Call, !@ <@ Type.GetTypeFromHandle(RuntimeTypeHandle()) @>)
+                il.Emit(OpCodes.Call, !@ <@ Activator.CreateInstance(typeof<int>) @>)
+                il.Emit(OpCodes.Unbox_Any, typeof<'X>)
+                il.Emit(OpCodes.Br_S, labelCast)
             il.MarkLabel(labelRead)
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Read() @>)
