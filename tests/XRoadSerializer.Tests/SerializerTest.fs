@@ -315,3 +315,10 @@ module Deserialization =
         result |> should not' (be Null)
         result.Ref |> should not' (be Null)
         result.Ref.Reference |> should be instanceOfType<TestType.Concrete1>
+
+    let [<Test>] ``deserialize nullable values`` () =
+        let result = TestXml.NullableValues |> deserialize'<TestType.WithNullableMembers>
+        result |> should not' (be Null)
+        result.Value1 |> should not' (be Null)
+        result.Value1 |> should equal 13
+        result.Value2 |> should be Null

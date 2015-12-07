@@ -106,66 +106,75 @@ let generate (il: ILGenerator) (argFunc: Expr -> int option) (expr: Expr<'a>) =
             | _ -> failwithf "Unimplemented expression: %A" expr
     genIL expr
 
-let getMethodInfo expr =
+let (!@) expr =
     match expr with
     | Call(_, mi, _) -> mi
     | PropertyGet(_, pi, _) -> pi.GetGetMethod()
-    | _ -> failwith "Must be method call expression"
+    | _ -> failwithf "Must be method call expression, but was `%A`." expr
+
+let (!!@) expr =
+    match expr with
+    | NewObject(ci, _) -> ci
+    | _ -> failwith "Must be constructor expression"
 
 let createMatchTypeMethod (typ: Type) = DynamicMethod(sprintf "%s_MatchType" typ.FullName, typeof<bool>, [| typeof<XmlReader> |])
 let createSerializerMethod (typ: Type) skipVisibility = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj> |], (skipVisibility: bool))
 let createDeserializerMethod (typ: Type) = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader> |])
 let createDeserializeContentMethod (typ: Type) = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj>; typeof<bool> |])
 
+let emitNullCheck (il: ILGenerator) (labelReturn: Label) =
+    // var nilValue = (reader.GetAttribute("nil", XmlNamespace.Xsi) ?? "").ToLower();
+    let nilValue = il.DeclareLocal(typeof<string>)
+    let markSkipNull = il.DefineLabel()
+    il.Emit(OpCodes.Ldarg_0)
+    il.Emit(OpCodes.Ldstr, "nil")
+    il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
+    il.Emit(OpCodes.Dup)
+    il.Emit(OpCodes.Brtrue_S, markSkipNull)
+    il.Emit(OpCodes.Pop)
+    il.Emit(OpCodes.Ldstr, "")
+    il.MarkLabel(markSkipNull)
+    il.Emit(OpCodes.Callvirt, !@ <@ "".ToLower() @>)
+    il.Emit(OpCodes.Stloc, nilValue)
+
+    // if (nilValue == "1" || nilValue == "true")
+    let lbl1 = il.DefineLabel()
+    let lbl2 = il.DefineLabel()
+    let lbl3 = il.DefineLabel()
+    il.Emit(OpCodes.Ldloc, nilValue)
+    il.Emit(OpCodes.Ldstr, "1")
+    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+    il.Emit(OpCodes.Brtrue_S, lbl1)
+    il.Emit(OpCodes.Ldloc, nilValue)
+    il.Emit(OpCodes.Ldstr, "true")
+    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+    il.Emit(OpCodes.Ldc_I4_0)
+    il.Emit(OpCodes.Ceq)
+    il.Emit(OpCodes.Br_S, lbl2)
+    il.MarkLabel(lbl1)
+    il.Emit(OpCodes.Ldc_I4_0)
+    il.MarkLabel(lbl2)
+    il.Emit(OpCodes.Nop)
+    il.Emit(OpCodes.Brtrue_S, lbl3)
+
+    // return null;
+    il.Emit(OpCodes.Ldnull)
+    il.Emit(OpCodes.Br, labelReturn)
+    il.MarkLabel(lbl3)
+
 let createDeserializerMethodBody (il: ILGenerator) (typeMap: TypeMap) =
     if typeMap.Type.IsAbstract then
         // throw new Exception(string.Format("Cannot deserialize abstract type `{0}`.", typ.FullName));
         il.Emit(OpCodes.Ldstr, "Cannot deserialize abstract type `{0}`.")
         il.Emit(OpCodes.Ldstr, typeMap.Type.FullName)
-        il.Emit(OpCodes.Call, getMethodInfo <@ String.Format("", "") @>)
+        il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
         il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
         il.Emit(OpCodes.Throw)
     else
         let markReturn = il.DefineLabel()
 
-        // var nilValue = (reader.GetAttribute("nil", XmlNamespace.Xsi) ?? "").ToLower();
-        let nilValue = il.DeclareLocal(typeof<string>)
-        let markSkipNull = il.DefineLabel()
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, "nil")
-        il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-        il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).GetAttribute("", "") @>)
-        il.Emit(OpCodes.Dup)
-        il.Emit(OpCodes.Brtrue_S, markSkipNull)
-        il.Emit(OpCodes.Pop)
-        il.Emit(OpCodes.Ldstr, "")
-        il.MarkLabel(markSkipNull)
-        il.Emit(OpCodes.Callvirt, getMethodInfo <@ "".ToLower() @>)
-        il.Emit(OpCodes.Stloc, nilValue)
-
-        // if (nilValue == "1" || nilValue == "true")
-        //     return null;
-        let lbl1 = il.DefineLabel()
-        let lbl2 = il.DefineLabel()
-        let lbl3 = il.DefineLabel()
-        il.Emit(OpCodes.Ldloc, nilValue)
-        il.Emit(OpCodes.Ldstr, "1")
-        il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
-        il.Emit(OpCodes.Brtrue_S, lbl1)
-        il.Emit(OpCodes.Ldloc, nilValue)
-        il.Emit(OpCodes.Ldstr, "true")
-        il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.Emit(OpCodes.Ceq)
-        il.Emit(OpCodes.Br_S, lbl2)
-        il.MarkLabel(lbl1)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.MarkLabel(lbl2)
-        il.Emit(OpCodes.Nop)
-        il.Emit(OpCodes.Brtrue_S, lbl3)
-        il.Emit(OpCodes.Ldnull)
-        il.Emit(OpCodes.Br, markReturn)
-        il.MarkLabel(lbl3)
+        emitNullCheck il markReturn
 
         // var instance = new T();
         let instance = il.DeclareLocal(typeMap.Type)
@@ -214,7 +223,7 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldstr, "type")
             il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-            il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).GetAttribute("", "") @>)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
             il.Emit(OpCodes.Stloc, strVar)
             il.Emit(OpCodes.Ldloc, strVar)
             il.Emit(OpCodes.Brfalse, selfLabel)
@@ -230,7 +239,7 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
             il.Emit(OpCodes.Ldloc, chars)
             il.Emit(OpCodes.Ldc_I4_2)
             let parts = il.DeclareLocal(typeof<string[]>)
-            il.Emit(OpCodes.Callvirt, getMethodInfo <@ "".Split([| ':' |], 2) @>)
+            il.Emit(OpCodes.Callvirt, !@ <@ "".Split([| ':' |], 2) @>)
             il.Emit(OpCodes.Stloc, parts)
             let typeName = il.DeclareLocal(typeof<string>)
             let typeNamespace = il.DeclareLocal(typeof<string>)
@@ -250,7 +259,7 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
             il.Emit(OpCodes.Ldloc, parts)
             il.Emit(OpCodes.Ldc_I4_0)
             il.Emit(OpCodes.Ldelem_Ref)
-            il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LookupNamespace("") @>)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
             il.Emit(OpCodes.Stloc, typeNamespace)
             il.Emit(OpCodes.Ldloc, typeNamespace)
             il.Emit(OpCodes.Brtrue_S, label2)
@@ -264,7 +273,7 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
             il.Emit(OpCodes.Stloc, typeName)
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldstr, "")
-            il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LookupNamespace("") @>)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
             il.Emit(OpCodes.Stloc, typeNamespace)
             il.MarkLabel(label2)
             il.Emit(OpCodes.Nop)
@@ -276,18 +285,18 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
                     il.Emit(OpCodes.Ldstr, "Invalid message: unknown type `{0}:{1}`.")
                     il.Emit(OpCodes.Ldloc, typeNamespace)
                     il.Emit(OpCodes.Ldloc, typeName)
-                    il.Emit(OpCodes.Call, getMethodInfo <@ String.Format("", "", "") @>)
+                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
                     il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                     il.Emit(OpCodes.Throw)
                 | x::xs ->
                     let lbl = il.DefineLabel()
                     il.Emit(OpCodes.Ldloc, typeName)
                     il.Emit(OpCodes.Ldstr, match x.Attribute.Name with null | "" -> x.Type.Name | x -> x)
-                    il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                     il.Emit(OpCodes.Brfalse_S, lbl)
                     il.Emit(OpCodes.Ldloc, typeNamespace)
                     il.Emit(OpCodes.Ldstr, x.Attribute.Namespace)
-                    il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                     il.Emit(OpCodes.Brfalse_S, lbl)
                     emitDefault x
                     il.Emit(OpCodes.Br, conditionEnd)
@@ -304,7 +313,7 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
     | _ ->
         let varDepth = il.DeclareLocal(typeof<int>)
         il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).Depth @>)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
         il.Emit(OpCodes.Stloc, varDepth)
 
         let label = il.DefineLabel()
@@ -339,7 +348,7 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
                 // reader.Read() -> false exception
                 il.MarkLabel(markLoopStart)
                 il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).Read() @>)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Read() @>)
                 il.Emit(OpCodes.Brtrue_S, markSuccess)
 
                 // throw new Exception("Invalid message: could not parse xml.");
@@ -353,19 +362,19 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
 
                 let markSuccess2 = il.DefineLabel()
                 il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).NodeType @>)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
                 il.Emit(OpCodes.Ldc_I4, int32 XmlNodeType.EndElement)
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, markSuccess2)
                 il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).Depth @>)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
                 il.Emit(OpCodes.Ldloc, varDepth)
                 il.Emit(OpCodes.Clt)
                 il.Emit(OpCodes.Brfalse_S, markSuccess2)
                 il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." property.Name)
                 il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
-                il.Emit(OpCodes.Call, getMethodInfo <@ String.Format("", "") @>)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
                 il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                 il.Emit(OpCodes.Throw)
                 il.MarkLabel(markSuccess2)
@@ -373,14 +382,14 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
 
                 // reader.Depth != depth
                 il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).Depth @>)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
                 il.Emit(OpCodes.Ldloc, varDepth)
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, markLoopStart)
 
                 // reader.NodeType != XmlNodeType.Element
                 il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).NodeType @>)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
                 il.Emit(OpCodes.Ldc_I4_1)
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, markLoopStart)
@@ -389,15 +398,15 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
                     // reader.LocalName != property.Name
                     let markDeserialize = il.DefineLabel()
                     il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
                     il.Emit(OpCodes.Ldstr, property.Name)
-                    il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                     il.Emit(OpCodes.Brtrue_S, markDeserialize)
                     il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
                     il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
                     il.Emit(OpCodes.Ldstr, property.Name)
-                    il.Emit(OpCodes.Call, getMethodInfo <@ String.Format("", "", "") @>)
+                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
                     il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                     il.Emit(OpCodes.Throw)
                     il.MarkLabel(markDeserialize)
@@ -442,9 +451,9 @@ and createMatchType il property =
         if not (propertyMap.Attribute |> isNull) && propertyMap.Attribute.Layout = LayoutKind.Choice then
             il.Emit(OpCodes.Call, propertyMap.Deserialization.MatchType)
         else
-            il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
             il.Emit(OpCodes.Ldstr, propertyInfo.Name)
-            il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
     | None ->
         il.Emit(OpCodes.Ldc_I4_0)
     il.Emit(OpCodes.Ret)
@@ -473,7 +482,7 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
             if attr.IsElement then
                 ilSer.Emit(OpCodes.Ldarg_0)
                 ilSer.Emit(OpCodes.Ldstr, attr.Name)
-                ilSer.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlWriter).WriteStartElement("") @>)
+                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
             ilSer.Emit(OpCodes.Ldarg_0)
             ilSer.Emit(OpCodes.Ldarg_1)
             ilSer.Emit(OpCodes.Castclass, choiceType)
@@ -483,7 +492,7 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
             ilSer.Emit(OpCodes.Br_S, conditionEnd)
             if attr.IsElement then
                 ilSer.Emit(OpCodes.Ldarg_0)
-                ilSer.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlWriter).WriteEndElement() @>)
+                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
             genSerialization (Some label) xs
     let genDeserialization options =
         let il = ilDeser
@@ -498,9 +507,9 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                 let typeMap = getTypeMap typ
                 if attr.IsElement then
                     il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
                     il.Emit(OpCodes.Ldstr, attr.Name)
-                    il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                     il.Emit(OpCodes.Brfalse_S, label)
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Call, typeMap.Deserialization.Root)
@@ -540,9 +549,9 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                 let typeMap = getTypeMap typ
                 if attr.IsElement then
                     il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, getMethodInfo <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
                     il.Emit(OpCodes.Ldstr, attr.Name)
-                    il.Emit(OpCodes.Call, getMethodInfo <@ "" = "" @>)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                 else
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
@@ -759,59 +768,96 @@ and findBaseTypes (typ: Type) =
     |> List.unfold (fun typ -> if typ = typeof<obj> then None else Some(findTypeMap typ, typ.BaseType))
     |> List.choose (id)
 
-let createSystemTypeMap<'T> (writerExpr: Expr<XmlWriter> -> Expr<obj> -> Expr<unit>) (readerExpr: Expr<XmlReader> -> Expr<obj>) =
-    let serializerMethod = createSerializerMethod typeof<'T> false
-    let deserializerMethod = createDeserializerMethod typeof<'T>
-    let reader: Expr<XmlReader> = Expr.GlobalVar("r")
-    let writer: Expr<XmlWriter> = Expr.GlobalVar("w")
-    let value: Expr<obj> = Expr.GlobalVar("v")
-    let il = serializerMethod.GetILGenerator()
-    generate il
-             (fun e -> match e with
-                       | e when e = (upcast value) -> il.Emit(OpCodes.Ldarg_1); Some(-1)
-                       | e when e = (upcast writer) -> il.Emit(OpCodes.Ldarg_0); Some(-1)
-                       | _ -> None)
-             (writerExpr writer value)
-    il.Emit(OpCodes.Ret)
-    let il = deserializerMethod.GetILGenerator()
-    generate il
-             (fun e -> if e = (upcast reader) then il.Emit(OpCodes.Ldarg_0); Some(-1) else None)
-             (readerExpr reader)
-    il.Emit(OpCodes.Ret)
-    let deserialization = { Root = deserializerMethod; Content = null; MatchType = null }
-    typeMaps.TryAdd(typeof<'T>, TypeMap.Create(typeof<'T>, deserialization, serializerMethod)) |> ignore
+let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: MemberInfo list) =
+    let createTypeMap isNullable =
+        let typ = if isNullable then typedefof<Nullable<_>>.MakeGenericType(typeof<'X>) else typeof<'X>
+        let serializerMethod =
+            let meth = createSerializerMethod typ false
+            let il = meth.GetILGenerator()
+            let labelEnd =
+                if isNullable || typ.IsClass then
+                    let label = il.DefineLabel()
+                    let labelEnd = il.DefineLabel()
+                    il.Emit(OpCodes.Ldarg_1)
+                    il.Emit(OpCodes.Ldnull)
+                    il.Emit(OpCodes.Ceq)
+                    il.Emit(OpCodes.Brfalse_S, label)
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Ldstr, "nil")
+                    il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+                    il.Emit(OpCodes.Ldstr, "true")
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteAttributeString("", "", "") @>)
+                    il.Emit(OpCodes.Br_S, labelEnd)
+                    il.MarkLabel(label)
+                    Some(labelEnd)
+                else None
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldarg_1)
+            writeMethods
+            |> List.iter (fun mi ->
+                match mi with
+                | :? MethodInfo as mi -> il.Emit(OpCodes.Callvirt, mi)
+                | _ -> failwith "not implemented"
+                il.Emit(OpCodes.Nop))
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteValue(null: obj) @>)
+            il.Emit(OpCodes.Nop)
+            labelEnd |> Option.iter il.MarkLabel
+            il.Emit(OpCodes.Ret)
+            meth
+        let deserializerMethod =
+            let meth = createDeserializerMethod typ
+            let il = meth.GetILGenerator()
+            let labelRead = il.DefineLabel()
+            let labelRet = il.DefineLabel()
+            let labelCast = il.DefineLabel()
+            if isNullable then
+                emitNullCheck il labelRet
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
+            il.Emit(OpCodes.Brfalse_S, labelRead)
+            il.Emit(OpCodes.Ldtoken, typeof<'X>)
+            il.Emit(OpCodes.Call, !@ <@ Type.GetTypeFromHandle(RuntimeTypeHandle()) @>)
+            il.Emit(OpCodes.Call, !@ <@ Activator.CreateInstance(typeof<int>) @>)
+            il.Emit(OpCodes.Unbox_Any, typeof<'X>)
+            il.Emit(OpCodes.Br_S, labelCast)
+            il.MarkLabel(labelRead)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Read() @>)
+            il.Emit(OpCodes.Pop)
+            il.Emit(OpCodes.Ldarg_0)
+            readMethods
+            |> List.iter (fun mi ->
+                match mi with
+                | :? MethodInfo as mi -> il.Emit(OpCodes.Callvirt, mi)
+                | :? ConstructorInfo as ci -> il.Emit(OpCodes.Newobj, ci)
+                | _ -> failwith "not implemented")
+            il.MarkLabel(labelCast)
+            if isNullable then il.Emit(OpCodes.Newobj, typ.GetConstructor([| typeof<'X> |]))
+            if typ.IsValueType then il.Emit(OpCodes.Box, typ)
+            il.MarkLabel(labelRet)
+            il.Emit(OpCodes.Ret)
+            meth
+        let deserialization = { Root = deserializerMethod; Content = null; MatchType = null }
+        typeMaps.TryAdd(typ, TypeMap.Create(typ, deserialization, serializerMethod)) |> ignore
+    if typeof<'X>.IsValueType then createTypeMap true
+    createTypeMap false
 
 do
     createSystemTypeMap<bool>
-        (fun w v -> <@ (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsBoolean()) @>)
-    createSystemTypeMap<Nullable<bool>>
-        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsBoolean()) @>)
+        []
+        [!@ <@ (null: XmlReader).ReadContentAsBoolean() @>]
     createSystemTypeMap<int32>
-        (fun w v -> <@ (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsInt()) @>)
-    createSystemTypeMap<Nullable<int32>>
-        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsInt()) @>)
+        []
+        [!@ <@ (null: XmlReader).ReadContentAsInt() @>]
     createSystemTypeMap<int64>
-        (fun w v -> <@ (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsLong()) @>)
-    createSystemTypeMap<Nullable<int64>>
-        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsLong()) @>)
+        []
+        [!@ <@ (null: XmlReader).ReadContentAsLong() @>]
     createSystemTypeMap<BigInteger>
-        (fun w v -> <@ (%w).WriteValue((%v).ToString()) @>)
-        (fun r -> <@ ignore((%r).Read()); box(BigInteger((%r).ReadContentAsDecimal())) @>)
-    createSystemTypeMap<Nullable<BigInteger>>
-        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue((%v).ToString()) @>)
-        (fun r -> <@ ignore((%r).Read()); box(BigInteger((%r).ReadContentAsDecimal())) @>)
+        [!@ <@ (null: obj).ToString() @>]
+        [!@ <@ (null: XmlReader).ReadContentAsDecimal() @>; !!@ <@ BigInteger(1M) @>]
     createSystemTypeMap<DateTime>
-        (fun w v -> <@ (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsDateTime()) @>)
-    createSystemTypeMap<Nullable<DateTime>>
-        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsDateTime()) @>)
+        []
+        [!@ <@ (null: XmlReader).ReadContentAsDateTime() @>]
     createSystemTypeMap<string>
-        (fun w v -> <@ if (%v) = null then (%w).WriteAttributeString("nil", XmlNamespace.Xsi, "true") else (%w).WriteValue(%v) @>)
-        (fun r -> <@ ignore((%r).Read()); box((%r).ReadContentAsString()) @>)
+        []
+        [!@ <@ (null: XmlReader).ReadContentAsString() @>]
