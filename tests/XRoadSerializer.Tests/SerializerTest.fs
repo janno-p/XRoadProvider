@@ -75,7 +75,7 @@ module TestType =
         [<XRoadElement>]
         member val Member = ExtendedType() :> ComplexType with get, set
 
-    [<AbstractClass; XRoadType(LayoutKind.Sequence)>]
+    [<AbstractClass; AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
     type AbstractBase() =
         [<XRoadElement>]
         member val BaseValue = "test" with get, set
@@ -142,6 +142,29 @@ module TestType =
     type InnerReferrer() =
         [<XRoadElement>]
         member val Ref = Referrer() with get, set
+
+    [<XRoadType(LayoutKind.Choice)>]
+    [<XRoadChoiceOption(1, "value1", true)>]
+    [<XRoadChoiceOption(2, "value2", true)>]
+    type AbstractRootChoice =
+        val private __id: int
+        val private __value: obj
+        private new(id, value: obj) = { __id = id; __value = value }
+        member this.TryGet_value1([<Out>] value: AbstractBase byref) =
+            if this.__id = 1 then value <- unbox this.__value
+            else value <- null
+            this.__id = 1
+        member this.TryGet_value2([<Out>] value: string byref) =
+            if this.__id = 2 then value <- unbox this.__value
+            else value <- null
+            this.__id = 2
+        static member New_value1(value: AbstractBase) = AbstractRootChoice(1, value)
+        static member New_value2(value: string) = AbstractRootChoice(2, value)
+
+    [<XRoadType(LayoutKind.Sequence)>]
+    type TypeWithAbstractChoice() =
+        [<XRoadElement>]
+        member val X = AbstractRootChoice.New_value1(Concrete1()) with get, set
 
 module Serialization =
     let serialize qn (nslist: (string * string) list) value =
@@ -342,3 +365,15 @@ module Deserialization =
         let (success, value) = result.IsAChoice.TryGetChoice1()
         success |> should equal true
         value |> should not' (be Null)
+
+    let [<Test>] ``deserialize choice with abstract root element`` () =
+        let result =
+            TestType.TypeWithAbstractChoice()
+            |> Serialization.serialize'
+            |> deserialize'<TestType.TypeWithAbstractChoice>
+        result |> should not' (be Null)
+        result.X |> should not' (be Null)
+        let (success, value) = result.X.TryGet_value1()
+        success |> should equal true
+        value |> should not' (be Null)
+        value.BaseValue |> should equal "test"

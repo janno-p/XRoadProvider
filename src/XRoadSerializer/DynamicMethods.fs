@@ -195,7 +195,106 @@ let createDeserializerMethodBody (il: ILGenerator) (typeMap: TypeMap) =
         il.MarkLabel(markReturn)
         il.Emit(OpCodes.Ret)
 
-let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: (PropertyInfo * TypeMap) list) =
+let rec emitTypeDeserialization (il: ILGenerator) (typeMap: TypeMap) =
+    let emitDefault (typeMap: TypeMap) =
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Call, typeMap.Deserialization.Root)
+        match typeMap.Type.IsValueType with
+        | true -> il.Emit(OpCodes.Unbox_Any, typeMap.Type)
+        | _ -> il.Emit(OpCodes.Castclass, typeMap.Type)
+    match findSubTypes typeMap.Type with
+    | [] -> emitDefault typeMap
+    | subTypes ->
+        let conditionEnd = il.DefineLabel()
+        let selfLabel = il.DefineLabel()
+        let strVar = il.DeclareLocal(typeof<string>)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldstr, "type")
+        il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
+        il.Emit(OpCodes.Stloc, strVar)
+        il.Emit(OpCodes.Ldloc, strVar)
+        il.Emit(OpCodes.Brfalse, selfLabel)
+        let chars = il.DeclareLocal(typeof<char[]>)
+        let parts = il.DeclareLocal(typeof<string[]>)
+        il.Emit(OpCodes.Ldloc, strVar)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Newarr, typeof<char>)
+        il.Emit(OpCodes.Stloc, chars)
+        il.Emit(OpCodes.Ldloc, chars)
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Ldc_I4, int32 ':')
+        il.Emit(OpCodes.Stelem_I2)
+        il.Emit(OpCodes.Ldloc, chars)
+        il.Emit(OpCodes.Ldc_I4_2)
+        il.Emit(OpCodes.Callvirt, !@ <@ "".Split([| ':' |], 2) @>)
+        il.Emit(OpCodes.Stloc, parts)
+        let typeName = il.DeclareLocal(typeof<string>)
+        let typeNamespace = il.DeclareLocal(typeof<string>)
+        let label1 = il.DefineLabel()
+        let label2 = il.DefineLabel()
+        il.Emit(OpCodes.Ldloc, parts)
+        il.Emit(OpCodes.Ldlen)
+        il.Emit(OpCodes.Conv_I4)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Ceq)
+        il.Emit(OpCodes.Brtrue_S, label1)
+        il.Emit(OpCodes.Ldloc, parts)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Ldelem_Ref)
+        il.Emit(OpCodes.Stloc, typeName)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldloc, parts)
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Ldelem_Ref)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
+        il.Emit(OpCodes.Stloc, typeNamespace)
+        il.Emit(OpCodes.Ldloc, typeNamespace)
+        il.Emit(OpCodes.Brtrue_S, label2)
+        il.Emit(OpCodes.Ldstr, "")
+        il.Emit(OpCodes.Stloc, typeNamespace)
+        il.Emit(OpCodes.Br_S, label2)
+        il.MarkLabel(label1)
+        il.Emit(OpCodes.Ldloc, parts)
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Ldelem_Ref)
+        il.Emit(OpCodes.Stloc, typeName)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldstr, "")
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
+        il.Emit(OpCodes.Stloc, typeNamespace)
+        il.MarkLabel(label2)
+        il.Emit(OpCodes.Nop)
+        let rec genSubType (lbl: Label option) subTypes =
+            lbl |> Option.iter (fun lbl -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop))
+            match subTypes with
+            | [] ->
+                il.Emit(OpCodes.Ldstr, "Invalid message: unknown type `{0}:{1}`.")
+                il.Emit(OpCodes.Ldloc, typeNamespace)
+                il.Emit(OpCodes.Ldloc, typeName)
+                il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
+                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                il.Emit(OpCodes.Throw)
+            | x::xs ->
+                let lbl = il.DefineLabel()
+                il.Emit(OpCodes.Ldloc, typeName)
+                il.Emit(OpCodes.Ldstr, match x.Attribute.Name with null | "" -> x.Type.Name | x -> x)
+                il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                il.Emit(OpCodes.Brfalse_S, lbl)
+                il.Emit(OpCodes.Ldloc, typeNamespace)
+                il.Emit(OpCodes.Ldstr, x.Attribute.Namespace)
+                il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                il.Emit(OpCodes.Brfalse_S, lbl)
+                emitDefault x
+                il.Emit(OpCodes.Br, conditionEnd)
+                genSubType (Some lbl) xs
+        subTypes |> genSubType None
+        il.MarkLabel(selfLabel)
+        emitDefault typeMap
+        il.MarkLabel(conditionEnd)
+        il.Emit(OpCodes.Nop)
+
+and createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: (PropertyInfo * TypeMap) list) =
     let (|ContentProperty|_|) (properties: (PropertyInfo * TypeMap) list) =
         match properties with
         | [(prop,_) as x] ->
@@ -205,107 +304,13 @@ let rec createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap 
         | _ -> None
 
     let emitDeserialization (property: PropertyInfo) (propTypeMap: TypeMap) =
-        let emitDefault (propTypeMap: TypeMap) =
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Castclass, typeMaps.Head.Type)
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Call, propTypeMap.Deserialization.Root)
-            if propTypeMap.Type.IsValueType
-            then il.Emit(OpCodes.Unbox_Any, propTypeMap.Type)
-            else il.Emit(OpCodes.Castclass, propTypeMap.Type)
-            il.Emit(OpCodes.Callvirt, property.GetSetMethod())
-        match findSubTypes property.PropertyType with
-        | [] -> emitDefault propTypeMap
-        | subTypes ->
-            let conditionEnd = il.DefineLabel()
-            let selfLabel = il.DefineLabel()
-            let strVar = il.DeclareLocal(typeof<string>)
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldstr, "type")
-            il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
-            il.Emit(OpCodes.Stloc, strVar)
-            il.Emit(OpCodes.Ldloc, strVar)
-            il.Emit(OpCodes.Brfalse, selfLabel)
-            il.Emit(OpCodes.Ldloc, strVar)
-            let chars = il.DeclareLocal(typeof<char[]>)
-            il.Emit(OpCodes.Ldc_I4_1)
-            il.Emit(OpCodes.Newarr, typeof<char>)
-            il.Emit(OpCodes.Stloc, chars)
-            il.Emit(OpCodes.Ldloc, chars)
-            il.Emit(OpCodes.Ldc_I4_0)
-            il.Emit(OpCodes.Ldc_I4, int32 ':')
-            il.Emit(OpCodes.Stelem_I2)
-            il.Emit(OpCodes.Ldloc, chars)
-            il.Emit(OpCodes.Ldc_I4_2)
-            let parts = il.DeclareLocal(typeof<string[]>)
-            il.Emit(OpCodes.Callvirt, !@ <@ "".Split([| ':' |], 2) @>)
-            il.Emit(OpCodes.Stloc, parts)
-            let typeName = il.DeclareLocal(typeof<string>)
-            let typeNamespace = il.DeclareLocal(typeof<string>)
-            let label1 = il.DefineLabel()
-            let label2 = il.DefineLabel()
-            il.Emit(OpCodes.Ldloc, parts)
-            il.Emit(OpCodes.Ldlen)
-            il.Emit(OpCodes.Conv_I4)
-            il.Emit(OpCodes.Ldc_I4_1)
-            il.Emit(OpCodes.Ceq)
-            il.Emit(OpCodes.Brtrue_S, label1)
-            il.Emit(OpCodes.Ldloc, parts)
-            il.Emit(OpCodes.Ldc_I4_1)
-            il.Emit(OpCodes.Ldelem_Ref)
-            il.Emit(OpCodes.Stloc, typeName)
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldloc, parts)
-            il.Emit(OpCodes.Ldc_I4_0)
-            il.Emit(OpCodes.Ldelem_Ref)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
-            il.Emit(OpCodes.Stloc, typeNamespace)
-            il.Emit(OpCodes.Ldloc, typeNamespace)
-            il.Emit(OpCodes.Brtrue_S, label2)
-            il.Emit(OpCodes.Ldstr, "")
-            il.Emit(OpCodes.Stloc, typeNamespace)
-            il.Emit(OpCodes.Br_S, label2)
-            il.MarkLabel(label1)
-            il.Emit(OpCodes.Ldloc, parts)
-            il.Emit(OpCodes.Ldc_I4_0)
-            il.Emit(OpCodes.Ldelem_Ref)
-            il.Emit(OpCodes.Stloc, typeName)
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldstr, "")
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
-            il.Emit(OpCodes.Stloc, typeNamespace)
-            il.MarkLabel(label2)
-            il.Emit(OpCodes.Nop)
-
-            let rec genSubType (lbl: Label option) subTypes =
-                lbl |> Option.iter (fun lbl -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop))
-                match subTypes with
-                | [] ->
-                    il.Emit(OpCodes.Ldstr, "Invalid message: unknown type `{0}:{1}`.")
-                    il.Emit(OpCodes.Ldloc, typeNamespace)
-                    il.Emit(OpCodes.Ldloc, typeName)
-                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                    il.Emit(OpCodes.Throw)
-                | x::xs ->
-                    let lbl = il.DefineLabel()
-                    il.Emit(OpCodes.Ldloc, typeName)
-                    il.Emit(OpCodes.Ldstr, match x.Attribute.Name with null | "" -> x.Type.Name | x -> x)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Brfalse_S, lbl)
-                    il.Emit(OpCodes.Ldloc, typeNamespace)
-                    il.Emit(OpCodes.Ldstr, x.Attribute.Namespace)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Brfalse_S, lbl)
-                    emitDefault x
-                    il.Emit(OpCodes.Br, conditionEnd)
-                    genSubType (Some lbl) xs
-            subTypes |> genSubType None
-            il.MarkLabel(selfLabel)
-            emitDefault propTypeMap
-            il.MarkLabel(conditionEnd)
-            il.Emit(OpCodes.Nop)
+        let x = il.DeclareLocal(propTypeMap.Type)
+        emitTypeDeserialization il propTypeMap
+        il.Emit(OpCodes.Stloc, x)
+        il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Castclass, typeMaps.Head.Type)
+        il.Emit(OpCodes.Ldloc, x)
+        il.Emit(OpCodes.Callvirt, property.GetSetMethod())
 
     match properties with
     | ContentProperty(property,propTypeMap) ->
@@ -479,16 +484,63 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
             ilSer.Emit(OpCodes.Ceq)
             ilSer.Emit(OpCodes.Brfalse, label)
             ilSer.Emit(OpCodes.Nop)
+            let emitSerialization () =
+                ilSer.Emit(OpCodes.Ldarg_0)
+                ilSer.Emit(OpCodes.Ldarg_1)
+                ilSer.Emit(OpCodes.Castclass, choiceType)
+                ilSer.Emit(OpCodes.Ldfld, valueField)
+                ilSer.Emit(OpCodes.Call, (getTypeMap typ).Serialization)
+                ilSer.Emit(OpCodes.Nop)
             if attr.IsElement then
                 ilSer.Emit(OpCodes.Ldarg_0)
                 ilSer.Emit(OpCodes.Ldstr, attr.Name)
                 ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
-            ilSer.Emit(OpCodes.Ldarg_0)
-            ilSer.Emit(OpCodes.Ldarg_1)
-            ilSer.Emit(OpCodes.Castclass, choiceType)
-            ilSer.Emit(OpCodes.Ldfld, valueField)
-            ilSer.Emit(OpCodes.Call, (getTypeMap typ).Serialization)
-            ilSer.Emit(OpCodes.Nop)
+                match findSubTypes typ with
+                | [] -> emitSerialization()
+                | subTypes ->
+                    let typeTestEnd = ilSer.DefineLabel()
+                    let rec testSubType (label: Label option) subTypes =
+                        match subTypes with
+                        | [] -> ()
+                        | subType::subTypes ->
+                            label |> Option.iter (fun label -> ilSer.MarkLabel(label); ilSer.Emit(OpCodes.Nop))
+                            let label = match subTypes with [] -> typeTestEnd | _ -> ilSer.DefineLabel()
+                            ilSer.Emit(OpCodes.Ldarg_1)
+                            ilSer.Emit(OpCodes.Castclass, choiceType)
+                            ilSer.Emit(OpCodes.Ldfld, valueField)
+                            ilSer.Emit(OpCodes.Call, objGetType)
+                            ilSer.Emit(OpCodes.Callvirt, typeGetFullName)
+                            ilSer.Emit(OpCodes.Ldstr, subType.Type.FullName)
+                            ilSer.Emit(OpCodes.Callvirt, stringEquals)
+                            ilSer.Emit(OpCodes.Brfalse_S, label)
+                            ilSer.Emit(OpCodes.Ldarg_0)
+                            ilSer.Emit(OpCodes.Ldstr, "type")
+                            ilSer.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+                            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartAttribute("", "") @>)
+                            let typeName = match subType.Attribute.Name with null | "" -> subType.Type.Name | name -> name
+                            ilSer.Emit(OpCodes.Ldarg_0)
+                            ilSer.Emit(OpCodes.Ldstr, typeName)
+                            match subType.Attribute.Namespace with
+                            | null | "" ->
+                                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteString("") @>)
+                            | ns ->
+                                ilSer.Emit(OpCodes.Ldstr, ns)
+                                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteQualifiedName("", "") @>)
+                            ilSer.Emit(OpCodes.Ldarg_0)
+                            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndAttribute() @>)
+                            ilSer.Emit(OpCodes.Ldarg_0)
+                            ilSer.Emit(OpCodes.Ldarg_1)
+                            ilSer.Emit(OpCodes.Castclass, choiceType)
+                            ilSer.Emit(OpCodes.Ldfld, valueField)
+                            ilSer.Emit(OpCodes.Call, subType.Serialization)
+                            ilSer.Emit(OpCodes.Nop)
+                            ilSer.Emit(OpCodes.Nop)
+                            ilSer.Emit(OpCodes.Br, typeTestEnd)
+                            testSubType (Some label) subTypes
+                    subTypes |> testSubType None
+                    ilSer.MarkLabel(typeTestEnd)
+                    ilSer.Emit(OpCodes.Nop)
+            else emitSerialization()
             ilSer.Emit(OpCodes.Br_S, conditionEnd)
             if attr.IsElement then
                 ilSer.Emit(OpCodes.Ldarg_0)
@@ -510,12 +562,8 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                     il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
                     il.Emit(OpCodes.Ldstr, attr.Name)
                     il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Brfalse_S, label)
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Call, typeMap.Deserialization.Root)
-                    if typeMap.Type.IsValueType
-                    then il.Emit(OpCodes.Unbox_Any, typeMap.Type)
-                    else il.Emit(OpCodes.Castclass, typeMap.Type)
+                    il.Emit(OpCodes.Brfalse, label)
+                    emitTypeDeserialization il typeMap
                 else
                     let instance = il.DeclareLocal(typeMap.Type)
                     il.Emit(OpCodes.Ldarg_0)
