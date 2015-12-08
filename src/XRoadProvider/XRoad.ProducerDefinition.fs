@@ -316,10 +316,10 @@ module TypeBuilder =
         let addTryMethod (id: int) (name: string) (runtimeType: RuntimeType) =
             let tryMethod =
                 Meth.create (sprintf "TryGet%s%s" (if Char.IsLower(name.[0]) then "_" else "") name)
-                |> Meth.setAttr MemberAttributes.Public
+                |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
                 |> Meth.returns<bool>
                 |> Meth.addOutParamRef (runtimeType.AsCodeTypeReference()) "value"
-                |> Meth.addStmt (Stmt.assign (!+ "value") Expr.nil)
+                |> Meth.addStmt (Stmt.assign (!+ "value") (Expr.defaultValue (runtimeType.AsCodeTypeReference())))
                 |> Meth.addStmt (Stmt.condIf (Op.equals (Expr.this @=> "__id") (!^ id))
                                              [Stmt.assign (!+ "value") (Expr.cast (runtimeType.AsCodeTypeReference()) (Expr.this @=> "__value"))])
                 |> Meth.addStmt (Stmt.ret (Op.equals (Expr.this @=> "__id") (!^ id)))

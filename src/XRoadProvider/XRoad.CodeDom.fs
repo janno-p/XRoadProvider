@@ -31,6 +31,7 @@ module Expr =
     let typeRefOf<'T> = CodeTypeReferenceExpression(typeRef<'T>) :> CodeExpression
     let enumValue<'T> valueName = CodePropertyReferenceExpression(typeRefOf<'T>, valueName)
     let cast (t: CodeTypeReference) e = CodeCastExpression(t, e) :> CodeExpression
+    let defaultValue (t: CodeTypeReference) = CodeDefaultValueExpression(t) :> CodeExpression
 
 /// Property reference operator.
 let (@=>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression
@@ -61,7 +62,6 @@ module Attributes =
     open XRoad.Attributes
 
     let private addUnqualifiedForm a = a |> Attr.addNamedArg "Form" (Expr.enumValue<XmlSchemaForm> "Unqualified")
-    let private addNullable isNillable a = a |> iif isNillable (fun a -> a |> Attr.addNamedArg "IsNullable" (!^ true))
 
     let DebuggerBrowsable = Attr.create<DebuggerBrowsableAttribute> |> Attr.addArg (Expr.enumValue<DebuggerBrowsableState> "Never")
     let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
@@ -77,10 +77,10 @@ module Attributes =
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "Namespace" (!^ typeName.NamespaceName)
 
-    let xrdElement(elementName, isNillable) =
+    let xrdElement(elementName, isNullable) =
         elementName
         |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadElementAttribute>
-        |> addNullable isNillable
+        |> iif isNullable (fun a -> a |> Attr.addNamedArg "IsNullable" (!^ true))
 
     let xrdContent =
         Attr.create<XRoadContentAttribute>
@@ -94,7 +94,7 @@ module Attributes =
     let xrdCollection (itemName, isNullable) =
         itemName
         |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadCollectionAttribute>
-        |> addNullable isNullable
+        |> iif isNullable (fun attr -> attr |> Attr.addNamedArg "ItemIsNullable" (!^ true))
 
 /// Functions to create and manipulate type fields.
 module Fld =
