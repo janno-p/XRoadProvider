@@ -1,11 +1,10 @@
-﻿module internal XRoad.CodeDom.Common
+﻿module internal XRoad.CodeDom
 
 open Microsoft.CSharp
 open Microsoft.FSharp.Core.CompilerServices
 open System
 open System.CodeDom
 open System.CodeDom.Compiler
-open System.Collections
 open System.Diagnostics
 open System.Globalization
 open System.IO
@@ -15,9 +14,6 @@ open XRoad.TypeSchema
 /// Get type reference from generic argument.
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
 
-/// Get type reference from given type name.
-let typeRefName name = CodeTypeReference(name: string)
-
 /// Applies function to argument if condition is met.
 let iif condition f x = if condition then x |> f else x
 
@@ -25,21 +21,16 @@ let forall args f x = args |> List.iter (f x); x
 
 /// Functions to simplify handling of code expressions.
 module Expr =
-    let value x = CodePrimitiveExpression(x) :> CodeExpression
     let fldref (f: CodeMemberField) e = CodeFieldReferenceExpression(e, f.Name) :> CodeExpression
     let this = CodeThisReferenceExpression() :> CodeExpression
     let typeOf (t: CodeTypeReference) = CodeTypeOfExpression(t) :> CodeExpression
-    let var name = CodeVariableReferenceExpression(name) :> CodeExpression
     let empty = CodeSnippetExpression() :> CodeExpression
-    let parent = CodeBaseReferenceExpression() :> CodeExpression
     let nil = CodePrimitiveExpression(null) :> CodeExpression
     let inst<'T> (args: CodeExpression list) = CodeObjectCreateExpression(typeof<'T>, args |> Array.ofList) :> CodeExpression
     let instOf (t: CodeTypeReference) (args: CodeExpression list) = CodeObjectCreateExpression(t, args |> Array.ofList) :> CodeExpression
     let typeRefOf<'T> = CodeTypeReferenceExpression(typeRef<'T>) :> CodeExpression
-    let typeRef (t: CodeTypeMember) = CodeTypeReferenceExpression(t.Name) :> CodeExpression
     let enumValue<'T> valueName = CodePropertyReferenceExpression(typeRefOf<'T>, valueName)
     let cast (t: CodeTypeReference) e = CodeCastExpression(t, e) :> CodeExpression
-    let code text = CodeSnippetExpression(text) :> CodeExpression
 
 /// Property reference operator.
 let (@=>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceExpression(target, memberName) :> CodeExpression
@@ -47,23 +38,14 @@ let (@=>) (target: CodeExpression) (memberName: string) = CodePropertyReferenceE
 /// Method call operator.
 let (@->) (target: CodeExpression) (memberName: string) = CodeMethodReferenceExpression(target, memberName)
 
-/// Add generic arguments to method call.
-let (@<>) (mie: CodeMethodReferenceExpression) (args: CodeTypeReference list) = args |> List.iter (mie.TypeArguments.Add >> ignore); mie
-
 /// Add parameter values to method call.
 let (@%) (mie: CodeMethodReferenceExpression) (args: CodeExpression list) = CodeMethodInvokeExpression(mie, args |> Array.ofList) :> CodeExpression
 
-/// Add parameters to delegate call.
-let (@%%) target args = CodeDelegateInvokeExpression(target, args |> Array.ofList) :> CodeExpression
-
-/// Array indexer operator.
-let (@?) target i = CodeArrayIndexerExpression(target, [| i |]) :> CodeExpression
-
 /// Variable reference operator
-let (!+) = Expr.var
+let (!+) name = CodeVariableReferenceExpression(name) :> CodeExpression
 
 /// Value reference operator
-let (!^) = Expr.value
+let (!^) value = CodePrimitiveExpression(value) :> CodeExpression
 
 /// Functions to create and manipulate code attributes.
 module Attr =
@@ -79,41 +61,48 @@ module Attributes =
     open XRoad.Attributes
 
     let private addUnqualifiedForm a = a |> Attr.addNamedArg "Form" (Expr.enumValue<XmlSchemaForm> "Unqualified")
-    let private addNullable isNillable a = a |> iif isNillable (fun a -> a |> Attr.addNamedArg "IsNullable" (Expr.value true))
+    let private addNullable isNillable a = a |> iif isNillable (fun a -> a |> Attr.addNamedArg "IsNullable" (!^ true))
 
     let DebuggerBrowsable = Attr.create<DebuggerBrowsableAttribute> |> Attr.addArg (Expr.enumValue<DebuggerBrowsableState> "Never")
     let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
-    let XmlAttributeWithName (name: string) = Attr.create<XmlAttributeAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm
-    let XmlTypeExclude = Attr.create<XmlTypeAttribute> |> Attr.addNamedArg "IncludeInSchema" (Expr.value false)
-    let XmlElement2(name, typ) = Attr.create<XmlElementAttribute> |> Attr.addArg (Expr.value name) |> Attr.addArg (Expr.typeOf typ) |> addUnqualifiedForm
     let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable
-    let XmlArrayItem(name, isNillable) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (Expr.value name) |> addUnqualifiedForm |> addNullable isNillable
+    let XmlArrayItem(name, isNillable) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (!^ name) |> addUnqualifiedForm |> addNullable isNillable
     let XmlIgnore = Attr.create<XmlIgnoreAttribute>
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
 
     let xrdDefType (layout: LayoutKind) =
         Attr.create<XRoadTypeAttribute> |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
+
     let xrdType (typeName: XName) (layout: LayoutKind) =
         Attr.create<XRoadTypeAttribute>
         |> Attr.addArg (!^ typeName.LocalName)
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "Namespace" (!^ typeName.NamespaceName)
-    let xrdElement(name, isNillable) =
-        name
-        |> Option.fold (fun attr n -> attr |> Attr.addArg (!^ n)) Attr.create<XRoadElementAttribute>
+
+    let xrdElement(elementName, isNillable) =
+        elementName
+        |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadElementAttribute>
         |> addNullable isNillable
+
     let xrdContent =
         Attr.create<XRoadContentAttribute>
-    let xrdChoiceOption (id: int) (name: string) (isElement: bool) =
-        Attr.create<XRoadChoiceOptionAttribute> |> Attr.addArg (!^ id) |> Attr.addArg (!^ name) |> Attr.addArg (!^ isElement)
+
+    let xrdChoiceOption (id: int) (name: string) (mergeContent: bool) =
+        Attr.create<XRoadChoiceOptionAttribute>
+        |> Attr.addArg (!^ id)
+        |> Attr.addArg (!^ name)
+        |> Attr.addNamedArg "MergeContent" (!^ mergeContent)
+
+    let xrdCollection (itemName, isNullable) =
+        itemName
+        |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadCollectionAttribute>
+        |> addNullable isNullable
 
 /// Functions to create and manipulate type fields.
 module Fld =
     let create<'T> name = CodeMemberField(typeRef<'T>, name)
-    let createEnum enumName valueName = CodeMemberField((enumName : string), valueName)
     let createRef (typ: CodeTypeReference) name = CodeMemberField(typ, name)
     let describe a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
-    let setAttr a (f: CodeMemberField) = f.Attributes <- a; f
 
 /// Functions to create and manipulate type properties.
 module Prop =
@@ -129,40 +118,22 @@ module Prop =
 module Stmt =
     let ret e = CodeMethodReturnStatement(e) :> CodeStatement
     let assign le re = CodeAssignStatement(le, re) :> CodeStatement
-    let condIf cond (args: CodeStatement list) = CodeConditionStatement(cond, args |> Array.ofList) :> CodeStatement
 
     let condIfElse cond (argsIf: CodeStatement list) (argsElse: CodeStatement list) =
         CodeConditionStatement(cond, argsIf |> Array.ofList, argsElse |> Array.ofList) :> CodeStatement
 
-    let ofExpr e = CodeExpressionStatement(e) :> CodeStatement
-    let declVar<'T> name = CodeVariableDeclarationStatement(typeof<'T>, name) :> CodeStatement
     let declVarWith<'T> name e = CodeVariableDeclarationStatement(typeof<'T>, name, e) :> CodeStatement
-    let declVarRef (typ: CodeTypeReference) name = CodeVariableDeclarationStatement(typ, name) :> CodeStatement
-    let declVarRefWith (typ: CodeTypeReference) name e = CodeVariableDeclarationStatement(typ, name, e) :> CodeStatement
-    let throw<'T> (args: CodeExpression list) = CodeThrowExceptionStatement(Expr.inst<'T> args) :> CodeStatement
-    let whileLoop testExpr statements = CodeIterationStatement(CodeSnippetStatement(), testExpr, CodeSnippetStatement(), statements |> Array.ofList) :> CodeStatement
-    let tryFinally tryStmts finallyStmts = CodeTryCatchFinallyStatement(tryStmts |> Array.ofList, [| |], finallyStmts |> Array.ofList) :> CodeStatement
-    let forLoop initStmt testExpr incrStmt statements = CodeIterationStatement(initStmt, testExpr, incrStmt, statements |> Array.ofList) :> CodeStatement
 
 /// Functions to create and manipulate type methods.
 module Meth =
     let create name = CodeMemberMethod(Name=name)
     let setAttr a (m: CodeMemberMethod) = m.Attributes <- a; m
     let addParam<'T> name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; m
-
-    let addOptParam<'T> name (m: CodeMemberMethod) =
-        let p = CodeParameterDeclarationExpression(typeof<'T>, name)
-        p.CustomAttributes.Add(Attr.create<System.Runtime.InteropServices.OptionalAttribute>) |> ignore
-        p.CustomAttributes.Add(Attr.create<System.Runtime.InteropServices.DefaultParameterValueAttribute> |> Attr.addArg Expr.nil) |> ignore
-        m.Parameters.Add(p) |> ignore
-        m
-
     let addParamRef (typ: CodeTypeReference) name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typ, name)) |> ignore; m
     let addExpr (e: CodeExpression) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let addStmt (e: CodeStatement) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let returns<'T> (m: CodeMemberMethod) = m.ReturnType <- typeRef<'T>; m
     let returnsOf (t: CodeTypeReference) (m: CodeMemberMethod) = m.ReturnType <- t; m
-    let typeParam (name: string) (m: CodeMemberMethod) = m.TypeParameters.Add(name) |> ignore; m
 
 /// Functions to create and manipulate type constructors.
 module Ctor =
@@ -175,18 +146,10 @@ module Ctor =
 /// Functions to simplify operator usage.
 module Op =
     let equals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityEquality, rhs) :> CodeExpression
-    let notEquals lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.IdentityInequality, rhs) :> CodeExpression
-    let boolOr lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.BooleanOr, rhs) :> CodeExpression
-    let boolAnd lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.BooleanAnd, rhs) :> CodeExpression
-    let isNull e = equals e (Expr.value null)
-    let isNotNull e = notEquals e (Expr.value null)
-    let ge lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThanOrEqual, rhs) :> CodeExpression
-    let greater lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.GreaterThan, rhs) :> CodeExpression
-    let plus lhs rhs = CodeBinaryOperatorExpression(lhs, CodeBinaryOperatorType.Add, rhs) :> CodeExpression
+    let isNull e = equals e (!^ null)
 
 /// Functions to create and manipulate types.
 module Cls =
-    let createEnum name = CodeTypeDeclaration(name, IsEnum=true)
     let create name = CodeTypeDeclaration(name, IsClass=true)
     let addAttr a (c: CodeTypeDeclaration) = c.TypeAttributes <- c.TypeAttributes ||| a; c
     let setAttr a (c: CodeTypeDeclaration) = c.TypeAttributes <- a; c
@@ -215,7 +178,7 @@ module Code =
                            then b.AppendFormat(" {0}", x)
                            else b.Append(x)) (Text.StringBuilder())
             Attr.create<TypeProviderXmlDocAttribute>
-            |> Attr.addArg (Expr.value (lines.ToString()))
+            |> Attr.addArg (!^ (lines.ToString()))
             |> t.CustomAttributes.Add
             |> ignore
         | None -> ()
@@ -223,7 +186,6 @@ module Code =
 
 /// Functions to create and manipulate arrays.
 module Arr =
-    let createOfSize<'T> (size: int) = CodeArrayCreateExpression(typeRef<'T>, size) :> CodeExpression
     let create<'T> (args: CodeExpression list) = CodeArrayCreateExpression(typeRef<'T>, args |> Array.ofList) :> CodeExpression
 
 module Compiler =
@@ -299,14 +261,6 @@ type RuntimeType =
         | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
         | ContentType -> CodeTypeReference(typeof<XRoad.BinaryContent>)
 
-/// Add special XmlReader class to allow seeking previous parts of XML document.
-/// Required for reading XML documents which do not comply with given schema.
-let createTypeFromAssemblyResource resourceName =
-    let assembly = typeof<RuntimeType>.Assembly
-    use stream = assembly.GetManifestResourceStream(resourceName)
-    use reader = new StreamReader(stream)
-    CodeSnippetTypeMember(reader.ReadToEnd())
-
 /// Create property with backing field.
 let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
     let backingField =
@@ -342,6 +296,6 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
             |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
             |> Prop.addSetStmt (Stmt.assign (Expr.this @=> f.Name) (Prop.setValue))
-            |> iif (sf.IsSome) (fun x -> x |> Prop.addSetStmt (Stmt.assign (Expr.this @=> sf.Value.Name) (Expr.value true)))
+            |> iif (sf.IsSome) (fun x -> x |> Prop.addSetStmt (Stmt.assign (Expr.this @=> sf.Value.Name) (!^ true)))
     owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
     p

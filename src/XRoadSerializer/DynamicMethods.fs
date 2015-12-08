@@ -491,7 +491,8 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                 ilSer.Emit(OpCodes.Ldfld, valueField)
                 ilSer.Emit(OpCodes.Call, (getTypeMap typ).Serialization)
                 ilSer.Emit(OpCodes.Nop)
-            if attr.IsElement then
+            if attr.MergeContent then emitSerialization()
+            else
                 ilSer.Emit(OpCodes.Ldarg_0)
                 ilSer.Emit(OpCodes.Ldstr, attr.Name)
                 ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
@@ -540,9 +541,8 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                     subTypes |> testSubType None
                     ilSer.MarkLabel(typeTestEnd)
                     ilSer.Emit(OpCodes.Nop)
-            else emitSerialization()
             ilSer.Emit(OpCodes.Br_S, conditionEnd)
-            if attr.IsElement then
+            if not <| attr.MergeContent then
                 ilSer.Emit(OpCodes.Ldarg_0)
                 ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
             genSerialization (Some label) xs
@@ -557,14 +557,7 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
             | (attr,typ,mi)::options ->
                 let label = il.DefineLabel()
                 let typeMap = getTypeMap typ
-                if attr.IsElement then
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, attr.Name)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Brfalse, label)
-                    emitTypeDeserialization il typeMap
-                else
+                if attr.MergeContent then
                     let instance = il.DeclareLocal(typeMap.Type)
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
@@ -576,6 +569,13 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                     il.Emit(OpCodes.Ldc_I4_1)
                     il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
                     il.Emit(OpCodes.Ldloc, instance)
+                else
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, attr.Name)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                    il.Emit(OpCodes.Brfalse, label)
+                    emitTypeDeserialization il typeMap
                 il.Emit(OpCodes.Call, mi)
                 il.Emit(OpCodes.Br_S, markReturn)
                 il.MarkLabel(label)
@@ -595,14 +595,14 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
             | (attr,typ,_)::options ->
                 let label = il.DefineLabel()
                 let typeMap = getTypeMap typ
-                if attr.IsElement then
+                if attr.MergeContent then
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
+                else
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
                     il.Emit(OpCodes.Ldstr, attr.Name)
                     il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                else
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
                 il.Emit(OpCodes.Brfalse_S, label)
                 il.Emit(OpCodes.Ldc_I4_1)
                 il.Emit(OpCodes.Br, markReturn)

@@ -31,8 +31,16 @@ type XRoadContentAttribute() =
 
 [<AllowNullLiteral>]
 [<AttributeUsage(AttributeTargets.Class, AllowMultiple=true)>]
-type XRoadChoiceOptionAttribute(id: int, name: string, isElement: bool) =
+type XRoadChoiceOptionAttribute(id: int, name: string) =
     inherit Attribute()
     member val Id = id with get
     member val Name = name with get
-    member val IsElement = isElement with get
+    member val MergeContent = false with get, set
+
+[<AllowNullLiteral>]
+[<AttributeUsage(AttributeTargets.Property)>]
+type XRoadCollectionAttribute(itemName: string) =
+    inherit Attribute()
+    new() = XRoadCollectionAttribute("")
+    member val ItemName = itemName with get
+    member val ItemIsNullable = false with get, set

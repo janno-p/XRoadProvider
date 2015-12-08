@@ -6,9 +6,8 @@ open System.Collections.Generic
 open System.Reflection
 open System.Text.RegularExpressions
 open System.Xml.Linq
-
 open XRoad.Attributes
-open XRoad.CodeDom.Common
+open XRoad.CodeDom
 open XRoad.Common
 open XRoad.TypeSchema
 

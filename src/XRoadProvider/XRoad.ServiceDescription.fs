@@ -1,8 +1,6 @@
 ﻿module internal XRoad.ServiceDescription
 
-open System.Collections.Generic
 open System.Xml.Linq
-
 open XRoad.Common
 
 /// Temporary type for SOAP:body binding elements.

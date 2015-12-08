@@ -6,10 +6,8 @@ open System.Collections.Generic
 open System.IO
 open System.Reflection
 open System.Xml
-
 open XRoad.Attributes
-open XRoad.CodeDom.Common
-open XRoad.CodeDom.ServiceImpl
+open XRoad.CodeDom
 open XRoad.Common
 open XRoad.TypeSchema
 
@@ -99,6 +97,24 @@ module TypeBuilder =
         (fun () ->
             num := !num + 1
             sprintf "%s%d" name !num)
+
+    /// Types which extend BinaryContent types should inherit its properties from BinaryContent runtime type also.
+    /// Create overloaded constructor to match BinaryContent constructor.
+    let inheritBinaryContent typ =
+        typ
+        |> Cls.setParent (ContentType.AsCodeTypeReference())
+        |> Cls.addMember (Ctor.create()
+                          |> Ctor.setAttr MemberAttributes.Public
+                          |> Ctor.addParam<System.IO.Stream> "content"
+                          |> Ctor.addBaseArg (!+ "content"))
+        |> Cls.addMember (Ctor.create()
+                          |> Ctor.setAttr MemberAttributes.Public
+                          |> Ctor.addParam<string> "contentId"
+                          |> Ctor.addParam<System.IO.Stream> "content"
+                          |> Ctor.addBaseArg (!+ "contentId")
+                          |> Ctor.addBaseArg (!+ "content"))
+        |> Cls.addMember (Ctor.create()
+                          |> Ctor.setAttr MemberAttributes.Public)
 
     /// Populate generated type declaration with properties specified in type schema definition.
     let rec build (context: TypeBuilderContext) runtimeType schemaType =
@@ -322,7 +338,7 @@ module TypeBuilder =
                     failwith "Not implemented: choice in choice."
                 | ChoiceContent.Element(spec) ->
                     let prop = buildElementProperty context spec
-                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name true) |> ignore
+                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name false) |> ignore
                     addNewMethod (i + 1) prop.Name prop.Type
                     None
                 | ChoiceContent.Group ->
@@ -330,7 +346,7 @@ module TypeBuilder =
                 | ChoiceContent.Sequence(spec) ->
                     let props = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
-                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName false) |> ignore
+                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName true) |> ignore
                     let optionType = createOptionType optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod (i + 1) optionName optionRuntimeType
@@ -405,18 +421,18 @@ module ServiceBuilder =
         let rec getReturnTypeTuple (tuple: (string * RuntimeType) list, types) =
             match types with
             | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_,typ) -> typ.AsCodeTypeReference()) |> Array.ofList)
-                    (typ, Expr.instOf typ (tuple |> List.map (fun (varName,_) -> Expr.var varName)))
+                    (typ, Expr.instOf typ (tuple |> List.map (fun (varName,_) -> !+ varName)))
             | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
             | x::xs -> let inner = getReturnTypeTuple([x], xs)
                        let typ = CodeTypeReference("System.Tuple", ((tuple |> List.map (fun (_,typ) -> typ.AsCodeTypeReference())) @ [fst inner]) |> Array.ofList)
-                       (typ, Expr.instOf typ ((tuple |> List.map (fun (varName,_) -> Expr.var varName)) @ [snd inner]))
+                       (typ, Expr.instOf typ ((tuple |> List.map (fun (varName,_) -> !+ varName)) @ [snd inner]))
         let types =
             if isMultipart
             then ("reader.Context.Attachments", PrimitiveType(typeof<IDictionary<string,Stream>>))::types
             else types
         match types with
         | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
-        | [(varName, typ)] -> (typ.AsCodeTypeReference(), Expr.var varName)
+        | [(varName, typ)] -> (typ.AsCodeTypeReference(), !+ varName)
         | many -> getReturnTypeTuple([], many)
 
     let addHeaderInitialization (protocol: XRoadProtocol) serviceName (reqhdrs: string list) (m: CodeMemberMethod) =
@@ -427,7 +443,7 @@ module ServiceBuilder =
         m |> Meth.addStmt (Stmt.declVarWith<string> "producer" ((Expr.this @-> "GetProducer") @% [Expr.this @=> propName "asutus"])) |> ignore
         let hdrExpr =
             [ yield (hdrName "asutus", Expr.this @=> (propName "asutus"))
-              yield (hdrName "andmekogu", Expr.var "producer")
+              yield (hdrName "andmekogu", !+ "producer")
               yield (hdrName "isikukood", Expr.this @=> (propName "isikukood"))
 
               match protocol with
@@ -435,7 +451,7 @@ module ServiceBuilder =
               | _ -> ()
 
               yield (hdrName "id", Expr.this @=> (propName "id"))
-              yield (hdrName "nimi", (Expr.this @-> "GetServiceName") @% [Expr.var "producer"; !^ serviceName; Expr.this @=> propName "nimi"])
+              yield (hdrName "nimi", (Expr.this @-> "GetServiceName") @% [!+ "producer"; !^ serviceName; Expr.this @=> propName "nimi"])
               yield (hdrName "toimik", Expr.this @=> (propName "toimik"))
               yield (hdrName "allasutus", Expr.this @=> (propName "allasutus"))
               yield (hdrName "amet", Expr.this @=> (propName "amet"))
@@ -447,7 +463,7 @@ module ServiceBuilder =
               yield (hdrName "salastada_sertifikaadiga", Expr.this @=> (propName "salastada_sertifikaadiga")) ]
             |> List.map (fun (name, exp) -> Expr.inst<SoapHeaderValue> [Expr.inst<XmlQualifiedName> [!^ name; !^ hdrns]; exp; !^ (reqhdrs |> List.exists ((=) name))])
             |> Arr.create<SoapHeaderValue>
-        m |> Meth.addStmt (Stmt.assign ((Expr.var "@__m") @=> "Header") hdrExpr)
+        m |> Meth.addStmt (Stmt.assign ((!+ "@__m") @=> "Header") hdrExpr)
 
     let addBodyInitialization context methodCall m =
         let instQN (nm: string) (ns: string) =
@@ -461,41 +477,41 @@ module ServiceBuilder =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name.LocalName enc.NamespaceName; Expr.var p.Name.LocalName])
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name.LocalName enc.NamespaceName; !+ p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
+            m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") stmt)
         | DocLiteralCall({ Parameters = [{ Type = Some(_) } as p] }) ->
             m |> addParameter context p
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [Expr.nil; Expr.var p.Name.LocalName]]))
+            m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [Expr.nil; !+ p.Name.LocalName]]))
         | DocLiteralCall(pw) ->
             let stmt =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name.LocalName p.Name.NamespaceName; Expr.var p.Name.LocalName])
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [instQN p.Name.LocalName p.Name.NamespaceName; !+ p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
+            m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") stmt)
         | RpcEncodedCall(acc,pw) ->
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__reqOpt" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
+            m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
             let stmt =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name]; Expr.var p.Name.LocalName])
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name]; !+ p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
+            m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") stmt)
         | RpcLiteralCall(acc,{ Parameters = [{ Type = Some(_) } as p] }) ->
             m |> addParameter context p
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc.LocalName acc.NamespaceName; Expr.var p.Name.LocalName]]))
+            m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") (Arr.create<Tuple<XmlQualifiedName, obj>> [Expr.inst<Tuple<XmlQualifiedName, obj>> [instQN acc.LocalName acc.NamespaceName; !+ p.Name.LocalName]]))
         | RpcLiteralCall(acc,pw) ->
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__reqOpt" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
+            m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN acc.LocalName acc.NamespaceName)) |> ignore
             let stmt =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name.LocalName]; Expr.var p.Name.LocalName])
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name.LocalName]; !+ p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
-            m |> Meth.addStmt (Stmt.assign (Expr.var "@__m" @=> "Body") stmt)
+            m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") stmt)
 
     let getResponseSpec (context: TypeBuilderContext) methodCall =
         match methodCall with
@@ -538,7 +554,7 @@ module ServiceBuilder =
         |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> context.Protocol.Name; !+ "@__p"]))
         |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
         |> addBodyInitialization context operation.InputParameters
-        |> iif (responseAccessor.IsSome) (fun x -> x |> Meth.addStmt (Stmt.assign (Expr.var "@__respOpt" @=> "Accessor") (Expr.inst<XmlQualifiedName> [!^ responseAccessor.Value.LocalName; !^ responseAccessor.Value.NamespaceName])))
+        |> iif (responseAccessor.IsSome) (fun x -> x |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (Expr.inst<XmlQualifiedName> [!^ responseAccessor.Value.LocalName; !^ responseAccessor.Value.NamespaceName])))
         |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [!+ "@__m"; !+ "@__reqOpt"; !+ "@__respOpt"]))
         |> createTuple parameters
 
@@ -639,9 +655,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
                 |> Meth.setAttr MemberAttributes.Private
                 |> Meth.addParam<string> "value"
                 |> Meth.returns<string>
-                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.var "value"))
+                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (!+ "value"))
                                                  [Stmt.ret (Expr.this @=> "producerName")]
-                                                 [Stmt.ret (Expr.var "value")])
+                                                 [Stmt.ret (!+ "value")])
 
             let getServiceNameMeth =
                 Meth.create "GetServiceName"
@@ -650,9 +666,9 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
                 |> Meth.addParam<string> "serviceName"
                 |> Meth.addParam<string> "value"
                 |> Meth.returns<string>
-                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (Expr.var "value"))
-                                                 [Stmt.ret ((Expr.typeRefOf<string> @-> "Format") @% [!^ "{0}.{1}"; Expr.var "producer"; Expr.var "serviceName"])]
-                                                 [Stmt.ret (Expr.var "value")])
+                |> Meth.addStmt (Stmt.condIfElse (Op.isNull (!+ "value"))
+                                                 [Stmt.ret ((Expr.typeRefOf<string> @-> "Format") @% [!^ "{0}.{1}"; !+ "producer"; !+ "serviceName"])]
+                                                 [Stmt.ret (!+ "value")])
 
             let ctor =
                 Ctor.create()

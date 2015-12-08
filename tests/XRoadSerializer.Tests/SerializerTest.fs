@@ -114,8 +114,8 @@ module TestType =
         member val Choice2Element = "test" with get, set
 
     [<XRoadType(LayoutKind.Choice)>]
-    [<XRoadChoiceOption(1, "Choice1", false)>]
-    [<XRoadChoiceOption(2, "Choice2", true)>]
+    [<XRoadChoiceOption(1, "Choice1", MergeContent=true)>]
+    [<XRoadChoiceOption(2, "Choice2", MergeContent=false)>]
     type TestChoice =
         val private __id: int
         val private __value: obj
@@ -144,8 +144,8 @@ module TestType =
         member val Ref = Referrer() with get, set
 
     [<XRoadType(LayoutKind.Choice)>]
-    [<XRoadChoiceOption(1, "value1", true)>]
-    [<XRoadChoiceOption(2, "value2", true)>]
+    [<XRoadChoiceOption(1, "value1", MergeContent=false)>]
+    [<XRoadChoiceOption(2, "value2", MergeContent=false)>]
     type AbstractRootChoice =
         val private __id: int
         val private __value: obj

@@ -148,7 +148,11 @@ module private Response =
                 | Separator -> parseContent()
             parseContent()
             contents |> Seq.toList
-        | None -> [(None, response.GetResponseStream())]
+        | None ->
+            use stream = response.GetResponseStream()
+            let content = new MemoryStream()
+            stream.CopyTo(content)
+            [(None, upcast content)]
 
     type XmlReader with
         member this.MoveToElement(depth, name, ns) =
@@ -173,6 +177,7 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
                 attachments |> List.iter (fun (id,stream) -> message.Attachments.Add(id.Value, stream))
                 xml
             | _ -> failwith "Invalid multipart response message: no content."
+        stream.Position <- 0L
         let reader = XmlReader.Create(stream)
         if not (reader.MoveToElement(0, "Envelope", XmlNamespace.SoapEnv)) then
             failwith "Soap envelope element was not found in response message."
