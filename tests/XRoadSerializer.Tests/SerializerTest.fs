@@ -37,7 +37,7 @@ module TestType =
 
     [<XRoadType(LayoutKind.Sequence)>]
     type WithContent() =
-        [<XRoadContent>]
+        [<XRoadElement(MergeContent=true)>]
         member val ContentValue = true with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
@@ -166,6 +166,12 @@ module TestType =
         [<XRoadElement>]
         member val X = AbstractRootChoice.New_value1(Concrete1()) with get, set
 
+    [<XRoadType(LayoutKind.Sequence)>]
+    type WithArray1() =
+        [<XRoadElement>]
+        [<XRoadCollection>]
+        member val Array = [| true; false; true; true |] with get, set
+
 module Serialization =
     let serialize qn (nslist: (string * string) list) value =
         let serializer = Serializer()
@@ -214,7 +220,7 @@ module Serialization =
 
     let [<Test>] ``serialize not nullable as null`` () =
         TestDelegate (fun _ -> TestType.ComplexType(String = null) |> serialize' |> ignore)
-        |> should (throwWithMessage "Not nullable property `String` of type `XRoadSerializer.Tests.SerializerTest+TestType+ComplexType` has null value.") typeof<Exception>
+        |> should (throwWithMessage "Not nullable property `String` of type `ComplexType` has null value.") typeof<Exception>
 
     let [<Test>] ``serialize extended type with base type contents`` () =
         TestType.ExtendedType() |> serialize' |> should equal TestXml.SubTypeWithBaseTypeMembers
@@ -377,3 +383,11 @@ module Deserialization =
         success |> should equal true
         value |> should not' (be Null)
         value.BaseValue |> should equal "test"
+
+    let [<Test; Ignore>] ``array with default property names`` () =
+        let resultXml = TestType.WithArray1() |> Serialization.serialize'
+        resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></keha></wrapper>"
+        let result = resultXml |> deserialize'<TestType.WithArray1>
+        result |> should not' (be Null)
+        result.Array |> should not' (be Null)
+        result.Array |> should equal [| true; false; true; true |]

@@ -69,7 +69,8 @@ module Attributes =
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
 
     let xrdDefType (layout: LayoutKind) =
-        Attr.create<XRoadTypeAttribute> |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
+        Attr.create<XRoadTypeAttribute>
+        |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
 
     let xrdType (typeName: XName) (layout: LayoutKind) =
         Attr.create<XRoadTypeAttribute>
@@ -83,7 +84,8 @@ module Attributes =
         |> iif isNullable (fun a -> a |> Attr.addNamedArg "IsNullable" (!^ true))
 
     let xrdContent =
-        Attr.create<XRoadContentAttribute>
+        Attr.create<XRoadElementAttribute>
+        |> Attr.addNamedArg "MergeContent" (!^ true)
 
     let xrdChoiceOption (id: int) (name: string) (mergeContent: bool) =
         Attr.create<XRoadChoiceOptionAttribute>

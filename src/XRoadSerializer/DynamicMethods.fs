@@ -22,7 +22,9 @@ type Deserialization =
 
 type TypeMap =
     { Type: Type
-      Attribute: XRoadTypeAttribute
+      Name: string
+      Namespace: string option
+      Layout: LayoutKind option
       DeserializeDelegate: Lazy<DeserializerDelegate>
       Deserialization: Deserialization
       SerializeDelegate: Lazy<SerializerDelegate>
@@ -31,13 +33,29 @@ type TypeMap =
         this.SerializeDelegate.Value.Invoke(writer, value)
     member this.Deserialize(reader: XmlReader) =
         this.DeserializeDelegate.Value.Invoke(reader)
-    static member Create(typ, deserialization, serialization) =
+    member this.FullName =
+        match this.Namespace with
+        | Some(ns) -> sprintf "{%s}:{%s}" ns this.Name
+        | None -> this.Name
+    static member Create(typ: Type, deserialization, serialization) =
+        let attr = typ.GetCustomAttribute<XRoadTypeAttribute>() |> Option.ofObj
         { Type = typ
-          Attribute = typ.GetCustomAttribute<XRoadTypeAttribute>()
+          Name = attr |> Option.fold (fun name attr -> match attr.Name with null | "" -> name | x -> x) typ.Name
+          Namespace = attr |> Option.bind (fun attr -> match attr.Namespace with null | "" -> None | x -> Some(x))
+          Layout = attr |> Option.map (fun attr -> attr.Layout)
           Deserialization = deserialization
           DeserializeDelegate = lazy (deserialization.Root.CreateDelegate(typeof<DeserializerDelegate>) |> unbox)
           Serialization = serialization
           SerializeDelegate = lazy (serialization.CreateDelegate(typeof<SerializerDelegate>) |> unbox) }
+
+type private PropertyMap =
+    { TypeMap: TypeMap
+      OwnerTypeMap: TypeMap
+      Name: string
+      IsContent: bool
+      IsNullable: bool
+      GetMethod: MethodInfo
+      SetMethod: MethodInfo }
 
 let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
@@ -265,7 +283,7 @@ let rec emitTypeDeserialization (il: ILGenerator) (typeMap: TypeMap) =
         il.Emit(OpCodes.Stloc, typeNamespace)
         il.MarkLabel(label2)
         il.Emit(OpCodes.Nop)
-        let rec genSubType (lbl: Label option) subTypes =
+        let rec genSubType (lbl: Label option) (subTypes: TypeMap list) =
             lbl |> Option.iter (fun lbl -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop))
             match subTypes with
             | [] ->
@@ -278,11 +296,11 @@ let rec emitTypeDeserialization (il: ILGenerator) (typeMap: TypeMap) =
             | x::xs ->
                 let lbl = il.DefineLabel()
                 il.Emit(OpCodes.Ldloc, typeName)
-                il.Emit(OpCodes.Ldstr, match x.Attribute.Name with null | "" -> x.Type.Name | x -> x)
+                il.Emit(OpCodes.Ldstr, x.Name)
                 il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                 il.Emit(OpCodes.Brfalse_S, lbl)
                 il.Emit(OpCodes.Ldloc, typeNamespace)
-                il.Emit(OpCodes.Ldstr, x.Attribute.Namespace)
+                il.Emit(OpCodes.Ldstr, x.Namespace |> Option.fold (fun _ x -> x) "")
                 il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                 il.Emit(OpCodes.Brfalse_S, lbl)
                 emitDefault x
@@ -298,9 +316,9 @@ and createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list
     let (|ContentProperty|_|) (properties: (PropertyInfo * TypeMap) list) =
         match properties with
         | [(prop,_) as x] ->
-            match prop.GetCustomAttribute<XRoadContentAttribute>() with
-            | null -> None
-            | _ -> Some(x)
+            match prop.GetCustomAttribute<XRoadElementAttribute>() with
+            | attr when attr.MergeContent -> Some(x)
+            | _ -> None
         | _ -> None
 
     let emitDeserialization (property: PropertyInfo) (propTypeMap: TypeMap) =
@@ -341,7 +359,7 @@ and createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list
             il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
             il.Emit(OpCodes.Nop))
 
-        match typeMaps.Head.Attribute.Layout with
+        match typeMaps.Head.Layout.Value with
         | LayoutKind.Choice ->
             ()
         | LayoutKind.Sequence ->
@@ -399,7 +417,7 @@ and createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, markLoopStart)
 
-                if propTypeMap.Attribute |> isNull || propTypeMap.Attribute.Layout <> LayoutKind.Choice then
+                if propTypeMap.Layout <> Some(LayoutKind.Choice) then
                     // reader.LocalName != property.Name
                     let markDeserialize = il.DefineLabel()
                     il.Emit(OpCodes.Ldarg_0)
@@ -436,12 +454,12 @@ and createTypeMap (typ: Type) =
             | LayoutKind.Choice ->
                 createChoiceTypeSerializers (serializerMethod.GetILGenerator()) (deserializerMethod.GetILGenerator()) (deserializeContentMethod.GetILGenerator()) (matchTypeMethod.GetILGenerator()) typ
             | _ ->
-                createSerializerMethodBody (serializerMethod.GetILGenerator()) typ
-                createDeserializerMethodBody (deserializerMethod.GetILGenerator()) (getTypeMap typ)
+                let typeMap = getTypeMap typ
+                createSerializerMethodBody (serializerMethod.GetILGenerator()) typeMap
+                createDeserializerMethodBody (deserializerMethod.GetILGenerator()) typeMap
                 let properties =
                     typ.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
-                    |> Array.filter (fun p -> p.GetCustomAttribute<XRoadElementAttribute>() |> isNull |> not ||
-                                              p.GetCustomAttribute<XRoadContentAttribute>() |> isNull |> not)
+                    |> Array.filter (fun p -> p.GetCustomAttribute<XRoadElementAttribute>() |> isNull |> not || p.GetCustomAttribute<XRoadCollectionAttribute>() |> isNull |> not)
                     |> Array.map (fun p -> (p, getTypeMap p.PropertyType))
                     |> Array.sortBy (fun (p,_) -> p.MetadataToken)
                     |> Array.toList
@@ -453,7 +471,7 @@ and createMatchType il property =
     match property with
     | Some(propertyInfo, propertyMap) ->
         il.Emit(OpCodes.Ldarg_0)
-        if not (propertyMap.Attribute |> isNull) && propertyMap.Attribute.Layout = LayoutKind.Choice then
+        if propertyMap.Layout = Some(LayoutKind.Choice) then
             il.Emit(OpCodes.Call, propertyMap.Deserialization.MatchType)
         else
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
@@ -518,15 +536,13 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                             ilSer.Emit(OpCodes.Ldstr, "type")
                             ilSer.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
                             ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartAttribute("", "") @>)
-                            let typeName = match subType.Attribute.Name with null | "" -> subType.Type.Name | name -> name
                             ilSer.Emit(OpCodes.Ldarg_0)
-                            ilSer.Emit(OpCodes.Ldstr, typeName)
-                            match subType.Attribute.Namespace with
-                            | null | "" ->
-                                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteString("") @>)
-                            | ns ->
+                            ilSer.Emit(OpCodes.Ldstr, subType.Name)
+                            match subType.Namespace with
+                            | Some(ns) ->
                                 ilSer.Emit(OpCodes.Ldstr, ns)
                                 ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteQualifiedName("", "") @>)
+                            | None -> ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteString("") @>)
                             ilSer.Emit(OpCodes.Ldarg_0)
                             ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndAttribute() @>)
                             ilSer.Emit(OpCodes.Ldarg_0)
@@ -664,110 +680,120 @@ and emitSerializerParam (typeMap: TypeMap) (subTypes: TypeMap list) emitWriterPa
         subTypes |> genSubType None
         il.MarkLabel(conditionEnd)
 
-and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
+and private emitPropertySerialization (il: ILGenerator) (propertyMap: PropertyMap) =
     let writer: Expr<XmlWriter> = Expr.GlobalVar("w")
     let value: Expr<obj> = Expr.GlobalVar("v")
+    let serializer: Expr<unit> = Expr.GlobalVar("s")
+    let attributes: Expr<unit> = Expr.GlobalVar("a")
 
-    generate il
-             (fun arg -> match arg with
-                         | e when e = (upcast value) -> il.Emit(OpCodes.Ldarg_1); Some(-1)
-                         | e when e = (upcast writer) -> il.Emit(OpCodes.Ldarg_0); Some(-1)
-                         | _ -> None)
-             <@ if (%value) = null then (%writer).WriteAttributeString("nil", XmlNamespace.Xsi, "true") @>
+    let isChoice = propertyMap.TypeMap.Layout = Some(LayoutKind.Choice)
+    let propertyName = propertyMap.Name
+    let ownerTypeName = propertyMap.OwnerTypeMap.FullName
 
-    let emitPropertySerialization (il: ILGenerator) (property: PropertyInfo) =
-        let contentAttribute = property.GetCustomAttribute<XRoadContentAttribute>() |> Option.ofObj
-        let elementAttribute = property.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj
-
-        let isChoice = property.PropertyType.GetCustomAttribute<XRoadTypeAttribute>()
-                       |> Option.ofObj
-                       |> Option.fold (fun _ attr -> attr.Layout = LayoutKind.Choice) false
-
-        let propertyName = property.Name
-        let typeName = property.DeclaringType.FullName
-
-        let serializer: Expr<unit> = Expr.GlobalVar("s")
-        let attributes: Expr<unit> = Expr.GlobalVar("a")
-
-        let contentExpr =
-            if isChoice || (property.PropertyType.IsValueType && Nullable.GetUnderlyingType(property.PropertyType) |> isNull) then
-                <@ (%serializer) @>
-            elif elementAttribute |> Option.fold (fun _ x -> x.IsNullable) false then
-                <@ (%attributes)
+    let contentExpr =
+        if isChoice || (propertyMap.TypeMap.Type.IsValueType && Nullable.GetUnderlyingType(propertyMap.TypeMap.Type) |> isNull) then
+            <@ (%serializer) @>
+        elif propertyMap.IsNullable then
+            <@ (%attributes)
+               (%serializer) @>
+        else
+            <@ if (%value) = null then
+                   raise (Exception(String.Format("Not nullable property `{0}` of type `{1}` has null value.", propertyName, ownerTypeName)))
+               else
+                   (%attributes)
                    (%serializer) @>
-            else
-                <@ if (%value) = null then
-                       raise (Exception(String.Format("Not nullable property `{0}` of type `{1}` has null value.", propertyName, typeName)))
-                   else
-                       (%attributes)
-                       (%serializer) @>
 
-        let expr =
-            if contentAttribute.IsSome || isChoice then
-                contentExpr
-            else
-                <@ (%writer).WriteStartElement(propertyName)
-                   (%contentExpr)
-                   (%writer).WriteEndElement() @>
+    let expr =
+        if propertyMap.IsContent || isChoice then
+            contentExpr
+        else
+            <@ (%writer).WriteStartElement(propertyName)
+               (%contentExpr)
+               (%writer).WriteEndElement() @>
 
-        let typeMap = getTypeMap property.PropertyType
-        let subTypes = findSubTypes property.PropertyType
+    let subTypes = findSubTypes propertyMap.TypeMap.Type
 
-        let emitWriterParam() =
-            il.Emit(OpCodes.Ldarg_0)
-        let emitValueParam() =
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Castclass, property.DeclaringType)
-            il.Emit(OpCodes.Callvirt, property.GetGetMethod())
-            if property.PropertyType.IsValueType then
-                il.Emit(OpCodes.Box, property.PropertyType)
-        let rec emitAttributesParam() =
-            match subTypes with
-            | [] -> ()
-            | _ ->
-                let conditionEnd = il.DefineLabel()
-                let rec genSubType (lbl: Label option) subTypes =
-                    match subTypes with
-                    | [] -> ()
-                    | x::xs ->
-                        match lbl with Some(lbl) -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop) | None -> ()
-                        let lbl = match xs with [] -> conditionEnd | _ -> il.DefineLabel()
-                        emitValueParam()
-                        il.Emit(OpCodes.Call, objGetType)
-                        il.Emit(OpCodes.Callvirt, typeGetFullName)
-                        il.Emit(OpCodes.Ldstr, x.Type.FullName)
-                        il.Emit(OpCodes.Callvirt, stringEquals)
-                        il.Emit(OpCodes.Ldc_I4_0)
-                        il.Emit(OpCodes.Ceq)
-                        il.Emit(OpCodes.Brtrue_S, lbl)
-                        il.Emit(OpCodes.Nop)
-                        generate' <@ (%writer).WriteStartAttribute("type", XmlNamespace.Xsi) @>
-                        let typeName = match x.Attribute.Name with null | "" -> x.Type.Name | name -> name
-                        match x.Attribute.Namespace with
-                        | null | "" -> generate' <@ (%writer).WriteString(typeName) @>
-                        | ns -> generate' <@ (%writer).WriteQualifiedName(typeName, ns) @>
-                        generate' <@ (%writer).WriteEndAttribute() @>
-                        il.Emit(OpCodes.Br, conditionEnd)
-                        genSubType (Some lbl) xs
-                emitValueParam()
-                il.Emit(OpCodes.Call, objGetType)
-                il.Emit(OpCodes.Callvirt, typeGetFullName)
-                il.Emit(OpCodes.Ldstr, property.PropertyType.FullName)
-                il.Emit(OpCodes.Callvirt, stringEquals)
-                il.Emit(OpCodes.Ldc_I4_0)
-                il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse, conditionEnd)
-                il.Emit(OpCodes.Nop)
-                subTypes |> genSubType None
-                il.MarkLabel(conditionEnd)
-        and generate' x = generate il (fun arg -> match arg with
-                                                  | e when e = (upcast value) -> emitValueParam(); Some(-1)
-                                                  | e when e = (upcast writer) -> emitWriterParam(); Some(-1)
-                                                  | e when e = (upcast serializer) -> emitSerializerParam typeMap subTypes emitWriterParam emitValueParam il; Some(-1)
-                                                  | e when e = (upcast attributes) -> emitAttributesParam(); Some(-1)
-                                                  | _ -> None) x
+    let emitWriterParam() =
+        il.Emit(OpCodes.Ldarg_0)
+    let emitValueParam() =
+        il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Castclass, propertyMap.OwnerTypeMap.Type)
+        il.Emit(OpCodes.Callvirt, propertyMap.GetMethod)
+        if propertyMap.TypeMap.Type.IsValueType then
+            il.Emit(OpCodes.Box, propertyMap.TypeMap.Type)
+    let rec emitAttributesParam() =
+        match subTypes with
+        | [] -> ()
+        | _ ->
+            let conditionEnd = il.DefineLabel()
+            let rec genSubType (lbl: Label option) subTypes =
+                match subTypes with
+                | [] -> ()
+                | x::xs ->
+                    match lbl with Some(lbl) -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop) | None -> ()
+                    let lbl = match xs with [] -> conditionEnd | _ -> il.DefineLabel()
+                    emitValueParam()
+                    il.Emit(OpCodes.Call, objGetType)
+                    il.Emit(OpCodes.Callvirt, typeGetFullName)
+                    il.Emit(OpCodes.Ldstr, x.Type.FullName)
+                    il.Emit(OpCodes.Callvirt, stringEquals)
+                    il.Emit(OpCodes.Ldc_I4_0)
+                    il.Emit(OpCodes.Ceq)
+                    il.Emit(OpCodes.Brtrue_S, lbl)
+                    il.Emit(OpCodes.Nop)
+                    generate' <@ (%writer).WriteStartAttribute("type", XmlNamespace.Xsi) @>
+                    let typeName = x.Name
+                    match x.Namespace with
+                    | Some(ns) -> generate' <@ (%writer).WriteQualifiedName(typeName, ns) @>
+                    | None -> generate' <@ (%writer).WriteString(typeName) @>
+                    generate' <@ (%writer).WriteEndAttribute() @>
+                    il.Emit(OpCodes.Br, conditionEnd)
+                    genSubType (Some lbl) xs
+            emitValueParam()
+            il.Emit(OpCodes.Call, objGetType)
+            il.Emit(OpCodes.Callvirt, typeGetFullName)
+            il.Emit(OpCodes.Ldstr, propertyMap.TypeMap.Type.FullName)
+            il.Emit(OpCodes.Callvirt, stringEquals)
+            il.Emit(OpCodes.Ldc_I4_0)
+            il.Emit(OpCodes.Ceq)
+            il.Emit(OpCodes.Brfalse, conditionEnd)
+            il.Emit(OpCodes.Nop)
+            subTypes |> genSubType None
+            il.MarkLabel(conditionEnd)
+    and generate' x = generate il (fun arg -> match arg with
+                                                | e when e = (upcast value) -> emitValueParam(); Some(-1)
+                                                | e when e = (upcast writer) -> emitWriterParam(); Some(-1)
+                                                | e when e = (upcast serializer) -> emitSerializerParam propertyMap.TypeMap subTypes emitWriterParam emitValueParam il; Some(-1)
+                                                | e when e = (upcast attributes) -> emitAttributesParam(); Some(-1)
+                                                | _ -> None) x
 
-        generate' expr
+    generate' expr
+    ()
+
+and createSerializerMethodBody (il: ILGenerator) (typeMap: TypeMap) =
+    let labelSerialize = il.DefineLabel()
+    let labelReturn = il.DefineLabel()
+
+    // if (value != null) {
+    il.Emit(OpCodes.Ldarg_1)
+    il.Emit(OpCodes.Ldnull)
+    il.Emit(OpCodes.Ceq)
+    il.Emit(OpCodes.Brfalse_S, labelSerialize)
+
+    // writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true");
+    il.Emit(OpCodes.Ldarg_0)
+    il.Emit(OpCodes.Ldstr, "nil")
+    il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+    il.Emit(OpCodes.Ldstr, "true")
+    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteAttributeString("", "", "") @>)
+
+    // return;
+    il.Emit(OpCodes.Br, labelReturn)
+
+    // }
+    il.MarkLabel(labelSerialize)
+    il.Emit(OpCodes.Nop)
+
     let rec callBase (typ: Type) =
         match findTypeMap typ.BaseType with
         | Some(typeMap) ->
@@ -777,13 +803,26 @@ and createSerializerMethodBody (il: ILGenerator) (typ: Type) =
             il.Emit(OpCodes.Call, typeMap.Serialization)
             il.Emit(OpCodes.Nop)
         | _ -> ()
-    callBase typ
-    typ.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
-    |> Array.choose (fun p ->
-        if p.GetCustomAttribute<XRoadElementAttribute>() |> isNull && p.GetCustomAttribute<XRoadContentAttribute>() |> isNull
-        then None
-        else Some(p))
-    |> Array.iter (emitPropertySerialization il)
+    callBase typeMap.Type
+
+    typeMap.Type.GetProperties(BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.DeclaredOnly)
+    |> Array.iter (fun p ->
+        match (p.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj,
+               p.GetCustomAttribute<XRoadCollectionAttribute>() |> Option.ofObj) with
+        | None, None -> ()
+        | elementAttr, collectionAttr ->
+            let propertyTypeMap = (getTypeMap p.PropertyType)
+            let propertyMap: PropertyMap =
+                { TypeMap = propertyTypeMap
+                  OwnerTypeMap = typeMap
+                  Name = elementAttr |> Option.fold (fun name attr -> match attr.Name with null | "" -> name | x -> x) p.Name
+                  IsContent = elementAttr |> Option.fold (fun _ attr -> attr.MergeContent) false
+                  IsNullable = elementAttr |> Option.fold (fun _ attr -> attr.IsNullable) false
+                  GetMethod = p.GetGetMethod()
+                  SetMethod = p.GetSetMethod() }
+            emitPropertySerialization il propertyMap)
+
+    il.MarkLabel(labelReturn)
     il.Emit(OpCodes.Ret)
 
 and getTypeMap(typ) : TypeMap =
@@ -796,7 +835,7 @@ and findTypeMap (typ: Type) =
     | null -> None
     | _ -> Some(getTypeMap typ)
 
-and findSubTypes (typ: Type) =
+and findSubTypes (typ: Type) : TypeMap list =
     let subTypes =
         typ.Assembly.GetTypes()
         |> Array.filter (fun x -> x.IsSubclassOf(typ))

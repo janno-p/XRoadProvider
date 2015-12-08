@@ -23,11 +23,7 @@ type XRoadElementAttribute(name: string) =
     new() = XRoadElementAttribute("")
     member val IsNullable = false with get, set
     member val Name = name with get
-
-[<AllowNullLiteral>]
-[<AttributeUsage(AttributeTargets.Property)>]
-type XRoadContentAttribute() =
-    inherit Attribute()
+    member val MergeContent = false with get, set
 
 [<AllowNullLiteral>]
 [<AttributeUsage(AttributeTargets.Class, AllowMultiple=true)>]
