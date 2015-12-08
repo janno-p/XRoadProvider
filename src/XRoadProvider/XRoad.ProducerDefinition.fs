@@ -65,8 +65,8 @@ module TypeBuilder =
             else
                 match definition.IsWrappedArray, definition.Type with
                 | Some(true), CollectionType(_, itemName, _) ->
-                    prop |> Prop.describe (Attributes.XmlArray(definition.IsNillable))
-                         |> Prop.describe (Attributes.XmlArrayItem(itemName, definition.IsItemNillable.Value))
+                    prop |> Prop.describe (Attributes.xrdElement(None, definition.IsNillable))
+                         |> Prop.describe (Attributes.xrdCollection(Some(itemName), definition.IsItemNillable.Value))
                          |> ignore
                 | Some(true), _ ->
                     failwith "Wrapped array should match to CollectionType."
@@ -119,7 +119,7 @@ module TypeBuilder =
     /// Populate generated type declaration with properties specified in type schema definition.
     let rec build (context: TypeBuilderContext) runtimeType schemaType =
         // Extract type declaration from runtime type definition.
-        let providedTy, providedTypeName =
+        let providedTy, _ (*providedTypeName*) =
             match runtimeType with
             | ProvidedType(decl, name) -> decl, name
             | _ -> failwith "Only generated types are accepted as arguments!"
@@ -162,7 +162,7 @@ module TypeBuilder =
                     failwith "Not implemented: restriction in complexType-s simpleContent."
                 | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
-                    | ProvidedType(baseDecl,_) as baseTy ->
+                    | ProvidedType(_ (*baseDecl*),_) as baseTy ->
                         providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
                     | _ ->
                         failwithf "Only complex types can be inherited! (%A)" spec.Base
@@ -313,8 +313,17 @@ module TypeBuilder =
             optionType |> addTypeProperties propList
             optionType
 
-        let addTryMethod () =
-            ()
+        let addTryMethod (id: int) (name: string) (runtimeType: RuntimeType) =
+            let tryMethod =
+                Meth.create (sprintf "TryGet%s%s" (if Char.IsLower(name.[0]) then "_" else "") name)
+                |> Meth.setAttr MemberAttributes.Public
+                |> Meth.returns<bool>
+                |> Meth.addOutParamRef (runtimeType.AsCodeTypeReference()) "value"
+                |> Meth.addStmt (Stmt.assign (!+ "value") Expr.nil)
+                |> Meth.addStmt (Stmt.condIf (Op.equals (Expr.this @=> "__id") (!^ id))
+                                             [Stmt.assign (!+ "value") (Expr.cast (runtimeType.AsCodeTypeReference()) (Expr.this @=> "__value"))])
+                |> Meth.addStmt (Stmt.ret (Op.equals (Expr.this @=> "__id") (!^ id)))
+            choiceType |> Cls.addMember(tryMethod) |> ignore
 
         let addNewMethod id (name: string) (runtimeType: RuntimeType) =
             let newMethod =
@@ -340,6 +349,7 @@ module TypeBuilder =
                     let prop = buildElementProperty context spec
                     choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name false) |> ignore
                     addNewMethod (i + 1) prop.Name prop.Type
+                    addTryMethod (i + 1) prop.Name prop.Type
                     None
                 | ChoiceContent.Group ->
                     failwith "Not implemented: group in choice."
@@ -350,8 +360,8 @@ module TypeBuilder =
                     let optionType = createOptionType optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod (i + 1) optionName optionRuntimeType
-                    Some(optionType)
-                )
+                    addTryMethod (i + 1) optionName optionRuntimeType
+                    Some(optionType))
 
         let choiceProperty =
             let prop = PropertyDefinition.Create(choiceName, false, None)

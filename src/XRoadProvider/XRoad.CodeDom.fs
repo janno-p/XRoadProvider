@@ -65,8 +65,6 @@ module Attributes =
 
     let DebuggerBrowsable = Attr.create<DebuggerBrowsableAttribute> |> Attr.addArg (Expr.enumValue<DebuggerBrowsableState> "Never")
     let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
-    let XmlArray(isNillable) = Attr.create<XmlArrayAttribute> |> addUnqualifiedForm |> addNullable isNillable
-    let XmlArrayItem(name, isNillable) = Attr.create<XmlArrayItemAttribute> |> Attr.addArg (!^ name) |> addUnqualifiedForm |> addNullable isNillable
     let XmlIgnore = Attr.create<XmlIgnoreAttribute>
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
 
@@ -118,6 +116,7 @@ module Prop =
 module Stmt =
     let ret e = CodeMethodReturnStatement(e) :> CodeStatement
     let assign le re = CodeAssignStatement(le, re) :> CodeStatement
+    let condIf cond (args: CodeStatement list) = CodeConditionStatement(cond, args |> Array.ofList) :> CodeStatement
 
     let condIfElse cond (argsIf: CodeStatement list) (argsElse: CodeStatement list) =
         CodeConditionStatement(cond, argsIf |> Array.ofList, argsElse |> Array.ofList) :> CodeStatement
@@ -130,6 +129,7 @@ module Meth =
     let setAttr a (m: CodeMemberMethod) = m.Attributes <- a; m
     let addParam<'T> name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; m
     let addParamRef (typ: CodeTypeReference) name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typ, name)) |> ignore; m
+    let addOutParamRef (typ: CodeTypeReference) name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typ, name, Direction=FieldDirection.Out)) |> ignore; m
     let addExpr (e: CodeExpression) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let addStmt (e: CodeStatement) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let returns<'T> (m: CodeMemberMethod) = m.ReturnType <- typeRef<'T>; m
