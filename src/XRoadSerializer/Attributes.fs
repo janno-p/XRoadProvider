@@ -40,3 +40,4 @@ type XRoadCollectionAttribute(itemName: string) =
     new() = XRoadCollectionAttribute("")
     member val ItemName = itemName with get
     member val ItemIsNullable = false with get, set
+    member val MergeContent = false with get, set
