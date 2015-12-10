@@ -18,22 +18,25 @@ type Serializer() as this =
     member __.Deserialize(reader: XmlReader, typ) =
         this.DeserializeObject(reader, typ) |> Option.fold (fun _ x -> x) null
 
-    member __.Serialize(writer: XmlWriter, value: obj, rootName: XmlQualifiedName) =
+    member __.Serialize<'T>(writer: XmlWriter, value: 'T, rootName: XmlQualifiedName) =
+        this.Serialize(writer, typeof<'T>, value, rootName)
+
+    member __.Serialize(writer: XmlWriter, typ, value: obj, rootName: XmlQualifiedName) =
         match rootName.Namespace with
         | null | "" -> writer.WriteStartElement(rootName.Name)
         | _ -> writer.WriteStartElement(rootName.Name, rootName.Namespace)
-        this.SerializeObject(writer, value)
+        this.SerializeObject(writer, typ, value)
         writer.WriteEndElement()
 
     member private __.DeserializeObject(reader, typ) =
         match reader.GetAttribute("nil", XmlNamespace.Xsi) |> Option.ofObj |> Option.map (fun x -> x.ToLower()) with
         | Some("true") | Some("1") -> None
         | _ ->
-            let typeMap = getTypeMap(typ)
+            let typeMap = getTypeMap typ
             if typeMap.Layout = Some(LayoutKind.Choice) && not (skipRoot reader.Depth reader) then None
             else Some(typeMap.Deserialize(reader))
 
-    member private __.SerializeObject(writer, value) =
+    member private __.SerializeObject(writer, typ, value) =
         match value with
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
-        | _ -> getTypeMap(value.GetType()).Serialize(writer, value) |> ignore
+        | _ -> (getTypeMap typ).Serialize(writer, value) |> ignore

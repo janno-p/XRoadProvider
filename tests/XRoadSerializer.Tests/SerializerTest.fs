@@ -10,108 +10,87 @@ open System.Xml
 open XRoad
 open XRoad.Attributes
 
-[<RequireQualifiedAccessAttribute>]
-module TestXml =
-    let [<Literal>] AbstractBaseType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></keha></wrapper>"
-    let [<Literal>] AbstractBaseTypeExplicitName = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:t=""testns""><keha><Reference xsi:type=""t:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></keha></wrapper>"
-    let [<Literal>] AbstractType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
-    let [<Literal>] Choice1Of2 = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Choice1Element>test</Choice1Element></keha></wrapper>"
-    let [<Literal>] Choice2Of2 = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Choice2><Choice2Element>test</Choice2Element></Choice2></keha></wrapper>"
-    let [<Literal>] ExtendedType = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Member xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></keha></wrapper>"
-    let [<Literal>] InnerAbstractBase = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Ref><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></Ref></keha></wrapper>"
-    let [<Literal>] IntegerValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>32</keha></wrapper>"
-    let [<Literal>] NullableValues = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>13</Value1><Value2 xsi:nil=""true"" /></keha></wrapper>"
-    let [<Literal>] NullValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:nil=""true"" /></wrapper>"
-    let [<Literal>] RootName = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></wrapper>"
-    let [<Literal>] SimpleValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></keha></wrapper>"
-    let [<Literal>] StringValue = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>string value</keha></wrapper>"
-    let [<Literal>] SubTypeWithBaseTypeMembers = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"
-    let [<Literal>] WithChoice1Sample = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></keha></wrapper>"
-    let [<Literal>] WithChoice2Sample = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice2><Choice2Element>test</Choice2Element></Choice2></keha></wrapper>"
-    let [<Literal>] EmptyString = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice /><Choice1Element>test</Choice1Element></keha></wrapper>"
-    let [<Literal>] NullString = @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice xsi:nil=""true"" /><Choice1Element>test</Choice1Element></keha></wrapper>"
-
 module TestType =
     type UnserializableType() =
-        member val Value = 10 with get, set
+        member val Value = Unchecked.defaultof<int> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type WithContent() =
         [<XRoadElement(MergeContent=true)>]
-        member val ContentValue = true with get, set
+        member val ContentValue = Unchecked.defaultof<bool> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type ComplexType() =
         [<XRoadElement>]
-        member val String = "test" with get, set
+        member val String = Unchecked.defaultof<string> with get, set
         [<XRoadElement>]
-        member val BigInteger = 100I with get, set
+        member val BigInteger = Unchecked.defaultof<bigint> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type SimpleType() =
         [<XRoadElement>]
-        member val Value = 13 with get, set
+        member val Value = Unchecked.defaultof<int> with get, set
         [<XRoadElement>]
-        member val ComplexValue = ComplexType() with get, set
+        member val ComplexValue = Unchecked.defaultof<ComplexType> with get, set
         [<XRoadElement>]
-        member val SubContent = WithContent() with get, set
+        member val SubContent = Unchecked.defaultof<WithContent> with get, set
         member val IgnoredValue = true with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type WithNullableMembers() =
         [<XRoadElement(IsNullable=true)>]
-        member val Value1 = Nullable(13) with get, set
+        member val Value1 = Unchecked.defaultof<Nullable<int>> with get, set
         [<XRoadElement(IsNullable=true)>]
-        member val Value2 = Nullable() with get, set
+        member val Value2 = Unchecked.defaultof<Nullable<int>> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type ExtendedType() =
         inherit ComplexType()
         [<XRoadElement>]
-        member val OwnElement = "test" with get, set
+        member val OwnElement = Unchecked.defaultof<string> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type UseBaseClass() =
         [<XRoadElement>]
-        member val Member = ExtendedType() :> ComplexType with get, set
+        member val Member = Unchecked.defaultof<ComplexType> with get, set
 
     [<AbstractClass; AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
     type AbstractBase() =
         [<XRoadElement>]
-        member val BaseValue = "test" with get, set
+        member val BaseValue = Unchecked.defaultof<string> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type Concrete1() =
         inherit AbstractBase()
         [<XRoadElement>]
-        member val SubValue1 = "test2" with get, set
+        member val SubValue1 = Unchecked.defaultof<string> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type Concrete2() =
         inherit AbstractBase()
         [<XRoadElement>]
-        member val SubValue2 = "test3" with get, set
+        member val SubValue2 = Unchecked.defaultof<string> with get, set
 
     [<XRoadType("ConcreteTypeName", LayoutKind.Sequence, Namespace="testns")>]
     type Concrete3() =
         inherit AbstractBase()
         [<XRoadElement>]
-        member val SubValue3 = "test2" with get, set
+        member val SubValue3 = Unchecked.defaultof<string> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type Referrer() =
         [<XRoadElement>]
-        member val Reference = Concrete1() :> AbstractBase with get, set
+        member val Reference = Unchecked.defaultof<AbstractBase> with get, set
 
     [<AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
     type Choice1() =
         [<XRoadElement>]
-        member val Choice1Element = "test" with get, set
+        member val Choice1Element = Unchecked.defaultof<string> with get, set
 
     [<AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
     type Choice2() =
         [<XRoadElement>]
-        member val Choice2Element = "test" with get, set
+        member val Choice2Element = Unchecked.defaultof<string> with get, set
 
     [<XRoadType(LayoutKind.Choice)>]
     [<XRoadChoiceOption(1, "Choice1", MergeContent=true)>]
@@ -133,15 +112,15 @@ module TestType =
 
     [<XRoadType(LayoutKind.Sequence)>]
     type WithChoice() =
+        [<XRoadElement(IsNullable=true)>]
+        member val NotAChoice = Unchecked.defaultof<string> with get, set
         [<XRoadElement>]
-        member val NotAChoice = "tere" with get, set
-        [<XRoadElement>]
-        member val IsAChoice = TestChoice.NewChoice1(Choice1()) with get, set
+        member val IsAChoice = Unchecked.defaultof<TestChoice> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type InnerReferrer() =
         [<XRoadElement>]
-        member val Ref = Referrer() with get, set
+        member val Ref = Unchecked.defaultof<Referrer> with get, set
 
     [<XRoadType(LayoutKind.Choice)>]
     [<XRoadChoiceOption(1, "value1", MergeContent=false)>]
@@ -164,7 +143,7 @@ module TestType =
     [<XRoadType(LayoutKind.Sequence)>]
     type TypeWithAbstractChoice() =
         [<XRoadElement>]
-        member val X = AbstractRootChoice.New_value1(Concrete1()) with get, set
+        member val X = Unchecked.defaultof<AbstractRootChoice> with get, set
 
     [<XRoadType(LayoutKind.Sequence)>]
     type WithArray1() =
@@ -172,221 +151,279 @@ module TestType =
         [<XRoadCollection>]
         member val Array = Unchecked.defaultof<bool[]> with get, set
 
-module Serialization =
-    let serialize qn (nslist: (string * string) list) value =
-        let serializer = Serializer()
-        use stream = new MemoryStream()
-        use sw = new StreamWriter(stream, Encoding.UTF8)
-        use writer = XmlWriter.Create(sw)
-        writer.WriteStartDocument()
-        writer.WriteStartElement("wrapper")
-        writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
-        nslist |> List.iter (fun (pr,ns) -> writer.WriteAttributeString("xmlns", pr, XmlNamespace.Xmlns, ns))
-        serializer.Serialize(writer, value, qn)
-        writer.WriteEndElement()
-        writer.WriteEndDocument()
-        writer.Flush()
-        sw.Flush()
-        stream.Position <- 0L
-        use sr = new StreamReader(stream, Encoding.UTF8)
-        sr.ReadToEnd()
+let serialize<'T> qn (nslist: (string * string) list) value =
+    let serializer = Serializer()
+    use stream = new MemoryStream()
+    use sw = new StreamWriter(stream, Encoding.UTF8)
+    use writer = XmlWriter.Create(sw)
+    writer.WriteStartDocument()
+    writer.WriteStartElement("wrapper")
+    writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
+    nslist |> List.iter (fun (pr,ns) -> writer.WriteAttributeString("xmlns", pr, XmlNamespace.Xmlns, ns))
+    serializer.Serialize<'T>(writer, value, qn)
+    writer.WriteEndElement()
+    writer.WriteEndDocument()
+    writer.Flush()
+    sw.Flush()
+    stream.Position <- 0L
+    use sr = new StreamReader(stream, Encoding.UTF8)
+    sr.ReadToEnd()
 
-    let serialize' v = serialize (XmlQualifiedName("keha")) [] v
+let serialize' v = serialize (XmlQualifiedName("keha")) [] v
 
-    let [<Test>] ``initializes new serializer`` () =
-        Serializer() |> should not' (equal null)
+let deserialize<'T> (rootName: XmlQualifiedName) xml : 'T =
+    let serializer = Serializer()
+    use sr = new StringReader(xml)
+    use reader = XmlReader.Create(sr)
+    let rec moveToRoot () =
+        if reader.NodeType = XmlNodeType.Element && reader.LocalName = rootName.Name && reader.NamespaceURI = rootName.Namespace
+        then true
+        else match reader.Read() with false -> false | true -> moveToRoot()
+    match moveToRoot() with
+    | true -> serializer.Deserialize<'T>(reader)
+    | false -> failwith "Invalid xml: could not find root element."
 
-    let [<Test>] ``can serialize simple value`` () =
-        TestType.SimpleType() |> serialize' |> should equal TestXml.SimpleValue
+let deserialize'<'T> xml : 'T = deserialize (XmlQualifiedName("keha")) xml
 
-    let [<Test>] ``serialize null value`` () =
-        (null: string) |> serialize' |> should equal TestXml.NullValue
+let simpleTypeEntity =
+    let entity = TestType.SimpleType(Value = 13)
+    entity.ComplexValue <- TestType.ComplexType(String = "test", BigInteger = 100I)
+    entity.SubContent <- TestType.WithContent(ContentValue = true)
+    entity
 
-    let [<Test>] ``write qualified root name`` () =
-        TestType.SimpleType() |> serialize (XmlQualifiedName("root", "urn:some-namespace")) [] |> should equal TestXml.RootName
+let [<Test>] ``initializes new serializer`` () =
+    Serializer() |> should not' (equal null)
 
-    let [<Test>] ``serializing unserializable type`` () =
-        TestDelegate(fun _ -> TestType.UnserializableType() |> serialize' |> ignore)
-        |> should (throwWithMessage "Type `XRoadSerializer.Tests.SerializerTest+TestType+UnserializableType` is not serializable.") typeof<Exception>
+let [<Test>] ``can serialize simple value`` () =
+    let resultXml = simpleTypeEntity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.SimpleType>
+    result |> should not' (be Null)
+    result.Value |> should equal 13
+    result.ComplexValue |> should not' (be Null)
+    result.ComplexValue.BigInteger |> should equal 100I
+    result.ComplexValue.String |> should equal "test"
+    result.SubContent |> should not' (be Null)
+    result.SubContent.ContentValue |> should equal true
 
-    let [<Test>] ``serialize string value`` () =
-        "string value" |> serialize' |> should equal TestXml.StringValue
+let [<Test>] ``serialize null value`` () =
+    let resultXml = (null: string) |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:nil=""true"" /></wrapper>"
+    resultXml |> deserialize'<string> |> should be Null
 
-    let [<Test>] ``serialize integer value`` () =
-        32 |> serialize' |> should equal TestXml.IntegerValue
+let [<Test>] ``write qualified root name`` () =
+    let resultXml = simpleTypeEntity |> serialize (XmlQualifiedName("root", "urn:some-namespace")) []
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></wrapper>"
 
-    let [<Test>] ``serialize nullable values`` () =
-        TestType.WithNullableMembers() |> serialize' |> should equal TestXml.NullableValues
+let [<Test>] ``serializing unserializable type`` () =
+    TestDelegate(fun _ -> TestType.UnserializableType(Value = 10) |> serialize' |> ignore)
+    |> should (throwWithMessage "Type `XRoadSerializer.Tests.SerializerTest+TestType+UnserializableType` is not serializable.") typeof<Exception>
 
-    let [<Test>] ``serialize not nullable as null`` () =
-        TestDelegate (fun _ -> TestType.ComplexType(String = null) |> serialize' |> ignore)
-        |> should (throwWithMessage "Not nullable property `String` of type `ComplexType` has null value.") typeof<Exception>
+let [<Test>] ``serialize string value`` () =
+    let resultXml = "string value" |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>string value</keha></wrapper>"
+    resultXml |> deserialize'<string> |> should equal "string value"
 
-    let [<Test>] ``serialize extended type with base type contents`` () =
-        TestType.ExtendedType() |> serialize' |> should equal TestXml.SubTypeWithBaseTypeMembers
+let [<Test>] ``serialize integer value`` () =
+    let resultXml = 32 |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>32</keha></wrapper>"
+    resultXml |> deserialize'<int> |> should equal 32
 
-    let [<Test>] ``serialize base type when subtype is used`` () =
-        TestType.UseBaseClass() |> serialize' |> should equal TestXml.ExtendedType
+let [<Test>] ``serialize nullable values`` () =
+    let resultXml = TestType.WithNullableMembers(Value1 = Nullable(13)) |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>13</Value1><Value2 xsi:nil=""true"" /></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.WithNullableMembers>
+    result |> should not' (be Null)
+    result.Value1 |> should not' (be Null)
+    result.Value1 |> should equal 13
+    result.Value2 |> should be Null
 
-    let [<Test>] ``serialize abstract base type when subtype is used`` () =
-        TestType.Referrer() |> serialize' |> should equal TestXml.AbstractBaseType
+let [<Test>] ``serialize not nullable as null`` () =
+    TestDelegate (fun _ -> TestType.ComplexType(String = null) |> serialize' |> ignore)
+    |> should (throwWithMessage "Not nullable property `String` of type `ComplexType` has null value.") typeof<Exception>
 
-    let [<Test>] ``serialize abstract base type when subtype is used (with explicit name and namespace)`` () =
-        TestType.Referrer(Reference=TestType.Concrete3()) |> serialize (XmlQualifiedName("keha")) ["t", "testns"] |> should equal TestXml.AbstractBaseTypeExplicitName
+let [<Test>] ``serialize choice with abstract root element`` () =
+    let optionEntity = TestType.Concrete1(SubValue1 = "test2", BaseValue = "test")
+    let resultXml = TestType.TypeWithAbstractChoice(X = TestType.AbstractRootChoice.New_value1(optionEntity)) |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><value1 xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></value1></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.TypeWithAbstractChoice>
+    result |> should not' (be Null)
+    result.X |> should not' (be Null)
+    let (success, value) = result.X.TryGet_value1()
+    success |> should equal true
+    value |> should not' (be Null)
+    value.BaseValue |> should equal "test"
 
-    let [<Test>] ``serialize inner abstract base type`` () =
-        TestType.InnerReferrer() |> serialize' |> should equal TestXml.InnerAbstractBase
+let [<Test; Ignore>] ``serialize array with default property names`` () =
+    let entity = TestType.WithArray1(Array = [| true; false; true; true |])
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.WithArray1>
+    result |> should not' (be Null)
+    result.Array |> should not' (be Null)
+    result.Array |> should equal entity.Array
 
-    let [<Test>] ``serialize choice type 1`` () =
-        TestType.TestChoice.NewChoice1(TestType.Choice1())
-        |> serialize'
-        |> should equal TestXml.Choice1Of2
+let [<Test>] ``deserialize abstract type`` () =
+    TestDelegate (fun _ -> @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
+                           |> deserialize'<TestType.AbstractBase>
+                           |> ignore)
+    |> should (throwWithMessage "Cannot deserialize abstract type `XRoadSerializer.Tests.SerializerTest+TestType+AbstractBase`.") typeof<Exception>
 
-    let [<Test>] ``serialize choice type 2`` () =
-        TestType.TestChoice.NewChoice2(TestType.Choice2())
-        |> serialize'
-        |> should equal TestXml.Choice2Of2
+let [<Test; Ignore>] ``serialize extended type with base type contents`` () =
+    let entity = TestType.ExtendedType(OwnElement = "test", String = "test", BigInteger = 100I)
+    let resultXml = entity |> serialize<TestType.ComplexType> (XmlQualifiedName("keha")) []
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.ExtendedType>
+    result |> should not' (be Null)
+    result.BigInteger |> should equal entity.BigInteger
+    result.OwnElement |> should equal entity.OwnElement
+    result.String |> should equal entity.String
+    let result = resultXml |> deserialize'<TestType.ComplexType>
+    result |> should not' (be Null)
+    result |> should be instanceOfType<TestType.ExtendedType>
+    (result :?> TestType.ExtendedType).OwnElement |> should equal entity.OwnElement
+    result.BigInteger |> should equal entity.BigInteger
+    result.String |> should equal entity.String
 
-    let [<Test>] ``serialize inner choice 1 element`` () =
-        TestType.WithChoice() |> serialize' |> should equal TestXml.WithChoice1Sample
+let [<Test>] ``serialize base type when subtype is used`` () =
+    let entityMember = TestType.ExtendedType(OwnElement = "test", String = "test", BigInteger = 100I)
+    let entity = TestType.UseBaseClass(Member = entityMember)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Member xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.UseBaseClass>
+    result |> should not' (be Null)
+    result.Member |> should not' (be Null)
+    result.Member |> should be instanceOfType<TestType.ExtendedType>
+    result.Member.BigInteger |> should equal entityMember.BigInteger
+    (result.Member :?> TestType.ExtendedType).OwnElement |> should equal entityMember.OwnElement
+    result.Member.String |> should equal entityMember.String
 
-    let [<Test>] ``serialize inner choice 2 element`` () =
-        let value = TestType.WithChoice()
-        value.IsAChoice <- TestType.TestChoice.NewChoice2(TestType.Choice2())
-        value |> serialize' |> should equal TestXml.WithChoice2Sample
+let [<Test>] ``serialize abstract base type when subtype is used`` () =
+    let concreteEntity = TestType.Concrete1(SubValue1 = "test2", BaseValue = "test")
+    let entity = TestType.Referrer(Reference = concreteEntity)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.Referrer>
+    result |> should not' (be Null)
+    result.Reference |> should not' (be Null)
+    result.Reference |> should be instanceOfType<TestType.Concrete1>
+    (result.Reference :?> TestType.Concrete1).SubValue1 |> should equal concreteEntity.SubValue1
 
-module Deserialization =
-    let deserialize<'T> (rootName: XmlQualifiedName) xml : 'T =
-        let serializer = Serializer()
-        use sr = new StringReader(xml)
-        use reader = XmlReader.Create(sr)
-        let rec moveToRoot () =
-            if reader.NodeType = XmlNodeType.Element && reader.LocalName = rootName.Name && reader.NamespaceURI = rootName.Namespace
-            then true
-            else match reader.Read() with false -> false | true -> moveToRoot()
-        match moveToRoot() with
-        | true -> serializer.Deserialize<'T>(reader)
-        | false -> failwith "Invalid xml: could not find root element."
+let [<Test>] ``serialize abstract base type when subtype is used (with explicit name and namespace)`` () =
+    let concreteEntity = TestType.Concrete3(SubValue3 = "test2", BaseValue = "test")
+    let entity = TestType.Referrer(Reference = concreteEntity)
+    let resultXml = entity |> serialize (XmlQualifiedName("keha")) ["t", "testns"]
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:t=""testns""><keha><Reference xsi:type=""t:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.Referrer>
+    result |> should not' (be Null)
+    result.Reference |> should not' (be Null)
+    result.Reference |> should be instanceOfType<TestType.Concrete3>
+    (result.Reference :?> TestType.Concrete3).SubValue3 |> should equal concreteEntity.SubValue3
 
-    let deserialize'<'T> xml : 'T = deserialize (XmlQualifiedName("keha")) xml
+let [<Test>] ``serialize inner abstract base type`` () =
+    let referenceEntity = TestType.Concrete1(SubValue1 = "kino", BaseValue = "basev")
+    let referrerEntity = TestType.Referrer(Reference = referenceEntity)
+    let entity = TestType.InnerReferrer(Ref = referrerEntity)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Ref><Reference xsi:type=""Concrete1""><BaseValue>basev</BaseValue><SubValue1>kino</SubValue1></Reference></Ref></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.InnerReferrer>
+    result |> should not' (be Null)
+    result.Ref |> should not' (be Null)
+    result.Ref.Reference |> should not' (be Null)
+    result.Ref.Reference |> should be instanceOfType<TestType.Concrete1>
+    (result.Ref.Reference :?> TestType.Concrete1).SubValue1 |> should equal referenceEntity.SubValue1
+    result.Ref.Reference.BaseValue |> should equal referenceEntity.BaseValue
 
-    let [<Test>] ``deserialize null value`` () =
-        TestXml.NullValue |> deserialize'<string> |> should be Null
+let [<Test>] ``serialize choice type 1`` () =
+    let optionEntity = TestType.Choice1(Choice1Element = "test")
+    let entity = TestType.TestChoice.NewChoice1(optionEntity)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Choice1Element>test</Choice1Element></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.TestChoice>
+    result |> should not' (be Null)
+    let (success, value) = result.TryGetChoice1()
+    success |> should equal true
+    value |> should not' (be Null)
+    value.Choice1Element |> should equal optionEntity.Choice1Element
+    let (success, value) = result.TryGetChoice2()
+    success |> should equal false
+    value |> should be Null
 
-    let [<Test>] ``deserialize string value`` () =
-        TestXml.StringValue |> deserialize'<string> |> should equal "string value"
+let [<Test>] ``serialize choice type 2`` () =
+    let optionEntity = TestType.Choice2(Choice2Element = "test")
+    let entity = TestType.TestChoice.NewChoice2(optionEntity)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Choice2><Choice2Element>test</Choice2Element></Choice2></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.TestChoice>
+    result |> should not' (be Null)
+    let (success, value) = result.TryGetChoice1()
+    success |> should equal false
+    value |> should be Null
+    let (success, value) = result.TryGetChoice2()
+    success |> should equal true
+    value |> should not' (be Null)
+    value.Choice2Element |> should equal optionEntity.Choice2Element
 
-    let [<Test>] ``deserialize integer value`` () =
-        TestXml.IntegerValue |> deserialize'<int> |> should equal 32
+let [<Test>] ``serialize inner choice 1 element`` () =
+    let optionEntity = TestType.Choice1(Choice1Element = "test")
+    let choiceEntity = TestType.TestChoice.NewChoice1(optionEntity)
+    let entity = TestType.WithChoice(NotAChoice = "tere", IsAChoice = choiceEntity)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.WithChoice>
+    result |> should not' (be Null)
+    result.NotAChoice |> should equal entity.NotAChoice
+    result.IsAChoice |> should not' (be Null)
+    let (success, value) = result.IsAChoice.TryGetChoice1()
+    success |> should equal true
+    value |> should not' (be Null)
+    value.Choice1Element |> should equal optionEntity.Choice1Element
+    let (success, value) = result.IsAChoice.TryGetChoice2()
+    success |> should equal false
+    value |> should be Null
 
-    let [<Test>] ``deserialize simple value`` () =
-        let result = TestXml.SimpleValue |> deserialize'<TestType.SimpleType>
-        result |> should not' (be Null)
-        result.Value |> should equal 13
-        result.ComplexValue |> should not' (be Null)
-        result.ComplexValue.BigInteger |> should equal 100I
-        result.ComplexValue.String |> should equal "test"
-        result.SubContent |> should not' (be Null)
-        result.SubContent.ContentValue |> should equal true
+let [<Test>] ``serialize inner choice 2 element`` () =
+    let optionEntity = TestType.Choice2(Choice2Element = "test")
+    let choiceEntity = TestType.TestChoice.NewChoice2(optionEntity)
+    let entity = TestType.WithChoice(NotAChoice = "tere", IsAChoice = choiceEntity)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice>tere</NotAChoice><Choice2><Choice2Element>test</Choice2Element></Choice2></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.WithChoice>
+    result |> should not' (be Null)
+    result.NotAChoice |> should equal entity.NotAChoice
+    result.IsAChoice |> should not' (be Null)
+    let (success, value) = result.IsAChoice.TryGetChoice1()
+    success |> should equal false
+    value |> should be Null
+    let (success, value) = result.IsAChoice.TryGetChoice2()
+    success |> should equal true
+    value |> should not' (be Null)
+    value.Choice2Element |> should equal optionEntity.Choice2Element
 
-    let [<Test>] ``deserialize abstract type`` () =
-        TestDelegate (fun _ -> TestXml.AbstractType |> deserialize'<TestType.AbstractBase> |> ignore)
-        |> should (throwWithMessage "Cannot deserialize abstract type `XRoadSerializer.Tests.SerializerTest+TestType+AbstractBase`.") typeof<Exception>
+let [<Test>] ``serialize empty string`` () =
+    let optionEntity = TestType.Choice1(Choice1Element = "test")
+    let choiceEntity = TestType.TestChoice.NewChoice1(optionEntity)
+    let entity = TestType.WithChoice(NotAChoice = "", IsAChoice = choiceEntity)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice /><Choice1Element>test</Choice1Element></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.WithChoice>
+    result |> should not' (be Null)
+    result.NotAChoice |> should equal ""
+    result.IsAChoice |> should not' (be Null)
+    let (success, value) = result.IsAChoice.TryGetChoice1()
+    success |> should equal true
+    value |> should not' (be Null)
 
-    let [<Test>] ``deserialize choice type 1`` () =
-        let result = TestXml.Choice1Of2 |> deserialize'<TestType.TestChoice>
-        result |> should not' (be Null)
-        let (success, value) = result.TryGetChoice1()
-        success |> should equal true
-        value |> should not' (be Null)
-        value.Choice1Element |> should equal "test"
-        let (success, value) = result.TryGetChoice2()
-        success |> should equal false
-        value |> should be Null
-
-    let [<Test>] ``deserialize choice type 2`` () =
-        let result = TestXml.Choice2Of2 |> deserialize'<TestType.TestChoice>
-        result |> should not' (be Null)
-        let (success, value) = result.TryGetChoice1()
-        success |> should equal false
-        value |> should be Null
-        let (success, value) = result.TryGetChoice2()
-        success |> should equal true
-        value |> should not' (be Null)
-        value.Choice2Element |> should equal "test"
-
-    let [<Test>] ``deserialize inner choice 1 element`` () =
-        let result = TestXml.WithChoice1Sample |> deserialize'<TestType.WithChoice>
-        result |> should not' (be Null)
-        result.NotAChoice |> should equal "tere"
-        result.IsAChoice |> should not' (be Null)
-        let (success, value) = result.IsAChoice.TryGetChoice1()
-        success |> should equal true
-        value |> should not' (be Null)
-        value.Choice1Element |> should equal "test"
-        let (success, value) = result.IsAChoice.TryGetChoice2()
-        success |> should equal false
-        value |> should be Null
-
-    let [<Test>] ``deserialize inner choice 2 element`` () =
-        let result = TestXml.WithChoice2Sample |> deserialize'<TestType.WithChoice>
-        result |> should not' (be Null)
-        result.NotAChoice |> should equal "tere"
-        result.IsAChoice |> should not' (be Null)
-        let (success, value) = result.IsAChoice.TryGetChoice1()
-        success |> should equal false
-        value |> should be Null
-        let (success, value) = result.IsAChoice.TryGetChoice2()
-        success |> should equal true
-        value |> should not' (be Null)
-        value.Choice2Element |> should equal "test"
-
-    let [<Test>] ``deserialize inner reference to abstract base type`` () =
-        let result = TestXml.InnerAbstractBase |> deserialize'<TestType.InnerReferrer>
-        result |> should not' (be Null)
-        result.Ref |> should not' (be Null)
-        result.Ref.Reference |> should be instanceOfType<TestType.Concrete1>
-
-    let [<Test>] ``deserialize nullable values`` () =
-        let result = TestXml.NullableValues |> deserialize'<TestType.WithNullableMembers>
-        result |> should not' (be Null)
-        result.Value1 |> should not' (be Null)
-        result.Value1 |> should equal 13
-        result.Value2 |> should be Null
-
-    let [<Test>] ``deserialize empty string`` () =
-        let result = TestXml.EmptyString |> deserialize'<TestType.WithChoice>
-        result |> should not' (be Null)
-        result.NotAChoice |> should equal ""
-        result.IsAChoice |> should not' (be Null)
-        let (success, value) = result.IsAChoice.TryGetChoice1()
-        success |> should equal true
-        value |> should not' (be Null)
-
-    let [<Test>] ``deserialize null string`` () =
-        let result = TestXml.NullString |> deserialize'<TestType.WithChoice>
-        result |> should not' (be Null)
-        result.NotAChoice |> should be Null
-        result.IsAChoice |> should not' (be Null)
-        let (success, value) = result.IsAChoice.TryGetChoice1()
-        success |> should equal true
-        value |> should not' (be Null)
-
-    let [<Test>] ``deserialize choice with abstract root element`` () =
-        let resultXml = TestType.TypeWithAbstractChoice() |> Serialization.serialize'
-        resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><value1 xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></value1></keha></wrapper>"
-        let result = resultXml |> deserialize'<TestType.TypeWithAbstractChoice>
-        result |> should not' (be Null)
-        result.X |> should not' (be Null)
-        let (success, value) = result.X.TryGet_value1()
-        success |> should equal true
-        value |> should not' (be Null)
-        value.BaseValue |> should equal "test"
-
-    let [<Test; Ignore>] ``array with default property names`` () =
-        let resultXml = TestType.WithArray1(Array = [| true; false; true; true |]) |> Serialization.serialize'
-        resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></keha></wrapper>"
-        let result = resultXml |> deserialize'<TestType.WithArray1>
-        result |> should not' (be Null)
-        result.Array |> should not' (be Null)
-        result.Array |> should equal [| true; false; true; true |]
+let [<Test>] ``deserialize null string`` () =
+    let optionEntity = TestType.Choice1(Choice1Element = "test")
+    let choiceEntity = TestType.TestChoice.NewChoice1(optionEntity)
+    let entity = TestType.WithChoice(NotAChoice = null, IsAChoice = choiceEntity)
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><NotAChoice xsi:nil=""true"" /><Choice1Element>test</Choice1Element></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.WithChoice>
+    result |> should not' (be Null)
+    result.NotAChoice |> should be Null
+    result.IsAChoice |> should not' (be Null)
+    let (success, value) = result.IsAChoice.TryGetChoice1()
+    success |> should equal true
+    value |> should not' (be Null)

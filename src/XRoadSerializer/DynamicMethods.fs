@@ -280,7 +280,8 @@ and private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: Type
             il.Emit(OpCodes.Castclass, typeMaps.Head.Type)
             il.Emit(OpCodes.Ldloc, x)
             il.Emit(OpCodes.Callvirt, propertyMap.SetMethod)
-        | Array arrayMap -> () // failwith "not implemented array property deserialization"
+        | Array arrayMap ->
+            failwith "not implemented array property deserialization"
 
     let (|Content|_|) (properties: Property list) =
         match properties with
@@ -387,26 +388,24 @@ and private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: Type
                 il.Emit(OpCodes.Brfalse_S, markLoopStart)
 
                 match prop with
-                | Individual propertyMap ->
-                    match propertyMap.Element with
-                    | Some(name,_) ->
-                        // reader.LocalName != property.Name
-                        let markDeserialize = il.DefineLabel()
-                        il.Emit(OpCodes.Ldarg_0)
-                        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                        il.Emit(OpCodes.Ldstr, name)
-                        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                        il.Emit(OpCodes.Brtrue_S, markDeserialize)
-                        il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
-                        il.Emit(OpCodes.Ldarg_0)
-                        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                        il.Emit(OpCodes.Ldstr, name)
-                        il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                        il.Emit(OpCodes.Throw)
-                        il.MarkLabel(markDeserialize)
-                    | None -> ()
-                | Array _ -> () // failwith "not implemented array deserialization"
+                | Individual { Element = Some(name,_) }
+                | Array { Element = Some(name,_) } ->
+                    // reader.LocalName != property.Name
+                    let markDeserialize = il.DefineLabel()
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, name)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                    il.Emit(OpCodes.Brtrue_S, markDeserialize)
+                    il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, name)
+                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
+                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                    il.Emit(OpCodes.Throw)
+                    il.MarkLabel(markDeserialize)
+                | _ -> ()
 
                 // Deserialize property
                 emitDeserialization prop
@@ -797,6 +796,9 @@ and emitPropertyContentSerialization (il: ILGenerator) (property: Property) (emi
         il.Emit(OpCodes.Clt)
         il.Emit(OpCodes.Brtrue_S, markLoopStart)
 
+    il.MarkLabel(markReturn)
+    il.Emit(OpCodes.Nop)
+
     match property.Element with
     | Some(_) ->
         // writer.WriteEndElement();
@@ -804,9 +806,6 @@ and emitPropertyContentSerialization (il: ILGenerator) (property: Property) (emi
         il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
         il.Emit(OpCodes.Nop)
     | None -> ()
-
-    il.MarkLabel(markReturn)
-    il.Emit(OpCodes.Nop)
 
 and private emitPropertySerialization (il: ILGenerator) (property: Property) =
     let emitValue =
@@ -948,6 +947,12 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
                     il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteAttributeString("", "", "") @>)
                     il.Emit(OpCodes.Br_S, labelEnd)
                     il.MarkLabel(label)
+                    if typ = typeof<string> then
+                        il.Emit(OpCodes.Ldarg_1)
+                        il.Emit(OpCodes.Castclass, typ)
+                        il.Emit(OpCodes.Ldstr, "")
+                        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                        il.Emit(OpCodes.Brtrue_S, labelEnd)
                     Some(labelEnd)
                 else None
             il.Emit(OpCodes.Ldarg_0)
