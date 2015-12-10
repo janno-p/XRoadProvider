@@ -170,7 +170,7 @@ module TestType =
     type WithArray1() =
         [<XRoadElement>]
         [<XRoadCollection>]
-        member val Array = [| true; false; true; true |] with get, set
+        member val Array = Unchecked.defaultof<bool[]> with get, set
 
 module Serialization =
     let serialize qn (nslist: (string * string) list) value =
@@ -373,10 +373,9 @@ module Deserialization =
         value |> should not' (be Null)
 
     let [<Test>] ``deserialize choice with abstract root element`` () =
-        let result =
-            TestType.TypeWithAbstractChoice()
-            |> Serialization.serialize'
-            |> deserialize'<TestType.TypeWithAbstractChoice>
+        let resultXml = TestType.TypeWithAbstractChoice() |> Serialization.serialize'
+        resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><value1 xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></value1></keha></wrapper>"
+        let result = resultXml |> deserialize'<TestType.TypeWithAbstractChoice>
         result |> should not' (be Null)
         result.X |> should not' (be Null)
         let (success, value) = result.X.TryGet_value1()
@@ -385,7 +384,7 @@ module Deserialization =
         value.BaseValue |> should equal "test"
 
     let [<Test; Ignore>] ``array with default property names`` () =
-        let resultXml = TestType.WithArray1() |> Serialization.serialize'
+        let resultXml = TestType.WithArray1(Array = [| true; false; true; true |]) |> Serialization.serialize'
         resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></keha></wrapper>"
         let result = resultXml |> deserialize'<TestType.WithArray1>
         result |> should not' (be Null)
