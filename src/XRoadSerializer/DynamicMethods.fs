@@ -502,125 +502,74 @@ module EmitDeserialization =
         il.MarkLabel(markReturn)
         il.Emit(OpCodes.Ret)
 
-let rec emitTypeDeserialization (il: ILGenerator) (typeMap: TypeMap) =
-    let emitDefault (typeMap: TypeMap) =
+    let emitPropertyValueDeserialization (il: ILGenerator) (typeMap: TypeMap) =
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Call, typeMap.Deserialization.Root)
         match typeMap.Type.IsValueType with
         | true -> il.Emit(OpCodes.Unbox_Any, typeMap.Type)
         | _ -> il.Emit(OpCodes.Castclass, typeMap.Type)
-    match findSubTypes typeMap.Type with
-    | [] -> emitDefault typeMap
-    | subTypes ->
-        let conditionEnd = il.DefineLabel()
-        let selfLabel = il.DefineLabel()
-        let strVar = il.DeclareLocal(typeof<string>)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, "type")
-        il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
-        il.Emit(OpCodes.Stloc, strVar)
-        il.Emit(OpCodes.Ldloc, strVar)
-        il.Emit(OpCodes.Brfalse, selfLabel)
-        let chars = il.DeclareLocal(typeof<char[]>)
-        let parts = il.DeclareLocal(typeof<string[]>)
-        il.Emit(OpCodes.Ldloc, strVar)
-        il.Emit(OpCodes.Ldc_I4_1)
-        il.Emit(OpCodes.Newarr, typeof<char>)
-        il.Emit(OpCodes.Stloc, chars)
-        il.Emit(OpCodes.Ldloc, chars)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.Emit(OpCodes.Ldc_I4, int32 ':')
-        il.Emit(OpCodes.Stelem_I2)
-        il.Emit(OpCodes.Ldloc, chars)
-        il.Emit(OpCodes.Ldc_I4_2)
-        il.Emit(OpCodes.Callvirt, !@ <@ "".Split([| ':' |], 2) @>)
-        il.Emit(OpCodes.Stloc, parts)
-        let typeName = il.DeclareLocal(typeof<string>)
-        let typeNamespace = il.DeclareLocal(typeof<string>)
-        let label1 = il.DefineLabel()
-        let label2 = il.DefineLabel()
-        il.Emit(OpCodes.Ldloc, parts)
-        il.Emit(OpCodes.Ldlen)
-        il.Emit(OpCodes.Conv_I4)
-        il.Emit(OpCodes.Ldc_I4_1)
-        il.Emit(OpCodes.Ceq)
-        il.Emit(OpCodes.Brtrue_S, label1)
-        il.Emit(OpCodes.Ldloc, parts)
-        il.Emit(OpCodes.Ldc_I4_1)
-        il.Emit(OpCodes.Ldelem_Ref)
-        il.Emit(OpCodes.Stloc, typeName)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldloc, parts)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.Emit(OpCodes.Ldelem_Ref)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
-        il.Emit(OpCodes.Stloc, typeNamespace)
-        il.Emit(OpCodes.Ldloc, typeNamespace)
-        il.Emit(OpCodes.Brtrue_S, label2)
-        il.Emit(OpCodes.Ldstr, "")
-        il.Emit(OpCodes.Stloc, typeNamespace)
-        il.Emit(OpCodes.Br_S, label2)
-        il.MarkLabel(label1)
-        il.Emit(OpCodes.Ldloc, parts)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.Emit(OpCodes.Ldelem_Ref)
-        il.Emit(OpCodes.Stloc, typeName)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, "")
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
-        il.Emit(OpCodes.Stloc, typeNamespace)
-        il.MarkLabel(label2)
-        il.Emit(OpCodes.Nop)
-        let rec genSubType (lbl: Label option) (subTypes: TypeMap list) =
-            lbl |> Option.iter (fun lbl -> il.MarkLabel(lbl); il.Emit(OpCodes.Nop))
-            match subTypes with
-            | [] ->
-                il.Emit(OpCodes.Ldstr, "Invalid message: unknown type `{0}:{1}`.")
-                il.Emit(OpCodes.Ldloc, typeNamespace)
-                il.Emit(OpCodes.Ldloc, typeName)
-                il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                il.Emit(OpCodes.Throw)
-            | x::xs ->
-                let lbl = il.DefineLabel()
-                il.Emit(OpCodes.Ldloc, typeName)
-                il.Emit(OpCodes.Ldstr, x.Name)
-                il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                il.Emit(OpCodes.Brfalse_S, lbl)
-                il.Emit(OpCodes.Ldloc, typeNamespace)
-                il.Emit(OpCodes.Ldstr, x.Namespace |> Option.fold (fun _ x -> x) "")
-                il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                il.Emit(OpCodes.Brfalse_S, lbl)
-                emitDefault x
-                il.Emit(OpCodes.Br, conditionEnd)
-                genSubType (Some lbl) xs
-        subTypes |> genSubType None
-        il.MarkLabel(selfLabel)
-        emitDefault typeMap
-        il.MarkLabel(conditionEnd)
-        il.Emit(OpCodes.Nop)
 
-and private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
+    let emitIndividualPropertyDeserialization (il: ILGenerator) (propertyMap: PropertyMap) =
+        let x = il.DeclareLocal(propertyMap.TypeMap.Type)
+        emitPropertyValueDeserialization il propertyMap.TypeMap
+        il.Emit(OpCodes.Stloc, x)
+        il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Castclass, propertyMap.OwnerTypeMap.Type)
+        il.Emit(OpCodes.Ldloc, x)
+        il.Emit(OpCodes.Callvirt, propertyMap.SetMethod)
+
+    /// Emits array type deserialization logic.
+    let emitArrayPropertyDeserialization (il: ILGenerator) (arrayMap: ArrayMap) =
+        let varDepth = il.DeclareLocal(typeof<int>)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
+        il.Emit(OpCodes.Stloc, varDepth)
+
+        let markArrayEnd = il.DefineLabel()
+        let markArrayNull = il.DefineLabel()
+
+        if arrayMap.Element.IsSome then
+            emitNullCheck il markArrayNull
+            il.Emit(OpCodes.Ldloc, varDepth)
+            il.Emit(OpCodes.Ldc_I4_1)
+            il.Emit(OpCodes.Add)
+            il.Emit(OpCodes.Stloc, varDepth)
+
+        let instance = il.DeclareLocal(arrayMap.Type)
+
+        // Empty element has nothing to parse.
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
+        il.Emit(OpCodes.Brtrue, markArrayEnd)
+
+        // TODO : Array deserialization loop.
+
+        il.Emit(OpCodes.Br_S, markArrayEnd)
+
+        il.MarkLabel(markArrayNull)
+        il.Emit(OpCodes.Stloc, instance)
+
+        il.MarkLabel(markArrayEnd)
+        il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Castclass, arrayMap.OwnerTypeMap.Type)
+        il.Emit(OpCodes.Ldloc, instance)
+        il.Emit(OpCodes.Callvirt, arrayMap.SetMethod)
+
+let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
     let emitDeserialization (prop: Property) =
         match prop with
         | Individual propertyMap ->
-            let x = il.DeclareLocal(propertyMap.TypeMap.Type)
-            emitTypeDeserialization il propertyMap.TypeMap
-            il.Emit(OpCodes.Stloc, x)
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Castclass, typeMaps.Head.Type)
-            il.Emit(OpCodes.Ldloc, x)
-            il.Emit(OpCodes.Callvirt, propertyMap.SetMethod)
-        | Array _ ->
-            failwith "not implemented array property deserialization"
+            EmitDeserialization.emitIndividualPropertyDeserialization il propertyMap
+        | Array arrayMap ->
+            EmitDeserialization.emitArrayPropertyDeserialization il arrayMap
 
     let (|Content|_|) (properties: Property list) =
         match properties with
-        | [Individual(propertyMap) as prop] ->
-            match propertyMap.Element with
-            | None -> if propertyMap.TypeMap.Layout <> Some(LayoutKind.Choice) then Some(prop) else None
-            | Some(_) -> None
+        | [Individual({ Element = None; TypeMap = typeMap }) as prop]
+        | [Array({ Element = None; ItemElement = None; ItemTypeMap = typeMap }) as prop] ->
+            match typeMap.Layout with
+            | Some(LayoutKind.Choice) -> None
+            | _ -> Some(prop)
         | _ -> None
 
     match properties with
@@ -867,7 +816,7 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                     il.Emit(OpCodes.Ldstr, attr.Name)
                     il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                     il.Emit(OpCodes.Brfalse, label)
-                    emitTypeDeserialization il typeMap
+                    EmitDeserialization.emitPropertyValueDeserialization il typeMap
                 il.Emit(OpCodes.Call, mi)
                 il.Emit(OpCodes.Br_S, markReturn)
                 il.MarkLabel(label)
@@ -964,21 +913,6 @@ and findTypeMap (typ: Type) =
     match typ.GetCustomAttribute<XRoadTypeAttribute>() with
     | null -> None
     | _ -> Some(getTypeMap typ)
-
-and findSubTypes (typ: Type) : TypeMap list =
-    let subTypes =
-        typ.Assembly.GetTypes()
-        |> Array.filter (fun x -> x.IsSubclassOf(typ))
-        |> List.ofArray
-    let rec orderTypes (ordered: Type list) (unordered: Type list) =
-        let next, rem = unordered |> List.partition (fun x -> ordered |> List.exists ((=) x.BaseType))
-        let newOrdered = next @ ordered
-        match rem with
-        | [] -> newOrdered
-        | _ -> orderTypes newOrdered rem
-    match subTypes with
-    | [] -> []
-    | xs -> orderTypes [typ] xs |> List.choose (findTypeMap) |> List.filter (fun x -> not x.Type.IsAbstract)
 
 and findBaseType (typ: Type) =
     if typ.BaseType |> isNull || typ.BaseType = typeof<obj> then None
