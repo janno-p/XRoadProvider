@@ -475,12 +475,13 @@ module ServiceBuilder =
             |> Arr.create<SoapHeaderValue>
         m |> Meth.addStmt (Stmt.assign ((!+ "@__m") @=> "Header") hdrExpr)
 
-    let addBodyInitialization context methodCall m =
+    let addBodyInitialization context methodCall (typesExpr: CodeArrayCreateExpression) m =
         let instQN (nm: string) (ns: string) =
             Expr.inst<XmlQualifiedName> [!^ nm; !^ ns]
         let addParameter (context: TypeBuilderContext) (parameter: Parameter) m =
             let runtimeType = context.GetRuntimeType(match parameter.Type with Some(typeName) -> SchemaType(typeName) | None -> SchemaElement(parameter.Name))
             m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) parameter.Name.LocalName |> ignore
+            typesExpr.Initializers.Add(Expr.typeOf (runtimeType.AsCodeTypeReference())) |> ignore
         match methodCall with
         | DocEncodedCall(enc,pw) ->
             let stmt =
@@ -553,17 +554,19 @@ module ServiceBuilder =
 
     /// Build content for each individual service call method.
     let build (context: TypeBuilderContext) _ (operation: ServicePortMethod) =
+        let types = CodeArrayCreateExpression()
+        types.CreateType <- CodeTypeReference(typeof<Type>)
         let (responseAccessor,parameters) = getResponseSpec context operation.OutputParameters
         Meth.create operation.Name
         |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
         |> Code.comment operation.Documentation
         |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
-        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> context.Protocol.Name]))
+        |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> context.Protocol.Name; types]))
         |> Meth.addStmt (Stmt.declVarWith<Dictionary<XmlQualifiedName, Type>> "@__p" (Expr.inst<Dictionary<XmlQualifiedName, Type>> []))
         |> forall parameters (fun m (nm,tp) -> m |> Meth.addExpr ((!+ "@__p" @-> "Add") @% [Expr.inst<XmlQualifiedName> [!^ nm.LocalName; !^ nm.NamespaceName]; Expr.typeOf(tp.AsCodeTypeReference())]) |> ignore)
         |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> context.Protocol.Name; !+ "@__p"]))
         |> addHeaderInitialization context.Protocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
-        |> addBodyInitialization context operation.InputParameters
+        |> addBodyInitialization context operation.InputParameters types
         |> iif (responseAccessor.IsSome) (fun x -> x |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (Expr.inst<XmlQualifiedName> [!^ responseAccessor.Value.LocalName; !^ responseAccessor.Value.NamespaceName])))
         |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [!+ "@__m"; !+ "@__reqOpt"; !+ "@__respOpt"]))
         |> createTuple parameters

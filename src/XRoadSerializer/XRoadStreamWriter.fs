@@ -109,8 +109,8 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         serializeBody (fun _ ->
             serializeAccessor (fun _ ->
                 msg.Body
-                |> Array.iter (fun (name,value) ->
-                    Serializer().Serialize(writer, value, if isNull name then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name))))
+                |> Array.iteri (fun i (name,value) ->
+                    Serializer().Serialize(writer, opt.Types.[i], value, if isNull name then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name))))
 
         writer.WriteEndDocument()
         writer.Flush()

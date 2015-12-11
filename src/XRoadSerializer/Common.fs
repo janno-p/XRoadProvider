@@ -59,11 +59,12 @@ type XRoadMessage() =
         |> Option.map (snd)
         |> Option.fold (fun _ x -> x) null
 
-type XRoadRequestOptions(uri: string, isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol) =
+type XRoadRequestOptions(uri: string, isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol, types: Type[]) =
     member val IsEncoded = isEncoded with get
     member val IsMultipart = isMultipart with get
     member val Protocol = protocol with get
     member val Uri = uri with get
+    member val Types = types with get
     member val Accessor: XmlQualifiedName = null with get, set
 
 type XRoadResponseOptions(isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol, types: IDictionary<XmlQualifiedName, Type>) =
