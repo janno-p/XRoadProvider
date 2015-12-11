@@ -267,9 +267,9 @@ let [<Test>] ``deserialize abstract type`` () =
     TestDelegate (fun _ -> @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
                            |> deserialize'<TestType.AbstractBase>
                            |> ignore)
-    |> should (throwWithMessage "Cannot deserialize abstract type `XRoadSerializer.Tests.SerializerTest+TestType+AbstractBase`.") typeof<Exception>
+    |> should (throwWithMessage "Cannot deserialize abstract type `AbstractBase`.") typeof<Exception>
 
-let [<Test; Ignore>] ``serialize extended type with base type contents`` () =
+let [<Test>] ``serialize extended type with base type contents`` () =
     let entity = TestType.ExtendedType(OwnElement = "test", String = "test", BigInteger = 100I)
     let resultXml = entity |> serialize<TestType.ComplexType> (XmlQualifiedName("keha")) []
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"

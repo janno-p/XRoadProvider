@@ -168,16 +168,12 @@ module EmitSerialization =
             il.Emit(OpCodes.Nop)
             typeMap |> emitTypeHierarchySerialization il markReturn other
 
-    /// Emit root type serialization logic for given TypeMap.
-    let emitRootSerializerMethod (il: ILGenerator) (subTypes: TypeMap list) (typeMap: TypeMap) =
-        let markContent = il.DefineLabel()
-        let markReturn = il.DefineLabel()
-
-        // When value is `null`, write `xsi:nil` attribute and return.
+    let private emitNilAttribute (il: ILGenerator) (markReturn: Label) =
+        let markNotNull = il.DefineLabel()
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Ldnull)
         il.Emit(OpCodes.Ceq)
-        il.Emit(OpCodes.Brfalse_S, markContent)
+        il.Emit(OpCodes.Brfalse_S, markNotNull)
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Ldstr, "nil")
         il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
@@ -185,9 +181,17 @@ module EmitSerialization =
         il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteAttributeString("", "", "") @>)
         il.Emit(OpCodes.Nop)
         il.Emit(OpCodes.Br, markReturn)
+        il.MarkLabel(markNotNull)
+        il.Emit(OpCodes.Nop)
+
+    /// Emit root type serialization logic for given TypeMap.
+    let emitRootSerializerMethod (il: ILGenerator) (subTypes: TypeMap list) (typeMap: TypeMap) =
+        let markReturn = il.DefineLabel()
+
+        // When value is `null`, write `xsi:nil` attribute and return.
+        emitNilAttribute il markReturn
 
         // Serialize value according to its type.
-        il.MarkLabel(markContent)
         typeMap |> emitTypeHierarchySerialization il markReturn subTypes
 
         // Return
@@ -300,76 +304,201 @@ module EmitSerialization =
         |> List.iter (fun property -> property |> emitPropertyContentSerialization il (emitPropertyValue il property))
         il.Emit(OpCodes.Ret)
 
-let emitNullCheck (il: ILGenerator) (labelReturn: Label) =
-    // var nilValue = (reader.GetAttribute("nil", XmlNamespace.Xsi) ?? "").ToLower();
-    let nilValue = il.DeclareLocal(typeof<string>)
-    let markSkipNull = il.DefineLabel()
-    il.Emit(OpCodes.Ldarg_0)
-    il.Emit(OpCodes.Ldstr, "nil")
-    il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
-    il.Emit(OpCodes.Dup)
-    il.Emit(OpCodes.Brtrue_S, markSkipNull)
-    il.Emit(OpCodes.Pop)
-    il.Emit(OpCodes.Ldstr, "")
-    il.MarkLabel(markSkipNull)
-    il.Emit(OpCodes.Callvirt, !@ <@ "".ToLower() @>)
-    il.Emit(OpCodes.Stloc, nilValue)
+module EmitDeserialization =
+    /// Check if current element has `xsi:nil` attribute present.
+    let private emitNullCheck (il: ILGenerator) (markReturn: Label) =
+        let nilValue = il.DeclareLocal(typeof<string>)
 
-    // if (nilValue == "1" || nilValue == "true")
-    let lbl1 = il.DefineLabel()
-    let lbl2 = il.DefineLabel()
-    let lbl3 = il.DefineLabel()
-    il.Emit(OpCodes.Ldloc, nilValue)
-    il.Emit(OpCodes.Ldstr, "1")
-    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-    il.Emit(OpCodes.Brtrue_S, lbl1)
-    il.Emit(OpCodes.Ldloc, nilValue)
-    il.Emit(OpCodes.Ldstr, "true")
-    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-    il.Emit(OpCodes.Ldc_I4_0)
-    il.Emit(OpCodes.Ceq)
-    il.Emit(OpCodes.Br_S, lbl2)
-    il.MarkLabel(lbl1)
-    il.Emit(OpCodes.Ldc_I4_0)
-    il.MarkLabel(lbl2)
-    il.Emit(OpCodes.Nop)
-    il.Emit(OpCodes.Brtrue_S, lbl3)
+        // Get attribute value into local variable, in case of null empty string is used.
+        let markSkipNull = il.DefineLabel()
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldstr, "nil")
+        il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
+        il.Emit(OpCodes.Dup)
+        il.Emit(OpCodes.Brtrue_S, markSkipNull)
+        il.Emit(OpCodes.Pop)
+        il.Emit(OpCodes.Ldstr, "")
+        il.MarkLabel(markSkipNull)
+        il.Emit(OpCodes.Callvirt, !@ <@ "".ToLower() @>)
+        il.Emit(OpCodes.Stloc, nilValue)
 
-    // return null;
-    il.Emit(OpCodes.Ldnull)
-    il.Emit(OpCodes.Br, labelReturn)
-    il.MarkLabel(lbl3)
+        // When attribute value is "true" or "1" return null.
+        let markNull = il.DefineLabel()
+        let markNotNull = il.DefineLabel()
+        il.Emit(OpCodes.Ldloc, nilValue)
+        il.Emit(OpCodes.Ldstr, "1")
+        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+        il.Emit(OpCodes.Brtrue_S, markNull)
+        il.Emit(OpCodes.Ldloc, nilValue)
+        il.Emit(OpCodes.Ldstr, "true")
+        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+        il.Emit(OpCodes.Brtrue_S, markNull)
+        il.Emit(OpCodes.Br_S, markNotNull)
 
-let createDeserializerMethodBody (il: ILGenerator) (typeMap: TypeMap) =
-    if typeMap.Type.IsAbstract then
-        // throw new Exception(string.Format("Cannot deserialize abstract type `{0}`.", typ.FullName));
-        il.Emit(OpCodes.Ldstr, "Cannot deserialize abstract type `{0}`.")
-        il.Emit(OpCodes.Ldstr, typeMap.Type.FullName)
-        il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
-        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-        il.Emit(OpCodes.Throw)
-    else
-        let markReturn = il.DefineLabel()
+        // return null;
+        il.MarkLabel(markNull)
+        il.Emit(OpCodes.Ldnull)
+        il.Emit(OpCodes.Br, markReturn)
+        il.MarkLabel(markNotNull)
+        il.Emit(OpCodes.Nop)
 
-        emitNullCheck il markReturn
-
-        // var instance = new T();
-        let instance = il.DeclareLocal(typeMap.Type)
-        il.Emit(OpCodes.Newobj, typeMap.Type.GetConstructor([| |]))
-        il.Emit(OpCodes.Stloc, instance)
-
-        // TODO: deserialize attributes
-
-        // Deserialize content
+    /// Emit type (and its base types) content deserialization.
+    let rec private emitContentDeserialization (il: ILGenerator) (instance: LocalBuilder) (typeMap: TypeMap) =
+        //typeMap.BaseType |> Option.iter (emitContentDeserialization il instance)
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Ldloc, instance)
         il.Emit(OpCodes.Ldc_I4_0)
         il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
         il.Emit(OpCodes.Nop)
 
-        // return instance;
-        il.Emit(OpCodes.Ldloc, instance)
+    /// Emit abstract type test and exception.
+    let private emitAbstractTypeException (il: ILGenerator) (typeMap: TypeMap) =
+        il.Emit(OpCodes.Ldstr, sprintf "Cannot deserialize abstract type `%s`." typeMap.FullName)
+        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+        il.Emit(OpCodes.Throw)
+
+    /// Emit whole contents of TypeMap deserialization.
+    let private emitBodyDeserialization (il: ILGenerator) (typeMap: TypeMap) =
+        if typeMap.Type.IsAbstract then
+            typeMap |> emitAbstractTypeException il
+        else
+            // Declare local variable to hold result.
+            let instance = il.DeclareLocal(typeMap.Type)
+            il.Emit(OpCodes.Newobj, typeMap.Type.GetConstructor([| |]))
+            il.Emit(OpCodes.Stloc, instance)
+
+            // TODO : Attributes
+
+            typeMap |> emitContentDeserialization il instance
+
+            // Prepare result for returning.
+            il.Emit(OpCodes.Ldloc, instance)
+
+    /// Check if value type matches expected type.
+    let private emitValueTypeTest (il: ILGenerator) (typeName: LocalBuilder, typeNamespace: LocalBuilder) (markNext: Label) (typeMap: TypeMap) =
+        il.Emit(OpCodes.Ldloc, typeName)
+        il.Emit(OpCodes.Ldstr, typeMap.Name)
+        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+        il.Emit(OpCodes.Brfalse_S, markNext)
+        il.Emit(OpCodes.Ldloc, typeNamespace)
+        il.Emit(OpCodes.Ldstr, typeMap.Namespace |> Option.fold (fun _ x -> x) "")
+        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+        il.Emit(OpCodes.Brfalse_S, markNext)
+
+    /// Emit deserialization taking into consideration if actual type matches subtype or not.
+    let rec private emitTypeHierarchyDeserialization il (markReturn: Label) (subTypes: TypeMap list) typeName typeMap =
+        match subTypes with
+        | [] ->
+            typeMap |> emitBodyDeserialization il
+        | subType::other ->
+            let markNext = il.DefineLabel()
+
+            // Check if type matches current TypeMap.
+            subType |> emitValueTypeTest il typeName markNext
+
+            // Deserialize content
+            subType |> emitBodyDeserialization il
+
+            il.Emit(OpCodes.Br, markReturn)
+            il.MarkLabel(markNext)
+            il.Emit(OpCodes.Nop)
+            typeMap |> emitTypeHierarchyDeserialization il markReturn other typeName
+
+    /// Reads type attribute value and stores name and namespace in variables.
+    let private emitTypeAttributeRead (il: ILGenerator) (typeMap: TypeMap) =
+        let typeName = il.DeclareLocal(typeof<string>)
+        let typeNamespace = il.DeclareLocal(typeof<string>)
+
+        let markParse = il.DefineLabel()
+        let markDone = il.DefineLabel()
+        let markDefaultName = il.DefineLabel()
+        let markDefaultNamespace = il.DefineLabel()
+        let markWithPrefix = il.DefineLabel()
+
+        // Load empty string as default values.
+        il.Emit(OpCodes.Ldstr, "")
+        il.Emit(OpCodes.Stloc, typeName)
+        il.Emit(OpCodes.Ldstr, "")
+        il.Emit(OpCodes.Stloc, typeNamespace)
+
+        // When `xsi:type` is not present use default values.
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldstr, "type")
+        il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
+        il.Emit(OpCodes.Dup)
+        il.Emit(OpCodes.Brtrue_S, markParse)
+        il.Emit(OpCodes.Pop)
+        il.Emit(OpCodes.Br, markDefaultName)
+
+        // Parse `xsi:type` value into type name and namespace.
+        il.MarkLabel(markParse)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Newarr, typeof<char>)
+        il.Emit(OpCodes.Dup)
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Ldc_I4, int32 ':')
+        il.Emit(OpCodes.Stelem_I2)
+        il.Emit(OpCodes.Ldc_I4_2)
+        il.Emit(OpCodes.Callvirt, !@ <@ "".Split([| ':' |], 2) @>)
+        il.Emit(OpCodes.Dup)
+
+        // When default namespace is used (no prefix).
+        il.Emit(OpCodes.Ldlen)
+        il.Emit(OpCodes.Conv_I4)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Ceq)
+        il.Emit(OpCodes.Brfalse_S, markWithPrefix)
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Ldelem_Ref)
+        il.Emit(OpCodes.Stloc, typeName)
+        il.Emit(OpCodes.Br_S, markDefaultNamespace)
+
+        // When prefix is present.
+        il.MarkLabel(markWithPrefix)
+        il.Emit(OpCodes.Dup)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Ldelem_Ref)
+        il.Emit(OpCodes.Stloc, typeName)
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Ldelem_Ref)
+        il.Emit(OpCodes.Stloc, typeNamespace)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldloc, typeNamespace)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
+        il.Emit(OpCodes.Stloc, typeNamespace)
+        il.Emit(OpCodes.Br_S, markDone)
+
+        // Use TypeMap name as default value for typeName.
+        il.MarkLabel(markDefaultName)
+        il.Emit(OpCodes.Ldstr, typeMap.Name)
+        il.Emit(OpCodes.Stloc, typeName)
+
+        // Use default namespace when no prefix was found.
+        il.MarkLabel(markDefaultNamespace)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldstr, "")
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LookupNamespace("") @>)
+        il.Emit(OpCodes.Stloc, typeNamespace)
+
+        il.MarkLabel(markDone)
+        il.Emit(OpCodes.Nop)
+
+        (typeName,typeNamespace)
+
+    let emitRootDeserializerMethod (il: ILGenerator) (subTypes: TypeMap list) (typeMap: TypeMap) =
+        let markReturn = il.DefineLabel()
+
+        // When value nil attribute is present returns null.
+        emitNullCheck il markReturn
+
+        // Read type attribute value of current element.
+        let typeName = typeMap |> emitTypeAttributeRead il
+
+        // Serialize value according to its type.
+        typeMap |> emitTypeHierarchyDeserialization il markReturn subTypes typeName
+
         il.MarkLabel(markReturn)
         il.Emit(OpCodes.Ret)
 
@@ -634,13 +763,15 @@ and createTypeMap (typ: Type) =
             | _ ->
                 let typeMap = getTypeMap typ
                 let properties = typeMap |> getProperties
+                let directSubTypes = typ |> findDirectSubTypes
 
                 // Emit serializers
-                EmitSerialization.emitRootSerializerMethod (serializeRootMethod.GetILGenerator()) (findDirectSubTypes typ) typeMap
+                EmitSerialization.emitRootSerializerMethod (serializeRootMethod.GetILGenerator()) directSubTypes typeMap
                 EmitSerialization.emitContentSerializerMethod (serializeContentMethod.GetILGenerator()) properties
 
                 // Emit deserializers
-                createDeserializerMethodBody (deserializeRootMethod.GetILGenerator()) typeMap
+                EmitDeserialization.emitRootDeserializerMethod (deserializeRootMethod.GetILGenerator()) directSubTypes typeMap
+
                 createDeserializeContentMethodBody (deserializeContentMethod.GetILGenerator()) (findBaseTypes typ) properties
                 match properties with
                 | [Individual { Element = None }]
@@ -915,7 +1046,45 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
             let labelRet = il.DefineLabel()
             let labelCast = il.DefineLabel()
             if isNullable || typ.IsClass then
-                emitNullCheck il labelRet
+                // var nilValue = (reader.GetAttribute("nil", XmlNamespace.Xsi) ?? "").ToLower();
+                let nilValue = il.DeclareLocal(typeof<string>)
+                let markSkipNull = il.DefineLabel()
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Ldstr, "nil")
+                il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
+                il.Emit(OpCodes.Dup)
+                il.Emit(OpCodes.Brtrue_S, markSkipNull)
+                il.Emit(OpCodes.Pop)
+                il.Emit(OpCodes.Ldstr, "")
+                il.MarkLabel(markSkipNull)
+                il.Emit(OpCodes.Callvirt, !@ <@ "".ToLower() @>)
+                il.Emit(OpCodes.Stloc, nilValue)
+
+                // if (nilValue == "1" || nilValue == "true")
+                let lbl1 = il.DefineLabel()
+                let lbl2 = il.DefineLabel()
+                let lbl3 = il.DefineLabel()
+                il.Emit(OpCodes.Ldloc, nilValue)
+                il.Emit(OpCodes.Ldstr, "1")
+                il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                il.Emit(OpCodes.Brtrue_S, lbl1)
+                il.Emit(OpCodes.Ldloc, nilValue)
+                il.Emit(OpCodes.Ldstr, "true")
+                il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Br_S, lbl2)
+                il.MarkLabel(lbl1)
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.MarkLabel(lbl2)
+                il.Emit(OpCodes.Nop)
+                il.Emit(OpCodes.Brtrue_S, lbl3)
+
+                // return null;
+                il.Emit(OpCodes.Ldnull)
+                il.Emit(OpCodes.Br, labelRet)
+                il.MarkLabel(lbl3)
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
             il.Emit(OpCodes.Brfalse_S, labelRead)
