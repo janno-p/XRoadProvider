@@ -535,7 +535,11 @@ module EmitDeserialization =
             il.Emit(OpCodes.Add)
             il.Emit(OpCodes.Stloc, varDepth)
 
-        let instance = il.DeclareLocal(arrayMap.Type)
+        let listType = typedefof<System.Collections.Generic.List<_>>.MakeGenericType(arrayMap.ItemTypeMap.Type)
+        let listInstance = il.DeclareLocal(listType)
+
+        il.Emit(OpCodes.Newobj, listType.GetConstructor([| |]))
+        il.Emit(OpCodes.Stloc, listInstance)
 
         // Empty element has nothing to parse.
         il.Emit(OpCodes.Ldarg_0)
@@ -544,12 +548,16 @@ module EmitDeserialization =
 
         // TODO : Array deserialization loop.
 
-        il.Emit(OpCodes.Br_S, markArrayEnd)
+        il.MarkLabel(markArrayEnd)
+
+        let instance = il.DeclareLocal(arrayMap.Type)
+
+        il.Emit(OpCodes.Ldloc,listInstance)
+        il.Emit(OpCodes.Callvirt, listType.GetMethod("ToArray", [| |]))
 
         il.MarkLabel(markArrayNull)
         il.Emit(OpCodes.Stloc, instance)
 
-        il.MarkLabel(markArrayEnd)
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, arrayMap.OwnerTypeMap.Type)
         il.Emit(OpCodes.Ldloc, instance)
