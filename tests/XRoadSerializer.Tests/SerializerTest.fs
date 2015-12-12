@@ -254,7 +254,7 @@ let [<Test>] ``serialize choice with abstract root element`` () =
     value |> should not' (be Null)
     value.BaseValue |> should equal "test"
 
-let [<Test; Ignore>] ``serialize array with default property names`` () =
+let [<Test>] ``serialize array with default property names`` () =
     let entity = TestType.WithArray1(Array = [| true; false; true; true |])
     let resultXml = entity |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></keha></wrapper>"

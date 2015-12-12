@@ -85,6 +85,13 @@ type Property =
     member this.OwnerTypeMap with get() = this |> function Individual x -> x.OwnerTypeMap | Array x -> x.OwnerTypeMap
     member this.Type with get() = this |> function Individual x -> x.TypeMap.Type | Array x -> x.Type
     member this.GetMethod with get() = this |> function Individual x -> x.GetMethod | Array x -> x.GetMethod
+    member this.PropertyName
+        with get() =
+            match this with
+            | Individual { Element = Some(name,_) }
+            | Array { Element = Some(name,_) }
+            | Array { Element = None; ItemElement = Some(name,_) } -> Some(name)
+            | _ -> None
 
 let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
@@ -518,6 +525,76 @@ module EmitDeserialization =
         il.Emit(OpCodes.Ldloc, x)
         il.Emit(OpCodes.Callvirt, propertyMap.SetMethod)
 
+    let emitXmlReaderRead (il: ILGenerator) =
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Read() @>)
+        il.Emit(OpCodes.Nop)
+
+    let emitXmlReaderReadOrExcept propertyName (il: ILGenerator) =
+        let markSuccess = il.DefineLabel()
+        il |> emitXmlReaderRead
+        il.Emit(OpCodes.Brtrue_S, markSuccess)
+        let errorMessage =
+            match propertyName with
+            | Some(name) -> sprintf "Invalid message: expected `%s`, but was end of file." name
+            | None -> "Invalid message: unexpected end of file."
+        il.Emit(OpCodes.Ldstr, errorMessage)
+        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+        il.Emit(OpCodes.Throw)
+        il.MarkLabel(markSuccess)
+        il.Emit(OpCodes.Nop)
+
+    let emitArrayContentEndCheck (markArrayEnd: Label, varDepth: LocalBuilder) (il: ILGenerator) =
+        let markSuccess = il.DefineLabel()
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
+        il.Emit(OpCodes.Ldc_I4, int32 XmlNodeType.EndElement)
+        il.Emit(OpCodes.Ceq)
+        il.Emit(OpCodes.Brfalse_S, markSuccess)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
+        il.Emit(OpCodes.Ldloc, varDepth)
+        il.Emit(OpCodes.Clt)
+        il.Emit(OpCodes.Brfalse_S, markSuccess)
+        il.Emit(OpCodes.Br, markArrayEnd)
+        il.MarkLabel(markSuccess)
+        il.Emit(OpCodes.Nop)
+
+    let emitXmlReaderDepthCheck (varDepth: LocalBuilder) (il: ILGenerator) =
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
+        il.Emit(OpCodes.Ldloc, varDepth)
+        il.Emit(OpCodes.Ceq)
+
+    let emitXmlReaderNodeTypeCheck (il: ILGenerator) =
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Ceq)
+
+    let emitArrayItemDeserialization (arrayMap: ArrayMap, listInstance: LocalBuilder) (il: ILGenerator) =
+        match arrayMap.ItemElement with
+        | Some(name,_) ->
+            let markDeserialize = il.DefineLabel()
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+            il.Emit(OpCodes.Ldstr, name)
+            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+            il.Emit(OpCodes.Brtrue_S, markDeserialize)
+            il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+            il.Emit(OpCodes.Ldstr, name)
+            il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
+            il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+            il.Emit(OpCodes.Throw)
+            il.MarkLabel(markDeserialize)
+        | None -> ()
+
+        il.Emit(OpCodes.Ldloc, listInstance)
+        emitPropertyValueDeserialization il arrayMap.ItemTypeMap
+        il.Emit(OpCodes.Callvirt, listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
+
     /// Emits array type deserialization logic.
     let emitArrayPropertyDeserialization (il: ILGenerator) (arrayMap: ArrayMap) =
         let varDepth = il.DeclareLocal(typeof<int>)
@@ -541,12 +618,31 @@ module EmitDeserialization =
         il.Emit(OpCodes.Newobj, listType.GetConstructor([| |]))
         il.Emit(OpCodes.Stloc, listInstance)
 
-        // Empty element has nothing to parse.
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
-        il.Emit(OpCodes.Brtrue, markArrayEnd)
+        let markSkipRead = il.DefineLabel()
 
-        // TODO : Array deserialization loop.
+        // Empty element has nothing to parse.
+        if arrayMap.Element.IsSome then
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
+            il.Emit(OpCodes.Brtrue, markArrayEnd)
+        else il.Emit(OpCodes.Br_S, markSkipRead)
+
+        let markLoopStart = il.DefineLabel()
+
+        il.MarkLabel(markLoopStart)
+        il |> emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map fst)
+        il.MarkLabel(markSkipRead)
+
+        il |> emitArrayContentEndCheck (markArrayEnd, varDepth)
+
+        il |> emitXmlReaderDepthCheck varDepth
+        il.Emit(OpCodes.Brfalse_S, markLoopStart)
+
+        il |> emitXmlReaderNodeTypeCheck
+        il.Emit(OpCodes.Brfalse_S, markLoopStart)
+
+        il |> emitArrayItemDeserialization (arrayMap, listInstance)
+        il.Emit(OpCodes.Br, markLoopStart)
 
         il.MarkLabel(markArrayEnd)
 
@@ -615,25 +711,10 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
             properties
             |> List.iteri (fun i prop ->
                 let markLoopStart = il.DefineLabel()
-                let markSuccess = il.DefineLabel()
 
-                // reader.Read() -> false exception
                 il.MarkLabel(markLoopStart)
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Read() @>)
-                il.Emit(OpCodes.Brtrue_S, markSuccess)
 
-                // throw new Exception("Invalid message: could not parse xml.");
-                match prop with
-                | Individual { Element = Some(name,_) }
-                | Array { Element = Some(name,_) }
-                | Array { ItemElement = Some(name,_) } ->
-                    il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was end of file." name)
-                | _ -> il.Emit(OpCodes.Ldstr, "Invalid message: unexpected end of file.")
-                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                il.Emit(OpCodes.Throw)
-                il.MarkLabel(markSuccess)
-                il.Emit(OpCodes.Nop)
+                il |> EmitDeserialization.emitXmlReaderReadOrExcept prop.PropertyName
 
                 if i = 0 then il.MarkLabel(skipLabel)
 
@@ -1040,8 +1121,7 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
                 il.Emit(OpCodes.Unbox_Any, typeof<'X>)
                 il.Emit(OpCodes.Br_S, labelCast)
             il.MarkLabel(labelRead)
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Read() @>)
+            il |> EmitDeserialization.emitXmlReaderRead
             il.Emit(OpCodes.Pop)
             il.Emit(OpCodes.Ldarg_0)
             readMethods
