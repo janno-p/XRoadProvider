@@ -147,8 +147,8 @@ module TestType =
 
     [<XRoadType(LayoutKind.Sequence)>]
     type WithArray1() =
-        [<XRoadElement>]
-        [<XRoadCollection>]
+        [<XRoadElement(IsNullable=true)>]
+        [<XRoadCollection(ItemIsNullable=true)>]
         member val Array = Unchecked.defaultof<bool[]> with get, set
 
 let serializeWithContext<'T> qn (nslist: (string * string) list) (context: SerializerContext) value =
@@ -442,3 +442,10 @@ let [<Test; Ignore>] ``serialize file`` () =
     resultXml |> should equal @""
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 1
+
+let [<Test>] ``serialize null array`` () =
+    let resultXml = TestType.WithArray1() |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array xsi:nil=""true"" /></keha></wrapper>"
+    let result = resultXml |> deserialize'<TestType.WithArray1>
+    result |> should not' (be Null)
+    result.Array |> should be Null

@@ -178,7 +178,6 @@ module EmitSerialization =
 
     let private emitNilAttribute (il: ILGenerator) (markReturn: Label) =
         let markNotNull = il.DefineLabel()
-        il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Ldnull)
         il.Emit(OpCodes.Ceq)
         il.Emit(OpCodes.Brfalse_S, markNotNull)
@@ -197,6 +196,7 @@ module EmitSerialization =
         let markReturn = il.DefineLabel()
 
         // When value is `null`, write `xsi:nil` attribute and return.
+        il.Emit(OpCodes.Ldarg_1)
         emitNilAttribute il markReturn
 
         // Serialize value according to its type.
@@ -262,6 +262,8 @@ module EmitSerialization =
             il.Emit(OpCodes.Call, propertyMap.TypeMap.Serialization.Root)
             il.Emit(OpCodes.Nop)
         | Array arrayMap ->
+            emitValue arrayMap.Type
+            emitNilAttribute il markReturn
             let arr = il.DeclareLocal(arrayMap.Type)
             emitValue arrayMap.Type
             il.Emit(OpCodes.Stloc, arr)
@@ -1149,10 +1151,30 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
     if typeof<'X>.IsValueType then createTypeMap true
     createTypeMap false
 
+let initBinaryContentSerialization () =
+    let typ = typeof<BinaryContent>
+    let serializeRootMethod =
+        let meth = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |])
+        let il = meth.GetILGenerator()
+        il.Emit(OpCodes.Ret)
+        meth
+    let deserializeRootMethod =
+        let meth = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
+        let il = meth.GetILGenerator()
+        il.Emit(OpCodes.Ldnull)
+        il.Emit(OpCodes.Ret)
+        meth
+    let deserialization = { Root = deserializeRootMethod; Content = null; MatchType = null }
+    let serialization: Serialization = { Root = serializeRootMethod; Content = null }
+    typeMaps.TryAdd(typ, TypeMap.Create(typ, deserialization, serialization, None)) |> ignore
+
 do
     createSystemTypeMap<bool>
         []
         [!@ <@ (null: XmlReader).ReadContentAsBoolean() @>]
+    createSystemTypeMap<decimal>
+        []
+        [!@ <@ (null: XmlReader).ReadContentAsDecimal() @>]
     createSystemTypeMap<int32>
         []
         [!@ <@ (null: XmlReader).ReadContentAsInt() @>]
@@ -1168,3 +1190,4 @@ do
     createSystemTypeMap<string>
         []
         [!@ <@ (null: XmlReader).ReadContentAsString() @>]
+    initBinaryContentSerialization()
