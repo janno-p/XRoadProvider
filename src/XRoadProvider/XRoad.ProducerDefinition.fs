@@ -98,24 +98,6 @@ module TypeBuilder =
             num := !num + 1
             sprintf "%s%d" name !num)
 
-    /// Types which extend BinaryContent types should inherit its properties from BinaryContent runtime type also.
-    /// Create overloaded constructor to match BinaryContent constructor.
-    let inheritBinaryContent typ =
-        typ
-        |> Cls.setParent (ContentType.AsCodeTypeReference())
-        |> Cls.addMember (Ctor.create()
-                          |> Ctor.setAttr MemberAttributes.Public
-                          |> Ctor.addParam<System.IO.Stream> "content"
-                          |> Ctor.addBaseArg (!+ "content"))
-        |> Cls.addMember (Ctor.create()
-                          |> Ctor.setAttr MemberAttributes.Public
-                          |> Ctor.addParam<string> "contentId"
-                          |> Ctor.addParam<System.IO.Stream> "content"
-                          |> Ctor.addBaseArg (!+ "contentId")
-                          |> Ctor.addBaseArg (!+ "content"))
-        |> Cls.addMember (Ctor.create()
-                          |> Ctor.setAttr MemberAttributes.Public)
-
     /// Populate generated type declaration with properties specified in type schema definition.
     let rec build (context: TypeBuilderContext) runtimeType schemaType =
         // Extract type declaration from runtime type definition.
@@ -130,10 +112,9 @@ module TypeBuilder =
         | SimpleType(SimpleTypeSpec.Restriction(spec, annotation)) ->
             providedTy |> Code.comment (annotationToText context annotation) |> ignore
             match context.GetRuntimeType(SchemaType(spec.Base)) with
+            | ContentType
             | PrimitiveType(_) as rtyp ->
                 providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.xrdContent |> ignore
-            | ContentType ->
-                providedTy |> inheritBinaryContent |> ignore
             | _ ->
                 failwith "Simple types should not restrict complex types."
         | SimpleType(ListDef) ->
