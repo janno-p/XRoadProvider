@@ -3,6 +3,7 @@
 open System
 open System.Collections.Generic
 open System.IO
+open System.Security.Cryptography
 open System.Xml
 
 [<RequireQualifiedAccessAttribute>]
@@ -44,6 +45,12 @@ module private XRoadProtocolExtensions =
         | XRoadProtocol.Version40 -> failwith "Not implemented v4.0"
         | x -> failwithf "Invalid XRoadProtocol value `%A`" x
 
+module XRoadHelper =
+    let generateNonce() =
+        let nonce = Array.create 42 0uy
+        RNGCryptoServiceProvider.Create().GetNonZeroBytes(nonce)
+        Convert.ToBase64String(nonce)
+
 type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
     member val Name = name with get
     member val Value = value with get
@@ -74,3 +81,20 @@ type XRoadResponseOptions(isEncoded: bool, isMultipart: bool, protocol: XRoadPro
     member val Types = types with get
     member val Accessor: XmlQualifiedName = null with get, set
     member val ExpectUnexpected = false with get, set
+
+type private ContentType =
+    | FileStorage of FileInfo
+    | Data of byte[]
+
+type public BinaryContent private (content: ContentType) =
+    member val ContentID = XRoadHelper.generateNonce() with get
+    member __.OpenStream() : Stream =
+        match content with
+        | FileStorage(file) -> upcast file.OpenRead()
+        | Data(data) -> upcast new MemoryStream(data)
+    member __.GetBytes() =
+        match content with
+        | FileStorage(file) -> File.ReadAllBytes(file.FullName)
+        | Data(data) -> data
+    static member Create(file) = BinaryContent(FileStorage(file))
+    static member Create(data) = BinaryContent(Data(data))

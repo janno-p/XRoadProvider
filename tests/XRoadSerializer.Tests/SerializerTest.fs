@@ -427,3 +427,13 @@ let [<Test>] ``deserialize null string`` () =
     let (success, value) = result.IsAChoice.TryGetChoice1()
     success |> should equal true
     value |> should not' (be Null)
+
+[<XRoadType(LayoutKind.Sequence)>]
+type WithBinaryContent() =
+    [<XRoadElement>]
+    member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
+
+let [<Test; Ignore>] ``serialize file`` () =
+    let entity = BinaryContent.Create([| 1uy; 2uy; 3uy; 4uy |])
+    let resultXml = entity |> serialize'
+    resultXml |> should equal @""

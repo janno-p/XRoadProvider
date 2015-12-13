@@ -19,11 +19,6 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     let request = WebRequest.Create(opt.Uri, Method="POST", ContentType="text/xml; charset=utf-8")
     do request.Headers.Set("SOAPAction", "")
 
-    let generateNonce() =
-        let nonce = Array.create 42 0uy
-        RNGCryptoServiceProvider.Create().GetNonZeroBytes(nonce)
-        Convert.ToBase64String(nonce)
-
     let writeContent (stream: Stream) (content: Stream) =
         let buffer = Array.create 1000 0uy
         let rec writeChunk() =
@@ -88,7 +83,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 if not (hdr.Value |> isNull) then
                     writer.WriteValue(hdr.Value)
                 elif hdr.Name.Name = "id" && (hdr.Name.Namespace = XmlNamespace.XRoad || hdr.Name.Namespace = XmlNamespace.Xtee) then
-                    writer.WriteValue(generateNonce())
+                    writer.WriteValue(XRoadHelper.generateNonce())
                 writer.WriteEndElement())
         writer.WriteEndElement()
 
