@@ -63,7 +63,8 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     member __.SendMessage(msg: XRoadMessage) =
         use content = new MemoryStream()
         use sw = new StreamWriter(content)
-        use writer = new XRoadXmlWriter(sw, XRoadSerializerContext(IsMultipart = opt.IsMultipart))
+        let context = SerializerContext(IsMultipart = opt.IsMultipart)
+        use writer = XmlWriter.Create(sw)
         writer.WriteStartDocument()
         writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
         writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
@@ -105,7 +106,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             serializeAccessor (fun _ ->
                 msg.Body
                 |> Array.iteri (fun i (name,value) ->
-                    Serializer().Serialize(writer, opt.Types.[i], value, if isNull name then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name))))
+                    Serializer().Serialize(writer, opt.Types.[i], value, (if isNull name then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name), context))))
 
         writer.WriteEndDocument()
         writer.Flush()

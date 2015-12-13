@@ -151,7 +151,7 @@ module TestType =
         [<XRoadCollection>]
         member val Array = Unchecked.defaultof<bool[]> with get, set
 
-let serialize<'T> qn (nslist: (string * string) list) value =
+let serializeWithContext<'T> qn (nslist: (string * string) list) (context: SerializerContext) value =
     let serializer = Serializer()
     use stream = new MemoryStream()
     use sw = new StreamWriter(stream, Encoding.UTF8)
@@ -160,7 +160,7 @@ let serialize<'T> qn (nslist: (string * string) list) value =
     writer.WriteStartElement("wrapper")
     writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
     nslist |> List.iter (fun (pr,ns) -> writer.WriteAttributeString("xmlns", pr, XmlNamespace.Xmlns, ns))
-    serializer.Serialize<'T>(writer, value, qn)
+    serializer.Serialize<'T>(writer, value, qn, context)
     writer.WriteEndElement()
     writer.WriteEndDocument()
     writer.Flush()
@@ -169,9 +169,10 @@ let serialize<'T> qn (nslist: (string * string) list) value =
     use sr = new StreamReader(stream, Encoding.UTF8)
     sr.ReadToEnd()
 
-let serialize' v = serialize (XmlQualifiedName("keha")) [] v
+let serialize' v = serializeWithContext (XmlQualifiedName("keha")) [] (SerializerContext()) v
+let serializeWithContext' context v = serializeWithContext (XmlQualifiedName("keha")) [] context v
 
-let deserialize<'T> (rootName: XmlQualifiedName) xml : 'T =
+let deserializeWithContext<'T> (rootName: XmlQualifiedName) (context: SerializerContext) xml : 'T =
     let serializer = Serializer()
     use sr = new StringReader(xml)
     use reader = XmlReader.Create(sr)
@@ -180,10 +181,11 @@ let deserialize<'T> (rootName: XmlQualifiedName) xml : 'T =
         then true
         else match reader.Read() with false -> false | true -> moveToRoot()
     match moveToRoot() with
-    | true -> serializer.Deserialize<'T>(reader)
+    | true -> serializer.Deserialize<'T>(reader, context)
     | false -> failwith "Invalid xml: could not find root element."
 
-let deserialize'<'T> xml : 'T = deserialize (XmlQualifiedName("keha")) xml
+let deserialize'<'T> xml : 'T = deserializeWithContext (XmlQualifiedName("keha")) (SerializerContext()) xml
+let deserializeWithContext'<'T> context xml : 'T = deserializeWithContext (XmlQualifiedName("keha")) context xml
 
 let simpleTypeEntity =
     let entity = TestType.SimpleType(Value = 13)
@@ -212,7 +214,7 @@ let [<Test>] ``serialize null value`` () =
     resultXml |> deserialize'<string> |> should be Null
 
 let [<Test>] ``write qualified root name`` () =
-    let resultXml = simpleTypeEntity |> serialize (XmlQualifiedName("root", "urn:some-namespace")) []
+    let resultXml = simpleTypeEntity |> serializeWithContext (XmlQualifiedName("root", "urn:some-namespace")) [] (SerializerContext())
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></wrapper>"
 
 let [<Test>] ``serializing unserializable type`` () =
@@ -271,7 +273,7 @@ let [<Test>] ``deserialize abstract type`` () =
 
 let [<Test>] ``serialize extended type with base type contents`` () =
     let entity = TestType.ExtendedType(OwnElement = "test", String = "test", BigInteger = 100I)
-    let resultXml = entity |> serialize<TestType.ComplexType> (XmlQualifiedName("keha")) []
+    let resultXml = entity |> serializeWithContext<TestType.ComplexType> (XmlQualifiedName("keha")) [] (SerializerContext())
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></keha></wrapper>"
     let result = resultXml |> deserialize'<TestType.ExtendedType>
     result |> should not' (be Null)
@@ -312,7 +314,7 @@ let [<Test>] ``serialize abstract base type when subtype is used`` () =
 let [<Test>] ``serialize abstract base type when subtype is used (with explicit name and namespace)`` () =
     let concreteEntity = TestType.Concrete3(SubValue3 = "test2", BaseValue = "test")
     let entity = TestType.Referrer(Reference = concreteEntity)
-    let resultXml = entity |> serialize (XmlQualifiedName("keha")) ["t", "testns"]
+    let resultXml = entity |> serializeWithContext (XmlQualifiedName("keha")) ["t", "testns"] (SerializerContext())
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:t=""testns""><keha><Reference xsi:type=""t:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></keha></wrapper>"
     let result = resultXml |> deserialize'<TestType.Referrer>
     result |> should not' (be Null)
@@ -434,6 +436,9 @@ type WithBinaryContent() =
     member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
 
 let [<Test; Ignore>] ``serialize file`` () =
+    let context = SerializerContext()
     let entity = BinaryContent.Create([| 1uy; 2uy; 3uy; 4uy |])
-    let resultXml = entity |> serialize'
+    let resultXml = entity |> serializeWithContext' context
     resultXml |> should equal @""
+    context.Attachments |> should not' (be Null)
+    context.Attachments.Count |> should equal 1

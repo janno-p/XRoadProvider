@@ -24,6 +24,7 @@ type XRoadElementAttribute(name: string) =
     member val IsNullable = false with get, set
     member val Name = name with get
     member val MergeContent = false with get, set
+    member val UseXop = false with get, set
 
 [<AllowNullLiteral>]
 [<AttributeUsage(AttributeTargets.Class, AllowMultiple=true)>]

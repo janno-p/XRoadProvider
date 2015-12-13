@@ -11,8 +11,8 @@ open System.Xml
 open XRoad
 open XRoad.Attributes
 
-type DeserializerDelegate = delegate of XmlReader -> obj
-type SerializerDelegate = delegate of XmlWriter * obj -> unit
+type DeserializerDelegate = delegate of XmlReader * SerializerContext -> obj
+type SerializerDelegate = delegate of XmlWriter * obj * SerializerContext -> unit
 
 type Serialization =
     { Root: MethodInfo
@@ -34,10 +34,10 @@ type TypeMap =
       Serialization: Serialization
       CanHaveNullAsValue: bool
       BaseType: TypeMap option }
-    member this.Serialize(writer: XmlWriter, value: obj) =
-        this.SerializeDelegate.Value.Invoke(writer, value)
-    member this.Deserialize(reader: XmlReader) =
-        this.DeserializeDelegate.Value.Invoke(reader)
+    member this.Serialize(writer: XmlWriter, value: obj, context: SerializerContext) =
+        this.SerializeDelegate.Value.Invoke(writer, value, context)
+    member this.Deserialize(reader: XmlReader, context: SerializerContext) =
+        this.DeserializeDelegate.Value.Invoke(reader, context)
     member this.FullName =
         match this.Namespace with
         | Some(ns) -> sprintf "{%s}:{%s}" ns this.Name
@@ -138,6 +138,7 @@ module EmitSerialization =
         typeMap.BaseType |> Option.iter (emitContentSerialization il)
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Ldarg_2)
         il.Emit(OpCodes.Call, typeMap.Serialization.Content)
         il.Emit(OpCodes.Nop)
 
@@ -257,6 +258,7 @@ module EmitSerialization =
         | Individual propertyMap ->
             il.Emit(OpCodes.Ldarg_0)
             emitValue propertyMap.TypeMap.Type
+            il.Emit(OpCodes.Ldarg_2)
             il.Emit(OpCodes.Call, propertyMap.TypeMap.Serialization.Root)
             il.Emit(OpCodes.Nop)
         | Array arrayMap ->
@@ -356,6 +358,7 @@ module EmitDeserialization =
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Ldloc, instance)
         il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
         il.Emit(OpCodes.Nop)
 
@@ -509,8 +512,9 @@ module EmitDeserialization =
         il.MarkLabel(markReturn)
         il.Emit(OpCodes.Ret)
 
-    let emitPropertyValueDeserialization (il: ILGenerator) (typeMap: TypeMap) =
+    let emitPropertyValueDeserialization (il: ILGenerator) (isContent: bool) (typeMap: TypeMap) =
         il.Emit(OpCodes.Ldarg_0)
+        il.Emit(if isContent then OpCodes.Ldarg_3 else OpCodes.Ldarg_1)
         il.Emit(OpCodes.Call, typeMap.Deserialization.Root)
         match typeMap.Type.IsValueType with
         | true -> il.Emit(OpCodes.Unbox_Any, typeMap.Type)
@@ -518,7 +522,7 @@ module EmitDeserialization =
 
     let emitIndividualPropertyDeserialization (il: ILGenerator) (propertyMap: PropertyMap) =
         let x = il.DeclareLocal(propertyMap.TypeMap.Type)
-        emitPropertyValueDeserialization il propertyMap.TypeMap
+        emitPropertyValueDeserialization il true propertyMap.TypeMap
         il.Emit(OpCodes.Stloc, x)
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, propertyMap.OwnerTypeMap.Type)
@@ -592,7 +596,7 @@ module EmitDeserialization =
         | None -> ()
 
         il.Emit(OpCodes.Ldloc, listInstance)
-        emitPropertyValueDeserialization il arrayMap.ItemTypeMap
+        emitPropertyValueDeserialization il true arrayMap.ItemTypeMap
         il.Emit(OpCodes.Callvirt, listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
 
     /// Emits array type deserialization logic.
@@ -701,6 +705,7 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldarg_1)
             il.Emit(OpCodes.Ldarg_2)
+            il.Emit(OpCodes.Ldarg_3)
             il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
             il.Emit(OpCodes.Nop))
 
@@ -787,10 +792,10 @@ and createTypeMap (typ: Type) =
     match typ.GetCustomAttribute<XRoadTypeAttribute>() with
     | null -> failwithf "Type `%s` is not serializable." typ.FullName
     | typeAttribute ->
-        let deserializeRootMethod = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader> |])
-        let deserializeContentMethod = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj>; typeof<bool> |])
-        let serializeRootMethod = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj> |], typeAttribute.Layout = LayoutKind.Choice)
-        let serializeContentMethod = DynamicMethod(sprintf "%s_SerializeContent" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj> |]) //, typeAttribute.Layout = LayoutKind.Choice)
+        let deserializeRootMethod = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
+        let deserializeContentMethod = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj>; typeof<bool>; typeof<SerializerContext> |])
+        let serializeRootMethod = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |], typeAttribute.Layout = LayoutKind.Choice)
+        let serializeContentMethod = DynamicMethod(sprintf "%s_SerializeContent" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |]) //, typeAttribute.Layout = LayoutKind.Choice)
         let matchTypeMethod = DynamicMethod(sprintf "%s_MatchType" typ.FullName, typeof<bool>, [| typeof<XmlReader> |])
         let deserialization = { Root = deserializeRootMethod; Content = deserializeContentMethod; MatchType = matchTypeMethod }
         let serialization: Serialization = { Root = serializeRootMethod; Content = serializeContentMethod }
@@ -862,6 +867,7 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                 ilSer.Emit(OpCodes.Ldarg_1)
                 ilSer.Emit(OpCodes.Castclass, choiceType)
                 ilSer.Emit(OpCodes.Ldfld, valueField)
+                ilSer.Emit(OpCodes.Ldarg_2)
                 ilSer.Emit(OpCodes.Call, (getTypeMap typ).Serialization.Root)
                 ilSer.Emit(OpCodes.Nop)
             if attr.MergeContent then
@@ -897,6 +903,7 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Ldloc, instance)
                     il.Emit(OpCodes.Ldc_I4_1)
+                    il.Emit(OpCodes.Ldarg_1)
                     il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
                     il.Emit(OpCodes.Ldloc, instance)
                 else
@@ -905,7 +912,7 @@ and createChoiceTypeSerializers ilSer ilDeser ilDeserContent ilMatch choiceType 
                     il.Emit(OpCodes.Ldstr, attr.Name)
                     il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                     il.Emit(OpCodes.Brfalse, label)
-                    EmitDeserialization.emitPropertyValueDeserialization il typeMap
+                    EmitDeserialization.emitPropertyValueDeserialization il false typeMap
                 il.Emit(OpCodes.Call, mi)
                 il.Emit(OpCodes.Br_S, markReturn)
                 il.MarkLabel(label)
@@ -1024,7 +1031,7 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
     let createTypeMap isNullable =
         let typ = if isNullable then typedefof<Nullable<_>>.MakeGenericType(typeof<'X>) else typeof<'X>
         let serializerMethod =
-            let meth = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj> |])
+            let meth = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |])
             let il = meth.GetILGenerator()
             let labelEnd =
                 if isNullable || typ.IsClass then
@@ -1063,7 +1070,7 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
             il.Emit(OpCodes.Ret)
             meth
         let deserializerMethod =
-            let meth = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader> |])
+            let meth = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
             let il = meth.GetILGenerator()
             let labelRead = il.DefineLabel()
             let labelRet = il.DefineLabel()

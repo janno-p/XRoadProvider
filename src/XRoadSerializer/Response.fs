@@ -186,6 +186,8 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
         if options.ExpectUnexpected then
             // TODO: check if unexpected exception was thrown by service.
             ()
+        let context = SerializerContext()
+        context.AddAttachments(message.Attachments)
         let serializer = Serializer()
         let rec findElements (parameters: List<_>) =
             if reader.Depth = 2 && reader.NodeType = XmlNodeType.Element then
@@ -194,7 +196,7 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
                     failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
                 | nm, ns ->
                     let qualifiedName = XmlQualifiedName(nm, ns)
-                    parameters.Add(qualifiedName, serializer.Deserialize(reader, options.Types.[qualifiedName]))
+                    parameters.Add(qualifiedName, serializer.Deserialize(reader, options.Types.[qualifiedName], context))
             if not (reader.Read()) || reader.Depth < 2 then parameters.ToArray()
             else findElements parameters
         reader.Read() |> ignore

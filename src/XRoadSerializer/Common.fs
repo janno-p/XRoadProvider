@@ -98,3 +98,12 @@ type public BinaryContent private (content: ContentType) =
         | Data(data) -> data
     static member Create(file) = BinaryContent(FileStorage(file))
     static member Create(data) = BinaryContent(Data(data))
+
+type SerializerContext() =
+    let attachments = Dictionary<string, Stream>()
+    member val IsMultipart = false with get, set
+    member val Attachments = attachments with get
+    member this.AddAttachments(attachments: IDictionary<_,_>) =
+        match attachments with
+        | null -> ()
+        | _ -> attachments |> Seq.iter (fun kvp -> this.Attachments.Add(kvp.Key, kvp.Value))
