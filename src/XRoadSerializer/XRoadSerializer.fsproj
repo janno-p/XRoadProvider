@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>XRoad</RootNamespace>
     <AssemblyName>XRoadSerializer</AssemblyName>
-    <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Name>XRoadSerializer</Name>
     <TargetFrameworkProfile />

@@ -1026,8 +1026,9 @@ and findDirectSubTypes (typ: Type) : TypeMap list =
 
 and findBaseTypes (typ: Type) =
     typ
-    |> List.unfold (fun typ -> if typ = typeof<obj> then None else Some(findTypeMap typ, typ.BaseType))
-    |> List.choose (id)
+    |> Seq.unfold (fun typ -> if typ = typeof<obj> then None else Some(findTypeMap typ, typ.BaseType))
+    |> Seq.choose (id)
+    |> Seq.toList
 
 let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: MemberInfo list) =
     let createTypeMap isNullable =

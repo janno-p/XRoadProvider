@@ -30,6 +30,18 @@ type XRoadProtocol =
     | Version40 = 3
 
 [<AutoOpen>]
+module internal Option =
+    let ofObj o = match o with null -> None | x -> Some(x)
+
+[<AutoOpen>]
+module internal List =
+    let tryHead lst = match lst with [] -> None | x::_ -> Some(x)
+
+[<AutoOpen>]
+module Common =
+    let isNull o = (o = null)
+
+[<AutoOpen>]
 module private XRoadProtocolExtensions =
     let protocolPrefix = function
         | XRoadProtocol.Version20 -> "xtee"
