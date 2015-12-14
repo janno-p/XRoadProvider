@@ -430,22 +430,35 @@ let [<Test>] ``deserialize null string`` () =
     success |> should equal true
     value |> should not' (be Null)
 
-[<XRoadType(LayoutKind.Sequence)>]
-type WithBinaryContent() =
-    [<XRoadElement>]
-    member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
-
-let [<Test; Ignore>] ``serialize file`` () =
-    let context = SerializerContext()
-    let entity = BinaryContent.Create([| 1uy; 2uy; 3uy; 4uy |])
-    let resultXml = entity |> serializeWithContext' context
-    resultXml |> should equal @""
-    context.Attachments |> should not' (be Null)
-    context.Attachments.Count |> should equal 1
-
 let [<Test>] ``serialize null array`` () =
     let resultXml = TestType.WithArray1() |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array xsi:nil=""true"" /></keha></wrapper>"
     let result = resultXml |> deserialize'<TestType.WithArray1>
     result |> should not' (be Null)
     result.Array |> should be Null
+
+[<XRoadType(LayoutKind.Sequence)>]
+type WithBinaryContent() =
+    [<XRoadElement>]
+    member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
+
+let [<Test>] ``serialize file`` () =
+    let context = SerializerContext()
+    let entity = WithBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
+    let resultXml = entity |> serializeWithContext' context
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent href=""cid:Content-ID"" /></keha></wrapper>"
+    context.Attachments |> should not' (be Null)
+    context.Attachments.Count |> should equal 1
+
+[<XRoadType(LayoutKind.Sequence)>]
+type WithXopBinaryContent() =
+    [<XRoadElement(UseXop=true)>]
+    member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
+
+let [<Test>] ``serialize file with xop`` () =
+    let context = SerializerContext()
+    let entity = WithXopBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
+    let resultXml = entity |> serializeWithContext' context
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent><xop:Include href=""cid:Content-ID"" xmlns:xop=""http://www.w3.org/2004/08/xop/include"" /></BinaryContent></keha></wrapper>"
+    context.Attachments |> should not' (be Null)
+    context.Attachments.Count |> should equal 1

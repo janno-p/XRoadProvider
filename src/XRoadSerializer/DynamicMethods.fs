@@ -4,6 +4,7 @@ open FSharp.Quotations
 open FSharp.Quotations.Patterns
 open System
 open System.Collections.Concurrent
+open System.Collections.Generic
 open System.Numerics
 open System.Reflection
 open System.Reflection.Emit
@@ -93,6 +94,9 @@ type Property =
             | Array { Element = None; ItemElement = Some(name,_) } -> Some(name)
             | _ -> None
 
+type private XopBinaryContent() =
+    inherit BinaryContent("", Data [| |])
+
 let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
 let (!@) expr =
@@ -176,7 +180,7 @@ module EmitSerialization =
             il.Emit(OpCodes.Nop)
             typeMap |> emitTypeHierarchySerialization il markReturn other
 
-    let private emitNilAttribute (il: ILGenerator) (markReturn: Label) =
+    let emitNilAttribute (markReturn: Label) (il: ILGenerator) =
         let markNotNull = il.DefineLabel()
         il.Emit(OpCodes.Ldnull)
         il.Emit(OpCodes.Ceq)
@@ -197,7 +201,7 @@ module EmitSerialization =
 
         // When value is `null`, write `xsi:nil` attribute and return.
         il.Emit(OpCodes.Ldarg_1)
-        emitNilAttribute il markReturn
+        il |> emitNilAttribute markReturn
 
         // Serialize value according to its type.
         typeMap |> emitTypeHierarchySerialization il markReturn subTypes
@@ -263,7 +267,7 @@ module EmitSerialization =
             il.Emit(OpCodes.Nop)
         | Array arrayMap ->
             emitValue arrayMap.Type
-            emitNilAttribute il markReturn
+            il |> emitNilAttribute markReturn
             let arr = il.DeclareLocal(arrayMap.Type)
             emitValue arrayMap.Type
             il.Emit(OpCodes.Stloc, arr)
@@ -981,7 +985,7 @@ and private getProperties (typeMap: TypeMap) : Property list =
             let element = if attr.MergeContent then None else Some(name, attr.IsNullable)
             match p.GetCustomAttribute<XRoadCollectionAttribute>() |> Option.ofObj with
             | Some(cattr) ->
-                let itemTypeMap = getTypeMap (p.PropertyType.GetElementType())
+                let itemTypeMap = getTypeMap (if attr.UseXop then typeof<XopBinaryContent> else p.PropertyType.GetElementType())
                 let itemName = match cattr.ItemName with null | "" -> "item" | name -> name
                 let itemElement = if itemTypeMap.Layout <> Some(LayoutKind.Choice)
                                   then if cattr.MergeContent then None else Some(itemName, cattr.ItemIsNullable)
@@ -994,7 +998,7 @@ and private getProperties (typeMap: TypeMap) : Property list =
                              GetMethod = p.GetGetMethod()
                              SetMethod = p.GetSetMethod() })
             | None ->
-                let propertyTypeMap = getTypeMap p.PropertyType
+                let propertyTypeMap = getTypeMap (if attr.UseXop then typeof<XopBinaryContent> else p.PropertyType)
                 let element = if propertyTypeMap.Layout <> Some(LayoutKind.Choice) then element else None
                 Some(Individual { TypeMap = propertyTypeMap
                                   Element = element
@@ -1038,19 +1042,9 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
             let il = meth.GetILGenerator()
             let labelEnd =
                 if isNullable || typ.IsClass then
-                    let label = il.DefineLabel()
                     let labelEnd = il.DefineLabel()
                     il.Emit(OpCodes.Ldarg_1)
-                    il.Emit(OpCodes.Ldnull)
-                    il.Emit(OpCodes.Ceq)
-                    il.Emit(OpCodes.Brfalse_S, label)
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Ldstr, "nil")
-                    il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-                    il.Emit(OpCodes.Ldstr, "true")
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteAttributeString("", "", "") @>)
-                    il.Emit(OpCodes.Br_S, labelEnd)
-                    il.MarkLabel(label)
+                    il |> EmitSerialization.emitNilAttribute labelEnd
                     if typ = typeof<string> then
                         il.Emit(OpCodes.Ldarg_1)
                         il.Emit(OpCodes.Castclass, typ)
@@ -1152,22 +1146,52 @@ let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: Member
     if typeof<'X>.IsValueType then createTypeMap true
     createTypeMap false
 
-let initBinaryContentSerialization () =
+let initBinaryContentSerialization useXop =
+    let designType = if useXop then typeof<XopBinaryContent> else typeof<BinaryContent>
     let typ = typeof<BinaryContent>
     let serializeRootMethod =
-        let meth = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |])
+        let meth = DynamicMethod(sprintf "%s_Serialize" designType.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |])
         let il = meth.GetILGenerator()
+        let markReturn = il.DefineLabel()
+        il.Emit(OpCodes.Ldarg_1)
+        il |> EmitSerialization.emitNilAttribute markReturn
+        if useXop then
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldstr, "xop")
+            il.Emit(OpCodes.Ldstr, "Include")
+            il.Emit(OpCodes.Ldstr, XmlNamespace.Xop)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "", "") @>)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldstr, "href")
+        il.Emit(OpCodes.Ldstr, "cid:{0}")
+        il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Castclass, typ)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: BinaryContent).ContentID @>)
+        il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteAttributeString("", "") @>)
+        if useXop then
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
+        il.Emit(OpCodes.Ldarg_2)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: SerializerContext).Attachments @>)
+        il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Castclass, typ)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: BinaryContent).ContentID @>)
+        il.Emit(OpCodes.Ldarg_1)
+        il.Emit(OpCodes.Castclass, typ)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: Dictionary<string, BinaryContent>).Add("", (null: BinaryContent)) @>)
+        il.MarkLabel(markReturn)
         il.Emit(OpCodes.Ret)
         meth
     let deserializeRootMethod =
-        let meth = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
+        let meth = DynamicMethod(sprintf "%s_Deserialize" designType.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
         let il = meth.GetILGenerator()
         il.Emit(OpCodes.Ldnull)
         il.Emit(OpCodes.Ret)
         meth
     let deserialization = { Root = deserializeRootMethod; Content = null; MatchType = null }
     let serialization: Serialization = { Root = serializeRootMethod; Content = null }
-    typeMaps.TryAdd(typ, TypeMap.Create(typ, deserialization, serialization, None)) |> ignore
+    typeMaps.TryAdd(designType, TypeMap.Create(typ, deserialization, serialization, None)) |> ignore
 
 do
     createSystemTypeMap<bool>
@@ -1191,4 +1215,5 @@ do
     createSystemTypeMap<string>
         []
         [!@ <@ (null: XmlReader).ReadContentAsString() @>]
-    initBinaryContentSerialization()
+    initBinaryContentSerialization (true)
+    initBinaryContentSerialization (false)

@@ -111,11 +111,11 @@ module private Response =
         if buffer |> isNull || value |> isNull || value.Length > buffer.Length then false
         else compare (value.Length - 1)
 
-    let parseResponse (response: WebResponse) =
+    let parseResponse (response: WebResponse) : Stream * BinaryContent list =
         match response |> getBoundaryMarker with
         | Some(boundaryMarker) ->
             use stream = new PeekStream(response.GetResponseStream())
-            let contents = List<string option * Stream>()
+            let contents = List<string option * MemoryStream>()
             let contentMarker = Encoding.ASCII.GetBytes(sprintf "--%s" boundaryMarker)
             let endMarker = Encoding.ASCII.GetBytes(sprintf "--%s--" boundaryMarker)
             let (|Content|End|Separator|) line =
@@ -139,7 +139,7 @@ module private Response =
                 let contentId = headers |> Map.tryFind("content-id") |> Option.map (fun x -> x.Trim().Trim('<', '>'))
                 let decoder = headers |> Map.tryFind("content-transfer-encoding") |> Option.bind (getDecoder)
                 let contentStream = new MemoryStream()
-                contents.Add(contentId, upcast contentStream)
+                contents.Add(contentId, contentStream)
                 copyChunk false Encoding.UTF8 decoder contentStream
             let rec parseContent () =
                 match stream |> readLine with
@@ -147,12 +147,19 @@ module private Response =
                 | End -> ()
                 | Separator -> parseContent()
             parseContent()
-            contents |> Seq.toList
+            match contents |> Seq.toList with
+            | (_,content)::attachments ->
+                (upcast content, attachments
+                                 |> List.map (fun (name,stream) ->
+                                    use stream = stream
+                                    stream.Position <- 0L
+                                    BinaryContent.Create(name.Value, stream.ToArray())))
+            | _ -> failwith "empty multipart content"
         | None ->
             use stream = response.GetResponseStream()
             let content = new MemoryStream()
             stream.CopyTo(content)
-            [(None, upcast content)]
+            (upcast content, [])
 
     type XmlReader with
         member this.MoveToElement(depth, name, ns) =
@@ -170,13 +177,10 @@ open Response
 type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
     member __.RetrieveMessage(): XRoadMessage =
         let message = XRoadMessage()
-        let stream =
-            match Response.parseResponse(response) with
-            | [(_,xml)] -> xml
-            | (_,xml)::attachments ->
-                attachments |> List.iter (fun (id,stream) -> message.Attachments.Add(id.Value, stream))
-                xml
-            | _ -> failwith "Invalid multipart response message: no content."
+        use stream =
+            let stream, attachments = Response.parseResponse(response)
+            attachments |> List.iter (fun content -> message.Attachments.Add(content.ContentID, content))
+            stream
         stream.Position <- 0L
         let reader = XmlReader.Create(stream)
         if not (reader.MoveToElement(0, "Envelope", XmlNamespace.SoapEnv)) then

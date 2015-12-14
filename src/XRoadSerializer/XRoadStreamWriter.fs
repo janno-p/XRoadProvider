@@ -4,7 +4,6 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Net
-open System.Security.Cryptography
 open System.Xml
 
 type XRoadStreamWriter() =
@@ -28,7 +27,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         content.Position <- 0L
         writeChunk()
 
-    let serializeMultipartMessage (attachments: IDictionary<string, Stream>) (serializeContent: Stream -> unit) =
+    let serializeMultipartMessage (attachments: Dictionary<string,BinaryContent>) (serializeContent: Stream -> unit) =
         use stream = request.GetRequestStream()
         if attachments.Count > 0 then
             use writer = new StreamWriter(stream, NewLine = "\r\n")
@@ -52,12 +51,13 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteLine("Content-ID: <{0}>", kvp.Key)
                 writer.WriteLine()
                 writer.Flush()
-                writeContent stream kvp.Value
+                use contentStream = kvp.Value.OpenStream()
+                writeContent stream contentStream
                 writer.WriteLine())
             writer.WriteLine("--{0}--", boundaryMarker)
         else stream |> serializeContent
 
-    let serializeMessage (content: Stream) (attachments: IDictionary<string, Stream>) =
+    let serializeMessage (content: Stream) (attachments: Dictionary<string,BinaryContent>) =
         serializeMultipartMessage attachments (fun s -> writeContent s content)
 
     member __.SendMessage(msg: XRoadMessage) =
@@ -110,7 +110,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
 
         writer.WriteEndDocument()
         writer.Flush()
-        serializeMessage content (dict [])
+        serializeMessage content context.Attachments
     member __.GetResponse(options) =
         new XRoadResponse(request.GetResponse(), options)
 

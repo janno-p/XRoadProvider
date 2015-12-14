@@ -17,6 +17,7 @@ module XmlNamespace =
     let [<Literal>] Xmime = "http://www.w3.org/2005/05/xmlmime"
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
     let [<Literal>] Xmlns = "http://www.w3.org/2000/xmlns/";
+    let [<Literal>] Xop = "http://www.w3.org/2004/08/xop/include"
     let [<Literal>] Xrd = "http://x-rd.net/xsd/xroad.xsd"
     let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
@@ -63,6 +64,30 @@ module XRoadHelper =
         RNGCryptoServiceProvider.Create().GetNonZeroBytes(nonce)
         Convert.ToBase64String(nonce)
 
+type internal ContentType =
+    | FileStorage of FileInfo
+    | Data of byte[]
+
+[<AllowNullLiteral>]
+type public BinaryContent internal (contentID: string, content: ContentType) =
+    member __.ContentID
+        with get() =
+            match contentID with
+            | null | "" -> XRoadHelper.generateNonce()
+            | _ -> contentID
+    member __.OpenStream() : Stream =
+        match content with
+        | FileStorage(file) -> upcast file.OpenRead()
+        | Data(data) -> upcast new MemoryStream(data)
+    member __.GetBytes() =
+        match content with
+        | FileStorage(file) -> File.ReadAllBytes(file.FullName)
+        | Data(data) -> data
+    static member Create(file) = BinaryContent("", FileStorage(file))
+    static member Create(contentID, file) = BinaryContent(contentID, FileStorage(file))
+    static member Create(data) = BinaryContent("", Data(data))
+    static member Create(contentID, data) = BinaryContent(contentID, Data(data))
+
 type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
     member val Name = name with get
     member val Value = value with get
@@ -71,7 +96,7 @@ type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
 type XRoadMessage() =
     member val Header: SoapHeaderValue array = [||] with get, set
     member val Body: (XmlQualifiedName * obj) array = [||] with get, set
-    member val Attachments = Dictionary<string, Stream>() with get, set
+    member val Attachments = Dictionary<string, BinaryContent>() with get, set
     member this.GetPart(name) =
         this.Body
         |> Array.tryFind (fst >> ((=) name))
@@ -94,25 +119,9 @@ type XRoadResponseOptions(isEncoded: bool, isMultipart: bool, protocol: XRoadPro
     member val Accessor: XmlQualifiedName = null with get, set
     member val ExpectUnexpected = false with get, set
 
-type private ContentType =
-    | FileStorage of FileInfo
-    | Data of byte[]
-
-type public BinaryContent private (content: ContentType) =
-    member val ContentID = XRoadHelper.generateNonce() with get
-    member __.OpenStream() : Stream =
-        match content with
-        | FileStorage(file) -> upcast file.OpenRead()
-        | Data(data) -> upcast new MemoryStream(data)
-    member __.GetBytes() =
-        match content with
-        | FileStorage(file) -> File.ReadAllBytes(file.FullName)
-        | Data(data) -> data
-    static member Create(file) = BinaryContent(FileStorage(file))
-    static member Create(data) = BinaryContent(Data(data))
-
+[<AllowNullLiteral>]
 type SerializerContext() =
-    let attachments = Dictionary<string, Stream>()
+    let attachments = Dictionary<string, BinaryContent>()
     member val IsMultipart = false with get, set
     member val Attachments = attachments with get
     member this.AddAttachments(attachments: IDictionary<_,_>) =
