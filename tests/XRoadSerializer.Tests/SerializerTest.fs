@@ -442,23 +442,41 @@ type WithBinaryContent() =
     [<XRoadElement>]
     member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
 
-let [<Test>] ``serialize file`` () =
+let [<Test; Ignore>] ``serialize file`` () =
     let context = SerializerContext()
     let entity = WithBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
     let resultXml = entity |> serializeWithContext' context
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent href=""cid:Content-ID"" /></keha></wrapper>"
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 1
+    context.Attachments.ContainsKey("Content-ID") |> should equal true
+    let result = resultXml |> deserializeWithContext'<WithBinaryContent> context
+    result |> should not' (be Null)
+    context.Attachments |> should not' (be Null)
+    context.Attachments.Count |> should equal 1
+    context.Attachments.ContainsKey("Content-ID") |> should equal true
+    result.BinaryContent |> should not' (be Null)
+    result.BinaryContent.ContentID |> should equal "Content-ID"
+    result.BinaryContent |> should be (sameAs context.Attachments.["Content-ID"])
 
 [<XRoadType(LayoutKind.Sequence)>]
 type WithXopBinaryContent() =
     [<XRoadElement(UseXop=true)>]
     member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
 
-let [<Test>] ``serialize file with xop`` () =
+let [<Test; Ignore>] ``serialize file with xop`` () =
     let context = SerializerContext()
     let entity = WithXopBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
     let resultXml = entity |> serializeWithContext' context
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent><xop:Include href=""cid:Content-ID"" xmlns:xop=""http://www.w3.org/2004/08/xop/include"" /></BinaryContent></keha></wrapper>"
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 1
+    context.Attachments.ContainsKey("Content-ID") |> should equal true
+    let result = resultXml |> deserializeWithContext'<WithXopBinaryContent> context
+    result |> should not' (be Null)
+    context.Attachments |> should not' (be Null)
+    context.Attachments.Count |> should equal 1
+    context.Attachments.ContainsKey("Content-ID") |> should equal true
+    result.BinaryContent |> should not' (be Null)
+    result.BinaryContent.ContentID |> should equal "Content-ID"
+    result.BinaryContent |> should be (sameAs context.Attachments.["Content-ID"])
