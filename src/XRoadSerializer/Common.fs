@@ -68,8 +68,13 @@ type internal ContentType =
     | FileStorage of FileInfo
     | Data of byte[]
 
+type public ContentEncoding =
+    | Binary = 0
+    | Base64 = 1
+
 [<AllowNullLiteral>]
 type public BinaryContent internal (contentID: string, content: ContentType) =
+    member val ContentEncoding = ContentEncoding.Binary with get, set
     member __.ContentID
         with get() =
             match contentID with
@@ -128,3 +133,77 @@ type SerializerContext() =
         match attachments with
         | null -> ()
         | _ -> attachments |> Seq.iter (fun kvp -> this.Attachments.Add(kvp.Key, kvp.Value))
+    member __.GetAttachment(href: string) =
+        if href.StartsWith("cid:") then
+            let contentID = href.Substring(4)
+            match attachments.TryGetValue(contentID) with
+            | true, value -> value
+            | _ -> failwithf "Multipart message doesn't contain content part with ID `%s`." contentID
+        else failwithf "Invalid multipart content reference: `%s`." href
+
+[<AbstractClass; Sealed>]
+type BinaryContentHelper private () =
+    static member DeserializeBinaryContent(reader: XmlReader, context: SerializerContext) =
+        let nilValue = match reader.GetAttribute("nil", XmlNamespace.Xsi) with null -> "" | x -> x
+        match nilValue.ToLower() with
+        | "true" | "1" -> null
+        | _ ->
+            match reader.GetAttribute("href") with
+            | null ->
+                if reader.IsEmptyElement then BinaryContent.Create([| |])
+                else
+                    reader.Read() |> ignore
+                    let bufferSize = 4096
+                    let buffer = Array.zeroCreate<byte>(bufferSize)
+                    use stream = new MemoryStream()
+                    let rec readContents() =
+                        let readCount = reader.ReadContentAsBase64(buffer, 0, bufferSize)
+                        if readCount > 0 then stream.Write(buffer, 0, readCount)
+                        if readCount = bufferSize then readContents()
+                    readContents()
+                    stream.Flush()
+                    stream.Position <- 0L
+                    BinaryContent.Create(stream.ToArray())
+            | contentID -> context.GetAttachment(contentID)
+
+    static member DeserializeXopBinaryContent(reader: XmlReader, context: SerializerContext) =
+        let nilValue = match reader.GetAttribute("nil", XmlNamespace.Xsi) with null -> "" | x -> x
+        match nilValue.ToLower() with
+        | "true" | "1" -> null
+        | _ ->
+            if reader.IsEmptyElement then BinaryContent.Create([| |])
+            else
+                let depth = reader.Depth + 1
+                let rec moveToXopInclude () =
+                    if reader.Read() then
+                        if reader.NodeType = XmlNodeType.EndElement && reader.Depth < depth then false
+                        elif reader.NodeType <> XmlNodeType.Element || reader.Depth <> depth || reader.LocalName <> "Include" || reader.NamespaceURI <> XmlNamespace.Xop then moveToXopInclude()
+                        else true
+                    else false
+                if moveToXopInclude () then
+                    match reader.GetAttribute("href") with
+                    | null -> failwithf "Missing reference to multipart content in xop:Include element."
+                    | contentID -> context.GetAttachment(contentID)
+                else BinaryContent.Create([| |])
+
+    static member SerializeBinaryContent(writer: XmlWriter, value: obj, context: SerializerContext) =
+        match value with
+        | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
+        | _ ->
+            let content = unbox<BinaryContent> value
+            if context.IsMultipart then
+                context.Attachments.Add(content.ContentID, content)
+                writer.WriteAttributeString("href", sprintf "cid:%s" content.ContentID)
+            else
+                let bytes = (unbox<BinaryContent> value).GetBytes()
+                writer.WriteBase64(bytes, 0, bytes.Length)
+
+    static member SerializeXopBinaryContent(writer: XmlWriter, value: obj, context: SerializerContext) =
+        match value with
+        | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
+        | _ ->
+            writer.WriteStartElement("xop", "Include", XmlNamespace.Xop)
+            let content = unbox<BinaryContent> value
+            context.Attachments.Add(content.ContentID, content)
+            writer.WriteAttributeString("href", sprintf "cid:%s" content.ContentID)
+            writer.WriteEndElement()

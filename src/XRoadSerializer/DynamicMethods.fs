@@ -321,7 +321,7 @@ module EmitSerialization =
 
 module EmitDeserialization =
     /// Check if current element has `xsi:nil` attribute present.
-    let private emitNullCheck (il: ILGenerator) (markReturn: Label) =
+    let emitNullCheck (markReturn: Label) (il: ILGenerator) =
         let nilValue = il.DeclareLocal(typeof<string>)
 
         // Get attribute value into local variable, in case of null empty string is used.
@@ -507,7 +507,7 @@ module EmitDeserialization =
         let markReturn = il.DefineLabel()
 
         // When value nil attribute is present returns null.
-        emitNullCheck il markReturn
+        il |> emitNullCheck markReturn
 
         // Read type attribute value of current element.
         let typeName = typeMap |> emitTypeAttributeRead il
@@ -616,7 +616,7 @@ module EmitDeserialization =
         let markArrayNull = il.DefineLabel()
 
         if arrayMap.Element.IsSome then
-            emitNullCheck il markArrayNull
+            il |> emitNullCheck markArrayNull
             il.Emit(OpCodes.Ldloc, varDepth)
             il.Emit(OpCodes.Ldc_I4_1)
             il.Emit(OpCodes.Add)
@@ -1152,41 +1152,29 @@ let initBinaryContentSerialization useXop =
     let serializeRootMethod =
         let meth = DynamicMethod(sprintf "%s_Serialize" designType.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |])
         let il = meth.GetILGenerator()
-        let markReturn = il.DefineLabel()
-        il.Emit(OpCodes.Ldarg_1)
-        il |> EmitSerialization.emitNilAttribute markReturn
         if useXop then
             il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldstr, "xop")
-            il.Emit(OpCodes.Ldstr, "Include")
-            il.Emit(OpCodes.Ldstr, XmlNamespace.Xop)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "", "") @>)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, "href")
-        il.Emit(OpCodes.Ldstr, "cid:{0}")
-        il.Emit(OpCodes.Ldarg_1)
-        il.Emit(OpCodes.Castclass, typ)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: BinaryContent).ContentID @>)
-        il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteAttributeString("", "") @>)
-        if useXop then
+            il.Emit(OpCodes.Ldarg_1)
+            il.Emit(OpCodes.Ldarg_2)
+            il.Emit(OpCodes.Call, !@ <@ BinaryContentHelper.SerializeXopBinaryContent(null, null, null) @>)
+        else
             il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
-        il.Emit(OpCodes.Ldarg_2)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: SerializerContext).Attachments @>)
-        il.Emit(OpCodes.Ldarg_1)
-        il.Emit(OpCodes.Castclass, typ)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: BinaryContent).ContentID @>)
-        il.Emit(OpCodes.Ldarg_1)
-        il.Emit(OpCodes.Castclass, typ)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: Dictionary<string, BinaryContent>).Add("", (null: BinaryContent)) @>)
-        il.MarkLabel(markReturn)
+            il.Emit(OpCodes.Ldarg_1)
+            il.Emit(OpCodes.Ldarg_2)
+            il.Emit(OpCodes.Call, !@ <@ BinaryContentHelper.SerializeBinaryContent(null, null, null) @>)
         il.Emit(OpCodes.Ret)
         meth
     let deserializeRootMethod =
         let meth = DynamicMethod(sprintf "%s_Deserialize" designType.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
         let il = meth.GetILGenerator()
-        il.Emit(OpCodes.Ldnull)
+        if useXop then
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldarg_1)
+            il.Emit(OpCodes.Call, !@ <@ BinaryContentHelper.DeserializeXopBinaryContent(null, null) @>)
+        else
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Ldarg_1)
+            il.Emit(OpCodes.Call, !@ <@ BinaryContentHelper.DeserializeBinaryContent(null, null) @>)
         il.Emit(OpCodes.Ret)
         meth
     let deserialization = { Root = deserializeRootMethod; Content = null; MatchType = null }

@@ -442,8 +442,23 @@ type WithBinaryContent() =
     [<XRoadElement>]
     member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
 
-let [<Test; Ignore>] ``serialize file`` () =
+let [<Test>] ``serialize inline file`` () =
     let context = SerializerContext()
+    let entity = WithBinaryContent(BinaryContent=BinaryContent.Create([| 1uy; 2uy; 3uy; 4uy |]))
+    let resultXml = entity |> serializeWithContext' context
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent>AQIDBA==</BinaryContent></keha></wrapper>"
+    context.Attachments |> should not' (be Null)
+    context.Attachments.Count |> should equal 0
+    let result = resultXml |> deserializeWithContext'<WithBinaryContent> context
+    result |> should not' (be Null)
+    context.Attachments |> should not' (be Null)
+    context.Attachments.Count |> should equal 0
+    result.BinaryContent |> should not' (be Null)
+    result.BinaryContent.ContentID |> should not' (be Null)
+    result.BinaryContent.GetBytes() |> should equal [| 1uy; 2uy; 3uy; 4uy |]
+
+let [<Test>] ``serialize multipart file`` () =
+    let context = SerializerContext(IsMultipart=true)
     let entity = WithBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
     let resultXml = entity |> serializeWithContext' context
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent href=""cid:Content-ID"" /></keha></wrapper>"
@@ -458,13 +473,14 @@ let [<Test; Ignore>] ``serialize file`` () =
     result.BinaryContent |> should not' (be Null)
     result.BinaryContent.ContentID |> should equal "Content-ID"
     result.BinaryContent |> should be (sameAs context.Attachments.["Content-ID"])
+    result.BinaryContent.GetBytes() |> should equal [| 1uy; 2uy; 3uy; 4uy |]
 
 [<XRoadType(LayoutKind.Sequence)>]
 type WithXopBinaryContent() =
     [<XRoadElement(UseXop=true)>]
     member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
 
-let [<Test; Ignore>] ``serialize file with xop`` () =
+let [<Test>] ``serialize xop file`` () =
     let context = SerializerContext()
     let entity = WithXopBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
     let resultXml = entity |> serializeWithContext' context
@@ -480,3 +496,4 @@ let [<Test; Ignore>] ``serialize file with xop`` () =
     result.BinaryContent |> should not' (be Null)
     result.BinaryContent.ContentID |> should equal "Content-ID"
     result.BinaryContent |> should be (sameAs context.Attachments.["Content-ID"])
+    result.BinaryContent.GetBytes() |> should equal [| 1uy; 2uy; 3uy; 4uy |]
