@@ -431,7 +431,7 @@ module ServiceBuilder =
             let select = match protocol with Version20 -> fst | _ -> snd
             let select = headerMapping >> select
             protocol.Namespace, select >> fst3, select >> snd3
-        m |> Meth.addStmt (Stmt.declVarWith<string> "producer" ((Expr.this @-> "GetProducer") @% [Expr.this @=> propName "asutus"])) |> ignore
+        m |> Meth.addStmt (Stmt.declVarWith<string> "producer" ((Expr.this @-> "GetProducer") @% [Expr.this @=> propName "andmekogu"])) |> ignore
         let hdrExpr =
             [ yield (hdrName "asutus", Expr.this @=> (propName "asutus"))
               yield (hdrName "andmekogu", !+ "producer")

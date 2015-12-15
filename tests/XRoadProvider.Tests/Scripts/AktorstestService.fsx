@@ -18,6 +18,31 @@ port.ProducerUri <- "http://localhost:8001/"
 port.Consumer <- "10239452"
 port.UserId <- "EE:PIN:abc4567"
 
+(* Sample 1: changeAddress
+let request1 = AktorstestDto.changeAddress()
+request1.request <- AktorstestDto.changeAddress.requestType()
+request1.request.aadress <- AktorstestDto.aadress()
+request1.request.aadress.korteriNr <- 13I
+request1.request.aadress.linnvald <- "Tallinn"
+request1.request.aadress.maakond <- Aktorstest.DefinedTypes.xroad.maakond(BaseValue="Harju")
+request1.request.aadress.majaNr <- "25A"
+request1.request.aadress.tanav <- "Paldiski mnt."
+request1.request.isikukood <- "30101010001"
+
+let response1 = port.changeAddress(request1)
+printfn "%A" response1.response.faultCode
+printfn "%A" response1.response.faultString
+//*)
+
+//(* Sample 2: fileDownload
+let request2 = AktorstestDto.fileDownload()
+request2.request <- AktorstestDto.fileDownload.requestType()
+request2.request.fileName <- "document.pdf"
+
+let response2 = port.fileDownload(request2)
+response2.response.file
+//*)
+
 (*
 // File upload with multipart request
 
@@ -29,26 +54,6 @@ let fupr = port.fileUpload(fup)
 
 printfn "%s" fupr.response.faultCode.BaseValue
 printfn "%s" fupr.response.faultString.BaseValue
-//*)
-
-//(*
-// Change address service
-
-let cad = AktorstestDto.changeAddress()
-cad.request <- AktorstestDto.changeAddress.requestType()
-cad.request.aadress <- AktorstestDto.aadress()
-cad.request.aadress.korteriNr <- 13I
-cad.request.aadress.linnvald <- "Tallinn"
-cad.request.aadress.maakond <- Aktorstest.DefinedTypes.xroad.maakond(BaseValue="Harju")
-cad.request.aadress.majaNr <- "25A"
-cad.request.aadress.tanav <- "Paldiski mnt."
-cad.request.isikukood <- "30101010001"
-
-let cadr = port.changeAddress(cad)
-
-printfn "%A" cadr
-//printfn "%s" cadr.response.faultCode.BaseValue
-//printfn "%s" cadr.response.faultString.BaseValue
 //*)
 
 (*
