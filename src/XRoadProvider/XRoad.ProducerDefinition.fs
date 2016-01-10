@@ -489,7 +489,7 @@ module ServiceBuilder =
                 pw.Parameters
                 |> List.map (fun p ->
                     m |> addParameter context p
-                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name]; !+ p.Name.LocalName])
+                    Expr.inst<Tuple<XmlQualifiedName,obj>> [Expr.inst<XmlQualifiedName> [!^ p.Name.LocalName]; !+ p.Name.LocalName])
                 |> Arr.create<Tuple<XmlQualifiedName,obj>>
             m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") stmt)
         | RpcLiteralCall(acc,{ Parameters = [{ Type = Some(_) } as p] }) ->

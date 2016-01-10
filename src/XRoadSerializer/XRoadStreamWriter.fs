@@ -60,6 +60,31 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     let serializeMessage (content: Stream) (attachments: Dictionary<string,BinaryContent>) =
         serializeMultipartMessage attachments (fun s -> writeContent s content)
 
+    let (|XteeName|_|) (name: XmlQualifiedName) =
+        match name.Namespace with
+        | XmlNamespace.Xtee -> Some name.Name
+        | _ -> None
+
+    let getHeaderElementType = function
+        | XteeName "asutus"
+        | XteeName "andmekogu"
+        | XteeName "isikukood"
+        | XteeName "ametnik"
+        | XteeName "id"
+        | XteeName "nimi"
+        | XteeName "toimik"
+        | XteeName "allasutus"
+        | XteeName "amet"
+        | XteeName "autentija"
+        | XteeName "makstud"
+        | XteeName "salastada"
+        | XteeName "salastatud"
+        | XteeName "salastatud_sertifikaadiga"
+        | XteeName "ametniknimi" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
+        | XteeName "asynkroonne" -> Some(XmlQualifiedName("boolean", XmlNamespace.Xsd))
+        | XteeName "salastada_sertifikaadiga" -> Some(XmlQualifiedName("base64", XmlNamespace.Xsd))
+        | _ -> None
+
     member __.SendMessage(msg: XRoadMessage) =
         use content = new MemoryStream()
         use sw = new StreamWriter(content)
@@ -71,16 +96,24 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, protocolNamespace opt.Protocol)
         msg.Body
         |> Array.map (fun (nm,_) -> nm.Namespace)
-        |> Set.ofArray
+        |> Seq.filter (fun ns -> not <| String.IsNullOrWhiteSpace(ns))
         |> Seq.iteri (fun i ns -> writer.WriteAttributeString("xmlns", sprintf "ns%d" i, XmlNamespace.Xmlns, ns))
         match opt.Accessor with | null -> () | acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace)
         if opt.IsEncoded then
+            writer.WriteAttributeString("xmlns", "xsd", XmlNamespace.Xmlns, XmlNamespace.Xsd)
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
         msg.Header
         |> Array.iter (fun hdr ->
             if hdr.IsRequired || hdr.Value <> null then
                 writer.WriteStartElement(hdr.Name.Name, hdr.Name.Namespace)
+                if opt.IsEncoded then
+                    hdr.Name
+                    |> getHeaderElementType
+                    |> Option.iter (fun nm ->
+                        writer.WriteStartAttribute("type", XmlNamespace.Xsi)
+                        writer.WriteQualifiedName(nm.Name, nm.Namespace)
+                        writer.WriteEndAttribute())
                 if not (hdr.Value |> isNull) then
                     writer.WriteValue(hdr.Value)
                 elif hdr.Name.Name = "id" && (hdr.Name.Namespace = XmlNamespace.XRoad || hdr.Name.Namespace = XmlNamespace.Xtee) then
@@ -106,7 +139,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             serializeAccessor (fun _ ->
                 msg.Body
                 |> Array.iteri (fun i (name,value) ->
-                    Serializer().Serialize(writer, opt.Types.[i], value, (if isNull name then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name), context))))
+                    Serializer(opt.IsEncoded).Serialize(writer, opt.Types.[i], value, (if isNull name then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name), context))))
 
         writer.WriteEndDocument()
         writer.Flush()

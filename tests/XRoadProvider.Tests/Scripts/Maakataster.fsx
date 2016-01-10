@@ -25,6 +25,13 @@ service.ProducerUri <- "http://localhost:8001/"
 printfn "%s" service.ProducerUri
 printfn "%s" service.ProducerName
 
-let a = service.ky(Maakataster.DefinedTypes.maakataster.ky_paring())
+(*
+let req_a = Maakataster.DefinedTypes.maakataster.ky_paring()
+req_a.katastritunnus <- "katastritunnus"
+req_a.ky_max <- Maakataster.DefinedTypes.maakataster.t_ky_max(BaseValue="10")
+
+let resp_a = service.ky(req_a)
+//*)
+
 let b = service.legacy1([| "array"; "of"; "strings" |])
 let c = service.uploadMime(Maakataster.DefinedTypes.maakataster.mime_paring())

@@ -152,7 +152,7 @@ module TestType =
         member val Array = Unchecked.defaultof<bool[]> with get, set
 
 let serializeWithContext<'T> qn (nslist: (string * string) list) (context: SerializerContext) value =
-    let serializer = Serializer()
+    let serializer = Serializer(false)
     use stream = new MemoryStream()
     use sw = new StreamWriter(stream, Encoding.UTF8)
     use writer = XmlWriter.Create(sw)
@@ -173,7 +173,7 @@ let serialize' v = serializeWithContext (XmlQualifiedName("keha")) [] (Serialize
 let serializeWithContext' context v = serializeWithContext (XmlQualifiedName("keha")) [] context v
 
 let deserializeWithContext<'T> (rootName: XmlQualifiedName) (context: SerializerContext) xml : 'T =
-    let serializer = Serializer()
+    let serializer = Serializer(false)
     use sr = new StringReader(xml)
     use reader = XmlReader.Create(sr)
     let rec moveToRoot () =
@@ -194,7 +194,7 @@ let simpleTypeEntity =
     entity
 
 let [<Test>] ``initializes new serializer`` () =
-    Serializer() |> should not' (equal null)
+    Serializer(false) |> should not' (equal null)
 
 let [<Test>] ``can serialize simple value`` () =
     let resultXml = simpleTypeEntity |> serialize'

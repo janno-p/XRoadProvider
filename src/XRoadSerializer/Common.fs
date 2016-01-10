@@ -64,6 +64,18 @@ module XRoadHelper =
         RNGCryptoServiceProvider.Create().GetNonZeroBytes(nonce)
         Convert.ToBase64String(nonce)
 
+    let getSystemTypeName = function
+        | "System.String" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
+        | "System.Boolean" -> Some(XmlQualifiedName("boolean", XmlNamespace.Xsd))
+        | "System.DateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
+        | "System.Decimal" -> Some(XmlQualifiedName("decimal", XmlNamespace.Xsd))
+        | "System.Double" -> Some(XmlQualifiedName("double", XmlNamespace.Xsd))
+        | "System.Float" -> Some(XmlQualifiedName("float", XmlNamespace.Xsd))
+        | "System.Int32" -> Some(XmlQualifiedName("int", XmlNamespace.Xsd))
+        | "System.Numerics.BigInteger" -> Some(XmlQualifiedName("integer", XmlNamespace.Xsd))
+        | "System.Int64" -> Some(XmlQualifiedName("long", XmlNamespace.Xsd))
+        | _ -> None
+
 type internal ContentType =
     | FileStorage of FileInfo
     | Data of byte[]

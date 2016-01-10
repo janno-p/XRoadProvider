@@ -192,7 +192,7 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
             ()
         let context = SerializerContext()
         context.AddAttachments(message.Attachments)
-        let serializer = Serializer()
+        let serializer = Serializer(options.IsEncoded)
         let rec findElements (parameters: List<_>) =
             if reader.Depth = 2 && reader.NodeType = XmlNodeType.Element then
                 match reader.LocalName, reader.NamespaceURI with

@@ -5,7 +5,7 @@ open System.Xml
 open XRoad.Attributes
 open XRoad.DynamicMethods
 
-type Serializer() as this =
+type Serializer(isEncoded) as this =
     let rec skipRoot (depth: int) (reader: XmlReader) =
         if reader.Read() && reader.Depth > depth then
             if reader.NodeType = XmlNodeType.Element && reader.Depth = (depth + 1) then true
@@ -32,11 +32,11 @@ type Serializer() as this =
         match reader.GetAttribute("nil", XmlNamespace.Xsi) |> Option.ofObj |> Option.map (fun x -> x.ToLower()) with
         | Some("true") | Some("1") -> None
         | _ ->
-            let typeMap = getTypeMap typ
+            let typeMap = typ |> getTypeMap isEncoded
             if typeMap.Layout = Some(LayoutKind.Choice) && not (skipRoot reader.Depth reader) then None
             else Some(typeMap.Deserialize(reader, context))
 
     member private __.SerializeObject(writer: XmlWriter, typ, value, context) =
         match value with
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
-        | _ -> (getTypeMap typ).Serialize(writer, value, context) |> ignore
+        | _ -> (typ |> getTypeMap isEncoded).Serialize(writer, value, context) |> ignore
