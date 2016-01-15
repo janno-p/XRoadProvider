@@ -21,7 +21,9 @@ NUGET
       Microsoft.Bcl.Build (>= 1.0.14)
     NuGet.CommandLine (3.3.0)
     NUnit (2.6.4)
-    NUnit.Runners (2.6.4)
+    NUnit.Console (3.0.1)
+    NUnit.Runners (3.0.1)
+      NUnit.Console (3.0.1)
     Octokit (0.17.0)
       Microsoft.Net.Http
     SourceLink.Fake (1.1.0)

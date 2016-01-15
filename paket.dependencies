@@ -2,12 +2,12 @@ source https://nuget.org/api/v2
 framework: net45
 
 nuget FAKE
-nuget FSharp.Core = 3.1.2.5
+nuget FSharp.Core < 4.0.0.0
 nuget FSharp.Formatting
 nuget FsUnit
 nuget NuGet.CommandLine
 nuget NUnit 
-nuget NUnit.Runners < 3.0.0
+nuget NUnit.Runners
 nuget SourceLink.Fake
 nuget Unquote
 

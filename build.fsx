@@ -7,6 +7,7 @@ open Fake
 open Fake.Git
 open Fake.AssemblyInfoFile
 open Fake.ReleaseNotesHelper
+open Fake.Testing.NUnit3
 open System
 open System.IO
 #if MONO
@@ -108,6 +109,12 @@ Target "CleanDocs" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Build library & test project
 
+Target "BuildDebug" (fun _ ->
+    !! solutionFile
+    |> MSBuildDebug "" "Rebuild"
+    |> ignore
+)
+
 Target "Build" (fun _ ->
     !! solutionFile
     |> MSBuildRelease "" "Rebuild"
@@ -119,11 +126,10 @@ Target "Build" (fun _ ->
 
 Target "RunTests" (fun _ ->
     !! testAssemblies
-    |> NUnit (fun p ->
+    |> NUnit3 (fun p ->
         { p with
-            DisableShadowCopy = true
             TimeOut = TimeSpan.FromMinutes 20.
-            OutputFile = "TestResults.xml" })
+            ResultSpecs = [ "TestResults.xml" ] })
 )
 
 #if MONO
@@ -311,9 +317,10 @@ Target "All" DoNothing
 
 "Clean"
   ==> "AssemblyInfo"
+  ==> "BuildDebug"
+  ==> "RunTests"
   ==> "Build"
   ==> "CopyBinaries"
-  ==> "RunTests"
   ==> "GenerateReferenceDocs"
   ==> "GenerateDocs"
   ==> "All"
