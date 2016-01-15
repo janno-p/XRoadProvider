@@ -99,7 +99,7 @@ type Property =
         with get() =
             match this with
             | Individual(x) -> x.SimpleTypeName
-            | Array(x) -> Some(XmlQualifiedName("Array", XmlNamespace.SoapEnc))
+            | Array(_) -> Some(XmlQualifiedName("Array", XmlNamespace.SoapEnc))
 
 type private XopBinaryContent() =
     inherit BinaryContent("", Data [| |])

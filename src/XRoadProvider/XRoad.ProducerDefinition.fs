@@ -507,17 +507,17 @@ module ServiceBuilder =
 
     let getResponseSpec (context: TypeBuilderContext) methodCall =
         match methodCall with
-        | DocEncodedCall(encodingNamespace, wrapper) ->
+        | DocEncodedCall(_) ->
             ((None: System.Xml.Linq.XName option), [])
-        | DocLiteralCall({ Parameters = [{ Type = Some(_) } as parameter] }) ->
+        | DocLiteralCall({ Parameters = [{ Type = Some(_) }] }) ->
             (None, [])
         | DocLiteralCall(wrapper) ->
             (None, wrapper.Parameters |> List.map (fun parameter -> (parameter.Name, context.GetRuntimeType(SchemaElement(parameter.Name)))))
-        | RpcEncodedCall(accessorName, wrapper) ->
+        | RpcEncodedCall(_) ->
             (None, [])
-        | RpcLiteralCall(accessorName, { Parameters = [{ Type = Some(_) } as parameter] }) ->
+        | RpcLiteralCall(_, { Parameters = [{ Type = Some(_) }] }) ->
             (None, [])
-        | RpcLiteralCall(accessorName, wrapper) ->
+        | RpcLiteralCall(_) ->
             (None, [])
 
     let createTuple (parameters: (System.Xml.Linq.XName * RuntimeType) list) m =
