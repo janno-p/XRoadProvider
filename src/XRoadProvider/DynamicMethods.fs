@@ -9,7 +9,7 @@ open System.Reflection
 open System.Reflection.Emit
 open System.Xml
 open XRoad
-open XRoad.Attributes
+open XRoad.Serialization.Attributes
 
 type DeserializerDelegate = delegate of XmlReader * SerializerContext -> obj
 type SerializerDelegate = delegate of XmlWriter * obj * SerializerContext -> unit

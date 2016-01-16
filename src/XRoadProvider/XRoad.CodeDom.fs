@@ -59,7 +59,7 @@ module Attributes =
     open System.Xml.Linq
     open System.Xml.Schema
     open System.Xml.Serialization
-    open XRoad.Attributes
+    open XRoad.Serialization.Attributes
 
     let private addUnqualifiedForm a = a |> Attr.addNamedArg "Form" (Expr.enumValue<XmlSchemaForm> "Unqualified")
 

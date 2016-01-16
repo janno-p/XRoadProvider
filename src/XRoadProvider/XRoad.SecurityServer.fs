@@ -30,7 +30,7 @@ let discoverProducers serverIP =
             writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnv)
 
             writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
-            writer.WriteStartElement("listProducers", XmlNamespace.XRoad)
+            writer.WriteStartElement("listProducers", XmlNamespace.XRoad31Ee)
             writer.WriteEndElement()
             writer.WriteEndElement()
 
@@ -46,7 +46,7 @@ let discoverProducers serverIP =
     // Locate response message main part in XDocument object.
     let envelope = doc.Elements(xnsname "Envelope" XmlNamespace.SoapEnv) |> Seq.exactlyOne
     let body = envelope.Elements(xnsname "Body" XmlNamespace.SoapEnv) |> Seq.exactlyOne
-    let message = body.Elements(xnsname "listProducersResponse" XmlNamespace.XRoad) |> Seq.exactlyOne
+    let message = body.Elements(xnsname "listProducersResponse" XmlNamespace.XRoad31Ee) |> Seq.exactlyOne
     let response = message.Elements(xname "response")
 
     // Parse all producer elements from XDocument object

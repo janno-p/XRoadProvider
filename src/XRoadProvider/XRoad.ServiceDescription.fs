@@ -293,8 +293,8 @@ let private parsePortBinding languageCode definitions element =
         | null -> ""
         | e -> e |> reqAttr (xname "location")
     // Extract producer name for given port from X-Road extension.
-    let current = element %! xnsname "address" XmlNamespace.XRoad
-    let legacy = element %! xnsname "address" XmlNamespace.Xtee
+    let current = element %! xnsname "address" XmlNamespace.XRoad31Ee
+    let legacy = element %! xnsname "address" XmlNamespace.XRoad20
     // Build port binding object if available.
     match current, legacy with
     | null, null -> None

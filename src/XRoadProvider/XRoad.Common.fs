@@ -42,13 +42,13 @@ module Pattern =
     /// Matches names defined in `http://x-road.ee/xsd/x-road.xsd` namespace.
     let (|XrdName|_|) (name: XName) =
         match name.NamespaceName with
-        | XmlNamespace.XRoad -> Some name.LocalName
+        | XmlNamespace.XRoad31Ee -> Some name.LocalName
         | _ -> None
 
     /// Matches names defined in `http://x-tee.riik.ee/xsd/xtee.xsd` namespace.
     let (|XteeName|_|) (name: XName) =
         match name.NamespaceName with
-        | XmlNamespace.Xtee -> Some name.LocalName
+        | XmlNamespace.XRoad20 -> Some name.LocalName
         | _ -> None
 
     /// Matches names defined in `http://schemas.xmlsoap.org/soap/encoding/` namespace.
@@ -265,16 +265,16 @@ module CodeSpec =
         /// Returns namespace value for the protocol version.
         member this.Namespace =
             match this with
-            | Version20 -> XmlNamespace.Xtee
-            | Version30 -> XmlNamespace.Xrd
-            | Version31 -> XmlNamespace.XRoad
+            | Version20 -> XmlNamespace.XRoad20
+            | Version30 -> XmlNamespace.XRoad30
+            | Version31 -> XmlNamespace.XRoad31Ee
             | Version40 -> "X-Road protocol version 4.0 is not implemented."
         /// Extracts X-Road protocol version from namespace that is used.
         static member FromNamespace(ns) =
             match ns with
-            | XmlNamespace.Xtee -> Version20
-            | XmlNamespace.Xrd -> Version30
-            | XmlNamespace.XRoad -> Version31
+            | XmlNamespace.XRoad20 -> Version20
+            | XmlNamespace.XRoad30 -> Version30
+            | XmlNamespace.XRoad31Ee -> Version31
             | _ -> failwithf "Unexpected X-Road namespace value `%s`." ns
 
     /// WSDL and SOAP binding style.

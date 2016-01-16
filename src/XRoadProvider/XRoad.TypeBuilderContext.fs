@@ -6,7 +6,7 @@ open System.Collections.Generic
 open System.Reflection
 open System.Text.RegularExpressions
 open System.Xml.Linq
-open XRoad.Attributes
+open XRoad.Serialization.Attributes
 open XRoad.CodeDom
 open XRoad.Common
 open XRoad.TypeSchema
@@ -128,8 +128,8 @@ type internal TypeBuilderContext =
                 let producerName =
                     match nsname.NamespaceName with
                     | Producer(producerName) -> producerName
-                    | XmlNamespace.Xtee -> "xtee"
-                    | XmlNamespace.XRoad -> "xroad"
+                    | XmlNamespace.XRoad20 -> "xtee"
+                    | XmlNamespace.XRoad31Ee -> "xroad"
                     | ns -> ns.toClassName()
                 let typ = Cls.create(producerName) |> Cls.addAttr TypeAttributes.Public
                 this.CachedNamespaces.Add(nsname, typ)

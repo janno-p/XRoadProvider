@@ -13,6 +13,8 @@ type LayoutKind =
 
 /// Attribute which identifies serializable type.
 /// Provides overrides for content layout, type name and namespace.
+[<AllowNullLiteral>]
+[<System.AttributeUsage(System.AttributeTargets.Class)>]
 type XRoadTypeAttribute =
     inherit System.Attribute
     /// Initializes new attribute by giving type name and content layout.
@@ -30,6 +32,8 @@ type XRoadTypeAttribute =
 
 /// Attribute which identifies serializable property.
 /// Provides overrides for property serialization.
+[<AllowNullLiteral>]
+[<System.AttributeUsage(System.AttributeTargets.Property)>]
 type XRoadElementAttribute =
     inherit System.Attribute
     /// Initializes new attribute by giving element name for serialization.
@@ -55,6 +59,8 @@ type XRoadElementAttribute =
 
 /// Identifies each individual option for choice type element.
 /// Each option should have its unique id and display name.
+[<AllowNullLiteral>]
+[<System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true)>]
 type XRoadChoiceOptionAttribute =
     inherit System.Attribute
     /// Initializes new attribute with unique id for current choice option
@@ -69,6 +75,8 @@ type XRoadChoiceOptionAttribute =
     member MergeContent: bool with get, set
 
 /// Provides serialization option for various collection types.
+[<AllowNullLiteral>]
+[<System.AttributeUsage(System.AttributeTargets.Property)>]
 type XRoadCollectionAttribute =
     inherit System.Attribute
     /// Initializes new attribute with item element name.

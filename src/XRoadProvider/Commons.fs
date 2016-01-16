@@ -7,7 +7,7 @@ open System.Security.Cryptography
 open System.Xml
 
 [<RequireQualifiedAccessAttribute>]
-module XmlNamespace =
+module internal XmlNamespace =
     let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
     let [<Literal>] Mime = "http://schemas.xmlsoap.org/wsdl/mime/"
     let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
@@ -18,17 +18,22 @@ module XmlNamespace =
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
     let [<Literal>] Xmlns = "http://www.w3.org/2000/xmlns/";
     let [<Literal>] Xop = "http://www.w3.org/2004/08/xop/include"
-    let [<Literal>] Xrd = "http://x-rd.net/xsd/xroad.xsd"
-    let [<Literal>] XRoad = "http://x-road.ee/xsd/x-road.xsd"
+    let [<Literal>] XRoad20 = "http://x-tee.riik.ee/xsd/xtee.xsd"
+    let [<Literal>] XRoad30 = "http://x-rd.net/xsd/xroad.xsd"
+    let [<Literal>] XRoad31Ee = "http://x-road.ee/xsd/x-road.xsd"
+    let [<Literal>] XRoad31Eu = "http://x-road.eu/xsd/x-road.xsd"
+    let [<Literal>] XRoad40 = "http://x-road.eu/xsd/xroad.xsd"
+    let [<Literal>] XRoad40Id = "http://x-road.eu/xsd/identifiers"
+    let [<Literal>] XRoad40Repr = "http://xroad.eu/xsd/representation.xsd"
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
-    let [<Literal>] Xtee = "http://x-tee.riik.ee/xsd/xtee.xsd"
 
 type XRoadProtocol =
-    | Version20 = 0
-    | Version30 = 1
-    | Version31 = 2
-    | Version40 = 3
+    | Undefined = 0
+    | Version20 = 1
+    | Version30 = 2
+    | Version31 = 3
+    | Version40 = 4
 
 [<AutoOpen>]
 module internal Option =
@@ -39,7 +44,7 @@ module internal List =
     let tryHead lst = match lst with [] -> None | x::_ -> Some(x)
 
 [<AutoOpen>]
-module Common =
+module Commons =
     let isNull o = (o = null)
 
 [<AutoOpen>]
@@ -52,9 +57,9 @@ module private XRoadProtocolExtensions =
         | x -> failwithf "Invalid XRoadProtocol value `%A`" x
 
     let protocolNamespace = function
-        | XRoadProtocol.Version20 -> XmlNamespace.Xtee
-        | XRoadProtocol.Version30 -> XmlNamespace.Xrd
-        | XRoadProtocol.Version31 -> XmlNamespace.XRoad
+        | XRoadProtocol.Version20 -> XmlNamespace.XRoad20
+        | XRoadProtocol.Version30 -> XmlNamespace.XRoad30
+        | XRoadProtocol.Version31 -> XmlNamespace.XRoad31Ee
         | XRoadProtocol.Version40 -> failwith "Not implemented v4.0"
         | x -> failwithf "Invalid XRoadProtocol value `%A`" x
 

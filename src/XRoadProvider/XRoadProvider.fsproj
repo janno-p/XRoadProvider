@@ -57,6 +57,9 @@
     <Compile Include="AssemblyInfo.Build.fs" />
     <Compile Include="Attributes.fsi" />
     <Compile Include="Attributes.fs" />
+    <Compile Include="Commons.fs" />
+    <Compile Include="DynamicMethods.fs" />
+    <Compile Include="Serialization.fs" />
     <Compile Include="XRoad.Common.fs" />
     <Compile Include="XRoad.ServiceDescription.fs" />
     <Compile Include="XRoad.TypeSchema.fs" />
@@ -68,13 +71,6 @@
     <Compile Include="XRoad.Providers.fs" />
     <None Include="paket.references" />
     <None Include="paket.template" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\XRoadSerializer\XRoadSerializer.fsproj">
-      <Name>XRoadSerializer</Name>
-      <Project>{3fb2085e-23d4-45f4-b04b-1cec3405525e}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

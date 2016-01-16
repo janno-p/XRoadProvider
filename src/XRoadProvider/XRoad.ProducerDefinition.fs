@@ -6,7 +6,7 @@ open System.Collections.Generic
 open System.IO
 open System.Reflection
 open System.Xml
-open XRoad.Attributes
+open XRoad.Serialization.Attributes
 open XRoad.CodeDom
 open XRoad.Common
 open XRoad.TypeSchema

@@ -8,7 +8,7 @@ open System.Runtime.InteropServices
 open System.Text
 open System.Xml
 open XRoad
-open XRoad.Attributes
+open XRoad.Serialization.Attributes
 
 module TestType =
     type UnserializableType() =
