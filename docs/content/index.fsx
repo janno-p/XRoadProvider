@@ -1,7 +1,7 @@
 (*** hide ***)
 // This block of code is omitted in the generated HTML documentation. Use 
 // it to define helpers that you do not want to show in the documentation.
-#I "../../src/XRoadProvider/bin/Debug/"
+#I "../../bin/XRoadProvider"
 
 (**
 XRoadProvider
@@ -35,12 +35,13 @@ This example demonstrates the use of the XRoadProvider:
 *)
 // Reference the type provider assembly.
 #r "XRoadProvider.dll"
-#r "XRoadSerializer.dll"
 
 open XRoad
 open XRoad.Providers
 
-type Maakataster = XRoadProducer< @"C:\Work\Thesis\producers\Maakataster.wsdl">
+let [<Literal>] maakatasterPath = @"E:\Projects\XRoadProvider\tests\XRoadProvider.Tests\Wsdl\Maakataster.wsdl.xml"
+
+type Maakataster = XRoadProducer<maakatasterPath>
 
 // Initialize service interface which provides access to operation methods.
 let myport = new Maakataster.myservice.myport()
@@ -58,7 +59,7 @@ request.katastritunnus <- "test"
 request.ky_max <- new Maakataster.DefinedTypes.maakataster.t_ky_max(BaseValue="001")
 
 // Execute service request against specified adapter.
-let _,response = myport.ky(request)
+let response = myport.ky(request)
 
 // Display results to console.
 response |> Array.iteri (printfn "%d) %A")
@@ -78,18 +79,21 @@ to X-Road specification.
 Usage example of `BinaryContent` type:
 
 *)
-type Aktorstest = XRoadProducer< @"C:\Work\Thesis\producers\Aktorstest.wsdl">
+let [<Literal>] aktorsPath = @"E:\Projects\XRoadProvider\tests\XRoadProvider.Tests\Wsdl\AktorstestService.wsdl.xml"
+
+type Aktorstest = XRoadProducer<aktorsPath>
 
 let service = Aktorstest.aktorstestService.Test()
 
-let content = new System.IO.MemoryStream([| 0uy; 1uy; 2uy; 3uy |])
-
 let request = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM()
 request.request <- Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM.requestType()
-request.request.filemtom <- BinaryContent(content)
+request.request.filemtom <- BinaryContent.Create([| 0uy; 1uy; 2uy; 3uy |])
 request.request.fileName <- "file.bin"
 
 let response = service.fileUploadMTOM(request)
+
+printfn "%s" response.response.faultCode.BaseValue
+printfn "%s" response.response.faultString.BaseValue
 
 (**
 
@@ -107,9 +111,9 @@ Example use of `XRoadServer` type provider:
 type SecurityServer = XRoadServer<"xxx.xxx.xx.xxx">
 
 // Initialize service interface for specific producer using details from security server.
-type Maakataster = XRoadProducer<SecurityServer.Producers.adsv5.WsdlUri>
+type Adsv5 = XRoadProducer<SecurityServer.Producers.adsv5.WsdlUri>
 
-let service = Maakataster.myservice.myport()
+let service = Adsv5.myservice.myport()
 
 // Use default security server end-point since WSDL has usually invalid value.
 service.ProducerUri <- SecurityServer.RequestUri
