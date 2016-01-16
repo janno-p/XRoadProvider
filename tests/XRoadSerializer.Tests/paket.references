@@ -1,4 +1,6 @@
-﻿FSharp.Core
-FsUnit
-NUnit 
-Unquote
+﻿group Test
+    FSharp.Core
+    FsUnit
+    NUnit
+    NUnit.Runners
+    Unquote

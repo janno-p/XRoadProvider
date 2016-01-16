@@ -1,16 +1,25 @@
 source https://nuget.org/api/v2
 framework: net45
 
-nuget FAKE
 nuget FSharp.Core < 4.0.0.0
-nuget FSharp.Formatting
-nuget FsUnit
-nuget NuGet.CommandLine
-nuget NUnit 
-nuget NUnit.Runners
-nuget SourceLink.Fake
-nuget Unquote
 
-github fsharp/FAKE modules/Octokit/Octokit.fsx
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi
+
+group Build
+    source https://nuget.org/api/v2
+
+    nuget FAKE
+    nuget FSharp.Formatting    
+    nuget SourceLink.Fake
+    
+    github fsharp/FAKE modules/Octokit/Octokit.fsx
+    
+group Test
+    source https://nuget.org/api/v2
+
+    nuget FSharp.Core >= 4.0.0.0
+    nuget FsUnit
+    nuget NUnit 
+    nuget NUnit.Runners
+    nuget Unquote

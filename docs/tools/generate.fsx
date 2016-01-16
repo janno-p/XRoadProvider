@@ -18,7 +18,7 @@ let githubLink = "http://github.com/janno-p/XRoadProvider"
 // Specify more information about your project
 let info =
   [ "project-name", "XRoadProvider"
-    "project-author", "Janno PÃµldma"
+    "project-author", "Janno Põldma"
     "project-summary", "Type providers for generating types and service interfaces for XRoad producers."
     "project-github", githubLink
     "project-nuget", "http://nuget.org/packages/XRoadProvider" ]
@@ -27,9 +27,8 @@ let info =
 // For typical project, no changes are needed below
 // --------------------------------------------------------------------------------------
 
-#I "../../packages/FAKE/tools/"
-#load "../../packages/FSharp.Formatting/FSharp.Formatting.fsx"
-#r "NuGet.Core.dll"
+#load "../../packages/build/FSharp.Formatting/FSharp.Formatting.fsx"
+#I "../../packages/build/FAKE/tools/"
 #r "FakeLib.dll"
 open Fake
 open System.IO
@@ -51,7 +50,7 @@ let content    = __SOURCE_DIRECTORY__ @@ "../content"
 let output     = __SOURCE_DIRECTORY__ @@ "../output"
 let files      = __SOURCE_DIRECTORY__ @@ "../files"
 let templates  = __SOURCE_DIRECTORY__ @@ "templates"
-let formatting = __SOURCE_DIRECTORY__ @@ "../../packages/FSharp.Formatting/"
+let formatting = __SOURCE_DIRECTORY__ @@ "../../packages/build/FSharp.Formatting/"
 let docTemplate = "docpage.cshtml"
 
 // Where to look for *.csproj templates (in this order)

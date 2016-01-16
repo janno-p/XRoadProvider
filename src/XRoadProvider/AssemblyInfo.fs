@@ -7,12 +7,12 @@ open System.Runtime.CompilerServices
 open Microsoft.FSharp.Core.CompilerServices
 #endif
 
-[<assembly: AssemblyTitleAttribute("XRoadProvider")>]
-[<assembly: AssemblyProductAttribute("XRoadProvider")>]
-[<assembly: AssemblyDescriptionAttribute("Type providers for generating types and service interfaces for XRoad producers.")>]
+[<assembly: AssemblyTitle("XRoadProvider")>]
+[<assembly: AssemblyProduct("XRoadProvider")>]
+[<assembly: AssemblyDescription("Type providers for generating types and service interfaces for XRoad producers.")>]
 
 #if DEBUG
-[<assembly: InternalsVisibleToAttribute("XRoadProvider.Tests")>]
+[<assembly: InternalsVisibleTo("XRoadProvider.Tests")>]
 #else
 [<assembly: TypeProviderAssemblyAttribute>]
 #endif
