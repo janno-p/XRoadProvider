@@ -10,7 +10,6 @@ open Fake.ReleaseNotesHelper
 open Fake.Testing.NUnit3
 open Fake.UserInputHelper
 open System
-open System.IO
 #if MONO
 #else
 #load "packages/build/SourceLink.Fake/tools/Fake.fsx"
@@ -79,13 +78,6 @@ let (|Fsproj|Csproj|Vbproj|Shproj|) (projFileName:string) =
     | _                           -> failwith (sprintf "Project file %s not supported. Unknown project type." projFileName)
 
 // Generate assembly info files with the right version & up-to-date information
-Target "ProductInfo" (fun _ ->
-    CreateFSharpAssemblyInfo ("src" @@ "ProductInfo.fs") [
-        Attribute.Version release.AssemblyVersion
-        Attribute.FileVersion release.AssemblyVersion
-    ]
-)
-
 Target "AssemblyInfo" (fun _ ->
     let getAssemblyInfoAttributes projectName =
         [ Attribute.Title (projectName)
@@ -104,7 +96,7 @@ Target "AssemblyInfo" (fun _ ->
 
     !! "src/**/*.??proj"
     |> Seq.map getProjectDetails
-    |> Seq.iter (fun (projFileName, projectName, folderName, attributes) ->
+    |> Seq.iter (fun (projFileName, _, folderName, attributes) ->
         match projFileName with
         | Fsproj -> CreateFSharpAssemblyInfo (folderName </> "AssemblyInfo.fs") attributes
         | Csproj -> CreateCSharpAssemblyInfo ((folderName </> "Properties") </> "AssemblyInfo.cs") attributes
@@ -251,7 +243,7 @@ let generateHelp' fail debug =
         buildDocumentationTarget args "Default"
         traceImportant "Help generated"
     with
-    | e when not fail ->
+    | _ when not fail ->
         traceImportant "generating help documentation failed"
 
 let generateHelp fail =
@@ -282,7 +274,7 @@ Target "GenerateHelpDebug" (fun _ ->
 )
 
 Target "KeepRunning" (fun _ ->
-    use watcher = !! "docs/content/**/*.*" |> WatchChanges (fun changes ->
+    use watcher = !! "docs/content/**/*.*" |> WatchChanges (fun _ ->
          generateHelp' true true
     )
 
@@ -390,7 +382,7 @@ Target "BuildPackage" DoNothing
 Target "All" DoNothing
 
 "Clean"
-  ==> "ProductInfo"
+  ==> "AssemblyInfo"
   ==> "BuildDebug"
   ==> "RunTests"
   ==> "Build"
