@@ -132,7 +132,7 @@ Target "CleanDocs" (fun _ ->
 Target "BuildDebug" (fun _ ->
     !! solutionFile
 #if MONO
-    |> MSBuildDebugExt "" [ ("DefineConstants", "MONO") ] "Rebuild"
+    |> MSBuild "" "Rebuild" [ ("Configuration", Debug"); ("DefineConstants", "MONO") ]
 #else
     |> MSBuildDebug "" "Rebuild"
 #endif
