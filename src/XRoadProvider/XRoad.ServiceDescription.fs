@@ -1,7 +1,7 @@
 ﻿module internal XRoad.ServiceDescription
 
 open System.Xml.Linq
-open XRoad.Common
+open XRoad.Wsdl
 
 /// Temporary type for SOAP:body binding elements.
 type private SoapBody =
@@ -23,7 +23,7 @@ type private MimeContent =
 
 /// Parse X-Road title elements for various languages.
 let private readLanguages languageCode (protocol: XRoadProtocol) (element: XElement) =
-    element.Elements(xnsname "title" protocol.Namespace)
+    element.Elements(xnsname "title" (protocolNamespace protocol))
     |> Seq.fold (fun doc el ->
         let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) "et"
         (lang, el.Value)::doc) []
@@ -149,7 +149,7 @@ let private partitionMessageParts (abstractParts: Map<_,_>)  bodyPart contentPar
             else
                 let parts = message |> parseAbstractParts part.Message.LocalName
                 match parts.TryFind part.Part with
-                | Some(value) when value.XName.NamespaceName = protocol.Namespace -> Choice2Of3(part.Part)
+                | Some(value) when value.XName.NamespaceName = (protocolNamespace protocol) -> Choice2Of3(part.Part)
                 | Some(_) -> Choice3Of3(part.Part)
                 | None -> failwithf "Message %s does not contain part %s" part.Message.LocalName part.Part)
     let hdr = parts |> List.choose (fun x -> match x with Choice1Of3(x) -> Some(x) | _ -> None)
@@ -221,7 +221,7 @@ let private parseOperation languageCode operation portType definitions style ns 
     let name = operation |> reqAttr (xname "name")
     // Extract X-Road version of the operation (optional: not used for metaservice operations).
     let version =
-        match operation %! xnsname "version" protocol.Namespace with
+        match operation %! xnsname "version" (protocolNamespace protocol) with
         | null -> None
         | el -> Some el.Value
     // SOAP extension for operation element: http://www.w3.org/TR/wsdl#_soap:operation
@@ -300,7 +300,7 @@ let private parsePortBinding languageCode definitions element =
     | null, null -> None
     | e, null | null, e ->
         let producer = e |> reqAttr (xname "producer")
-        let protocol = XRoadProtocol.FromNamespace(e.Name.NamespaceName)
+        let protocol = fromNamespace e.Name.NamespaceName
         let servicePort =
             { Name = name
               Documentation = readLanguages languageCode protocol element

@@ -3,7 +3,7 @@
 open System.Xml
 open System.Xml.Linq
 
-open XRoad.Common
+open XRoad.Wsdl
 
 /// Represents single producer information acquired from security server.
 type Producer =

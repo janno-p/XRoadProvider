@@ -2,9 +2,7 @@
 
 open NUnit.Framework
 open Swensen.Unquote
-open System.IO
 open XRoad
-open XRoad.ServiceDescription
 
 [<TestFixture>]
 module XRoadDocLiteralWrappedV5Test =
@@ -41,7 +39,7 @@ module XRoadDocLiteralWrappedV5Test =
         test <@ operation.OutputParameters.IsMultipart = false @>
         test <@ operation.OutputParameters.Accessor.IsNone @>
         let context = TypeBuilderContext.FromSchema(schema, "et")
-        let expectedProtocol = XRoad.Common.CodeSpec.XRoadProtocol.Version31
+        let expectedProtocol = XRoadProtocol.Version31
         test <@ context.Protocol = expectedProtocol @>
 
     [<Test>]

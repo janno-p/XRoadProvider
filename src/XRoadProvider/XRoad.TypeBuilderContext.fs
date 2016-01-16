@@ -8,7 +8,7 @@ open System.Text.RegularExpressions
 open System.Xml.Linq
 open XRoad.Serialization.Attributes
 open XRoad.CodeDom
-open XRoad.Common
+open XRoad.Wsdl
 open XRoad.TypeSchema
 
 [<AutoOpen>]
