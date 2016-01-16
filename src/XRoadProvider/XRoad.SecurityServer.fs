@@ -1,4 +1,4 @@
-﻿module private XRoad.SecurityServer
+﻿module internal XRoad.SecurityServer
 
 open System.Xml
 open System.Xml.Linq

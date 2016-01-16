@@ -1,5 +1,5 @@
 ﻿/// Implementations for the type providers that are available for X-Road infrastructure.
-module XRoad.Providers.Impl
+namespace ProviderImplementation.ProvidedTypes
 
 /// Generated type provider for X-Road infrastructure.
 /// Builds service interface for certain producer.

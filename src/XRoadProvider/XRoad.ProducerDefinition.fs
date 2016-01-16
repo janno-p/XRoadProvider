@@ -1,4 +1,4 @@
-﻿module private XRoad.ProducerDefinition
+﻿module internal XRoad.ProducerDefinition
 
 open System
 open System.CodeDom

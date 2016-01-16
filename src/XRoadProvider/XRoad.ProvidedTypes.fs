@@ -1,8 +1,7 @@
-﻿module XRoad.Providers.Impl
+﻿namespace ProviderImplementation.ProvidedTypes
 
 open Microsoft.FSharp.Core.CompilerServices
 open Microsoft.FSharp.Quotations
-open ProviderImplementation.ProvidedTypes
 open System
 open System.Collections.Generic
 open System.IO
