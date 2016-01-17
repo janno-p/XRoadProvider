@@ -163,10 +163,6 @@ type XRoadProviders() as this =
                 let this = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
                 match parameterValues with
                 | [| :? string as securityServer; :? string as instance; :? bool as refresh |] ->
-                    // Create type which holds member classes.
-                    let memberClassesTy = ProvidedTypeDefinition("MemberClasses", Some baseTy, HideObjectMethods = true)
-                    memberClassesTy.AddXmlDoc("Lists all available members and subsystems in the X-Road instance.")
-                    this.AddMember(memberClassesTy)
                     // Execute request against security server to retrieve list of registered producers.
                     SecurityServerV6.downloadProducerList securityServer instance refresh
                     |> List.map (fun memberClass ->
@@ -176,7 +172,7 @@ type XRoadProviders() as this =
                         classTy.AddMembersDelayed (fun () ->
                             memberClass.Members
                             |> List.map (fun memberItem -> 
-                                let memberTy = ProvidedTypeDefinition(memberItem.Name, Some baseTy, HideObjectMethods = true)
+                                let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
                                 memberTy.AddXmlDoc(memberItem.Name)
                                 memberTy.AddMember(ProvidedLiteralField("Name", typeof<string>, memberItem.Name))
                                 memberTy.AddMember(ProvidedLiteralField("Code", typeof<string>, memberItem.Code))
@@ -187,7 +183,7 @@ type XRoadProviders() as this =
                                 memberTy.AddMember(ProvidedField("Subsystems", subsystemsTy))
                                 memberTy))
                         classTy)
-                    |> memberClassesTy.AddMembers
+                    |> this.AddMembers
                 | _ -> failwith "Unexpected parameter values!"
                 this)
 

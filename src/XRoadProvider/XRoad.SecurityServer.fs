@@ -95,8 +95,8 @@ module internal SecurityServerV6 =
         let doc = getFile (sprintf "http://%s/listClients?xRoadInstance=%s" host instance) refresh
         let root = doc.Element(xnsname "clientList" XmlNamespace.XRoad40)
         // Data structures to support recomposition to records.
-        let subsystems = Dictionary<string * string, List<string>>()
-        let members = Dictionary<string, List<string * string>>()
+        let subsystems = Dictionary<string * string, ISet<string>>()
+        let members = Dictionary<string, ISet<string * string>>()
         // Collect data about members and subsystems.
         root.Elements(xnsname "member" XmlNamespace.XRoad40)
         |> Seq.iter (fun element ->
@@ -107,27 +107,26 @@ module internal SecurityServerV6 =
             | "MEMBER" ->
                 let name = element.Element(xnsname "name" XmlNamespace.XRoad40).Value
                 match members.TryGetValue(memberClass) with
-                | true, lst -> lst.Add(memberCode, name)
-                | false, _ -> members.Add(memberClass, new List<_>([memberCode, name]))
+                | true, lst -> lst.Add(name, memberCode) |> ignore
+                | false, _ -> members.Add(memberClass, new SortedSet<_>([name, memberCode]))
             | "SUBSYSTEM" ->
                 let subsystemCode = id.Element(xnsname "subsystemCode" XmlNamespace.XRoad40Id).Value
                 match subsystems.TryGetValue((memberClass, memberCode)) with
-                | true, lst -> lst.Add(subsystemCode)
-                | false, _ -> subsystems.Add((memberClass, memberCode), new List<_>([subsystemCode]))
+                | true, lst -> lst.Add(subsystemCode) |> ignore
+                | false, _ -> subsystems.Add((memberClass, memberCode), new SortedSet<_>([subsystemCode]))
             | x -> failwithf "Unexpected object type value `%s`." x)
         // Compose records from previously collected data.
         members
         |> Seq.map (fun kvp ->
             { Name = kvp.Key
               Members = kvp.Value
-                        |> Seq.map (fun (code,name) ->
+                        |> Seq.map (fun (name,code) ->
                             { Code = code
                               Name = name
                               Subsystems =
                                 match subsystems.TryGetValue((kvp.Key, code)) with
-                                | true, lst -> lst |> Seq.sortBy (fun x -> x) |> Seq.toList
+                                | true, lst -> lst |> Seq.toList
                                 | false, _ -> [] })
-                        |> Seq.sortBy (fun x -> (x.Name, x.Code))
                         |> Seq.toList })
         |> Seq.sortBy (fun x -> x.Name)
         |> Seq.toList
