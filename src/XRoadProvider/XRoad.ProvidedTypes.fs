@@ -138,33 +138,45 @@ type XRoadProviders() as this =
                 | _ -> failwith "Unexpected parameter values!"
                 thisTy)
 
-    /// Generic type for service producer discovery in X-Road instance.
+    let createParameters name =
+        // Security server domain name or IP address is required parameter.
+        let securityServer = ProvidedStaticParameter("SecurityServer", typeof<string>)
+        securityServer.AddXmlDoc(sprintf "Domain name or IP address of X-Road security server which is used to discover %s in that X-Road instance." name)
+
+        // Name of security server instance the security server is belonging to.
+        let xroadInstance = ProvidedStaticParameter("XRoadInstance", typeof<string>)
+        xroadInstance.AddXmlDoc("Code identifying the instance of X-Road system.")
+
+        // Value which forces type provider to refresh list, even if its already cached.
+        let forceRefresh = ProvidedStaticParameter("ForceRefresh", typeof<bool>, false)
+        forceRefresh.AddXmlDoc(sprintf "When `true`, forces type provider to refresh %s list from security server." name)
+
+        let useHttps = ProvidedStaticParameter("UseHttps", typeof<bool>, false)
+        useHttps.AddXmlDoc("When `true`, tryes to download data using https protocol.")
+
+        [ securityServer; xroadInstance; forceRefresh; useHttps ]
+
+    // Generic type for service producer discovery in X-Road instance.
     let producerListTy =
         let typ = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducerList", Some baseTy)
         typ.AddXmlDoc("List all available producers in particular v6 X-Road instance.")
         typ
 
+    // Generic type for central service discovery in selected X-Road instance.
+    let centralServiceListTy =
+        let typ = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadCentralServicesList", Some baseTy)
+        typ.AddXmlDoc("List all available central services in particular v6 X-Road instance.")
+        typ
+
     do
-        // Security server domain name or IP address is required parameter.
-        let securityServer = ProvidedStaticParameter("SecurityServer", typeof<string>)
-        securityServer.AddXmlDoc("Domain name or IP address of X-Road security server which is used to discover producers in that X-Road instance.")
-
-        // Name of security server instance the security server is belonging to.
-        let xroadInstance = ProvidedStaticParameter("XRoadInstance", typeof<string>)
-        securityServer.AddXmlDoc("Code identifying the instance of X-Road system.")
-
-        // Value which forces type provider to refresh producer list, even if its already cached.
-        let forceRefresh = ProvidedStaticParameter("ForceRefresh", typeof<bool>, false)
-        forceRefresh.AddXmlDoc("When `true`, forces type provider to refresh producer list from security server.")
-
         producerListTy.DefineStaticParameters(
-            [ securityServer; xroadInstance; forceRefresh ],
+            (createParameters "producers"),
             fun typeName parameterValues ->
                 let this = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
                 match parameterValues with
-                | [| :? string as securityServer; :? string as instance; :? bool as refresh |] ->
+                | [| :? string as securityServer; :? string as instance; :? bool as refresh; :? bool as useHttps |] ->
                     // Execute request against security server to retrieve list of registered producers.
-                    SecurityServerV6.downloadProducerList securityServer instance refresh
+                    SecurityServerV6.downloadProducerList securityServer instance refresh useHttps
                     |> List.map (fun memberClass ->
                         let classTy = ProvidedTypeDefinition(memberClass.Name, Some baseTy, HideObjectMethods = true)
                         classTy.AddXmlDoc(memberClass.Name)
@@ -187,4 +199,21 @@ type XRoadProviders() as this =
                 | _ -> failwith "Unexpected parameter values!"
                 this)
 
-    do this.AddNamespace(namespaceName, [serverTy; producerListTy])
+        centralServiceListTy.DefineStaticParameters(
+            (createParameters "central services"),
+            fun typeName parameterValues ->
+                let this = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
+                match parameterValues with
+                | [| :? string as securityServer; :? string as instance; :? bool as refresh; :? bool as useHttps |] ->
+                    // Execute request against security server to retrieve list of registered producers.
+                    match SecurityServerV6.downloadCentralServiceList securityServer instance refresh useHttps with
+                    | [] ->
+                        let p = ProvidedProperty("<Note>", typeof<string>, GetterCode = (fun _ -> <@@ "" @@>), IsStatic = true)
+                        p.AddXmlDoc("No central services are listed in this X-Road instance.")
+                        [p :> MemberInfo]
+                    | xs -> xs |> List.map (fun serviceCode -> upcast ProvidedLiteralField(serviceCode, typeof<string>, serviceCode))
+                    |> this.AddMembers
+                | _ -> failwith "Unexpected parameter values!"
+                this)
+
+        this.AddNamespace(namespaceName, [serverTy; producerListTy; centralServiceListTy])

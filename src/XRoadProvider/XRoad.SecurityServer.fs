@@ -65,6 +65,9 @@ module internal SecurityServer =
 
 
 module internal SecurityServerV6 =
+    // Needs better solution to handle server certificates.
+    ServicePointManager.ServerCertificateValidationCallback <- Security.RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
+
     /// Represents single member and its subsystems.
     type Member =
         { Code: string
@@ -90,9 +93,9 @@ module internal SecurityServerV6 =
         XDocument.Load(cache.[uri].OpenRead())
 
     /// Downloads and parses producer list for X-Road v6 security server.
-    let downloadProducerList host instance refresh =
+    let downloadProducerList host instance refresh useHttps =
         // Read xml document from file and navigate to root element.
-        let doc = getFile (sprintf "http://%s/listClients?xRoadInstance=%s" host instance) refresh
+        let doc = getFile (sprintf "http%s://%s/listClients?xRoadInstance=%s" (if useHttps then "s" else "") host instance) refresh
         let root = doc.Element(xnsname "clientList" XmlNamespace.XRoad40)
         // Data structures to support recomposition to records.
         let subsystems = Dictionary<string * string, ISet<string>>()
@@ -129,4 +132,15 @@ module internal SecurityServerV6 =
                                 | false, _ -> [] })
                         |> Seq.toList })
         |> Seq.sortBy (fun x -> x.Name)
+        |> Seq.toList
+
+    /// Downloads and parses central service list from X-Road v6 security server.
+    let downloadCentralServiceList host instance refresh useHttps =
+        // Read xml document from file and navigate to root element.
+        let doc = getFile (sprintf "http%s://%s/listCentralServices?xRoadInstance=%s" (if useHttps then "s" else "") host instance) refresh
+        let root = doc.Element(xnsname "centralServiceList" XmlNamespace.XRoad40)
+        // Collect data about available central services.
+        root.Elements(xnsname "centralService" XmlNamespace.XRoad40)
+        |> Seq.map (fun element -> element.Element(xnsname "serviceCode" XmlNamespace.XRoad40Id).Value)
+        |> Seq.sortBy (id)
         |> Seq.toList
