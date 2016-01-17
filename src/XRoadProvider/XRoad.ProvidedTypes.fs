@@ -138,82 +138,70 @@ type XRoadProviders() as this =
                 | _ -> failwith "Unexpected parameter values!"
                 thisTy)
 
-    let createParameters name =
-        // Security server domain name or IP address is required parameter.
-        let securityServer = ProvidedStaticParameter("SecurityServer", typeof<string>)
-        securityServer.AddXmlDoc(sprintf "Domain name or IP address of X-Road security server which is used to discover %s in that X-Road instance." name)
+    let buildServer6Types (typeName: string) (args: obj []) =
+        let securityServer = args.[0] :?> string
+        let xRoadInstance = args.[1] :?> string
+        let refresh = args.[2] :?> bool
+        let useHttps = args.[3] :?> bool
 
-        // Name of security server instance the security server is belonging to.
-        let xroadInstance = ProvidedStaticParameter("XRoadInstance", typeof<string>)
-        xroadInstance.AddXmlDoc("Code identifying the instance of X-Road system.")
+        let thisTy = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
 
-        // Value which forces type provider to refresh list, even if its already cached.
-        let forceRefresh = ProvidedStaticParameter("ForceRefresh", typeof<bool>, false)
-        forceRefresh.AddXmlDoc(sprintf "When `true`, forces type provider to refresh %s list from security server." name)
+        // Type which holds information about producers defined in selected instance.
+        let producersTy = ProvidedTypeDefinition("Producers", Some baseTy, HideObjectMethods = true)
+        producersTy.AddXmlDoc("All available producers in particular v6 X-Road instance.")
+        thisTy.AddMember(producersTy)
 
-        let useHttps = ProvidedStaticParameter("UseHttps", typeof<bool>, false)
-        useHttps.AddXmlDoc("When `true`, tryes to download data using https protocol.")
+        // Type which holds information about central services defined in selected instance.
+        let centralServicesTy = ProvidedTypeDefinition("CentralServices", Some baseTy, HideObjectMethods = true)
+        centralServicesTy.AddXmlDoc("All available central services in particular v6 X-Road instance.")
+        thisTy.AddMember(centralServicesTy)
 
-        [ securityServer; xroadInstance; forceRefresh; useHttps ]
+        producersTy.AddMembersDelayed (fun _ ->
+            SecurityServerV6.downloadProducerList securityServer xRoadInstance refresh useHttps
+            |> List.map (fun memberClass ->
+                let classTy = ProvidedTypeDefinition(memberClass.Name, Some baseTy, HideObjectMethods = true)
+                classTy.AddXmlDoc(memberClass.Name)
+                classTy.AddMember(ProvidedLiteralField("ClassName", typeof<string>, memberClass.Name))
+                classTy.AddMembersDelayed (fun () ->
+                    memberClass.Members
+                    |> List.map (fun memberItem -> 
+                        let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
+                        memberTy.AddXmlDoc(memberItem.Name)
+                        memberTy.AddMember(ProvidedLiteralField("Name", typeof<string>, memberItem.Name))
+                        memberTy.AddMember(ProvidedLiteralField("Code", typeof<string>, memberItem.Code))
+                        let subsystemsTy = ProvidedTypeDefinition("Subsystems", Some baseTy, HideObjectMethods = true)
+                        subsystemsTy.AddXmlDoc(sprintf "List of subsystems for %s." memberItem.Name)
+                        subsystemsTy.AddMembersDelayed(fun () -> memberItem.Subsystems |> List.map (fun subsystem -> ProvidedLiteralField(subsystem, typeof<string>, subsystem)))
+                        memberTy.AddMember(subsystemsTy)
+                        memberTy.AddMember(ProvidedField("Subsystems", subsystemsTy))
+                        memberTy))
+                classTy))
 
-    // Generic type for service producer discovery in X-Road instance.
-    let producerListTy =
-        let typ = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducerList", Some baseTy)
-        typ.AddXmlDoc("List all available producers in particular v6 X-Road instance.")
+        centralServicesTy.AddMembersDelayed (fun _ ->
+            match SecurityServerV6.downloadCentralServiceList securityServer xRoadInstance refresh useHttps with
+            | [] ->
+                let property = ProvidedProperty("<Note>", typeof<string>, GetterCode = (fun _ -> <@@ "" @@>), IsStatic = true)
+                property.AddXmlDoc("No central services are listed in this X-Road instance.")
+                [property :> MemberInfo]
+            | services ->
+                services
+                |> List.map (fun serviceCode ->
+                    upcast ProvidedLiteralField(serviceCode, typeof<string>, serviceCode)))
+
+        thisTy
+
+    let server6Parameters =
+        [ ProvidedStaticParameter("SecurityServer", typeof<string>), "Domain name or IP address of X-Road security server which is used to connect to that X-Road instance."
+          ProvidedStaticParameter("XRoadInstance", typeof<string>), "Code identifying the instance of X-Road system."
+          ProvidedStaticParameter("ForceRefresh", typeof<bool>, false), "When `true`, forces type provider to refresh data from security server."
+          ProvidedStaticParameter("UseHttps", typeof<bool>, false), "When `true`, tryes to download data using https protocol." ]
+        |> List.map (fun (parameter,doc) -> parameter.AddXmlDoc(doc); parameter)
+
+    // Generic type for collecting information from selected X-Road instance.
+    let server6Ty =
+        let typ = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadServer6", Some baseTy)
+        typ.AddXmlDoc("Type provider which collects data from selected X-Road instance.")
         typ
 
-    // Generic type for central service discovery in selected X-Road instance.
-    let centralServiceListTy =
-        let typ = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadCentralServicesList", Some baseTy)
-        typ.AddXmlDoc("List all available central services in particular v6 X-Road instance.")
-        typ
-
-    do
-        producerListTy.DefineStaticParameters(
-            (createParameters "producers"),
-            fun typeName parameterValues ->
-                let this = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
-                match parameterValues with
-                | [| :? string as securityServer; :? string as instance; :? bool as refresh; :? bool as useHttps |] ->
-                    // Execute request against security server to retrieve list of registered producers.
-                    SecurityServerV6.downloadProducerList securityServer instance refresh useHttps
-                    |> List.map (fun memberClass ->
-                        let classTy = ProvidedTypeDefinition(memberClass.Name, Some baseTy, HideObjectMethods = true)
-                        classTy.AddXmlDoc(memberClass.Name)
-                        classTy.AddMember(ProvidedLiteralField("ClassName", typeof<string>, memberClass.Name))
-                        classTy.AddMembersDelayed (fun () ->
-                            memberClass.Members
-                            |> List.map (fun memberItem -> 
-                                let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
-                                memberTy.AddXmlDoc(memberItem.Name)
-                                memberTy.AddMember(ProvidedLiteralField("Name", typeof<string>, memberItem.Name))
-                                memberTy.AddMember(ProvidedLiteralField("Code", typeof<string>, memberItem.Code))
-                                let subsystemsTy = ProvidedTypeDefinition("Subsystems", Some baseTy, HideObjectMethods = true)
-                                subsystemsTy.AddXmlDoc(sprintf "List of subsystems for %s." memberItem.Name)
-                                subsystemsTy.AddMembersDelayed(fun () -> memberItem.Subsystems |> List.map (fun subsystem -> ProvidedLiteralField(subsystem, typeof<string>, subsystem)))
-                                memberTy.AddMember(subsystemsTy)
-                                memberTy.AddMember(ProvidedField("Subsystems", subsystemsTy))
-                                memberTy))
-                        classTy)
-                    |> this.AddMembers
-                | _ -> failwith "Unexpected parameter values!"
-                this)
-
-        centralServiceListTy.DefineStaticParameters(
-            (createParameters "central services"),
-            fun typeName parameterValues ->
-                let this = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
-                match parameterValues with
-                | [| :? string as securityServer; :? string as instance; :? bool as refresh; :? bool as useHttps |] ->
-                    // Execute request against security server to retrieve list of registered producers.
-                    match SecurityServerV6.downloadCentralServiceList securityServer instance refresh useHttps with
-                    | [] ->
-                        let p = ProvidedProperty("<Note>", typeof<string>, GetterCode = (fun _ -> <@@ "" @@>), IsStatic = true)
-                        p.AddXmlDoc("No central services are listed in this X-Road instance.")
-                        [p :> MemberInfo]
-                    | xs -> xs |> List.map (fun serviceCode -> upcast ProvidedLiteralField(serviceCode, typeof<string>, serviceCode))
-                    |> this.AddMembers
-                | _ -> failwith "Unexpected parameter values!"
-                this)
-
-        this.AddNamespace(namespaceName, [serverTy; producerListTy; centralServiceListTy])
+    do server6Ty.DefineStaticParameters(server6Parameters, buildServer6Types)
+    do this.AddNamespace(namespaceName, [serverTy; server6Ty])
