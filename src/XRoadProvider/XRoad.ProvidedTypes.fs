@@ -6,6 +6,7 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Reflection
+open XRoad
 
 /// Generated type providers for X-Road infrastructure.
 /// Currently only one type provider is available, which builds service interface for certain producer.
@@ -126,7 +127,7 @@ type XRoadProviders() as this =
                     producersTy.AddXmlDoc("List of available database names registered at the security server.")
                     thisTy.AddMember(producersTy)
                     // Add list of members which each corresponds to certain producer.
-                    XRoad.SecurityServer.discoverProducers(serverIP)
+                    SecurityServer.discoverProducers(serverIP)
                     |> List.map (fun producer ->
                         let producerTy = ProvidedTypeDefinition(producer.Name, Some baseTy, HideObjectMethods=true)
                         producerTy.AddMember(ProvidedLiteralField("ProducerName", typeof<string>, producer.Name))
@@ -137,4 +138,57 @@ type XRoadProviders() as this =
                 | _ -> failwith "Unexpected parameter values!"
                 thisTy)
 
-    do this.AddNamespace(namespaceName, [serverTy])
+    /// Generic type for service producer discovery in X-Road instance.
+    let producerListTy =
+        let typ = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducerList", Some baseTy)
+        typ.AddXmlDoc("List all available producers in particular v6 X-Road instance.")
+        typ
+
+    do
+        // Security server domain name or IP address is required parameter.
+        let securityServer = ProvidedStaticParameter("SecurityServer", typeof<string>)
+        securityServer.AddXmlDoc("Domain name or IP address of X-Road security server which is used to discover producers in that X-Road instance.")
+
+        // Name of security server instance the security server is belonging to.
+        let xroadInstance = ProvidedStaticParameter("XRoadInstance", typeof<string>)
+        securityServer.AddXmlDoc("Code identifying the instance of X-Road system.")
+
+        // Value which forces type provider to refresh producer list, even if its already cached.
+        let forceRefresh = ProvidedStaticParameter("ForceRefresh", typeof<bool>, false)
+        forceRefresh.AddXmlDoc("When `true`, forces type provider to refresh producer list from security server.")
+
+        producerListTy.DefineStaticParameters(
+            [ securityServer; xroadInstance; forceRefresh ],
+            fun typeName parameterValues ->
+                let this = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
+                match parameterValues with
+                | [| :? string as securityServer; :? string as instance; :? bool as refresh |] ->
+                    // Create type which holds member classes.
+                    let memberClassesTy = ProvidedTypeDefinition("MemberClasses", Some baseTy, HideObjectMethods = true)
+                    memberClassesTy.AddXmlDoc("Lists all available members and subsystems in the X-Road instance.")
+                    this.AddMember(memberClassesTy)
+                    // Execute request against security server to retrieve list of registered producers.
+                    SecurityServerV6.downloadProducerList securityServer instance refresh
+                    |> List.map (fun memberClass ->
+                        let classTy = ProvidedTypeDefinition(memberClass.Name, Some baseTy, HideObjectMethods = true)
+                        classTy.AddXmlDoc(memberClass.Name)
+                        classTy.AddMember(ProvidedLiteralField("ClassName", typeof<string>, memberClass.Name))
+                        classTy.AddMembersDelayed (fun () ->
+                            memberClass.Members
+                            |> List.map (fun memberItem -> 
+                                let memberTy = ProvidedTypeDefinition(memberItem.Name, Some baseTy, HideObjectMethods = true)
+                                memberTy.AddXmlDoc(memberItem.Name)
+                                memberTy.AddMember(ProvidedLiteralField("Name", typeof<string>, memberItem.Name))
+                                memberTy.AddMember(ProvidedLiteralField("Code", typeof<string>, memberItem.Code))
+                                let subsystemsTy = ProvidedTypeDefinition("Subsystems", Some baseTy, HideObjectMethods = true)
+                                subsystemsTy.AddXmlDoc(sprintf "List of subsystems for %s." memberItem.Name)
+                                subsystemsTy.AddMembersDelayed(fun () -> memberItem.Subsystems |> List.map (fun subsystem -> ProvidedLiteralField(subsystem, typeof<string>, subsystem)))
+                                memberTy.AddMember(subsystemsTy)
+                                memberTy.AddMember(ProvidedField("Subsystems", subsystemsTy))
+                                memberTy))
+                        classTy)
+                    |> memberClassesTy.AddMembers
+                | _ -> failwith "Unexpected parameter values!"
+                this)
+
+    do this.AddNamespace(namespaceName, [serverTy; producerListTy])
