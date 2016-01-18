@@ -105,8 +105,6 @@ module internal SecurityServerV6 =
     /// High-level function to execute web request against security server.
     let makeWebRequest (serverUri: Uri) writeRequest =
         let request = WebRequest.Create(serverUri) :?> HttpWebRequest
-        if serverUri.Scheme.ToLower() = "https" then
-            request.ServerCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
         request.Method <- "POST"
         request.ContentType <- sprintf "text/xml; charset=%s" Encoding.UTF8.HeaderName
         request.Headers.Set("SOAPAction", "")
