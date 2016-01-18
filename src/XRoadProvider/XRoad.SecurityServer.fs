@@ -1,11 +1,13 @@
 ﻿namespace XRoad
 
+open System
 open System.Collections.Generic
 open System.IO
 open System.Net
+open System.Net.Security
+open System.Text
 open System.Xml
 open System.Xml.Linq
-
 open XRoad.Wsdl
 
 module internal SecurityServer =
@@ -79,6 +81,14 @@ module internal SecurityServerV6 =
         { Name: string
           Members: Member list }
 
+    type ServiceId =
+        { XRoadInstance: string
+          MemberClass: string
+          MemberCode: string
+          SubsystemCode: string option
+          ServiceCode: string
+          ServiceVersion: string option }
+
     /// Remember previously downloaded content in temporary files.
     let cache = Dictionary<string, FileInfo>()
 
@@ -91,6 +101,19 @@ module internal SecurityServerV6 =
             webClient.DownloadFile(uri, fileName)
             cache.[uri] <- FileInfo(fileName)
         XDocument.Load(cache.[uri].OpenRead())
+
+    /// High-level function to execute web request against security server.
+    let makeWebRequest (serverUri: Uri) writeRequest =
+        let request = WebRequest.Create(serverUri) :?> HttpWebRequest
+        if serverUri.Scheme.ToLower() = "https" then
+            request.ServerCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
+        request.Method <- "POST"
+        request.ContentType <- sprintf "text/xml; charset=%s" Encoding.UTF8.HeaderName
+        request.Headers.Set("SOAPAction", "")
+        writeRequest request
+        use response = request.GetResponse()
+        use reader = new StreamReader(response.GetResponseStream())
+        XDocument.Load(reader)
 
     /// Downloads and parses producer list for X-Road v6 security server.
     let downloadProducerList host instance refresh useHttps =
@@ -143,4 +166,54 @@ module internal SecurityServerV6 =
         root.Elements(xnsname "centralService" XmlNamespace.XRoad40)
         |> Seq.map (fun element -> element.Element(xnsname "serviceCode" XmlNamespace.XRoad40Id).Value)
         |> Seq.sortBy (id)
+        |> Seq.toList
+
+    /// Downloads and parses method list of selected service provider.
+    let downloadMethodsList host instance useHttps client service =
+        let serverUri = Uri(sprintf "http%s://%s" (if useHttps then "s" else "") host)
+        let clientMemberClass, clientMemberCode = client
+        let serviceMemberClass, serviceMemberCode = service
+        let doc = makeWebRequest serverUri (fun request ->
+            use stream = request.GetRequestStream()
+            use writer = XmlWriter.Create(stream)
+            writer.WriteStartDocument()
+            writer.WriteStartElement("Envelope", XmlNamespace.SoapEnv) // <soapenv:Envelope>
+            writer.WriteStartElement("Header", XmlNamespace.SoapEnv) // <soapenv:Header>
+            writer.WriteStartElement("client", XmlNamespace.XRoad40Id)
+            writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, "MEMBER")
+            writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, instance)
+            writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, clientMemberClass)
+            writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, clientMemberCode)
+            writer.WriteEndElement()
+            writer.WriteStartElement("service", XmlNamespace.XRoad40Id)
+            writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, "SERVICE")
+            writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, instance)
+            writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, serviceMemberClass)
+            writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, serviceMemberCode)
+            writer.WriteElementString("serviceCode", XmlNamespace.XRoad40Id, "listMethods")
+            writer.WriteEndElement()
+            writer.WriteElementString("id", XmlNamespace.XRoad40Id, XRoadHelper.generateNonce())
+            writer.WriteElementString("protocolVersion", XmlNamespace.XRoad40Id, "4.0")
+            writer.WriteEndElement() // </soapenv:Header>
+            writer.WriteStartElement("Body", XmlNamespace.SoapEnv) // <soapenv:Body>
+            writer.WriteStartElement("listMethods", XmlNamespace.XRoad40)
+            writer.WriteEndElement()
+            writer.WriteEndElement() // </soapenv:Body>
+            writer.WriteEndElement() // </soapenv:Envelope>
+            writer.WriteEndDocument())
+        let envelope = doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
+        let body = envelope.Element(xnsname "Body" XmlNamespace.SoapEnv)
+        let fault = body.Element(xnsname "Fault" XmlNamespace.SoapEnv)
+        if fault <> null then
+            let code = fault.Element(xname "faultcode") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
+            let text = fault.Element(xname "faultstring") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
+            failwithf "Opration resulted with error: FaultCode: %s; FaultString: %s" code text
+        body.Element(xnsname "listMethodsResponse" XmlNamespace.XRoad40).Elements(xnsname "service" XmlNamespace.XRoad40)
+        |> Seq.map (fun service ->
+            { XRoadInstance = service.Element(xnsname "xRoadInstance" XmlNamespace.XRoad40Id).Value
+              MemberClass = service.Element(xnsname "memberClass" XmlNamespace.XRoad40Id).Value
+              MemberCode = service.Element(xnsname "memberCode" XmlNamespace.XRoad40Id).Value
+              SubsystemCode = service.Element(xnsname "subsystemCode" XmlNamespace.XRoad40Id) |> Option.ofObj |> Option.map (fun x -> x.Value)
+              ServiceCode = service.Element(xnsname "serviceCode" XmlNamespace.XRoad40Id).Value
+              ServiceVersion = service.Element(xnsname "serviceVersion" XmlNamespace.XRoad40Id) |> Option.ofObj |> Option.map (fun x -> x.Value) })
         |> Seq.toList

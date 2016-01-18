@@ -173,7 +173,11 @@ type XRoadProviders() as this =
                         subsystemsTy.AddXmlDoc(sprintf "List of subsystems for %s." memberItem.Name)
                         subsystemsTy.AddMembersDelayed(fun () -> memberItem.Subsystems |> List.map (fun subsystem -> ProvidedLiteralField(subsystem, typeof<string>, subsystem)))
                         memberTy.AddMember(subsystemsTy)
-                        memberTy.AddMember(ProvidedField("Subsystems", subsystemsTy))
+                        let servicesTy = ProvidedTypeDefinition("Services", Some baseTy, HideObjectMethods = true)
+                        servicesTy.AddMembersDelayed(fun _ ->
+                            SecurityServerV6.downloadMethodsList securityServer xRoadInstance useHttps (memberClass.Name, memberItem.Code) (memberClass.Name, memberItem.Code)
+                            |> List.map (fun x -> ProvidedLiteralField(x.ServiceCode, typeof<string>, x.ServiceCode)))
+                        memberTy.AddMember(servicesTy)
                         memberTy))
                 classTy))
 
