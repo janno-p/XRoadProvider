@@ -1,9 +1,16 @@
 ﻿namespace XRoad
 
 open FSharp.Core
+open System.IO
 open System.Xml
 open XRoad.Serialization.Attributes
 open XRoad.DynamicMethods
+
+module Stream =
+    let toString (stream: Stream) =
+        stream.Position <- 0L
+        use reader = new StreamReader(stream)
+        reader.ReadToEnd()
 
 type Serializer(isEncoded) as this =
     let rec skipRoot (depth: int) (reader: XmlReader) =
@@ -43,6 +50,7 @@ type Serializer(isEncoded) as this =
 
 namespace XRoad
 
+open Common.Logging
 open System
 open System.Collections.Generic
 open System.IO
@@ -218,12 +226,14 @@ module private Response =
 open Response
 
 type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
+    let log = LogManager.GetLogger()
     member __.RetrieveMessage(): XRoadMessage =
         let message = XRoadMessage()
         use stream =
             let stream, attachments = Response.parseResponse(response)
             attachments |> List.iter (fun content -> message.Attachments.Add(content.ContentID, content))
             stream
+        log.Trace(fun m -> m.Invoke(stream |> Stream.toString) |> ignore)
         stream.Position <- 0L
         let reader = XmlReader.Create(stream)
         if not (reader.MoveToElement(0, "Envelope", XmlNamespace.SoapEnv)) then
@@ -256,6 +266,7 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
 
 namespace XRoad
 
+open Common.Logging
 open System
 open System.Collections.Generic
 open System.IO
@@ -271,6 +282,8 @@ type XRoadStreamReader() =
     end
 
 type XRoadRequest(opt: XRoadRequestOptions) =
+    let log = LogManager.GetLogger()
+
     let request = WebRequest.Create(opt.Uri, Method="POST", ContentType="text/xml; charset=utf-8")
     do request.Headers.Set("SOAPAction", "")
 
@@ -399,6 +412,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
 
         writer.WriteEndDocument()
         writer.Flush()
+        log.Trace(fun m -> m.Invoke(content |> Stream.toString) |> ignore)
         serializeMessage content context.Attachments
     member __.GetResponse(options) =
         new XRoadResponse(request.GetResponse(), options)

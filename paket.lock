@@ -2,19 +2,22 @@ FRAMEWORK: NET45
 NUGET
   remote: https://www.nuget.org/api/v2
   specs:
+    Common.Logging (3.3.1)
+      Common.Logging.Core (>= 3.3.1)
+    Common.Logging.Core (3.3.1)
     FSharp.Core (3.1.2.5)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
   specs:
-    src/ProvidedTypes.fs (f1234ba078dad7cbb674b1d1ab8b94f92f827911)
-    src/ProvidedTypes.fsi (f1234ba078dad7cbb674b1d1ab8b94f92f827911)
+    src/ProvidedTypes.fs (eb919461a3cfc5bd8a7569a7af723566b678e8fa)
+    src/ProvidedTypes.fsi (eb919461a3cfc5bd8a7569a7af723566b678e8fa)
 GROUP Build
 NUGET
   remote: https://www.nuget.org/api/v2
   specs:
-    FAKE (4.14.5)
+    FAKE (4.16.0)
     FSharp.Compiler.Service (1.4.2.3)
-    FSharp.Formatting (2.13.2)
+    FSharp.Formatting (2.13.4)
       FSharp.Compiler.Service (>= 1.4.2 < 1.5.0)
       FSharpVSPowerTools.Core (>= 2.2.0 < 2.3.0)
     FSharpVSPowerTools.Core (2.2.0)
@@ -31,7 +34,7 @@ NUGET
 GITHUB
   remote: fsharp/FAKE
   specs:
-    modules/Octokit/Octokit.fsx (be2eea40d8445637c3adb5700377b56c3fe1a274)
+    modules/Octokit/Octokit.fsx (627d68727518ef0c013d0dfbb0260aba84de98e1)
       Octokit
 GROUP Test
 NUGET
@@ -45,4 +48,4 @@ NUGET
     NUnit.Console (3.0.1)
     NUnit.Runners (3.0.1)
       NUnit.Console (3.0.1)
-    Unquote (3.1.0)
+    Unquote (3.1.1)
