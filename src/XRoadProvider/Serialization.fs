@@ -28,6 +28,9 @@ type Serializer(isEncoded) as this =
     member __.Serialize<'T>(writer: XmlWriter, value: 'T, rootName: XmlQualifiedName, context) =
         this.Serialize(writer, typeof<'T>, value, rootName, context)
 
+    member __.Serialize(writer: XmlWriter, value: obj, context: SerializerContext) =
+        this.SerializeObject(writer, value.GetType(), value, context)
+
     member __.Serialize(writer: XmlWriter, typ, value: obj, rootName: XmlQualifiedName, context) =
         match rootName.Namespace with
         | null | "" -> writer.WriteStartElement(rootName.Name)
@@ -214,7 +217,7 @@ module private Response =
 
     type XmlReader with
         member this.MoveToElement(depth, name, ns) =
-            let isElement () = this.Depth = depth && this.LocalName = name && this.NamespaceURI = ns
+            let isElement () = this.Depth = depth && (name = null || (this.LocalName = name && this.NamespaceURI = ns))
             let rec findElement () =
                 if isElement() then true
                 elif this.Read() then
@@ -246,18 +249,12 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
         let context = SerializerContext()
         context.AddAttachments(message.Attachments)
         let serializer = Serializer(options.IsEncoded)
-        let rec findElements (parameters: List<_>) =
-            if reader.Depth = 2 && reader.NodeType = XmlNodeType.Element then
-                match reader.LocalName, reader.NamespaceURI with
-                | "Fault", XmlNamespace.SoapEnv ->
-                    failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
-                | nm, ns ->
-                    let qualifiedName = XmlQualifiedName(nm, ns)
-                    parameters.Add(qualifiedName, serializer.Deserialize(reader, options.Types.[qualifiedName], context))
-            if not (reader.Read()) || reader.Depth < 2 then parameters.ToArray()
-            else findElements parameters
-        reader.Read() |> ignore
-        message.Body <- findElements(List<_>())
+        if not (reader.MoveToElement(2, null, null)) then
+            failwith "Soap message has empty payload in response."
+        message.Body <-
+            match reader.LocalName, reader.NamespaceURI with
+            | "Fault", XmlNamespace.SoapEnv -> failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
+            | _ -> serializer.Deserialize(reader, options.ResponseType, context)
         message
 
     interface IDisposable with
@@ -363,10 +360,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
         writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
         writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, protocolNamespace opt.Protocol)
-        msg.Body
-        |> Array.map (fun (nm,_) -> nm.Namespace)
-        |> Seq.filter (fun ns -> not <| String.IsNullOrWhiteSpace(ns))
-        |> Seq.iteri (fun i ns -> writer.WriteAttributeString("xmlns", sprintf "ns%d" i, XmlNamespace.Xmlns, ns))
+        msg.Namespaces |> Seq.iteri (fun i ns -> writer.WriteAttributeString("xmlns", sprintf "ns%d" i, XmlNamespace.Xmlns, ns))
         match opt.Accessor with | null -> () | acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace)
         if opt.IsEncoded then
             writer.WriteAttributeString("xmlns", "xsd", XmlNamespace.Xmlns, XmlNamespace.Xsd)
@@ -390,13 +384,6 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteEndElement())
         writer.WriteEndElement()
 
-        let serializeBody funContent =
-            match msg.Body with
-            | [| (null, _) |] -> funContent()
-            | _ -> writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
-                   funContent()
-                   writer.WriteEndElement()
-
         let serializeAccessor funContent =
             match opt.Accessor with
             | null -> funContent()
@@ -404,11 +391,9 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                    funContent()
                    writer.WriteEndElement()
 
-        serializeBody (fun _ ->
-            serializeAccessor (fun _ ->
-                msg.Body
-                |> Array.iteri (fun i (name,value) ->
-                    Serializer(opt.IsEncoded).Serialize(writer, opt.Types.[i], value, (if isNull name then XmlQualifiedName("Body", XmlNamespace.SoapEnv) else name), context))))
+        writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
+        serializeAccessor (fun _ -> Serializer(opt.IsEncoded).Serialize(writer, msg.Body, context))
+        writer.WriteEndElement()
 
         writer.WriteEndDocument()
         writer.Flush()

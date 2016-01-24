@@ -19,6 +19,7 @@ type XRoadElementAttribute(name: string) =
     new() = XRoadElementAttribute("")
     member val IsNullable = false with get, set
     member val Name = name with get
+    member val Namespace = "" with get, set
     member val MergeContent = false with get, set
     member val UseXop = false with get, set
     member val TypeName = "" with get, set

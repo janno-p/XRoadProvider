@@ -1,7 +1,6 @@
-﻿#I @"../../../src/XRoadProvider/bin/Debug"
+﻿#I @"../../../bin/XRoadProvider"
 
 #r "XRoadProvider"
-#r "XRoadSerializer"
 
 open XRoad.Providers
 

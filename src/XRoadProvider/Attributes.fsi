@@ -57,6 +57,9 @@ type XRoadElementAttribute =
     /// Name of the element in serialization context. By default property name is used.
     member Name: string with get
 
+    /// Namespace of the element in serialization context. By default empty namespace is used.
+    member Namespace: string with get, set
+
     /// When true, no extra element is serialized for this property. Instead, property
     /// contents become direct child elements of property owner element.
     member MergeContent: bool with get, set

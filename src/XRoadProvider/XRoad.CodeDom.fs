@@ -78,10 +78,12 @@ module Attributes =
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "Namespace" (!^ typeName.NamespaceName)
 
-    let xrdElement(elementName, isNullable) =
-        elementName
-        |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadElementAttribute>
-        |> iif isNullable (fun a -> a |> Attr.addNamedArg "IsNullable" (!^ true))
+    let xrdElement(elementName, elementNamespace, isNullable) =
+        let attr = Attr.create<XRoadElementAttribute>
+        elementName |> Option.iter (fun name -> attr |> Attr.addArg (!^ name) |> ignore)
+        elementNamespace |> Option.iter (fun ns -> attr |> Attr.addNamedArg "Namespace" (!^ ns) |> ignore)
+        if isNullable then attr |> Attr.addNamedArg "IsNullable" (!^ true) |> ignore
+        attr
 
     let xrdContent =
         Attr.create<XRoadElementAttribute>
