@@ -35,5 +35,6 @@ type XRoadCollectionAttribute(itemName: string) =
     inherit Attribute()
     new() = XRoadCollectionAttribute("")
     member val ItemName = itemName with get
+    member val ItemNamespace = "" with get, set
     member val ItemIsNullable = false with get, set
     member val MergeContent = false with get, set

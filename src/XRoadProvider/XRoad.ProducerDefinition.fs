@@ -531,10 +531,8 @@ module ServiceBuilder =
 
     /// Build content for each individual service call method.
     let build (context: TypeBuilderContext) _ (operation: ServicePortMethod): CodeTypeMember list =
-        let paramClass = Cls.create(sprintf "%sInput" operation.Name)
-                         |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
-        let resultClass = Cls.create(sprintf "%sOutput" operation.Name)
-                          |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
+        let paramClass = Cls.create(sprintf "%sInput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
+        let resultClass = Cls.create(sprintf "%sOutput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
         let m =
             Meth.create operation.Name
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)

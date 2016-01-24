@@ -7,13 +7,13 @@
 open System.IO
 open XRoad.Providers
 
-(*
+//(*
 let properties = Common.Logging.Configuration.NameValueCollection()
 properties.["showDateTime"] <- "true"
 properties.["level"] <- "TRACE"
 
 Common.Logging.LogManager.Adapter <- Common.Logging.Simple.ConsoleOutLoggerFactoryAdapter(properties)
-*)
+//*)
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"

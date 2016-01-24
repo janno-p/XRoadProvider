@@ -114,6 +114,9 @@ type XRoadCollectionAttribute =
     /// Item element name for particular collection element.
     member ItemName: string with get
 
+    /// Item element namespace for particular collection element.
+    member ItemNamespace: string with get, set
+
     /// Specifies if collection elements item element is allowed to contain `null` values.
     member ItemIsNullable: bool with get, set
 

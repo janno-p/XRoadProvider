@@ -8,6 +8,7 @@ open System.Numerics
 open System.Reflection
 open System.Reflection.Emit
 open System.Xml
+open System.Xml.Linq
 open XRoad
 open XRoad.Serialization.Attributes
 
@@ -19,11 +20,8 @@ type Serialization =
       Content: MethodInfo }
     with
         static member Create (typ: Type): Serialization =
-            let isChoice = typ.GetCustomAttribute(typeof<XRoadTypeAttribute>, false) :?> XRoadTypeAttribute
-                           |> Option.ofObj
-                           |> Option.fold (fun _ x -> x.Layout = LayoutKind.Choice) false
-            { Root = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |], isChoice)
-              Content = DynamicMethod(sprintf "%s_SerializeContent" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |]) }
+            { Root = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |], true)
+              Content = DynamicMethod(sprintf "%s_SerializeContent" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |], true) }
 
 type Deserialization =
     { Root: MethodInfo
@@ -31,9 +29,9 @@ type Deserialization =
       MatchType: MethodInfo }
     with
         static member Create (typ: Type): Deserialization =
-            { Root = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
-              Content = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj>; typeof<bool>; typeof<SerializerContext> |])
-              MatchType = DynamicMethod(sprintf "%s_MatchType" typ.FullName, typeof<bool>, [| typeof<XmlReader> |]) }
+            { Root = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
+              Content = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj>; typeof<bool>; typeof<SerializerContext> |], true)
+              MatchType = DynamicMethod(sprintf "%s_MatchType" typ.FullName, typeof<bool>, [| typeof<XmlReader> |], true) }
 
 type TypeMap =
     { Type: Type
@@ -71,16 +69,16 @@ type TypeMap =
 type PropertyMap =
     { TypeMap: TypeMap
       SimpleTypeName: XmlQualifiedName option
-      Element: (string * bool) option
+      Element: (XName * bool) option
       OwnerTypeMap: TypeMap
       GetMethod: MethodInfo
       SetMethod: MethodInfo }
 
 type ArrayMap =
     { Type: Type
-      Element: (string * bool) option
+      Element: (XName * bool) option
       ItemTypeMap: TypeMap
-      ItemElement: (string * bool) option
+      ItemElement: (XName * bool) option
       ItemSimpleTypeName: XmlQualifiedName option
       OwnerTypeMap: TypeMap
       GetMethod: MethodInfo
@@ -120,13 +118,10 @@ type private XopBinaryContent() =
 
 let typeMaps = ConcurrentDictionary<Type, TypeMap>()
 
-let (|Collection|Serializable|NotSerializable|) (typ: Type) =
-    if typ.IsArray then
-        Collection
-    else
-        match typ.GetCustomAttribute<XRoadTypeAttribute>() with
-        | null -> NotSerializable
-        | attr -> Serializable(attr)
+let (|Serializable|NotSerializable|) (typ: Type) =
+    match typ.GetCustomAttribute<XRoadTypeAttribute>() with
+    | null -> NotSerializable
+    | attr -> Serializable(attr)
 
 let (!@) expr =
     match expr with
@@ -280,10 +275,13 @@ module EmitSerialization =
         match property.Element with
         | Some(name, isNullable) ->
             il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldstr, name)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
+            il.Emit(OpCodes.Ldstr, name.LocalName)
+            match name.NamespaceName with
+            | "" -> il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
+            | ns -> il.Emit(OpCodes.Ldstr, ns)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
             il.Emit(OpCodes.Nop)
-            if not isNullable then property |> emitNotNullableCheck il name emitValue
+            if not isNullable then property |> emitNotNullableCheck il name.LocalName emitValue
             if isEncoded then
                 property.SimpleTypeName
                 |> Option.iter (fun typeName -> emitTypeAttribute il typeName.Name (Some(typeName.Namespace)))
@@ -572,13 +570,13 @@ module EmitDeserialization =
         il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Read() @>)
         il.Emit(OpCodes.Nop)
 
-    let emitXmlReaderReadOrExcept propertyName (il: ILGenerator) =
+    let emitXmlReaderReadOrExcept (propertyName: XName option) (il: ILGenerator) =
         let markSuccess = il.DefineLabel()
         il |> emitXmlReaderRead
         il.Emit(OpCodes.Brtrue_S, markSuccess)
         let errorMessage =
             match propertyName with
-            | Some(name) -> sprintf "Invalid message: expected `%s`, but was end of file." name
+            | Some(name) -> sprintf "Invalid message: expected `%s`, but was end of file." (name.ToString())
             | None -> "Invalid message: unexpected end of file."
         il.Emit(OpCodes.Ldstr, errorMessage)
         il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
@@ -618,15 +616,22 @@ module EmitDeserialization =
         match arrayMap.ItemElement with
         | Some(name,_) ->
             let markDeserialize = il.DefineLabel()
+            let markError = il.DefineLabel()
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-            il.Emit(OpCodes.Ldstr, name)
+            il.Emit(OpCodes.Ldstr, name.LocalName)
+            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+            il.Emit(OpCodes.Brfalse_S, markError)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
+            il.Emit(OpCodes.Ldstr, name.NamespaceName)
             il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
             il.Emit(OpCodes.Brtrue_S, markDeserialize)
+            il.MarkLabel(markError)
             il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-            il.Emit(OpCodes.Ldstr, name)
+            il.Emit(OpCodes.Ldstr, name.ToString())
             il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
             il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
             il.Emit(OpCodes.Throw)
@@ -716,8 +721,15 @@ module EmitDeserialization =
         | Some(Array { Element = None; ItemElement = Some(name,_) }) ->
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-            il.Emit(OpCodes.Ldstr, name)
+            il.Emit(OpCodes.Ldstr, name.LocalName)
             il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
+            il.Emit(OpCodes.Ldstr, name.NamespaceName)
+            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+            il.Emit(OpCodes.Add)
+            il.Emit(OpCodes.Ldc_I4_2)
+            il.Emit(OpCodes.Div)
         il.Emit(OpCodes.Ret)
 
 let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
@@ -795,7 +807,7 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
                 | Individual { Element = Some(name,_) }
                 | Array { Element = Some(name,_) }
                 | Array { ItemElement = Some(name,_) } ->
-                    il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." name)
+                    il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." (name.ToString()))
                 | _ -> il.Emit(OpCodes.Ldstr, "Invalid message: unexpected element `</{0}>`.")
                 il.Emit(OpCodes.Ldarg_0)
                 il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
@@ -824,15 +836,22 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
                 | Array { Element = Some(name,_) } ->
                     // reader.LocalName != property.Name
                     let markDeserialize = il.DefineLabel()
+                    let markError = il.DefineLabel()
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, name)
+                    il.Emit(OpCodes.Ldstr, name.LocalName)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                    il.Emit(OpCodes.Brfalse_S, markError)
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
+                    il.Emit(OpCodes.Ldstr, name.NamespaceName)
                     il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                     il.Emit(OpCodes.Brtrue_S, markDeserialize)
+                    il.MarkLabel(markError)
                     il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, name)
+                    il.Emit(OpCodes.Ldstr, name.ToString())
                     il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
                     il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                     il.Emit(OpCodes.Throw)
@@ -851,17 +870,13 @@ and createTypeMap (isEncoded: bool) (typ: Type) =
         let typeMap = TypeMap.Create(typ, deserialization, serialization, typ |> findBaseType isEncoded)
         if typeMaps.TryAdd(typ, typeMap) then typeMap |> init; typeMap else typeMaps.[typ]
     match typ with
-    | Collection -> typ |> addTypeMap (createArrayTypeSerializers isEncoded)
-    | NotSerializable -> failwithf "Type `%s` is not serializable." typ.FullName
+    | NotSerializable ->
+        failwithf "Type `%s` is not serializable." typ.FullName
     | Serializable(typeAttribute) ->
         typ |> addTypeMap (fun typeMap ->
             match typeAttribute.Layout with
             | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers isEncoded
             | _ -> typeMap |> createTypeSerializers isEncoded)
-
-and createArrayTypeSerializers isEncoded (typeMap: TypeMap) =
-    let elementTypeMap = typeMap.Type.GetElementType() |> getTypeMap isEncoded
-    failwithf "%s" typeMap.Type.FullName
 
 and createTypeSerializers isEncoded (typeMap: TypeMap) =
     let properties = typeMap |> getProperties isEncoded
@@ -1027,13 +1042,15 @@ and private getProperties isEncoded (typeMap: TypeMap) : Property list =
         | None -> None
         | Some(attr) ->
             let name = match attr.Name with null | "" -> p.Name | name -> name
-            let element = if attr.MergeContent then None else Some(name, attr.IsNullable)
+            let xname = match attr.Namespace with "" -> XName.Get(name) | ns -> XName.Get(name, ns)
+            let element = if attr.MergeContent then None else Some(xname, attr.IsNullable)
             match p.GetCustomAttribute<XRoadCollectionAttribute>() |> Option.ofObj with
             | Some(cattr) ->
                 let itemTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else p.PropertyType.GetElementType()) |> getTypeMap isEncoded
                 let itemName = match cattr.ItemName with null | "" -> "item" | name -> name
+                let itemXName = match cattr.ItemNamespace with "" -> XName.Get(itemName) | ns -> XName.Get(itemName, ns)
                 let itemElement = if itemTypeMap.Layout <> Some(LayoutKind.Choice)
-                                  then if cattr.MergeContent then None else Some(itemName, cattr.ItemIsNullable)
+                                  then if cattr.MergeContent then None else Some(itemXName, cattr.ItemIsNullable)
                                   else None
                 Some(Array { Type = p.PropertyType
                              Element = element
