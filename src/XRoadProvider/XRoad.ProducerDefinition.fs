@@ -469,6 +469,9 @@ module ServiceBuilder =
             let prop = paramClass |> addProperty (parameter.Name.LocalName, runtimeType, false)
             let attr = Attributes.xrdElement (nm, ns, false)
             prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
+            match runtimeType with
+            | CollectionType(x, itemName, y) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
+            | _ -> ()
             m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
         match operation.InputParameters with

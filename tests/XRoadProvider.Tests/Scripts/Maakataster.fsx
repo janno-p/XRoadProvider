@@ -1,8 +1,19 @@
 ﻿#I @"../../../bin/XRoadProvider"
 
+#r "../../../packages/Common.Logging/lib/net40/Common.Logging.dll"
+#r "../../../packages/Common.Logging.Core/lib/net40/Common.Logging.Core.dll"
 #r "XRoadProvider"
 
+open System.IO
 open XRoad.Providers
+
+//(*
+let properties = Common.Logging.Configuration.NameValueCollection()
+properties.["showDateTime"] <- "true"
+properties.["level"] <- "TRACE"
+
+Common.Logging.LogManager.Adapter <- Common.Logging.Simple.ConsoleOutLoggerFactoryAdapter(properties)
+//*)
 
 [<Literal>]
 let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/Maakataster.wsdl.xml"
