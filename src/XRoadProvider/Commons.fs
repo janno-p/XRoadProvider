@@ -538,3 +538,163 @@ module internal Wsdl =
     type Service =
         { Name: string
           Ports: ServicePort list }
+
+
+module internal MultipartMessage =
+    open System.Net
+    open System.Text
+
+    type private ChunkState = Limit | NewLine | EndOfStream
+
+    type private PeekStream(stream: Stream) =
+        let mutable borrow = None : int option
+        member __.Read() =
+            match borrow with
+            | Some(x) ->
+                borrow <- None
+                x
+            | None -> stream.ReadByte()
+        member __.Peek() =
+            match borrow with
+            | None ->
+                let x = stream.ReadByte()
+                borrow <- Some(x)
+                x
+            | Some(x) -> x
+        member __.Flush() = stream.Flush()
+        interface IDisposable with
+            member __.Dispose() =
+                stream.Dispose()
+
+    let private getBoundaryMarker (response: WebResponse) =
+        let parseMultipartContentType (contentType: string) =
+            let parts = contentType.Split([| ';' |], StringSplitOptions.RemoveEmptyEntries)
+                        |> List.ofArray
+                        |> List.map (fun x -> x.Trim())
+            match parts with
+            | "multipart/related" :: parts ->
+                parts |> List.tryFind (fun x -> x.StartsWith("boundary="))
+                      |> Option.map (fun x -> x.Substring(9).Trim('"'))
+            | _ -> None
+        response
+        |> Option.ofObj
+        |> Option.map (fun r -> r.ContentType)
+        |> Option.bind (parseMultipartContentType)
+
+    let [<Literal>] private CHUNK_SIZE = 4096
+    let [<Literal>] private CR = 13
+    let [<Literal>] private LF = 10
+
+    let private readChunkOrLine (buffer: byte []) (stream: PeekStream) =
+        let rec addByte pos =
+            if pos >= CHUNK_SIZE then (ChunkState.Limit, pos)
+            else
+                match stream.Read() with
+                | -1 -> (ChunkState.EndOfStream, pos)
+                | byt ->
+                    if byt = CR && stream.Peek() = LF then
+                        stream.Read() |> ignore
+                        (ChunkState.NewLine, pos)
+                    else
+                        buffer.[pos] <- Convert.ToByte(byt)
+                        addByte (pos + 1)
+        let result = addByte 0
+        stream.Flush()
+        result
+
+    let private readLine stream =
+        let mutable line = [| |] : byte []
+        let buffer = Array.zeroCreate<byte>(CHUNK_SIZE)
+        let rec readChunk () =
+            let (state, chunkSize) = stream |> readChunkOrLine buffer
+            Array.Resize(&line, line.Length + chunkSize)
+            Array.Copy(buffer, line, chunkSize)
+            match state with
+            | ChunkState.Limit -> readChunk()
+            | ChunkState.EndOfStream
+            | ChunkState.NewLine -> ()
+        readChunk()
+        line
+
+    let private extractMultipartContentHeaders (stream: PeekStream) =
+        let rec getHeaders () = seq {
+            match Encoding.ASCII.GetString(stream |> readLine).Trim() with
+            | null | "" -> ()
+            | line ->
+                match line.Split([| ':' |], 2) with
+                | [| name |] -> yield (name.Trim(), "")
+                | [| name; content |] -> yield (name.Trim(), content.Trim())
+                | _ -> failwith "never"
+                yield! getHeaders() }
+        getHeaders() |> Map.ofSeq
+
+    let private base64Decoder (encoding: Encoding) (encodedBytes: byte []) =
+        match encodedBytes with
+        | null | [| |] -> [| |]
+        | _ ->
+            let chars = encoding.GetChars(encodedBytes)
+            Convert.FromBase64CharArray(chars, 0, chars.Length)
+
+    let private getDecoder (contentEncoding: string) =
+        match contentEncoding.ToLower() with
+        | "base64" -> Some(base64Decoder)
+        | "quoted-printable" | "7bit" | "8bit" | "binary" -> None
+        | _ -> failwithf "No decoder implemented for content transfer encoding `%s`." contentEncoding
+
+    let private startsWith (value: byte []) (buffer: byte []) =
+        let rec compare i =
+            if value.[i] = buffer.[i] then
+                if i = 0 then true else compare (i - 1)
+            else false
+        if buffer |> isNull || value |> isNull || value.Length > buffer.Length then false
+        else compare (value.Length - 1)
+
+    let internal read (response: WebResponse) : Stream * BinaryContent list =
+        match response |> getBoundaryMarker with
+        | Some(boundaryMarker) ->
+            use stream = new PeekStream(response.GetResponseStream())
+            let contents = List<string option * MemoryStream>()
+            let contentMarker = Encoding.ASCII.GetBytes(sprintf "--%s" boundaryMarker)
+            let endMarker = Encoding.ASCII.GetBytes(sprintf "--%s--" boundaryMarker)
+            let (|Content|End|Separator|) line =
+                if line |> startsWith endMarker then End
+                elif line |> startsWith contentMarker then Content
+                else Separator
+            let buffer = Array.zeroCreate<byte>(CHUNK_SIZE)
+            let rec copyChunk addNewLine encoding (decoder: (Encoding -> byte[] -> byte[]) option) (contentStream: Stream) =
+                let (state,size) = stream |> readChunkOrLine buffer
+                if buffer |> startsWith endMarker then false
+                elif buffer |> startsWith contentMarker then true
+                elif state = ChunkState.EndOfStream then failwith "Unexpected end of multipart stream."
+                else
+                    if decoder.IsNone && addNewLine then contentStream.Write([| 13uy; 10uy |], 0, 2)
+                    let (decodedBuffer,size) = decoder |> Option.fold (fun (buf,_) func -> let buf = buf |> func encoding
+                                                                                           (buf,buf.Length)) (buffer,size)
+                    contentStream.Write(decodedBuffer, 0, size)
+                    match state with EndOfStream -> false | _ -> copyChunk (state = ChunkState.NewLine) encoding decoder contentStream
+            let parseContentPart () =
+                let headers = stream |> extractMultipartContentHeaders
+                let contentId = headers |> Map.tryFind("content-id") |> Option.map (fun x -> x.Trim().Trim('<', '>'))
+                let decoder = headers |> Map.tryFind("content-transfer-encoding") |> Option.bind (getDecoder)
+                let contentStream = new MemoryStream()
+                contents.Add(contentId, contentStream)
+                copyChunk false Encoding.UTF8 decoder contentStream
+            let rec parseContent () =
+                match stream |> readLine with
+                | Content -> if parseContentPart() then parseContent() else ()
+                | End -> ()
+                | Separator -> parseContent()
+            parseContent()
+            match contents |> Seq.toList with
+            | (_,content)::attachments ->
+                (upcast content, attachments
+                                 |> List.map (fun (name,stream) ->
+                                    use stream = stream
+                                    stream.Position <- 0L
+                                    BinaryContent.Create(name.Value, stream.ToArray())))
+            | _ -> failwith "empty multipart content"
+        | None ->
+            use stream = response.GetResponseStream()
+            let content = new MemoryStream()
+            stream.CopyTo(content)
+            (upcast content, [])

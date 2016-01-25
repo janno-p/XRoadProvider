@@ -138,6 +138,11 @@ type XRoadProviders() as this =
                 | _ -> failwith "Unexpected parameter values!"
                 thisTy)
 
+    let noteProperty message : MemberInfo =
+        let property = ProvidedProperty("<Note>", typeof<string>, GetterCode = (fun _ -> <@@ "" @@>), IsStatic = true)
+        property.AddXmlDoc(message)
+        upcast property
+
     let buildServer6Types (typeName: string) (args: obj []) =
         let securityServer: string = unbox args.[0]
         let xRoadInstance: string = unbox args.[1]
@@ -171,33 +176,40 @@ type XRoadProviders() as this =
                 classTy.AddMember(ProvidedLiteralField("ClassName", typeof<string>, memberClass.Name))
                 classTy.AddMembersDelayed (fun () ->
                     memberClass.Members
-                    |> List.map (fun memberItem -> 
+                    |> List.map (fun memberItem ->
+                        let addServicesTy service doc =
+                            let servicesTy = ProvidedTypeDefinition("Services", Some baseTy, HideObjectMethods = true)
+                            servicesTy.AddXmlDoc(sprintf "List of services for %s." memberItem.Name)
+                            servicesTy.AddMembersDelayed(fun _ ->
+                                try
+                                    match  SecurityServerV6.downloadMethodsList securityServer xRoadInstance useHttps client service with
+                                    | [] -> [noteProperty "No services are list in this X-Road member."]
+                                    | ss -> ss |> List.map (fun x -> ProvidedLiteralField(x.ServiceCode, typeof<string>, x.ServiceCode) :> MemberInfo)
+                                with e -> [noteProperty e.Message])
+                            servicesTy
                         let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
                         memberTy.AddXmlDoc(memberItem.Name)
                         memberTy.AddMember(ProvidedLiteralField("Name", typeof<string>, memberItem.Name))
                         memberTy.AddMember(ProvidedLiteralField("Code", typeof<string>, memberItem.Code))
                         let subsystemsTy = ProvidedTypeDefinition("Subsystems", Some baseTy, HideObjectMethods = true)
                         subsystemsTy.AddXmlDoc(sprintf "List of subsystems for %s." memberItem.Name)
-                        subsystemsTy.AddMembersDelayed(fun () -> memberItem.Subsystems |> List.map (fun subsystem -> ProvidedLiteralField(subsystem, typeof<string>, subsystem)))
+                        subsystemsTy.AddMembersDelayed(fun () ->
+                            memberItem.Subsystems
+                            |> List.map (fun subsystem ->
+                                let subsystemTy = ProvidedTypeDefinition(subsystem, Some baseTy, HideObjectMethods = true)
+                                subsystemTy.AddXmlDoc(sprintf "Subsystem %s of X-Road member %s (%s)." subsystem memberItem.Name memberItem.Code)
+                                subsystemTy.AddMember(ProvidedLiteralField("Name", typeof<string>, subsystem))
+                                subsystemTy.AddMember(addServicesTy (SecurityServerV6.SubsystemId(memberClass.Name, memberItem.Code, subsystem)) (sprintf "List of services for %s." subsystem))
+                                subsystemTy))
                         memberTy.AddMember(subsystemsTy)
-                        let servicesTy = ProvidedTypeDefinition("Services", Some baseTy, HideObjectMethods = true)
-                        servicesTy.AddMembersDelayed(fun _ ->
-                            SecurityServerV6.downloadMethodsList securityServer xRoadInstance useHttps client (memberClass.Name, memberItem.Code)
-                            |> List.map (fun x -> ProvidedLiteralField(x.ServiceCode, typeof<string>, x.ServiceCode)))
-                        memberTy.AddMember(servicesTy)
+                        memberTy.AddMember(addServicesTy (SecurityServerV6.MemberId(memberClass.Name, memberItem.Code)) (sprintf "List of services for %s." memberItem.Name))
                         memberTy))
                 classTy))
 
         centralServicesTy.AddMembersDelayed (fun _ ->
             match SecurityServerV6.downloadCentralServiceList securityServer xRoadInstance refresh useHttps with
-            | [] ->
-                let property = ProvidedProperty("<Note>", typeof<string>, GetterCode = (fun _ -> <@@ "" @@>), IsStatic = true)
-                property.AddXmlDoc("No central services are listed in this X-Road instance.")
-                [property :> MemberInfo]
-            | services ->
-                services
-                |> List.map (fun serviceCode ->
-                    upcast ProvidedLiteralField(serviceCode, typeof<string>, serviceCode)))
+            | [] -> [noteProperty "No central services are listed in this X-Road instance."]
+            | services -> services |> List.map (fun serviceCode -> upcast ProvidedLiteralField(serviceCode, typeof<string>, serviceCode)))
 
         thisTy
 
