@@ -67,8 +67,19 @@ module internal SecurityServer =
 
 
 module internal SecurityServerV6 =
+    let utf8WithoutBom = UTF8Encoding(false)
+
     // Needs better solution to handle server certificates.
     ServicePointManager.ServerCertificateValidationCallback <- Security.RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
+
+    /// Identifies X-Road client
+    type Client =
+        | MemberId of string * string
+        | SubsystemId of string * string * string
+        with
+            member x.ObjectId with get() = match x with MemberId(_) -> "MEMBER" | SubsystemId(_) -> "SUBSYSTEM"
+            member x.MemberClass with get() = match x with MemberId(v,_) | SubsystemId(v,_,_) -> v
+            member x.MemberCode with get() = match x with MemberId(_,v) | SubsystemId(_,v,_) -> v
 
     /// Represents single member and its subsystems.
     type Member =
@@ -105,6 +116,7 @@ module internal SecurityServerV6 =
     /// High-level function to execute web request against security server.
     let makeWebRequest (serverUri: Uri) writeRequest =
         let request = WebRequest.Create(serverUri) :?> HttpWebRequest
+        request.ServicePoint.Expect100Continue <- false
         request.Method <- "POST"
         request.ContentType <- sprintf "text/xml; charset=%s" Encoding.UTF8.HeaderName
         request.Headers.Set("SOAPAction", "")
@@ -167,38 +179,43 @@ module internal SecurityServerV6 =
         |> Seq.toList
 
     /// Downloads and parses method list of selected service provider.
-    let downloadMethodsList host instance useHttps client service =
+    let downloadMethodsList host instance useHttps (client: Client) service =
         let serverUri = Uri(sprintf "http%s://%s" (if useHttps then "s" else "") host)
-        let clientMemberClass, clientMemberCode = client
         let serviceMemberClass, serviceMemberCode = service
         let doc = makeWebRequest serverUri (fun request ->
             use stream = request.GetRequestStream()
-            use writer = XmlWriter.Create(stream)
+            use streamWriter = new StreamWriter(stream, utf8WithoutBom)
+            use writer = XmlWriter.Create(streamWriter, XmlWriterSettings(Indent=true, IndentChars="  ", NewLineChars=Environment.NewLine))
             writer.WriteStartDocument()
-            writer.WriteStartElement("Envelope", XmlNamespace.SoapEnv) // <soapenv:Envelope>
+            writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv) // <soapenv:Envelope>
+            writer.WriteAttributeString("xmlns", "soapenv", XmlNamespace.Xmlns, XmlNamespace.SoapEnv)
+            writer.WriteAttributeString("xmlns", "xrd", XmlNamespace.Xmlns, XmlNamespace.XRoad40)
+            writer.WriteAttributeString("xmlns", "id", XmlNamespace.Xmlns, XmlNamespace.XRoad40Id)
             writer.WriteStartElement("Header", XmlNamespace.SoapEnv) // <soapenv:Header>
-            writer.WriteStartElement("client", XmlNamespace.XRoad40Id)
-            writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, "MEMBER")
+            writer.WriteStartElement("client", XmlNamespace.XRoad40)
+            writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, client.ObjectId)
             writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, instance)
-            writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, clientMemberClass)
-            writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, clientMemberCode)
+            writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, client.MemberClass)
+            writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, client.MemberCode)
+            match client with SubsystemId(_,_,code) -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code) | _ -> ()
             writer.WriteEndElement()
-            writer.WriteStartElement("service", XmlNamespace.XRoad40Id)
+            writer.WriteStartElement("service", XmlNamespace.XRoad40)
             writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, "SERVICE")
             writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, instance)
             writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, serviceMemberClass)
             writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, serviceMemberCode)
             writer.WriteElementString("serviceCode", XmlNamespace.XRoad40Id, "listMethods")
             writer.WriteEndElement()
-            writer.WriteElementString("id", XmlNamespace.XRoad40Id, XRoadHelper.generateNonce())
-            writer.WriteElementString("protocolVersion", XmlNamespace.XRoad40Id, "4.0")
+            writer.WriteElementString("id", XmlNamespace.XRoad40, XRoadHelper.generateNonce())
+            writer.WriteElementString("protocolVersion", XmlNamespace.XRoad40, "4.0")
             writer.WriteEndElement() // </soapenv:Header>
             writer.WriteStartElement("Body", XmlNamespace.SoapEnv) // <soapenv:Body>
             writer.WriteStartElement("listMethods", XmlNamespace.XRoad40)
             writer.WriteEndElement()
             writer.WriteEndElement() // </soapenv:Body>
             writer.WriteEndElement() // </soapenv:Envelope>
-            writer.WriteEndDocument())
+            writer.WriteEndDocument()
+            writer.Flush())
         let envelope = doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
         let body = envelope.Element(xnsname "Body" XmlNamespace.SoapEnv)
         let fault = body.Element(xnsname "Fault" XmlNamespace.SoapEnv)

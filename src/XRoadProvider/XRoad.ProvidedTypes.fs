@@ -139,10 +139,17 @@ type XRoadProviders() as this =
                 thisTy)
 
     let buildServer6Types (typeName: string) (args: obj []) =
-        let securityServer = args.[0] :?> string
-        let xRoadInstance = args.[1] :?> string
-        let refresh = args.[2] :?> bool
-        let useHttps = args.[3] :?> bool
+        let securityServer: string = unbox args.[0]
+        let xRoadInstance: string = unbox args.[1]
+        let memberClass: string = unbox args.[2]
+        let memberCode: string = unbox args.[3]
+        let subsystemCode: string = unbox args.[4]
+        let refresh: bool = unbox args.[5]
+        let useHttps: bool = unbox args.[6]
+
+        let client = match subsystemCode with
+                     | null | "" -> SecurityServerV6.MemberId(memberClass, memberCode)
+                     | code -> SecurityServerV6.SubsystemId(memberClass, memberCode, code)
 
         let thisTy = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
 
@@ -175,7 +182,7 @@ type XRoadProviders() as this =
                         memberTy.AddMember(subsystemsTy)
                         let servicesTy = ProvidedTypeDefinition("Services", Some baseTy, HideObjectMethods = true)
                         servicesTy.AddMembersDelayed(fun _ ->
-                            SecurityServerV6.downloadMethodsList securityServer xRoadInstance useHttps (memberClass.Name, memberItem.Code) (memberClass.Name, memberItem.Code)
+                            SecurityServerV6.downloadMethodsList securityServer xRoadInstance useHttps client (memberClass.Name, memberItem.Code)
                             |> List.map (fun x -> ProvidedLiteralField(x.ServiceCode, typeof<string>, x.ServiceCode)))
                         memberTy.AddMember(servicesTy)
                         memberTy))
@@ -197,6 +204,9 @@ type XRoadProviders() as this =
     let server6Parameters =
         [ ProvidedStaticParameter("SecurityServer", typeof<string>), "Domain name or IP address of X-Road security server which is used to connect to that X-Road instance."
           ProvidedStaticParameter("XRoadInstance", typeof<string>), "Code identifying the instance of X-Road system."
+          ProvidedStaticParameter("MemberClass", typeof<string>), "Member class that is used in client identifier in X-Road request."
+          ProvidedStaticParameter("MemberCode", typeof<string>), "Member code that is used in client identifier in X-Road requests."
+          ProvidedStaticParameter("SubsystemCode", typeof<string>, ""), "Subsystem code that is used in client identifier in X-Road requests."
           ProvidedStaticParameter("ForceRefresh", typeof<bool>, false), "When `true`, forces type provider to refresh data from security server."
           ProvidedStaticParameter("UseHttps", typeof<bool>, false), "When `true`, tryes to download data using https protocol." ]
         |> List.map (fun (parameter,doc) -> parameter.AddXmlDoc(doc); parameter)
