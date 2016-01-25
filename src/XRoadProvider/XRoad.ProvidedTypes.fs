@@ -152,9 +152,10 @@ type XRoadProviders() as this =
         let refresh: bool = unbox args.[5]
         let useHttps: bool = unbox args.[6]
 
-        let client = match subsystemCode with
-                     | null | "" -> SecurityServerV6.MemberId(memberClass, memberCode)
-                     | code -> SecurityServerV6.SubsystemId(memberClass, memberCode, code)
+        let client =
+            match subsystemCode with
+            | null | "" -> SecurityServerV6.Member(xRoadInstance, memberClass, memberCode)
+            | code -> SecurityServerV6.Subsystem(xRoadInstance, memberClass, memberCode, code)
 
         let thisTy = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
 
@@ -177,12 +178,14 @@ type XRoadProviders() as this =
                 classTy.AddMembersDelayed (fun () ->
                     memberClass.Members
                     |> List.map (fun memberItem ->
-                        let addServicesTy service doc =
+                        let memberId = SecurityServerV6.Member(xRoadInstance, memberClass.Name, memberItem.Code)
+                        let addServicesTy (provider: SecurityServerV6.ServiceProvider) doc =
                             let servicesTy = ProvidedTypeDefinition("Services", Some baseTy, HideObjectMethods = true)
                             servicesTy.AddXmlDoc(sprintf "List of services for %s." memberItem.Name)
                             servicesTy.AddMembersDelayed(fun _ ->
                                 try
-                                    match  SecurityServerV6.downloadMethodsList securityServer xRoadInstance useHttps client service with
+                                    let service: SecurityServerV6.Service = { Provider = provider; ServiceCode = "listMethods"; ServiceVersion = None }
+                                    match  SecurityServerV6.downloadMethodsList securityServer useHttps client service with
                                     | [] -> [noteProperty "No services are list in this X-Road member."]
                                     | ss -> ss |> List.map (fun x -> ProvidedLiteralField(x.ServiceCode, typeof<string>, x.ServiceCode) :> MemberInfo)
                                 with e -> [noteProperty e.Message])
@@ -199,10 +202,10 @@ type XRoadProviders() as this =
                                 let subsystemTy = ProvidedTypeDefinition(subsystem, Some baseTy, HideObjectMethods = true)
                                 subsystemTy.AddXmlDoc(sprintf "Subsystem %s of X-Road member %s (%s)." subsystem memberItem.Name memberItem.Code)
                                 subsystemTy.AddMember(ProvidedLiteralField("Name", typeof<string>, subsystem))
-                                subsystemTy.AddMember(addServicesTy (SecurityServerV6.SubsystemId(memberClass.Name, memberItem.Code, subsystem)) (sprintf "List of services for %s." subsystem))
+                                subsystemTy.AddMember(addServicesTy (memberId.GetSubsystem(subsystem)) (sprintf "List of services for %s." subsystem))
                                 subsystemTy))
                         memberTy.AddMember(subsystemsTy)
-                        memberTy.AddMember(addServicesTy (SecurityServerV6.MemberId(memberClass.Name, memberItem.Code)) (sprintf "List of services for %s." memberItem.Name))
+                        memberTy.AddMember(addServicesTy memberId (sprintf "List of services for %s." memberItem.Name))
                         memberTy))
                 classTy))
 

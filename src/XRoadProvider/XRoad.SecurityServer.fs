@@ -72,14 +72,28 @@ module internal SecurityServerV6 =
     // Needs better solution to handle server certificates.
     ServicePointManager.ServerCertificateValidationCallback <- Security.RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
 
-    /// Identifies X-Road client
-    type Identifier =
-        | MemberId of string * string
-        | SubsystemId of string * string * string
+    /// Identifies X-Road service provider.
+    type ServiceProvider =
+        | Member of xRoadInstance: string * memberClass: string * memberCode: string
+        | Subsystem of xRoadInstance: string * memberClass: string * memberCode: string * subsystemCode: string
         with
-            member x.ObjectId with get() = match x with MemberId(_) -> "MEMBER" | SubsystemId(_) -> "SUBSYSTEM"
-            member x.MemberClass with get() = match x with MemberId(v,_) | SubsystemId(v,_,_) -> v
-            member x.MemberCode with get() = match x with MemberId(_,v) | SubsystemId(_,v,_) -> v
+            member this.ObjectId with get() = match this with Member(_) -> "MEMBER" | Subsystem(_) -> "SUBSYSTEM"
+            member this.XRoadInstance with get() = match this with Member(v,_,_) | Subsystem(v,_,_,_) -> v
+            member this.MemberClass with get() = match this with Member(_,v,_) | Subsystem(_,v,_,_) -> v
+            member this.MemberCode with get() = match this with Member(_,_,v) | Subsystem(_,_,v,_) -> v
+            member this.SubsystemCode with get() = match this with Member(_) -> None | Subsystem(_,_,_,v) -> Some(v)
+            member this.Identifier with get() = sprintf "%s/%s/%s%s" this.XRoadInstance this.MemberClass this.MemberCode (this.SubsystemCode |> Option.fold (fun _ x -> sprintf "/%s" x) "")
+            override this.ToString() = sprintf "%s:%s" this.ObjectId this.Identifier
+            member this.GetSubsystem(subsystemCode) = match this with Member(a,b,c) -> Subsystem(a,b,c,subsystemCode) | Subsystem(a,b,c,_) -> Subsystem(a,b,c,subsystemCode)
+
+    /// Identifies X-Road service.
+    type Service =
+        { Provider: ServiceProvider
+          ServiceCode: string
+          ServiceVersion: string option }
+        with
+            member this.ObjectId with get() = "SERVICE"
+            override this.ToString() = sprintf "%s:%s/%s%s" this.ObjectId this.Provider.Identifier this.ServiceCode (this.ServiceVersion |> Option.fold (fun _ x -> sprintf "/%s" x) "")
 
     /// Represents single member and its subsystems.
     type Member =
@@ -180,7 +194,7 @@ module internal SecurityServerV6 =
         |> Seq.toList
 
     /// Downloads and parses method list of selected service provider.
-    let downloadMethodsList host instance useHttps (client: Identifier) (service: Identifier) =
+    let downloadMethodsList host useHttps (client: ServiceProvider) (service: Service) =
         let serverUri = Uri(sprintf "http%s://%s" (if useHttps then "s" else "") host)
         let doc = makeWebRequest serverUri (fun request ->
             use stream = request.GetRequestStream()
@@ -194,18 +208,19 @@ module internal SecurityServerV6 =
             writer.WriteStartElement("Header", XmlNamespace.SoapEnv) // <soapenv:Header>
             writer.WriteStartElement("client", XmlNamespace.XRoad40)
             writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, client.ObjectId)
-            writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, instance)
+            writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, client.XRoadInstance)
             writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, client.MemberClass)
             writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, client.MemberCode)
-            match client with SubsystemId(_,_,code) -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code) | _ -> ()
+            client.SubsystemCode |> Option.iter (fun code -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code))
             writer.WriteEndElement()
             writer.WriteStartElement("service", XmlNamespace.XRoad40)
-            writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, "SERVICE")
-            writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, instance)
-            writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, service.MemberClass)
-            writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, service.MemberCode)
-            match service with SubsystemId(_,_,code) -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code) | _ -> ()
-            writer.WriteElementString("serviceCode", XmlNamespace.XRoad40Id, "listMethods")
+            writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, service.ObjectId)
+            writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, service.Provider.XRoadInstance)
+            writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, service.Provider.MemberClass)
+            writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, service.Provider.MemberCode)
+            service.Provider.SubsystemCode |> Option.iter (fun code -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code))
+            writer.WriteElementString("serviceCode", XmlNamespace.XRoad40Id, service.ServiceCode)
+            service.ServiceVersion |> Option.iter (fun vers -> writer.WriteElementString("serviceVersion", XmlNamespace.XRoad40Id, vers))
             writer.WriteEndElement()
             writer.WriteElementString("id", XmlNamespace.XRoad40, XRoadHelper.generateNonce())
             writer.WriteElementString("protocolVersion", XmlNamespace.XRoad40, "4.0")
