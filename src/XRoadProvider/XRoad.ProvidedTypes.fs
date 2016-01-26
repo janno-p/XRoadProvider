@@ -179,33 +179,27 @@ type XRoadProviders() as this =
                     memberClass.Members
                     |> List.map (fun memberItem ->
                         let memberId = SecurityServerV6.Member(xRoadInstance, memberClass.Name, memberItem.Code)
-                        let addServicesTy (provider: SecurityServerV6.ServiceProvider) doc =
-                            let servicesTy = ProvidedTypeDefinition("Services", Some baseTy, HideObjectMethods = true)
-                            servicesTy.AddXmlDoc(sprintf "List of services for %s." memberItem.Name)
-                            servicesTy.AddMembersDelayed(fun _ ->
-                                try
-                                    let service: SecurityServerV6.Service = { Provider = provider; ServiceCode = "listMethods"; ServiceVersion = None }
-                                    match  SecurityServerV6.downloadMethodsList securityServer useHttps client service with
-                                    | [] -> [noteProperty "No services are list in this X-Road member."]
-                                    | ss -> ss |> List.map (fun x -> ProvidedLiteralField(x.ServiceCode, typeof<string>, x.ServiceCode) :> MemberInfo)
-                                with e -> [noteProperty e.Message])
-                            servicesTy
+                        let addServices provider =
+                            try
+                                let service: SecurityServerV6.Service = { Provider = provider; ServiceCode = "listMethods"; ServiceVersion = None }
+                                match  SecurityServerV6.downloadMethodsList securityServer useHttps client service with
+                                | [] -> [noteProperty "No services are list in this X-Road member."]
+                                | ss -> ss |> List.map (fun x -> ProvidedLiteralField((sprintf "SERVICE:%s" x.ServiceCode), typeof<string>, x.ServiceCode) :> MemberInfo)
+                            with e -> [noteProperty e.Message]
                         let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
                         memberTy.AddXmlDoc(memberItem.Name)
                         memberTy.AddMember(ProvidedLiteralField("Name", typeof<string>, memberItem.Name))
                         memberTy.AddMember(ProvidedLiteralField("Code", typeof<string>, memberItem.Code))
-                        let subsystemsTy = ProvidedTypeDefinition("Subsystems", Some baseTy, HideObjectMethods = true)
-                        subsystemsTy.AddXmlDoc(sprintf "List of subsystems for %s." memberItem.Name)
-                        subsystemsTy.AddMembersDelayed(fun () ->
+                        memberTy.AddMembersDelayed(fun _ -> addServices memberId)
+                        memberTy.AddMembersDelayed(fun () ->
                             memberItem.Subsystems
                             |> List.map (fun subsystem ->
-                                let subsystemTy = ProvidedTypeDefinition(subsystem, Some baseTy, HideObjectMethods = true)
+                                let subsystemId = memberId.GetSubsystem(subsystem)
+                                let subsystemTy = ProvidedTypeDefinition(sprintf "%s:%s" subsystemId.ObjectId subsystem, Some baseTy, HideObjectMethods = true)
                                 subsystemTy.AddXmlDoc(sprintf "Subsystem %s of X-Road member %s (%s)." subsystem memberItem.Name memberItem.Code)
                                 subsystemTy.AddMember(ProvidedLiteralField("Name", typeof<string>, subsystem))
-                                subsystemTy.AddMember(addServicesTy (memberId.GetSubsystem(subsystem)) (sprintf "List of services for %s." subsystem))
+                                subsystemTy.AddMembersDelayed(fun _ -> addServices subsystemId)
                                 subsystemTy))
-                        memberTy.AddMember(subsystemsTy)
-                        memberTy.AddMember(addServicesTy memberId (sprintf "List of services for %s." memberItem.Name))
                         memberTy))
                 classTy))
 
