@@ -228,7 +228,7 @@ type internal ProvidedField =
 
 /// Represents the type constructor in a provided symbol type.
 [<NoComparison>]
-type internal SymbolKind = 
+type internal ProvidedSymbolKind = 
     /// Indicates that the type constructor is for a single-dimensional array
     | SDArray 
     /// Indicates that the type constructor is for a multi-dimensional array
@@ -250,7 +250,7 @@ type internal ProvidedSymbolType =
     inherit Type
 
     /// Returns the kind of this symbolic type
-    member Kind : SymbolKind
+    member Kind : ProvidedSymbolKind
 
     /// Return the provided types used as arguments of this symbolic type
     member Args : list<Type>

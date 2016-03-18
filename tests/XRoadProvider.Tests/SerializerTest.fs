@@ -498,7 +498,7 @@ let [<Test>] ``serialize xop file`` () =
     result.BinaryContent |> should be (sameAs context.Attachments.["Content-ID"])
     result.BinaryContent.GetBytes() |> should equal [| 1uy; 2uy; 3uy; 4uy |]
 
-let [<Test; Ignore>] ``serialize array of system type values`` () =
+let [<Test; Ignore("Not implemented")>] ``serialize array of system type values`` () =
     let resultXml = [| "1"; "2"; "3" |] |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><item>1</item><item>2</item><item>3</item></keha></wrapper>"
     resultXml |> deserialize'<string> |> should equal [| "1"; "2"; "3" |]

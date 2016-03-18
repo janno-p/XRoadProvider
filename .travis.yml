@@ -1,7 +1,6 @@
 language: csharp
 mono:
   - latest
-  - alpha
 
 sudo: false
 
