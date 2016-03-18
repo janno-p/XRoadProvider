@@ -113,13 +113,22 @@ module internal SecurityServerV6 =
           SubsystemCode: string option
           ServiceCode: string
           ServiceVersion: string option }
+        with
+            member this.WsdlPath =
+                StringBuilder().Append(sprintf "wsdl?xRoadInstance=%s" this.XRoadInstance)
+                               .Append(sprintf "&memberClass=%s" this.MemberClass)
+                               .Append(sprintf "&memberCode=%s" this.MemberCode)
+                               .Append(this.SubsystemCode |> Option.fold (fun _ -> sprintf "&subsystemCode=%s") "")
+                               .Append(sprintf "&serviceCode=%s" this.ServiceCode)
+                               .Append(this.ServiceVersion |> Option.fold (fun _ -> sprintf "&version=%s") "")
+                               .ToString()
 
     /// Remember previously downloaded content in temporary files.
     let cache = Dictionary<string, FileInfo>()
 
     /// Downloads producer list if not already downloaded previously.
     /// Can be forced to redownload file by `refresh` parameters.
-    let getFile uri refresh =
+    let getFile refresh uri =
         if refresh || (not (cache.ContainsKey(uri))) then
             let fileName = Path.GetTempFileName()
             use webClient = new WebClient()
@@ -141,9 +150,9 @@ module internal SecurityServerV6 =
         XDocument.Load(reader)
 
     /// Downloads and parses producer list for X-Road v6 security server.
-    let downloadProducerList host instance refresh useHttps =
+    let downloadProducerList uri instance refresh =
         // Read xml document from file and navigate to root element.
-        let doc = getFile (sprintf "http%s://%s/listClients?xRoadInstance=%s" (if useHttps then "s" else "") host instance) refresh
+        let doc = Uri(uri, sprintf "listClients?xRoadInstance=%s" instance).ToString() |> getFile refresh
         let root = doc.Element(xnsname "clientList" XmlNamespace.XRoad40)
         // Data structures to support recomposition to records.
         let subsystems = Dictionary<string * string, ISet<string>>()
@@ -183,9 +192,9 @@ module internal SecurityServerV6 =
         |> Seq.toList
 
     /// Downloads and parses central service list from X-Road v6 security server.
-    let downloadCentralServiceList host instance refresh useHttps =
+    let downloadCentralServiceList uri instance refresh =
         // Read xml document from file and navigate to root element.
-        let doc = getFile (sprintf "http%s://%s/listCentralServices?xRoadInstance=%s" (if useHttps then "s" else "") host instance) refresh
+        let doc = Uri(uri, sprintf "listCentralServices?xRoadInstance=%s" instance).ToString() |> getFile refresh
         let root = doc.Element(xnsname "centralServiceList" XmlNamespace.XRoad40)
         // Collect data about available central services.
         root.Elements(xnsname "centralService" XmlNamespace.XRoad40)
@@ -194,9 +203,8 @@ module internal SecurityServerV6 =
         |> Seq.toList
 
     /// Downloads and parses method list of selected service provider.
-    let downloadMethodsList host useHttps (client: ServiceProvider) (service: Service) =
-        let serverUri = Uri(sprintf "http%s://%s" (if useHttps then "s" else "") host)
-        let doc = makeWebRequest serverUri (fun request ->
+    let downloadMethodsList uri (client: ServiceProvider) (service: Service) =
+        let doc = makeWebRequest uri (fun request ->
             use stream = request.GetRequestStream()
             use streamWriter = new StreamWriter(stream, utf8WithoutBom)
             use writer = XmlWriter.Create(streamWriter)

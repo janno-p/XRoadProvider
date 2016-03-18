@@ -296,20 +296,19 @@ let private parsePortBinding languageCode definitions element =
     let current = element %! xnsname "address" XmlNamespace.XRoad31Ee
     let legacy = element %! xnsname "address" XmlNamespace.XRoad20
     // Build port binding object if available.
-    match current, legacy with
-    | null, null -> None
-    | e, null | null, e ->
-        let producer = e |> reqAttr (xname "producer")
-        let protocol = fromNamespace e.Name.NamespaceName
-        let servicePort =
-            { Name = name
-              Documentation = readLanguages languageCode protocol element
-              Uri = address
-              Producer = producer
-              Methods = []
-              Protocol = protocol }
-        Some(servicePort |> parseBinding languageCode definitions binding)
-    | _ -> failwith "Mixing different X-Road protocol versions is not supported."
+    let producer, protocol =
+        match current, legacy with
+        | null, null -> "", XRoadProtocol.Version40
+        | e, null | null, e -> (e |> reqAttr (xname "producer")), (fromNamespace e.Name.NamespaceName)
+        | _ -> failwith "Mixing different X-Road protocol versions is not supported."
+    let servicePort =
+        { Name = name
+          Documentation = readLanguages languageCode protocol element
+          Uri = address
+          Producer = producer
+          Methods = []
+          Protocol = protocol }
+    Some(servicePort |> parseBinding languageCode definitions binding)
 
 /// Parse all service elements defined as immediate child elements of current element.
 /// http://www.w3.org/TR/wsdl#_services

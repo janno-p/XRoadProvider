@@ -144,13 +144,12 @@ type XRoadProviders() as this =
         upcast property
 
     let buildServer6Types (typeName: string) (args: obj []) =
-        let securityServer: string = unbox args.[0]
+        let securityServerUri = Uri(unbox<string> args.[0])
         let xRoadInstance: string = unbox args.[1]
         let memberClass: string = unbox args.[2]
         let memberCode: string = unbox args.[3]
         let subsystemCode: string = unbox args.[4]
         let refresh: bool = unbox args.[5]
-        let useHttps: bool = unbox args.[6]
 
         let client =
             match subsystemCode with
@@ -170,7 +169,7 @@ type XRoadProviders() as this =
         thisTy.AddMember(centralServicesTy)
 
         producersTy.AddMembersDelayed (fun _ ->
-            SecurityServerV6.downloadProducerList securityServer xRoadInstance refresh useHttps
+            SecurityServerV6.downloadProducerList securityServerUri xRoadInstance refresh
             |> List.map (fun memberClass ->
                 let classTy = ProvidedTypeDefinition(memberClass.Name, Some baseTy, HideObjectMethods = true)
                 classTy.AddXmlDoc(memberClass.Name)
@@ -179,18 +178,18 @@ type XRoadProviders() as this =
                     memberClass.Members
                     |> List.map (fun memberItem ->
                         let memberId = SecurityServerV6.Member(xRoadInstance, memberClass.Name, memberItem.Code)
-                        let addServices provider =
+                        let addServices provider addNote =
                             try
                                 let service: SecurityServerV6.Service = { Provider = provider; ServiceCode = "listMethods"; ServiceVersion = None }
-                                match  SecurityServerV6.downloadMethodsList securityServer useHttps client service with
-                                | [] -> [noteProperty "No services are list in this X-Road member."]
-                                | ss -> ss |> List.map (fun x -> ProvidedLiteralField((sprintf "SERVICE:%s" x.ServiceCode), typeof<string>, x.ServiceCode) :> MemberInfo)
+                                match addNote, SecurityServerV6.downloadMethodsList securityServerUri client service with
+                                | true, [] -> [noteProperty "No services are listed in this X-Road member."]
+                                | _, ss -> ss |> List.map (fun x -> ProvidedLiteralField((sprintf "SERVICE:%s" x.ServiceCode), typeof<string>, Uri(securityServerUri, x.WsdlPath).ToString()) :> MemberInfo)
                             with e -> [noteProperty e.Message]
                         let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
                         memberTy.AddXmlDoc(memberItem.Name)
                         memberTy.AddMember(ProvidedLiteralField("Name", typeof<string>, memberItem.Name))
                         memberTy.AddMember(ProvidedLiteralField("Code", typeof<string>, memberItem.Code))
-                        memberTy.AddMembersDelayed(fun _ -> addServices memberId)
+                        memberTy.AddMembersDelayed(fun _ -> addServices memberId false)
                         memberTy.AddMembersDelayed(fun () ->
                             memberItem.Subsystems
                             |> List.map (fun subsystem ->
@@ -198,26 +197,25 @@ type XRoadProviders() as this =
                                 let subsystemTy = ProvidedTypeDefinition(sprintf "%s:%s" subsystemId.ObjectId subsystem, Some baseTy, HideObjectMethods = true)
                                 subsystemTy.AddXmlDoc(sprintf "Subsystem %s of X-Road member %s (%s)." subsystem memberItem.Name memberItem.Code)
                                 subsystemTy.AddMember(ProvidedLiteralField("Name", typeof<string>, subsystem))
-                                subsystemTy.AddMembersDelayed(fun _ -> addServices subsystemId)
+                                subsystemTy.AddMembersDelayed(fun _ -> addServices subsystemId true)
                                 subsystemTy))
                         memberTy))
                 classTy))
 
         centralServicesTy.AddMembersDelayed (fun _ ->
-            match SecurityServerV6.downloadCentralServiceList securityServer xRoadInstance refresh useHttps with
+            match SecurityServerV6.downloadCentralServiceList securityServerUri xRoadInstance refresh with
             | [] -> [noteProperty "No central services are listed in this X-Road instance."]
             | services -> services |> List.map (fun serviceCode -> upcast ProvidedLiteralField(serviceCode, typeof<string>, serviceCode)))
 
         thisTy
 
     let server6Parameters =
-        [ ProvidedStaticParameter("SecurityServer", typeof<string>), "Domain name or IP address of X-Road security server which is used to connect to that X-Road instance."
+        [ ProvidedStaticParameter("SecurityServerUri", typeof<string>), "X-Road security server uri which is used to connect to that X-Road instance."
           ProvidedStaticParameter("XRoadInstance", typeof<string>), "Code identifying the instance of X-Road system."
           ProvidedStaticParameter("MemberClass", typeof<string>), "Member class that is used in client identifier in X-Road request."
           ProvidedStaticParameter("MemberCode", typeof<string>), "Member code that is used in client identifier in X-Road requests."
           ProvidedStaticParameter("SubsystemCode", typeof<string>, ""), "Subsystem code that is used in client identifier in X-Road requests."
-          ProvidedStaticParameter("ForceRefresh", typeof<bool>, false), "When `true`, forces type provider to refresh data from security server."
-          ProvidedStaticParameter("UseHttps", typeof<bool>, false), "When `true`, tryes to download data using https protocol." ]
+          ProvidedStaticParameter("ForceRefresh", typeof<bool>, false), "When `true`, forces type provider to refresh data from security server." ]
         |> List.map (fun (parameter,doc) -> parameter.AddXmlDoc(doc); parameter)
 
     // Generic type for collecting information from selected X-Road instance.

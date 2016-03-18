@@ -720,7 +720,7 @@ module Parser =
         | _ -> failwithf "Could not resolve uri `%s`." path
 
     /// Parses all definitions in given schema node.
-    let rec private findSchemaNode (schemaUri: Uri) (schemaLookup: Dictionary<(string * string),SchemaNode>) node =
+    let rec private findSchemaNode (schemaUri: Uri) (schemaLookup: Dictionary<(string * string),SchemaNode>) (documentSchemas: Map<_,_>) node =
         let schemaNode = SchemaNode.FromNode(node)
         // Use previously parsed schema if present.
         match schemaLookup.TryGetValue((schemaNode.TargetNamespace.NamespaceName, schemaUri.ToString())) with
@@ -731,21 +731,33 @@ module Parser =
             imports
             |> List.filter (fun (ns, _) -> XmlNamespace.predefined |> List.exists ((=) ns.NamespaceName) |> not)
             |> List.iter (fun (ns, uri) ->
-                let path = (uri |> Option.orDefault(ns.NamespaceName)) |> fixUri (Some schemaUri)
-                let schemaNode = XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
-                                 |> findSchemaNode path schemaLookup
-                if schemaNode.TargetNamespace <> ns then
-                    failwith "Imported type schema should define same target namespace as the schema importing it.")
+                match uri, documentSchemas.TryFind(ns.NamespaceName) with
+                | None, Some(_) -> ()
+                | _ ->
+                    let path = (uri |> Option.orDefault(ns.NamespaceName)) |> fixUri (Some schemaUri)
+                    let schemaNode =
+                        XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
+                        |> findSchemaNode path schemaLookup documentSchemas
+                    if schemaNode.TargetNamespace <> ns then
+                        failwith "Imported type schema should define same target namespace as the schema importing it.")
             // Parse included schemas into target namespace.
             includes
             |> List.iter (fun uri ->
                 let path = uri |> fixUri (Some schemaUri)
                 let schemaNode = XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
-                                 |> findSchemaNode path schemaLookup
+                                 |> findSchemaNode path schemaLookup documentSchemas
                 if schemaNode.TargetNamespace <> schema.TargetNamespace then
                     failwith "Included type schema should define same target namespace as the schema including it.")
             schema
         | true, schema -> schema
+
+    let private getDocumentSchemas (typesNode: XElement) =
+        typesNode.Elements(xnsname "schema" XmlNamespace.Xsd)
+        |> Seq.choose (fun schemaNode ->
+            match schemaNode.Attribute(xname "targetNamespace") with
+            | null -> None
+            | attr -> Some(attr.Value, schemaNode))
+        |> Map.ofSeq
 
     /// Parses all type schemas defined and referenced in current WSDL document.
     let parseSchema path (definitions: XElement) =
@@ -754,7 +766,8 @@ module Parser =
         | typesNode ->
             let schemaLookup = Dictionary<_,_>()
             let uri = fixUri None path
-            typesNode.Elements(xnsname "schema" XmlNamespace.Xsd) |> Seq.iter (findSchemaNode uri schemaLookup >> ignore)
+            let documentSchemas = getDocumentSchemas typesNode
+            documentSchemas |> Map.iter (fun _ node -> findSchemaNode uri schemaLookup documentSchemas node |> ignore)
             schemaLookup
             |> Seq.fold (fun (mergedSchemas: Dictionary<string,SchemaNode>) kvp ->
                 match mergedSchemas.TryGetValue (fst kvp.Key) with
