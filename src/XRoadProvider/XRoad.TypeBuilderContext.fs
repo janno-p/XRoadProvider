@@ -106,7 +106,7 @@ type internal TypeBuilderContext =
       /// Schema level type definition lookup.
       Types: Map<string,SchemaType>
       /// X-Road protocol used by this producer.
-      Protocol: XRoadProtocol
+      MessageProtocol: XRoadMessageProtocolVersion
       /// Language code preferred for code comments.
       LanguageCode: string }
     with
@@ -257,12 +257,12 @@ type internal TypeBuilderContext =
         /// Initializes new context object from given schema definition.
         static member FromSchema(schema, languageCode) =
             // Validates that schema contains single operation style, as required by X-Road specification.
-            let protocol =
+            let messageProtocol =
                 let reduceStyle s1 s2 =
-                    if s1 <> s2 then failwith "Mixing services implementing different X-Road protocols is not accepted!"
+                    if s1 <> s2 then failwith "Mixing services implementing different X-Road message protocol versions is not accepted!"
                     s1
                 schema.Services
-                |> List.map (fun svc -> svc.Ports |> List.map (fun p -> p.Protocol) |> List.reduce reduceStyle)
+                |> List.map (fun svc -> svc.Ports |> List.map (fun p -> p.MessageProtocol) |> List.reduce reduceStyle)
                 |> List.reduce reduceStyle
             // Initialize type builder context.
             { CachedNamespaces = Dictionary<_,_>()
@@ -282,5 +282,5 @@ type internal TypeBuilderContext =
                   |> Map.toSeq
                   |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
-              Protocol = protocol
+              MessageProtocol = messageProtocol
               LanguageCode = languageCode }

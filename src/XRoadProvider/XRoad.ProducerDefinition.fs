@@ -85,7 +85,7 @@ module TypeBuilder =
         annotation
         |> Option.bind (fun annotation ->
             annotation.AppInfo
-            |> List.collect (fun e -> e.Elements(xnsname "title" (protocolNamespace context.Protocol)) |> List.ofSeq)
+            |> List.collect (fun e -> e.Elements(titleElementName context.MessageProtocol) |> List.ofSeq)
             |> List.fold (fun doc el ->
                 let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) "et"
                 (lang, el.Value)::doc) []
@@ -664,7 +664,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
                 Ctor.create()
                 |> Ctor.setAttr MemberAttributes.Public
                 |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerUri") (!^ port.Uri))
-                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (!^ port.Producer))
+                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (!^ port.ProducerName ))
 
             let portTy =
                 Cls.create port.Name

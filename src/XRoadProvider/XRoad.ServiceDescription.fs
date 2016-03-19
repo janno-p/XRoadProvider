@@ -22,8 +22,8 @@ type private MimeContent =
       Type: string option }
 
 /// Parse X-Road title elements for various languages.
-let private readLanguages languageCode (protocol: XRoadProtocol) (element: XElement) =
-    element.Elements(xnsname "title" (protocolNamespace protocol))
+let private readLanguages languageCode messageProtocol (element: XElement) =
+    element.Elements(titleElementName messageProtocol)
     |> Seq.fold (fun doc el ->
         let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) "et"
         (lang, el.Value)::doc) []
@@ -134,13 +134,14 @@ let private parseBindingParts (binding: XElement) _ (*messageName*) =
         ) (None, [], [])
 
 /// Partition all message parts into body and header components.
-let private partitionMessageParts (abstractParts: Map<_,_>)  bodyPart contentParts headerParts messageName definitions abstractDef (protocol: XRoadProtocol) =
+let private partitionMessageParts (abstractParts: Map<_,_>)  bodyPart contentParts headerParts messageName definitions abstractDef messageProtocol =
     let contentParts =
         contentParts
         |> List.map (fun part ->
             match abstractParts.TryFind part.Part with
             | Some(_) -> part.Part
             | None -> failwithf "Message `%s` does not contain part `%s`." messageName part.Part)
+    let isHeaderFunc = isMessageProtocolHeaderFunc messageProtocol
     let parts =
         headerParts
         |> List.map (fun part ->
@@ -149,7 +150,7 @@ let private partitionMessageParts (abstractParts: Map<_,_>)  bodyPart contentPar
             else
                 let parts = message |> parseAbstractParts part.Message.LocalName
                 match parts.TryFind part.Part with
-                | Some(value) when value.XName.NamespaceName = (protocolNamespace protocol) -> Choice2Of3(part.Part)
+                | Some(value) when isHeaderFunc value.XName -> Choice2Of3(part.Part)
                 | Some(_) -> Choice3Of3(part.Part)
                 | None -> failwithf "Message %s does not contain part %s" part.Message.LocalName part.Part)
     let hdr = parts |> List.choose (fun x -> match x with Choice1Of3(x) -> Some(x) | _ -> None)
@@ -174,7 +175,7 @@ let private validateEncodedParameters (parameters: Parameter list) messageName =
 
 /// Read operation message and its parts definitions from document.
 /// http://www.w3.org/TR/wsdl#_abstract-v
-let private parseOperationMessage style (protocol: XRoadProtocol) (binding: XElement) definitions abstractDef opName ns =
+let private parseOperationMessage style messageProtocol (binding: XElement) definitions abstractDef opName ns =
     let msgName = abstractDef |> reqAttr (xname "name")
     let abstractParts = abstractDef |> parseAbstractParts msgName
     // Walk through message parts explicitly referenced in operation binding.
@@ -191,7 +192,7 @@ let private parseOperationMessage style (protocol: XRoadProtocol) (binding: XEle
         | None -> failwithf "X-Road operation binding `%s` doesn't define SOAP:body." msgName
     // Build service parameters.
     let expectedBodyParts, requiredHeaders =
-        partitionMessageParts abstractParts bodyPart.Value contentParts headerParts msgName definitions abstractDef protocol
+        partitionMessageParts abstractParts bodyPart.Value contentParts headerParts msgName definitions abstractDef messageProtocol
     let parameters =
         expectedBodyParts
         |> List.map (fun partName ->
@@ -217,11 +218,11 @@ let private parseOperationMessage style (protocol: XRoadProtocol) (binding: XEle
 
 /// Parse operation binding and bind to abstract message definitions.
 /// http://www.w3.org/TR/wsdl#_bindings
-let private parseOperation languageCode operation portType definitions style ns (protocol: XRoadProtocol) =
+let private parseOperation languageCode operation portType definitions style ns messageProtocol =
     let name = operation |> reqAttr (xname "name")
     // Extract X-Road version of the operation (optional: not used for metaservice operations).
     let version =
-        match operation %! xnsname "version" (protocolNamespace protocol) with
+        match operation %! (versionElementName messageProtocol) with
         | null -> None
         | el -> Some el.Value
     // SOAP extension for operation element: http://www.w3.org/TR/wsdl#_soap:operation
@@ -241,17 +242,17 @@ let private parseOperation languageCode operation portType definitions style ns 
     let parseParameters direction =
         let message = abstractDesc |> parseMessageName direction |> findMessageElement definitions
         let bindingElement = (operation %! xnsname direction XmlNamespace.Wsdl)
-        parseOperationMessage style protocol bindingElement definitions message name ns
+        parseOperationMessage style messageProtocol bindingElement definitions message name ns
     // Combine abstract and concrete part information about service implementation.
     { Name = name
       Version = version
       InputParameters = parseParameters "input"
       OutputParameters = parseParameters "output"
-      Documentation = readDocumentation languageCode protocol abstractDesc }
+      Documentation = readDocumentation languageCode messageProtocol abstractDesc }
 
 /// Parse operations bindings block.
 /// http://www.w3.org/TR/wsdl#_bindings
-let private parseBinding languageCode definitions (bindingName: XName) servicePort =
+let private parseBinding languageCode definitions (bindingName: XName) (servicePort: ServicePort) =
     // Default namespace for operations
     let targetNamespace = definitions |> attrOrDefault (xname "targetNamespace") ""
     // Find binding element in current document
@@ -278,7 +279,7 @@ let private parseBinding languageCode definitions (bindingName: XName) servicePo
     // Parse individual operations from current binding element.
     let methods =
         binding %* xnsname "operation" XmlNamespace.Wsdl
-        |> Seq.map (fun op -> parseOperation languageCode op portType definitions bindingStyle ns servicePort.Protocol)
+        |> Seq.map (fun op -> parseOperation languageCode op portType definitions bindingStyle ns servicePort.MessageProtocol)
         |> List.ofSeq
     { servicePort with Methods = methods }
 
@@ -292,22 +293,24 @@ let private parsePortBinding languageCode definitions element =
         match element %! xnsname "address" XmlNamespace.Soap with
         | null -> ""
         | e -> e |> reqAttr (xname "location")
-    // Extract producer name for given port from X-Road extension.
-    let current = element %! xnsname "address" XmlNamespace.XRoad31Ee
-    let legacy = element %! xnsname "address" XmlNamespace.XRoad20
     // Build port binding object if available.
-    let producer, protocol =
-        match current, legacy with
-        | null, null -> "", XRoadProtocol.Version40
-        | e, null | null, e -> (e |> reqAttr (xname "producer")), (fromNamespace e.Name.NamespaceName)
+    let messageProtocol =
+        // Extract producer name for given port from X-Road extension.
+        let xraddress = [XmlNamespace.XRoad20; XmlNamespace.XRoad30; XmlNamespace.XRoad31Ee; XmlNamespace.XRoad31Eu]
+                        |> List.map (fun ns -> element %! xnsname "address" ns)
+        match xraddress with
+        | [] -> XRoadMessageProtocolVersion.Version40
+        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad20 -> XRoadMessageProtocolVersion.Version20 (x |> reqAttr (xname "producer"))
+        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad30 -> XRoadMessageProtocolVersion.Version30 (x |> reqAttr (xname "producer"))
+        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad31Ee -> XRoadMessageProtocolVersion.Version31Ee (x |> reqAttr (xname "producer"))
+        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad31Eu -> XRoadMessageProtocolVersion.Version31Eu (x |> reqAttr (xname "producer"))
         | _ -> failwith "Mixing different X-Road protocol versions is not supported."
     let servicePort =
         { Name = name
-          Documentation = readLanguages languageCode protocol element
+          Documentation = readLanguages languageCode messageProtocol element
           Uri = address
-          Producer = producer
           Methods = []
-          Protocol = protocol }
+          MessageProtocol = messageProtocol }
     Some(servicePort |> parseBinding languageCode definitions binding)
 
 /// Parse all service elements defined as immediate child elements of current element.
