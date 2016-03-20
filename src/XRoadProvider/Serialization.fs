@@ -201,6 +201,57 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteValue(value)
             writer.WriteEndElement()
 
+    let writeClientHeader (value: XRoadMemberIdentifier) req (writer: XmlWriter) =
+        if req |> Array.exists ((=) "client") || value <> null then
+            writer.WriteStartElement("client", XmlNamespace.XRoad40)
+            if value <> null then
+                writer.WriteStartAttribute("objectType", XmlNamespace.XRoad40Id)
+                writer.WriteValue("MEMBER")
+                writer.WriteEndAttribute()
+                writer.WriteStartElement("xRoadInstance", XmlNamespace.XRoad40Id)
+                writer.WriteValue(value.XRoadInstance)
+                writer.WriteEndElement()
+                writer.WriteStartElement("memberClass", XmlNamespace.XRoad40Id)
+                writer.WriteValue(value.MemberClass)
+                writer.WriteEndElement()
+                writer.WriteStartElement("memberCode", XmlNamespace.XRoad40Id)
+                writer.WriteValue(value.MemberCode)
+                writer.WriteEndElement()
+                if String.IsNullOrWhiteSpace(value.SubsystemCode) |> not then
+                    writer.WriteStartElement("subsystemCode", XmlNamespace.XRoad40Id)
+                    writer.WriteValue(value.SubsystemCode)
+                    writer.WriteEndElement()
+            writer.WriteEndElement()
+
+    let writeServiceHeader (value: XRoadMemberIdentifier) req (writer: XmlWriter) =
+        if req |> Array.exists ((=) "service") || value <> null then
+            writer.WriteStartElement("service", XmlNamespace.XRoad40)
+            if value <> null then
+                writer.WriteStartAttribute("objectType", XmlNamespace.XRoad40Id)
+                writer.WriteValue("SERVICE")
+                writer.WriteEndAttribute()
+                writer.WriteStartElement("xRoadInstance", XmlNamespace.XRoad40Id)
+                writer.WriteValue(value.XRoadInstance)
+                writer.WriteEndElement()
+                writer.WriteStartElement("memberClass", XmlNamespace.XRoad40Id)
+                writer.WriteValue(value.MemberClass)
+                writer.WriteEndElement()
+                writer.WriteStartElement("memberCode", XmlNamespace.XRoad40Id)
+                writer.WriteValue(value.MemberCode)
+                writer.WriteEndElement()
+                if String.IsNullOrWhiteSpace(value.SubsystemCode) |> not then
+                    writer.WriteStartElement("subsystemCode", XmlNamespace.XRoad40Id)
+                    writer.WriteValue(value.SubsystemCode)
+                    writer.WriteEndElement()
+                writer.WriteStartElement("serviceCode", XmlNamespace.XRoad40Id)
+                writer.WriteValue(opt.ServiceCode)
+                writer.WriteEndElement()
+                if String.IsNullOrWhiteSpace(opt.ServiceVersion) |> not then
+                    writer.WriteStartElement("serviceVersion", XmlNamespace.XRoad40Id)
+                    writer.WriteValue(opt.ServiceVersion)
+                    writer.WriteEndElement()
+            writer.WriteEndElement()
+
     let writeXRoadHeader (msg: XRoadMessage) (writer: XmlWriter) =
         if writer.LookupPrefix(msg.HeaderNamespace) |> isNull then
             writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, msg.HeaderNamespace)
@@ -243,6 +294,8 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         | :? XRoadHeader as header ->
             if writer.LookupPrefix(XmlNamespace.XRoad40Id) |> isNull then
                 writer.WriteAttributeString("xmlns", "id", XmlNamespace.Xmlns, XmlNamespace.XRoad40Id)
+            writer |> writeClientHeader header.Client msg.RequiredHeaders
+            writer |> writeServiceHeader header.Producer msg.RequiredHeaders
             writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
             writer |> writeStringHeader header.UserId "userId" msg.HeaderNamespace msg.RequiredHeaders
             writer |> writeStringHeader header.Issue "issue" msg.HeaderNamespace msg.RequiredHeaders

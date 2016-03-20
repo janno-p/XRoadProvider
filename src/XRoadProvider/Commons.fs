@@ -130,7 +130,7 @@ module private XRoadProtocolExtensions =
         | Version40(_) -> isHeaderOf XmlNamespace.XRoad40 docHeaders
 
 module XRoadHelper =
-    let getUUID () = System.Guid.NewGuid().ToString().ToUpper()
+    let getUUID () = System.Guid.NewGuid().ToString()
 
     let getSystemTypeName = function
         | "System.String" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
@@ -232,17 +232,20 @@ type public XRoadDocHeader() =
     member val EncryptedCert = "" with get, set
 
 /// Represents identifiers that can be used by the service clients, namely X-Road members and subsystems.
-type public XRoadClientIdentifier() =
+[<AllowNullLiteral>]
+type public XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, ?subsystemCode) =
+    new () = XRoadMemberIdentifier("", "", "")
     /// Code identifying the instance of the X-Road system.
-    member val XRoadInstance = "" with get, set
+    member val XRoadInstance = xRoadInstance with get, set
     /// Code identifying the member class (e.g., government agency, private enterprise, physical person).
-    member val MemberClass = "" with get, set
+    member val MemberClass = memberClass with get, set
     /// Member code that uniquely identifies the given X-Road member within its member class.
-    member val MemberCode = "" with get, set
+    member val MemberCode = memberCode with get, set
     /// Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
-    member val SubsystemCode = "" with get, set
+    member val SubsystemCode = defaultArg subsystemCode "" with get, set
 
 /// Represents identifiers of services.
+[<AllowNullLiteral>]
 type public XRoadServiceIdentifier() =
     /// Code identifying the instance of the X-Road system.
     member val XRoadInstance = "" with get, set
@@ -258,6 +261,7 @@ type public XRoadServiceIdentifier() =
     member val ServiceVersion = "" with get, set
 
 /// Represents identifiers of central services.
+[<AllowNullLiteral>]
 type public XRoadCentralServiceIdentifier() =
     /// Code identifying the instance of the X-Road system.
     member val XRoadInstance = "" with get, set
@@ -268,9 +272,9 @@ type public XRoadCentralServiceIdentifier() =
 type public XRoadHeader() =
     inherit AbstractXRoadHeader()
     /// Identifies a service client – an entity that initiates the service call.
-    member val Client = new XRoadClientIdentifier() with get, set
+    member val Client = new XRoadMemberIdentifier() with get, set
     /// Identifies the service that is invoked by the request.
-    member val Service = new XRoadServiceIdentifier() with get, set
+    member val Producer = new XRoadMemberIdentifier() with get, set
     /// Identifies the central service that is invoked by the request.
     member val CentralService = new XRoadCentralServiceIdentifier() with get, set
     /// Unique identifier for this message. The recommended form of message ID is UUID.
@@ -329,6 +333,8 @@ type XRoadRequestOptions(uri: string, isEncoded: bool, isMultipart: bool, protoc
     member val Protocol = protocol with get
     member val Uri = uri with get
     member val Accessor: XmlQualifiedName = null with get, set
+    member val ServiceCode = "" with get, set
+    member val ServiceVersion = "" with get, set
 
 type XRoadResponseOptions(isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol, responseType: Type) =
     member val IsEncoded = isEncoded with get

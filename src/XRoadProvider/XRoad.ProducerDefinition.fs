@@ -538,6 +538,8 @@ module ServiceBuilder =
             |> Code.comment operation.Documentation
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString()]))
+            |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceCode") (!^ operation.Name))
+            |> iif operation.Version.IsSome (fun x -> x |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceVersion") (!^ operation.Version.Value)))
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (CodeTypeReference(resultClass.Name)) ]))
             |> addHeaderInitialization context.MessageProtocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
             |> buildOperationInput context operation paramClass
