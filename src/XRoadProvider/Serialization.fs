@@ -175,7 +175,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("string", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
-            if value |> isNull |> not then
+            if String.IsNullOrEmpty(value) |> not then
                 writer.WriteValue(value)
             writer.WriteEndElement()
 
@@ -197,7 +197,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("base64", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
-            if value |> isNull |> not then
+            if value |> isNull |> not && value |> Array.isEmpty |> not then
                 writer.WriteValue(value)
             writer.WriteEndElement()
 
@@ -209,13 +209,16 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteValue("MEMBER")
                 writer.WriteEndAttribute()
                 writer.WriteStartElement("xRoadInstance", XmlNamespace.XRoad40Id)
-                writer.WriteValue(value.XRoadInstance)
+                if not <| String.IsNullOrEmpty(value.XRoadInstance) then
+                    writer.WriteValue(value.XRoadInstance)
                 writer.WriteEndElement()
                 writer.WriteStartElement("memberClass", XmlNamespace.XRoad40Id)
-                writer.WriteValue(value.MemberClass)
+                if not <| String.IsNullOrEmpty(value.MemberClass) then
+                    writer.WriteValue(value.MemberClass)
                 writer.WriteEndElement()
                 writer.WriteStartElement("memberCode", XmlNamespace.XRoad40Id)
-                writer.WriteValue(value.MemberCode)
+                if not <| String.IsNullOrEmpty(value.MemberCode) then
+                    writer.WriteValue(value.MemberCode)
                 writer.WriteEndElement()
                 if String.IsNullOrWhiteSpace(value.SubsystemCode) |> not then
                     writer.WriteStartElement("subsystemCode", XmlNamespace.XRoad40Id)
@@ -231,20 +234,24 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteValue("SERVICE")
                 writer.WriteEndAttribute()
                 writer.WriteStartElement("xRoadInstance", XmlNamespace.XRoad40Id)
-                writer.WriteValue(value.XRoadInstance)
+                if not <| String.IsNullOrEmpty(value.XRoadInstance) then
+                    writer.WriteValue(value.XRoadInstance)
                 writer.WriteEndElement()
                 writer.WriteStartElement("memberClass", XmlNamespace.XRoad40Id)
-                writer.WriteValue(value.MemberClass)
+                if not <| String.IsNullOrEmpty(value.MemberClass) then
+                    writer.WriteValue(value.MemberClass)
                 writer.WriteEndElement()
                 writer.WriteStartElement("memberCode", XmlNamespace.XRoad40Id)
-                writer.WriteValue(value.MemberCode)
+                if not <| String.IsNullOrEmpty(value.MemberCode) then
+                    writer.WriteValue(value.MemberCode)
                 writer.WriteEndElement()
                 if String.IsNullOrWhiteSpace(value.SubsystemCode) |> not then
                     writer.WriteStartElement("subsystemCode", XmlNamespace.XRoad40Id)
                     writer.WriteValue(value.SubsystemCode)
                     writer.WriteEndElement()
                 writer.WriteStartElement("serviceCode", XmlNamespace.XRoad40Id)
-                writer.WriteValue(opt.ServiceCode)
+                if not <| String.IsNullOrEmpty(opt.ServiceCode) then
+                    writer.WriteValue(opt.ServiceCode)
                 writer.WriteEndElement()
                 if String.IsNullOrWhiteSpace(opt.ServiceVersion) |> not then
                     writer.WriteStartElement("serviceVersion", XmlNamespace.XRoad40Id)

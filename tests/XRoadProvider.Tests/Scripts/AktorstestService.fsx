@@ -3,8 +3,10 @@
 #r "../../../packages/Common.Logging/lib/net40/Common.Logging.dll"
 #r "../../../packages/Common.Logging.Core/lib/net40/Common.Logging.Core.dll"
 #r "XRoadProvider"
+#r "System.Xml.Linq"
 
 open System.IO
+open XRoad
 open XRoad.Providers
 
 //(*
@@ -24,8 +26,10 @@ type AktorstestDto = Aktorstest.DefinedTypes.aktorstest
 let port = Aktorstest.aktorstestService.Test()
 
 port.ProducerUri <- "http://localhost:8001/"
-port.Consumer <- "10239452"
-port.UserId <- "EE:PIN:abc4567"
+
+let header = XRoadDocHeader()
+header.Consumer <- "10239452"
+header.UserId <- "EE:PIN:abc4567"
 
 (* Sample 1: changeAddress
 let request1 = AktorstestDto.changeAddress()
@@ -48,7 +52,7 @@ let request2 = AktorstestDto.fileDownload()
 request2.request <- AktorstestDto.fileDownload.requestType()
 request2.request.fileName <- "document.pdf"
 
-let response2 = port.fileDownload(request2)
+let response2 = port.fileDownload(header, request2)
 response2.response.file
 //*)
 
