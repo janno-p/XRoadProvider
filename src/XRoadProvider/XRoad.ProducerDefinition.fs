@@ -549,14 +549,13 @@ module ServiceBuilder =
         [m; paramClass; resultClass]
 
 /// Adds header element properties to given type.
-let private addHeaderProperties (protocol: XRoadProtocol) portBaseTy =
-    let choose = XRoadHelper.headerMapping >> (match protocol with XRoadProtocol.Version20 -> fst | _ -> snd)
-    let propName = choose >> XRoadHelper.snd3
-    let docValue = choose >> XRoadHelper.trd3 >> Some
-    [ "asutus"; "andmekogu"; "isikukood"; "id"; "nimi"; "toimik"; "allasutus"; "amet"; "ametniknimi"; "autentija"; "makstud"; "salastada"; "salastada_sertifikaadiga"; "salastatud"; "salastatud_sertifikaadiga" ]
-    |> List.fold (fun typ hdr -> typ |> createProperty<string> (propName hdr) (docValue hdr)) portBaseTy
-    |> iif (match protocol with XRoadProtocol.Version20 -> true | _ -> false) (fun typ -> typ |> createProperty<string> (propName "ametnik") (docValue "ametnik"))
-    |> createProperty<Nullable<bool>> (propName "asynkroonne") (docValue "asynkroonne")
+let private addHeaderProperty messageProtocol portBaseTy =
+    let func =
+        match messageProtocol with
+        | Version20(_) -> createProperty<XRoadRpcHeader>
+        | Version30(_) | Version31Ee(_) | Version31Eu(_) -> createProperty<XRoadDocHeader>
+        | Version40 -> createProperty<XRoadHeader>
+    func "Header" (Some "SOAP Header contents of X-Road request or response.") portBaseTy
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
@@ -664,7 +663,10 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
                 Ctor.create()
                 |> Ctor.setAttr MemberAttributes.Public
                 |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerUri") (!^ port.Uri))
-                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (!^ port.ProducerName ))
+
+            // Add default producer name value if message protocol defines it in service description.
+            port.MessageProtocol.ProducerName
+            |> Option.iter (fun producerName -> ctor |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (!^ producerName)) |> ignore)
 
             let portTy =
                 Cls.create port.Name
@@ -677,7 +679,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
                 |> Cls.addMember getProducerMeth
                 |> Cls.addMember getServiceNameMeth
                 |> Code.comment port.Documentation
-                |> addHeaderProperties context.Protocol
+                |> addHeaderProperty context.MessageProtocol
             serviceTy |> Cls.addMember portTy |> ignore
 
             port.Methods

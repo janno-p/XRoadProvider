@@ -137,50 +137,6 @@ module XRoadHelper =
         | "System.Int64" -> Some(XmlQualifiedName("long", XmlNamespace.Xsd))
         | _ -> None
 
-    /// Define X-Road SOAP header element name and description values depending on operation style used in WSDL binding:
-    /// First tuple contains RPC/Encoded style values and second one values for Document/Literal style.
-    let headerMapping = function
-        | "asutus"                    -> ("asutus", "Asutus", "Asutuse DNS-nimi."),
-                                         ("consumer", "Consumer", "DNS-name of the institution")
-        | "andmekogu"                 -> ("andmekogu", "Andmekogu", "Andmekogu DNS-nimi."),
-                                         ("producer", "Producer", "DNS-name of the database")
-        | "isikukood"                 -> ("isikukood", "Isikukood", "Teenuse kasutaja isikukood, millele eelneb kahekohaline maa kood. Näiteks EE37702026518."),
-                                         ("userId", "UserId", "ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518")
-        | "ametnik"                   -> ("ametnik", "Ametnik", "Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0)."),
-                                         ("", "", "")
-        | "id"                        -> ("id", "Id", "Teenuse väljakutse nonss (unikaalne identifikaator)."),
-                                         ("id", "Id", "Service invocation nonce (unique identifier)")
-        | "nimi"                      -> ("nimi", "Nimi", "Kutsutava teenuse nimi."),
-                                         ("service", "Service", "Name of the service to be invoked")
-        | "toimik"                    -> ("toimik", "Toimik", "Teenuse väljakutsega seonduva toimiku number (mittekohustuslik)."),
-                                         ("issue", "Issue", "Name of file or document related to the service invocation")
-        | "allasutus"                 -> ("allasutus", "Allasutus", "Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis)."),
-                                         ("unit", "Unit", "Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal)")
-        | "amet"                      -> ("amet", "Amet", "Teenuse kasutaja ametikoht."),
-                                         ("position", "Position", "Organizational position or role of the person invoking the service")
-        | "ametniknimi"               -> ("ametniknimi", "Ametniknimi", "Teenuse kasutaja nimi."),
-                                         ("userName", "UserName", "Name of the person invoking the service")
-        | "asynkroonne"               -> ("asynkroonne", "Asynkroonne", "Teenuse kasutamise asünkroonsus. Kui väärtus on 'true', siis sooritab turvaserver päringu asünkroonselt."),
-                                         ("async", "Async", "Specifies asynchronous service. If the value is \"true\", then the security server performs the service call asynchronously.")
-        | "autentija"                 -> ("autentija", "Autentija", "Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis)."),
-                                         ("authenticator", "Authenticator", "Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.")
-        | "makstud"                   -> ("makstud", "Makstud", "Teenuse kasutamise eest makstud summa."),
-                                         ("paid", "Paid", "The amount of money paid for invoking the service")
-        | "salastada"                 -> ("salastada", "Salastada", "Kui asutusele on X-tee keskuse poolt antud päringute salastamise õigus ja andmekogu on nõus päringut salastama, siis selle elemendi olemasolul päringu päises andmekogu turvaserver krüpteerib päringu logi, kasutades selleks X-tee keskuse salastusvõtit."),
-                                         ("encrypt", "Encrypt", "If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center")
-        | "salastada_sertifikaadiga"  -> ("salastada_sertifikaadiga", "SalastadaSertifikaadiga", "Päringu sooritaja ID-kaardi autentimissertifikaat DERkujul base64 kodeerituna. Selle elemendi olemasolu päringu päises väljendab soovi päringu logi salastamiseks asutuse turvaserveris päringu sooritaja ID-kaardi autentimisvõtmega. Seda välja kasutatakse ainult kodaniku päringute portaalis."),
-                                         ("encryptCert", "EncryptCert", "Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only.")
-        | "salastatud"                -> ("salastatud", "Salastatud", "Kui päringu välja päises oli element salastada ja päringulogi salastamine õnnestus, siis vastuse päisesse lisatakse tühi element salastatud."),
-                                         ("encrypted", "Encrypted", "If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header.")
-        | "salastatud_sertifikaadiga" -> ("salastatud_sertifikaadiga", "SalastatudSertifikaadiga", "Kui päringu päises oli element salastada_sertifikaadiga ja päringulogi salastamine õnnestus, siis vastuse päisesesse lisatakse tühi element salastatud_sertifikaadiga."),
-                                         ("encryptedCert", "EncryptedCert", "If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header.")
-        | name                        -> failwithf "Invalid header name '%s'" name
-
-    // Helper functions to extract values from three-argument tuples.
-    let fst3 (x, _, _) = x
-    let snd3 (_, x, _) = x
-    let trd3 (_, _, x) = x
-
 type internal ContentType =
     | FileStorage of FileInfo
     | Data of byte[]
@@ -188,6 +144,143 @@ type internal ContentType =
 type public ContentEncoding =
     | Binary = 0
     | Base64 = 1
+
+[<AbstractClass>]
+type public AbstractXRoadHeader() =
+    /// Unresolved header elements.
+    member val Unresolved = List<System.Xml.Linq.XElement>() with get, set
+
+/// Combines X-Road SOAP headers for RPC style messages.
+type public XRoadRpcHeader() =
+    inherit AbstractXRoadHeader()
+    /// Asutuse DNS-nimi.
+    member val Asutus = "" with get, set
+    /// Andmekogu DNS-nimi.
+    member val Andmekogu = "" with get, set
+    /// Teenuse kasutaja isikukood, millele eelneb kahekohaline maa kood. Näiteks EE37702026518.
+    member val Isikukood = "" with get, set
+    /// Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0).
+    member val Ametnik = "" with get, set
+    /// Teenuse väljakutse nonss (unikaalne identifikaator).
+    member val Id = "" with get, set
+    /// Kutsutava teenuse nimi.
+    member val Nimi = "" with get, set
+    /// Teenuse väljakutsega seonduva toimiku number (mittekohustuslik).
+    member val Toimik = "" with get, set
+    /// Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis).
+    member val Allasutus = "" with get, set
+    /// Teenuse kasutaja ametikoht.
+    member val Amet = "" with get, set
+    /// Teenuse kasutaja nimi.
+    member val Ametniknimi = "" with get, set
+    /// Teenuse kasutamise asünkroonsus. Kui väärtus on "true", siis sooritab turvaserver päringu asünkroonselt.
+    member val Asynkroonne = false with get, set
+    /// Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis).
+    member val Autentija = "" with get, set
+    /// Teenuse kasutamise eest makstud summa.
+    member val Makstud = "" with get, set
+    /// Kui asutusele on X-tee keskuse poolt antud päringute salastamise õigus ja andmekogu on nõus päringut salastama, siis selle elemendi olemasolul päringu päises andmekogu turvaserver krüpteerib päringu logi, kasutades selleks X-tee keskuse salastusvõtit.
+    member val Salastada = "" with get, set
+    /// Päringu sooritaja ID-kaardi autentimissertifikaat DERkujul base64 kodeerituna. Selle elemendi olemasolu päringu päises väljendab soovi päringu logi salastamiseks asutuse turvaserveris päringu sooritaja ID-kaardi autentimisvõtmega. Seda välja kasutatakse ainult kodaniku päringute portaalis."
+    member val SalastadaSertifikaadiga = ""B with get, set
+    /// Kui päringu välja päises oli element salastada ja päringulogi salastamine õnnestus, siis vastuse päisesse lisatakse tühi element salastatud.
+    member val Salastatud = "" with get, set
+    /// Kui päringu päises oli element salastada_sertifikaadiga ja päringulogi salastamine õnnestus, siis vastuse päisesesse lisatakse tühi element salastatud_sertifikaadiga.
+    member val SalastatudSertifikaadiga = "" with get, set
+
+/// Combines X-Road SOAP headers for document style messages.
+type public XRoadDocHeader() =
+    inherit AbstractXRoadHeader()
+    /// DNS-name of the institution
+    member val Consumer = "" with get, set
+    /// DNS-name of the database
+    member val Producer = "" with get, set
+    /// ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518.
+    member val UserId = "" with get, set
+    /// Service invocation nonce (unique identifier).
+    member val Id = "" with get, set
+    /// Name of the service to be invoked.
+    member val Service = "" with get, set
+    /// Name of file or document related to the service invocation.
+    member val Issue = "" with get, set
+    /// Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal).
+    member val Unit = "" with get, set
+    /// Organizational position or role of the person invoking the service.
+    member val Position = "" with get, set
+    /// Name of the person invoking the service.
+    member val UserName = "" with get, set
+    /// Specifies asynchronous service. If the value is "true", then the security server performs the service call asynchronously.
+    member val Async = false with get, set
+    /// Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.
+    member val Authenticator = "" with get, set
+    /// The amount of money paid for invoking the service.
+    member val Paid = "" with get, set
+    /// If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center.
+    member val Encrypt = "" with get, set
+    /// Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only.
+    member val EncryptCert = ""B with get, set
+    /// If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header.
+    member val Encrypted = "" with get, set
+    /// If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header.
+    member val EncryptedCert = "" with get, set
+
+/// Represents identifiers that can be used by the service clients, namely X-Road members and subsystems.
+type public XRoadClientIdentifier() =
+    /// Code identifying the instance of the X-Road system.
+    member val XRoadInstance = "" with get, set
+    /// Code identifying the member class (e.g., government agency, private enterprise, physical person).
+    member val MemberClass = "" with get, set
+    /// Member code that uniquely identifies the given X-Road member within its member class.
+    member val MemberCode = "" with get, set
+    /// Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
+    member val SubsystemCode = "" with get, set
+
+/// Represents identifiers of services.
+type public XRoadServiceIdentifier() =
+    /// Code identifying the instance of the X-Road system.
+    member val XRoadInstance = "" with get, set
+    /// Code identifying the member class (e.g., government agency, private enterprise, physical person).
+    member val MemberClass = "" with get, set
+    /// Member code that uniquely identifies the given X-Road member within its member class.
+    member val MemberCode = "" with get, set
+    /// Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
+    member val SubsystemCode = "" with get, set
+    /// The service code is chosen by the service provider.
+    member val ServiceCode = "" with get, set
+    /// Version is optional and can be used to distinguish between technically incompatible versions of the same basic service.
+    member val ServiceVersion = "" with get, set
+
+/// Represents identifiers of central services.
+type public XRoadCentralServiceIdentifier() =
+    /// Code identifying the instance of the X-Road system.
+    member val XRoadInstance = "" with get, set
+    /// The service code is chosen by the service provider.
+    member val ServiceCode = "" with get, set
+
+/// Combines X-Road SOAP headers for X-Road v6.
+type public XRoadHeader() =
+    inherit AbstractXRoadHeader()
+    /// Identifies a service client – an entity that initiates the service call.
+    member val Client = new XRoadClientIdentifier() with get, set
+    /// Identifies the service that is invoked by the request.
+    member val Service = new XRoadServiceIdentifier() with get, set
+    /// Identifies the central service that is invoked by the request.
+    member val CentralService = new XRoadCentralServiceIdentifier() with get, set
+    /// Unique identifier for this message. The recommended form of message ID is UUID.
+    member val Id = "" with get, set
+    /// User whose action initiated the request. The user ID should be prefixed with two-letter ISO country code (e.g., EE12345678901).
+    member val UserId = "" with get, set
+    /// For responses, this field contains a Base64 encoded hash of the request SOAP message.
+    /// This field is automatically filled in by the service provider's security server.
+    member val RequestHash = "" with get, set
+    /// Identifies the hash algorithm that was used to calculate the value of the requestHash field.
+    /// The algorithms are specified as URIs listed in the XML-DSIG specification [DSIG].
+    member val RequestHashAlgorithm = "" with get, set
+    /// Identifies received application, issue or document that was the cause of the service request.
+    /// This field may be used by the client information system to connect service requests (and responses) to working procedures.
+    member val Issue = "" with get, set
+    /// X-Road message protocol version. The value of this field MUST be 4.0
+    member val ProtocolVersion = "" with get, set
 
 [<AllowNullLiteral>]
 type public BinaryContent internal (contentID: string, content: ContentType) =
