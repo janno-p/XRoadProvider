@@ -1,7 +1,11 @@
 ﻿namespace XRoad
 
+open Common.Logging
 open FSharp.Core
+open System
+open System.Collections.Generic
 open System.IO
+open System.Net
 open System.Xml
 open XRoad.Serialization.Attributes
 open XRoad.DynamicMethods
@@ -51,16 +55,6 @@ type Serializer(isEncoded) as this =
         | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
         | _ -> (typ |> getTypeMap isEncoded).Serialize(writer, value, context) |> ignore
 
-namespace XRoad
-
-open Common.Logging
-open System
-open System.Collections.Generic
-open System.IO
-open System.Net
-open System.Text
-open System.Xml
-
 module private Response =
     type XmlReader with
         member this.MoveToElement(depth, name, ns) =
@@ -107,15 +101,6 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
     interface IDisposable with
         member __.Dispose() =
             (response :> IDisposable).Dispose()
-
-namespace XRoad
-
-open Common.Logging
-open System
-open System.Collections.Generic
-open System.IO
-open System.Net
-open System.Xml
 
 type XRoadStreamWriter() =
     class
@@ -178,25 +163,95 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         | XmlNamespace.XRoad20 -> Some name.Name
         | _ -> None
 
-    let getHeaderElementType = function
-        | XteeName "asutus"
-        | XteeName "andmekogu"
-        | XteeName "isikukood"
-        | XteeName "ametnik"
-        | XteeName "id"
-        | XteeName "nimi"
-        | XteeName "toimik"
-        | XteeName "allasutus"
-        | XteeName "amet"
-        | XteeName "autentija"
-        | XteeName "makstud"
-        | XteeName "salastada"
-        | XteeName "salastatud"
-        | XteeName "salastatud_sertifikaadiga"
-        | XteeName "ametniknimi" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
-        | XteeName "asynkroonne" -> Some(XmlQualifiedName("boolean", XmlNamespace.Xsd))
-        | XteeName "salastada_sertifikaadiga" -> Some(XmlQualifiedName("base64", XmlNamespace.Xsd))
-        | _ -> None
+    let writeIdHeader value ns req (writer: XmlWriter) =
+        if req |> Array.exists ((=) "id") || value |> isNull |> not then
+            writer.WriteStartElement("id", ns)
+            if opt.IsEncoded then
+                writer.WriteStartAttribute("type", XmlNamespace.Xsi)
+                writer.WriteQualifiedName("string", XmlNamespace.Xsd)
+                writer.WriteEndAttribute()
+            writer.WriteValue(if value |> isNull then XRoadHelper.generateNonce() else value)
+            writer.WriteEndElement()
+
+    let writeStringHeader value name ns req (writer: XmlWriter) =
+        if req |> Array.exists ((=) name) || value |> isNull |> not then
+            writer.WriteStartElement(name, ns)
+            if opt.IsEncoded then
+                writer.WriteStartAttribute("type", XmlNamespace.Xsi)
+                writer.WriteQualifiedName("string", XmlNamespace.Xsd)
+                writer.WriteEndAttribute()
+            if value |> isNull |> not then
+                writer.WriteValue(value)
+            elif name = "id" then
+                writer.WriteValue(XRoadHelper.generateNonce())
+            writer.WriteEndElement()
+
+    let writeBoolHeader (value: Nullable<bool>) name ns req (writer: XmlWriter) =
+        if req |> Array.exists ((=) name) || value.HasValue then
+            writer.WriteStartElement(name, ns)
+            if opt.IsEncoded then
+                writer.WriteStartAttribute("type", XmlNamespace.Xsi)
+                writer.WriteQualifiedName("boolean", XmlNamespace.Xsd)
+                writer.WriteEndAttribute()
+            if value.HasValue then
+                writer.WriteValue(value)
+            writer.WriteEndElement()
+
+    let writeBase64Header (value: byte[]) name ns req (writer: XmlWriter) =
+        if req |> Array.exists ((=) name) || value |> isNull |> not then
+            writer.WriteStartElement(name, ns)
+            if opt.IsEncoded then
+                writer.WriteStartAttribute("type", XmlNamespace.Xsi)
+                writer.WriteQualifiedName("base64", XmlNamespace.Xsd)
+                writer.WriteEndAttribute()
+            if value |> isNull |> not then
+                writer.WriteValue(value)
+            writer.WriteEndElement()
+
+    let writeXRoadHeader (msg: XRoadMessage) (writer: XmlWriter) =
+        match msg.Header with
+        | :? XRoadRpcHeader as header ->
+            writer |> writeStringHeader header.Asutus "asutus" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Andmekogu "andmekogu" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Isikukood "isikukood" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Ametnik "ametnik" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Nimi "nimi" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Toimik "toimik" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Allasutus "allasutus" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Amet "amet" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.AmetnikNimi "ametniknimi" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeBoolHeader header.Asynkroonne "asynkroonne" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Autentija "autentija" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Makstud "makstud" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Salastada "salastada" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeBase64Header header.SalastadaSertifikaadiga "salastada_sertifikaadiga" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Salastatud "salastatud" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.SalastatudSertifikaadiga "salastatud_sertifikaadiga" msg.HeaderNamespace msg.RequiredHeaders
+        | :? XRoadDocHeader as header ->
+            writer |> writeStringHeader header.Consumer "consumer" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Producer "producer" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.UserId "userId" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Service "service" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Issue "issue" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Unit "unit" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Position "position" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.UserName "userName" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeBoolHeader header.Async "async" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Authenticator "authenticator" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Paid "paid" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Encrypt "encrypt" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeBase64Header header.EncryptCert "encryptCert" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Encrypted "encrypted" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.EncryptedCert "encryptedCert" msg.HeaderNamespace msg.RequiredHeaders
+        | :? XRoadHeader as header ->
+            writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.UserId "userId" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.Issue "issue" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeStringHeader header.ProtocolVersion "protocolVersion" msg.HeaderNamespace msg.RequiredHeaders
+        | _ -> failwithf "Unexpected X-Road header type `%s`." (msg.Header.GetType().FullName)
+        msg.Header.Unresolved |> Seq.iter (fun e -> e.WriteTo(writer))
 
     member __.SendMessage(msg: XRoadMessage) =
         use content = new MemoryStream()
@@ -213,22 +268,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer.WriteAttributeString("xmlns", "xsd", XmlNamespace.Xmlns, XmlNamespace.Xsd)
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
-        msg.Header
-        |> Array.iter (fun hdr ->
-            if hdr.IsRequired || hdr.Value <> null then
-                writer.WriteStartElement(hdr.Name.Name, hdr.Name.Namespace)
-                if opt.IsEncoded then
-                    hdr.Name
-                    |> getHeaderElementType
-                    |> Option.iter (fun nm ->
-                        writer.WriteStartAttribute("type", XmlNamespace.Xsi)
-                        writer.WriteQualifiedName(nm.Name, nm.Namespace)
-                        writer.WriteEndAttribute())
-                if not (hdr.Value |> isNull) then
-                    writer.WriteValue(hdr.Value)
-                elif hdr.Name.Name = "id" && (hdr.Name.Namespace = XmlNamespace.XRoad31Ee || hdr.Name.Namespace = XmlNamespace.XRoad20) then
-                    writer.WriteValue(XRoadHelper.generateNonce())
-                writer.WriteEndElement())
+        writer |> writeXRoadHeader msg
         writer.WriteEndElement()
 
         let serializeAccessor funContent =

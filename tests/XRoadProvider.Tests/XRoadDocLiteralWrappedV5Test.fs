@@ -18,7 +18,7 @@ module XRoadDocLiteralWrappedV5Test =
         test <@ port.Uri = "http://localhost:8080/axis2/services/aktorstestService" @>
         test <@ port.Documentation.IsSome @>
         test <@ port.Documentation.Value = "Test andmekogu xtee ver5 doc/literal stiili jaoks" @>
-        test <@ port.Producer = "aktorstest" @>
+        test <@ port.MessageProtocol = Version31Ee("aktorstest") @>
 
     [<Test>]
     let ``Parse multipart input operation`` () =
@@ -39,8 +39,7 @@ module XRoadDocLiteralWrappedV5Test =
         test <@ operation.OutputParameters.IsMultipart = false @>
         test <@ operation.OutputParameters.Accessor.IsNone @>
         let context = TypeBuilderContext.FromSchema(schema, "et")
-        let expectedProtocol = XRoadProtocol.Version31
-        test <@ context.Protocol = expectedProtocol @>
+        test <@ context.MessageProtocol = Version31Ee("aktorstest") @>
 
     [<Test>]
     let ``Parse multipart output operation`` () =

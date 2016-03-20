@@ -36,8 +36,9 @@ type XRoadProtocol =
     | Undefined = 0
     | Version20 = 1
     | Version30 = 2
-    | Version31 = 3
-    | Version40 = 4
+    | Version31Ee = 3
+    | Version31Eu = 4
+    | Version40 = 5
 
 type XRoadMessageProtocolVersion =
     | Version20 of string
@@ -50,6 +51,13 @@ type XRoadMessageProtocolVersion =
             match this with
             | Version20(s) | Version30(s) | Version31Ee(s) | Version31Eu(s) -> Some(s)
             | Version40 -> None
+        member this.EnumValue =
+            match this with
+            | Version20(_) -> XRoadProtocol.Version20
+            | Version30(_) -> XRoadProtocol.Version30
+            | Version31Ee(_) -> XRoadProtocol.Version31Ee
+            | Version31Eu(_) -> XRoadProtocol.Version31Eu
+            | Version40(_) -> XRoadProtocol.Version40
 
 [<AutoOpen>]
 module internal Option =
@@ -76,23 +84,18 @@ module private XRoadProtocolExtensions =
     let protocolPrefix = function
         | XRoadProtocol.Version20 -> "xtee"
         | XRoadProtocol.Version30
-        | XRoadProtocol.Version31 -> "xrd"
+        | XRoadProtocol.Version31Ee
+        | XRoadProtocol.Version31Eu -> "xrd"
         | XRoadProtocol.Version40 -> failwith "Not implemented v4.0"
         | x -> failwithf "Invalid XRoadProtocol value `%A`" x
 
     let protocolNamespace = function
         | XRoadProtocol.Version20 -> XmlNamespace.XRoad20
         | XRoadProtocol.Version30 -> XmlNamespace.XRoad30
-        | XRoadProtocol.Version31 -> XmlNamespace.XRoad31Ee
+        | XRoadProtocol.Version31Ee -> XmlNamespace.XRoad31Ee
+        | XRoadProtocol.Version31Eu -> XmlNamespace.XRoad31Eu
         | XRoadProtocol.Version40 -> XmlNamespace.XRoad40
         | x -> failwithf "Invalid XRoadProtocol value `%A`" x
-
-    /// Extracts X-Road protocol version from namespace that is used.
-    let fromNamespace = function
-        | XmlNamespace.XRoad20 -> XRoadProtocol.Version20
-        | XmlNamespace.XRoad30 -> XRoadProtocol.Version30
-        | XmlNamespace.XRoad31Ee -> XRoadProtocol.Version31
-        | ns -> failwithf "Unexpected X-Road namespace value `%s`." ns
 
     let private messageProtocolNamespace = function
         | Version20(_) -> XmlNamespace.XRoad20
@@ -172,9 +175,9 @@ type public XRoadRpcHeader() =
     /// Teenuse kasutaja ametikoht.
     member val Amet = "" with get, set
     /// Teenuse kasutaja nimi.
-    member val Ametniknimi = "" with get, set
+    member val AmetnikNimi = "" with get, set
     /// Teenuse kasutamise asünkroonsus. Kui väärtus on "true", siis sooritab turvaserver päringu asünkroonselt.
-    member val Asynkroonne = false with get, set
+    member val Asynkroonne = Unchecked.defaultof<Nullable<bool>> with get, set
     /// Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis).
     member val Autentija = "" with get, set
     /// Teenuse kasutamise eest makstud summa.
@@ -210,7 +213,7 @@ type public XRoadDocHeader() =
     /// Name of the person invoking the service.
     member val UserName = "" with get, set
     /// Specifies asynchronous service. If the value is "true", then the security server performs the service call asynchronously.
-    member val Async = false with get, set
+    member val Async = Unchecked.defaultof<Nullable<bool>> with get, set
     /// Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.
     member val Authenticator = "" with get, set
     /// The amount of money paid for invoking the service.
@@ -309,7 +312,9 @@ type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
     member val IsRequired = required with get
 
 type XRoadMessage() =
-    member val Header: SoapHeaderValue array = [||] with get, set
+    member val Header = Unchecked.defaultof<AbstractXRoadHeader> with get, set
+    member val RequiredHeaders = Unchecked.defaultof<string[]> with get, set
+    member val HeaderNamespace = "" with get, set
     member val Body: obj = null with get, set
     member val Attachments = Dictionary<string, BinaryContent>() with get, set
     member val Namespaces = List<string>() with get
