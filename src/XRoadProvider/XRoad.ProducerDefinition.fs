@@ -444,9 +444,12 @@ module ServiceBuilder =
             m |> Meth.addStmt (Stmt.condIf ((Expr.typeRefOf<string> @-> "IsNullOrWhiteSpace") @% [!+ "header" @=> producerPropName]) [Stmt.assign (!+ "header" @=> producerPropName) (!^ messageProtocol.ProducerName.Value)])
               |> Meth.addStmt (Stmt.condIf ((Expr.typeRefOf<string> @-> "IsNullOrWhiteSpace") @% [!+ "header" @=> servicePropName]) [Stmt.assign (!+ "header" @=> servicePropName) ((Expr.typeRefOf<string> @-> "Format") @% [!^ (sprintf "{0}.%s" serviceName); !+ "header" @=> producerPropName])])
               |> ignore
-        | None -> ()
+        | None ->
+            m |> Meth.addStmt (Stmt.condIf ((Expr.typeRefOf<string> @-> "IsNullOrWhiteSpace") @% [!+ "header" @=> "ProtocolVersion"]) [Stmt.assign (!+ "header" @=> "ProtocolVersion") (!^ "4.0")])
+              |> ignore
         m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "RequiredHeaders") (reqhdrs |> List.map (fun x -> !^ x) |> Arr.create<string>))
           |> Meth.addStmt (Stmt.assign ((!+ "@__m") @=> "Header") (!+ "header"))
+          |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "HeaderNamespace") (!^ messageProtocol.HeaderNamespace))
 
     let instQN (nm: string) (ns: string) = Expr.inst<XmlQualifiedName> [!^ nm; !^ ns]
 

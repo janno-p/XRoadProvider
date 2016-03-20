@@ -230,7 +230,7 @@ module internal SecurityServerV6 =
             writer.WriteElementString("serviceCode", XmlNamespace.XRoad40Id, service.ServiceCode)
             service.ServiceVersion |> Option.iter (fun vers -> writer.WriteElementString("serviceVersion", XmlNamespace.XRoad40Id, vers))
             writer.WriteEndElement()
-            writer.WriteElementString("id", XmlNamespace.XRoad40, XRoadHelper.generateNonce())
+            writer.WriteElementString("id", XmlNamespace.XRoad40, XRoadHelper.getUUID())
             writer.WriteElementString("protocolVersion", XmlNamespace.XRoad40, "4.0")
             writer.WriteEndElement() // </soapenv:Header>
             writer.WriteStartElement("Body", XmlNamespace.SoapEnv) // <soapenv:Body>

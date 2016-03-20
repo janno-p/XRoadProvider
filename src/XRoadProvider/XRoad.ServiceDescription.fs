@@ -297,14 +297,14 @@ let private parsePortBinding languageCode definitions element =
     let messageProtocol =
         // Extract producer name for given port from X-Road extension.
         let xraddress = [XmlNamespace.XRoad20; XmlNamespace.XRoad30; XmlNamespace.XRoad31Ee; XmlNamespace.XRoad31Eu]
-                        |> List.map (fun ns -> element %! xnsname "address" ns)
+                        |> List.choose (fun ns -> element %! xnsname "address" ns |> Option.ofObj)
         match xraddress with
         | [] -> XRoadMessageProtocolVersion.Version40
         | [x] when x.Name.NamespaceName = XmlNamespace.XRoad20 -> XRoadMessageProtocolVersion.Version20 (x |> reqAttr (xname "producer"))
         | [x] when x.Name.NamespaceName = XmlNamespace.XRoad30 -> XRoadMessageProtocolVersion.Version30 (x |> reqAttr (xname "producer"))
         | [x] when x.Name.NamespaceName = XmlNamespace.XRoad31Ee -> XRoadMessageProtocolVersion.Version31Ee (x |> reqAttr (xname "producer"))
         | [x] when x.Name.NamespaceName = XmlNamespace.XRoad31Eu -> XRoadMessageProtocolVersion.Version31Eu (x |> reqAttr (xname "producer"))
-        | _ -> failwith "Mixing different X-Road protocol versions is not supported."
+        | _ -> failwithf "Mixing different X-Road protocol versions is not supported (%A)." xraddress
     let servicePort =
         { Name = name
           Documentation = readLanguages languageCode messageProtocol element

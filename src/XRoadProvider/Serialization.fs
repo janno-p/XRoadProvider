@@ -158,11 +158,6 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     let serializeMessage (content: Stream) (attachments: Dictionary<string,BinaryContent>) =
         serializeMultipartMessage attachments (fun s -> writeContent s content)
 
-    let (|XteeName|_|) (name: XmlQualifiedName) =
-        match name.Namespace with
-        | XmlNamespace.XRoad20 -> Some name.Name
-        | _ -> None
-
     let writeIdHeader value ns req (writer: XmlWriter) =
         if req |> Array.exists ((=) "id") || value |> isNull |> not then
             writer.WriteStartElement("id", ns)
@@ -170,7 +165,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("string", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
-            writer.WriteValue(if value |> isNull then XRoadHelper.generateNonce() else value)
+            writer.WriteValue(if String.IsNullOrWhiteSpace(value) then XRoadHelper.getUUID() else value)
             writer.WriteEndElement()
 
     let writeStringHeader value name ns req (writer: XmlWriter) =
@@ -182,8 +177,6 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                 writer.WriteEndAttribute()
             if value |> isNull |> not then
                 writer.WriteValue(value)
-            elif name = "id" then
-                writer.WriteValue(XRoadHelper.generateNonce())
             writer.WriteEndElement()
 
     let writeBoolHeader (value: Nullable<bool>) name ns req (writer: XmlWriter) =
@@ -209,6 +202,8 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer.WriteEndElement()
 
     let writeXRoadHeader (msg: XRoadMessage) (writer: XmlWriter) =
+        if writer.LookupPrefix(msg.HeaderNamespace) |> isNull then
+            writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, msg.HeaderNamespace)
         match msg.Header with
         | :? XRoadRpcHeader as header ->
             writer |> writeStringHeader header.Asutus "asutus" msg.HeaderNamespace msg.RequiredHeaders
@@ -246,6 +241,8 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer |> writeStringHeader header.Encrypted "encrypted" msg.HeaderNamespace msg.RequiredHeaders
             writer |> writeStringHeader header.EncryptedCert "encryptedCert" msg.HeaderNamespace msg.RequiredHeaders
         | :? XRoadHeader as header ->
+            if writer.LookupPrefix(XmlNamespace.XRoad40Id) |> isNull then
+                writer.WriteAttributeString("xmlns", "id", XmlNamespace.Xmlns, XmlNamespace.XRoad40Id)
             writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
             writer |> writeStringHeader header.UserId "userId" msg.HeaderNamespace msg.RequiredHeaders
             writer |> writeStringHeader header.Issue "issue" msg.HeaderNamespace msg.RequiredHeaders

@@ -24,13 +24,13 @@ module internal XmlNamespace =
     let [<Literal>] XRoad31Eu = "http://x-road.eu/xsd/x-road.xsd"
     let [<Literal>] XRoad40 = "http://x-road.eu/xsd/xroad.xsd"
     let [<Literal>] XRoad40Id = "http://x-road.eu/xsd/identifiers"
-    let [<Literal>] XRoad40Repr = "http://xroad.eu/xsd/representation.xsd"
+    let [<Literal>] XRoad40Repr = "http://x-road.eu/xsd/representation.xsd"
     let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
     let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
 
     /// Defines namespaces which are handled separately (not generated).
     let predefined =
-        [ Http; Mime; Soap; SoapEnc; SoapEnv; Wsdl; Xmime; Xml; Xmlns; Xop; Xsd; Xsi ]
+        [ Http; Mime; Soap; SoapEnc; SoapEnv; Wsdl; Xmime; Xml; Xmlns; Xop; Xsd; Xsi; XRoad40; XRoad40Id; XRoad40Repr ]
 
 type XRoadProtocol =
     | Undefined = 0
@@ -58,6 +58,13 @@ type XRoadMessageProtocolVersion =
             | Version31Ee(_) -> XRoadProtocol.Version31Ee
             | Version31Eu(_) -> XRoadProtocol.Version31Eu
             | Version40(_) -> XRoadProtocol.Version40
+        member this.HeaderNamespace =
+            match this with
+            | Version20(_) -> XmlNamespace.XRoad20
+            | Version30(_) -> XmlNamespace.XRoad30
+            | Version31Ee(_) -> XmlNamespace.XRoad31Ee
+            | Version31Eu(_) -> XmlNamespace.XRoad31Eu
+            | Version40(_) -> XmlNamespace.XRoad40
 
 [<AutoOpen>]
 module internal Option =
@@ -85,8 +92,8 @@ module private XRoadProtocolExtensions =
         | XRoadProtocol.Version20 -> "xtee"
         | XRoadProtocol.Version30
         | XRoadProtocol.Version31Ee
-        | XRoadProtocol.Version31Eu -> "xrd"
-        | XRoadProtocol.Version40 -> failwith "Not implemented v4.0"
+        | XRoadProtocol.Version31Eu
+        | XRoadProtocol.Version40 -> "xrd"
         | x -> failwithf "Invalid XRoadProtocol value `%A`" x
 
     let protocolNamespace = function
@@ -123,10 +130,7 @@ module private XRoadProtocolExtensions =
         | Version40(_) -> isHeaderOf XmlNamespace.XRoad40 docHeaders
 
 module XRoadHelper =
-    let generateNonce() =
-        let nonce = Array.create 42 0uy
-        RNGCryptoServiceProvider.Create().GetNonZeroBytes(nonce)
-        Convert.ToBase64String(nonce)
+    let getUUID () = System.Guid.NewGuid().ToString().ToUpper()
 
     let getSystemTypeName = function
         | "System.String" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
@@ -291,7 +295,7 @@ type public BinaryContent internal (contentID: string, content: ContentType) =
     member __.ContentID
         with get() =
             match contentID with
-            | null | "" -> XRoadHelper.generateNonce()
+            | null | "" -> XRoadHelper.getUUID()
             | _ -> contentID
     member __.OpenStream() : Stream =
         match content with

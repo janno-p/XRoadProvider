@@ -67,6 +67,7 @@
     <None Include="Wsdl\Maakataster.wsdl.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Include="Wsdl\XRoadV6.wsdl.xml" />
     <Content Include="App.config" />
     <None Include="paket.references" />
   </ItemGroup>
