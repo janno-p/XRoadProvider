@@ -13,7 +13,7 @@ open XRoad.DynamicMethods
 module Stream =
     let toString (stream: Stream) =
         stream.Position <- 0L
-        use reader = new StreamReader(stream)
+        let reader = new StreamReader(stream)
         reader.ReadToEnd()
 
 type Serializer(isEncoded) as this =

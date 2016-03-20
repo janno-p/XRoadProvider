@@ -106,7 +106,8 @@ module TypeBuilder =
             | ProvidedType(decl, name) -> decl, name
             | _ -> failwith "Only generated types are accepted as arguments!"
         // Generates unique type name for every choice element.
-        let choiceNameGenerator = nameGenerator "Choice"
+        let choiceNameGen = nameGenerator "Choice"
+        let seqNameGen = nameGenerator "Seq"
         // Parse schema definition and add all properties that are defined.
         match schemaType with
         | SimpleType(SimpleTypeSpec.Restriction(spec, annotation)) ->
@@ -155,11 +156,11 @@ module TypeBuilder =
                 | ComplexTypeContent.Empty ->
                     None
             specContent
-            |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGenerator context content)) ()
+            |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGen seqNameGen context content)) ()
         | EmptyType -> ()
 
     /// Collects property definitions from every content element of complexType.
-    and private collectComplexTypeContentProperties choiceNameGenerator context spec =
+    and private collectComplexTypeContentProperties choiceNameGen seqNameGen context spec =
         // Attribute definitions
         let attributeProperties = spec.Attributes |> List.map (buildAttributeProperty context)
         // Element definitions
@@ -173,18 +174,18 @@ module TypeBuilder =
                 let collectSequenceProperties content =
                     match content with
                     | SequenceContent.Choice(cspec) ->
-                        collectChoiceProperties choiceNameGenerator context cspec
+                        collectChoiceProperties choiceNameGen context cspec
                     | SequenceContent.Element(spec) ->
                         [ buildElementProperty context spec ]
-                    | SequenceContent.Sequence(_) ->
-                        failwith "Not implemented: sequence in complexType sequence."
+                    | SequenceContent.Sequence(sspec) ->
+                        collectSequenceProperties seqNameGen context sspec
                     | SequenceContent.Any ->
                         [ buildAnyProperty() ]
                     | SequenceContent.Group ->
                         failwith "Not implemented: group in complexType sequence."
                 spec.Content |> List.map (collectSequenceProperties) |> List.collect (id)
             | Some(ComplexTypeParticle.Choice(cspec)) ->
-                collectChoiceProperties choiceNameGenerator context cspec
+                collectChoiceProperties choiceNameGen context cspec
             | Some(ComplexTypeParticle.Group) ->
                 failwith "Not implemented: group in complexType."
             | None -> []
@@ -264,6 +265,10 @@ module TypeBuilder =
                     IsNillable = isNillable }
         | Reference(_) ->
             failwith "Not implemented: schema reference to type."
+
+    /// Create property definitions for sequence element specification.
+    and private collectSequenceProperties seqNameGen context spec : PropertyDefinition list =
+        []
 
     /// Create property definitions for choice element specification.
     and private collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition list =
