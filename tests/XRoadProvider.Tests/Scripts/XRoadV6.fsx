@@ -1,8 +1,7 @@
-﻿#I @"../../../bin/XRoadProvider"
-
-#r "../../../packages/Common.Logging/lib/net40/Common.Logging.dll"
+﻿#r "../../../packages/Common.Logging/lib/net40/Common.Logging.dll"
 #r "../../../packages/Common.Logging.Core/lib/net40/Common.Logging.Core.dll"
-#r "XRoadProvider"
+#r "../../../bin/XRoadProvider/XRoadProvider.dll"
+
 #r "System.Xml.Linq"
 
 open System.IO
