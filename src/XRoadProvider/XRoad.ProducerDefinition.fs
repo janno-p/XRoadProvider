@@ -267,7 +267,7 @@ module TypeBuilder =
             failwith "Not implemented: schema reference to type."
 
     /// Create property definitions for sequence element specification.
-    and private collectSequenceProperties seqNameGen context spec : PropertyDefinition list =
+    and private collectSequenceProperties _(*seqNameGen*) _(*context*) _(*spec*) : PropertyDefinition list =
         []
 
     /// Create property definitions for choice element specification.
@@ -470,7 +470,7 @@ module ServiceBuilder =
             let attr = Attributes.xrdElement (nm, ns, false)
             prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
             match runtimeType with
-            | CollectionType(x, itemName, y) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
+            | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
             | _ -> ()
             m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
