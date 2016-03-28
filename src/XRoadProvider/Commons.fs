@@ -628,7 +628,7 @@ module internal Wsdl =
           Type: XName option }
 
     /// Combines parameter for request or response.
-    type ParameterWrapper =
+    type OperationContent =
         { HasMultipartContent: bool
           Parameters: Parameter list
           RequiredHeaders: string list }
@@ -636,33 +636,32 @@ module internal Wsdl =
     /// Type that represents different style of message formats.
     type MethodCall =
         // Encoded always type
-        | RpcEncodedCall of accessorName: XName * parameters: ParameterWrapper
+        | RpcEncoded of XName * OperationContent
         // Element directly under accessor element (named after message part name).
         // Type becomes the schema type of part accessor element.
-        | RpcLiteralCall of accessorName: XName * parameters: ParameterWrapper
+        | RpcLiteral of XName * OperationContent
         // Encoded uses always type attribues.
-        | DocEncodedCall of ns: XNamespace * parameters: ParameterWrapper
+        | DocEncoded of XNamespace * OperationContent
         // Element directly under body.
         // Type becomes the schema type of enclosing element (Body)
-        | DocLiteralCall of parameters: ParameterWrapper
-        member this.Accessor =
-            match this with
-            | DocEncodedCall(_) | DocLiteralCall(_) -> None
-            | RpcEncodedCall(accessor, _) | RpcLiteralCall(accessor, _) -> Some(accessor)
-        member this.Wrapper =
-            match this with
-            | DocEncodedCall(_, wrapper)
-            | DocLiteralCall(wrapper)
-            | RpcEncodedCall(_, wrapper)
-            | RpcLiteralCall(_, wrapper) -> wrapper
+        | DocLiteral of OperationContent
+        // Document literal with type part which defines SOAP:Body
+        | DocLiteralBody of OperationContent
+        // Recognizes valid document literal wrapped style operations.
+        | DocLiteralWrapped of XName * OperationContent
         member this.IsEncoded =
-            match this with RpcEncodedCall(_) -> true | _ -> false
+            match this with RpcEncoded(_) | DocEncoded(_) -> true | _ -> false
+        member this.Content =
+            match this with
+            | RpcEncoded(_,content) | RpcLiteral(_,content)
+            | DocEncoded(_,content) | DocLiteral(content)
+            | DocLiteralWrapped(_,content) | DocLiteralBody(content) -> content
         member this.RequiredHeaders =
-            this.Wrapper.RequiredHeaders
+            this.Content.RequiredHeaders
         member this.IsMultipart =
-            this.Wrapper.HasMultipartContent
+            this.Content.HasMultipartContent
         member this.Parameters =
-            this.Wrapper.Parameters
+            this.Content.Parameters
 
     /// Definition for method which corresponds to single X-Road operation.
     type ServicePortMethod =

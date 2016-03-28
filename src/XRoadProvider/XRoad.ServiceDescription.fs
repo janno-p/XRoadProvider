@@ -200,21 +200,32 @@ let private parseOperationMessage style messageProtocol (binding: XElement) defi
             | Some(SchemaElement(name)) -> { Name = name; Type = None }
             | Some(SchemaType(name)) -> { Name = XName.Get(partName); Type = Some(name) }
             | None -> failwithf "Message `%s` does not contain part `%s`." msgName partName)
+    // Body parts should be described uniformly.
+    let numTypes = parameters |> List.filter (fun x -> x.Type.IsNone) |> List.length
+    let numElements = parameters |> List.filter (fun x -> x.Type.IsSome) |> List.length
+    if numTypes > 0 && numElements > 0 then
+        failwithf "Mixing type and element parts in operation message (%s) is not acceptable." opName
     // Service request input or output parameters.
-    let parameterWrapper =
+    let content =
         { HasMultipartContent = contentParts |> List.isEmpty |> not
           Parameters = parameters
           RequiredHeaders = requiredHeaders }
     // Validate parameter usage
     match accessorName with
-    | Some(_) -> validateEncodedParameters parameterWrapper.Parameters msgName
-    | None -> validateLiteralParameters parameterWrapper.Parameters msgName
+    | Some(_) -> validateEncodedParameters content.Parameters msgName
+    | None -> validateLiteralParameters content.Parameters msgName
     // Wrap method call into correct context.
     match style, accessorName with
-    | Document, Some(value) -> DocEncodedCall(value.Namespace, parameterWrapper)
-    | Document, None -> DocLiteralCall parameterWrapper
-    | Rpc, Some(value) -> RpcEncodedCall(value, parameterWrapper)
-    | Rpc, None -> RpcLiteralCall(xnsname opName ns, parameterWrapper)
+    | Document, Some(value) -> DocEncoded(value.Namespace, content)
+    | Document, None ->
+        match content with
+        | { Parameters = [ { Type = Some(_) } ] } -> DocLiteralBody(content)
+        | { Parameters = { Type = Some(_) } :: _ } ->
+            failwithf "Document literal style can have exactly 1 type part in operation message (%s)." opName
+        | { Parameters = [ { Name = name; Type = None } ] } -> DocLiteralWrapped(name, content)
+        | _ -> DocLiteral(content)
+    | Rpc, Some(value) -> RpcEncoded(value, content)
+    | Rpc, None -> RpcLiteral(xnsname opName ns, content)
 
 /// Parse operation binding and bind to abstract message definitions.
 /// http://www.w3.org/TR/wsdl#_bindings

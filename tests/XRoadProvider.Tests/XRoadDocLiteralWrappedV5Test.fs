@@ -1,8 +1,9 @@
 ﻿namespace XRoadProvider.Test
 
+open FsUnit
 open NUnit.Framework
-open Swensen.Unquote
 open XRoad
+open XRoad.Wsdl
 
 [<TestFixture>]
 module XRoadDocLiteralWrappedV5Test =
@@ -10,95 +11,87 @@ module XRoadDocLiteralWrappedV5Test =
     let ``Read aktorstest service`` () =
         let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
-        test <@ services.Length = 1 @>
+        services.Length |> should equal 1
         let service = services |> List.head
-        test <@ service.Name = "aktorstestService" @>
-        test <@ service.Ports.Length = 1 @>
+        service.Name |> should equal "aktorstestService"
+        service.Ports.Length |> should equal 1
         let port = service.Ports |> List.head
-        test <@ port.Uri = "http://localhost:8080/axis2/services/aktorstestService" @>
-        test <@ port.Documentation.IsSome @>
-        test <@ port.Documentation.Value = "Test andmekogu xtee ver5 doc/literal stiili jaoks" @>
-        test <@ port.MessageProtocol = Version31Ee("aktorstest") @>
+        port.Uri |> should equal "http://localhost:8080/axis2/services/aktorstestService"
+        port.Documentation |> should equal (Some "Test andmekogu xtee ver5 doc/literal stiili jaoks")
+        port.MessageProtocol |> should equal (Version31Ee "aktorstest")
 
     [<Test>]
     let ``Parse multipart input operation`` () =
         let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
         let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "fileUpload")
-        test <@ operation.Documentation.IsSome @>
-        test <@ operation.Documentation.Value = "Faili üleslaadimine" @>
-        test <@ operation.Version = Some "v1" @>
-        test <@ operation.InputParameters.Parameters.Length = 1 @>
-        test <@ operation.InputParameters.RequiredHeaders.Length = 5 @>
-        test <@ operation.InputParameters.IsMultipart = true @>
-        test <@ operation.InputParameters.IsEncoded = false @>
-        test <@ operation.InputParameters.Accessor.IsNone @>
-        test <@ operation.OutputParameters.Parameters.Length = 1 @>
-        test <@ operation.OutputParameters.RequiredHeaders.Length = 5 @>
-        test <@ operation.OutputParameters.IsEncoded = false @>
-        test <@ operation.OutputParameters.IsMultipart = false @>
-        test <@ operation.OutputParameters.Accessor.IsNone @>
+        operation.Documentation |> should equal (Some "Faili üleslaadimine")
+        operation.Version |> should equal (Some "v1")
+        match operation.InputParameters with DocLiteralWrapped(_) -> () | _ -> failwith "Invalid operation style"
+        operation.InputParameters.Parameters.Length |> should equal 1
+        operation.InputParameters.RequiredHeaders.Length |> should equal 5
+        operation.InputParameters.IsMultipart |> should be True
+        operation.InputParameters.IsEncoded |> should be False
+        operation.OutputParameters.Parameters.Length |> should equal 1
+        operation.OutputParameters.RequiredHeaders.Length |> should equal 5
+        operation.OutputParameters.IsEncoded |> should be False
+        operation.OutputParameters.IsMultipart |> should be False
         let context = TypeBuilderContext.FromSchema(schema, "et")
-        test <@ context.MessageProtocol = Version31Ee("aktorstest") @>
+        context.MessageProtocol |> should equal (Version31Ee "aktorstest")
 
     [<Test>]
     let ``Parse multipart output operation`` () =
         let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
         let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "fileDownload")
-        test <@ operation.Documentation.IsSome @>
-        test <@ operation.Documentation.Value = "Faili allalaadimine" @>
-        test <@ operation.Version = Some "v1" @>
-        test <@ operation.InputParameters.Parameters.Length = 1 @>
-        test <@ operation.InputParameters.RequiredHeaders.Length = 5 @>
-        test <@ operation.InputParameters.IsMultipart = false @>
-        test <@ operation.OutputParameters.Parameters.Length = 1 @>
-        test <@ operation.OutputParameters.RequiredHeaders.Length = 5 @>
-        test <@ operation.OutputParameters.IsMultipart = true @>
-        ()
+        operation.Documentation |> should equal (Some "Faili allalaadimine")
+        operation.Version |> should equal (Some "v1")
+        operation.InputParameters.Parameters.Length |> should equal 1
+        operation.InputParameters.RequiredHeaders.Length |> should equal 5
+        operation.InputParameters.IsMultipart |> should be False
+        operation.OutputParameters.Parameters.Length |> should equal 1
+        operation.OutputParameters.RequiredHeaders.Length |> should equal 5
+        operation.OutputParameters.IsMultipart |> should be True
 
     [<Test>]
     let ``Parse operation without version number`` () =
         let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
         let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "listMethods")
-        test <@ operation.Documentation.IsNone @>
-        test <@ operation.Version.IsNone @>
-        test <@ operation.InputParameters.Parameters.Length = 1 @>
-        test <@ operation.InputParameters.RequiredHeaders.Length = 0 @>
-        test <@ operation.InputParameters.IsMultipart = false @>
-        test <@ operation.OutputParameters.Parameters.Length = 1 @>
-        test <@ operation.OutputParameters.RequiredHeaders.Length = 0 @>
-        test <@ operation.OutputParameters.IsMultipart = false @>
-        ()
+        operation.Documentation |> should equal None
+        operation.Version |> should equal None
+        operation.InputParameters.Parameters.Length |> should equal 1
+        operation.InputParameters.RequiredHeaders.Length |> should equal 0
+        operation.InputParameters.IsMultipart |> should be False
+        operation.OutputParameters.Parameters.Length |> should equal 1
+        operation.OutputParameters.RequiredHeaders.Length |> should equal 0
+        operation.OutputParameters.IsMultipart |> should be False
 
     [<Test>]
     let ``Parse non-multipart operation`` () =
         let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let services = schema.Services
         let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "isikOtsing")
-        test <@ operation.Name = "isikOtsing" @>
-        test <@ operation.Documentation.IsSome @>
-        test <@ operation.Documentation.Value = "Isiku andmete otsimine isikukoodi järgi" @>
-        test <@ operation.Version = Some "v1" @>
-        test <@ operation.InputParameters.Parameters.Length = 1 @>
-        test <@ operation.InputParameters.RequiredHeaders.Length = 5 @>
-        test <@ operation.InputParameters.IsMultipart = false @>
-        test <@ operation.OutputParameters.Parameters.Length = 1 @>
-        test <@ operation.OutputParameters.RequiredHeaders.Length = 5 @>
-        test <@ operation.OutputParameters.IsMultipart = false @>
-        ()
+        operation.Name |> should equal "isikOtsing"
+        operation.Documentation |> should equal (Some "Isiku andmete otsimine isikukoodi järgi")
+        operation.Version |> should equal (Some "v1")
+        operation.InputParameters.Parameters.Length |> should equal 1
+        operation.InputParameters.RequiredHeaders.Length |> should equal 5
+        operation.InputParameters.IsMultipart |> should be False
+        operation.OutputParameters.Parameters.Length |> should equal 1
+        operation.OutputParameters.RequiredHeaders.Length |> should equal 5
+        operation.OutputParameters.IsMultipart |> should be False
 
     [<Test>]
     let ``Parse Aktorstest xml schema definition`` () =
         let schema = ProducerDescription.Load(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml", "et")
         let typeSchemas = schema.TypeSchemas
-        test <@ typeSchemas.Count = 2 @>
-        test <@ typeSchemas.ContainsKey "http://aktorstest.x-road.ee/producer" @>
-        test <@ typeSchemas.ContainsKey "http://x-road.ee/xsd/x-road.xsd" @>
+        typeSchemas.Count |> should equal 2
+        typeSchemas.ContainsKey "http://aktorstest.x-road.ee/producer" |> should be True
+        typeSchemas.ContainsKey "http://x-road.ee/xsd/x-road.xsd" |> should be True
         let mainSchema = typeSchemas.["http://aktorstest.x-road.ee/producer"]
-        test <@ mainSchema.TargetNamespace.NamespaceName = "http://aktorstest.x-road.ee/producer" @>
-        test <@ mainSchema.QualifiedAttributes = false @>
-        test <@ mainSchema.QualifiedElements = false @>
-        test <@ mainSchema.Elements.Count = 18 @>
-        test <@ mainSchema.Types.Count = 4 @>
+        mainSchema.TargetNamespace.NamespaceName |> should equal "http://aktorstest.x-road.ee/producer"
+        mainSchema.QualifiedAttributes |> should be False
+        mainSchema.QualifiedElements |> should be False
+        mainSchema.Elements.Count |> should equal 18
+        mainSchema.Types.Count |> should equal 4

@@ -475,18 +475,20 @@ module ServiceBuilder =
             m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
         match operation.InputParameters with
-        | DocEncodedCall(encodingNamespace, wrapper) ->
+        | DocEncoded(encodingNamespace, wrapper) ->
             wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
-        | DocLiteralCall({ Parameters = [{ Type = Some(_) } as p] }) ->
-            addParameter p None None
-        | DocLiteralCall(wrapper) ->
+        | DocLiteralBody(content) ->
+            addParameter content.Parameters.Head None None
+        | DocLiteralWrapped(_) ->
+            failwith "doc/literal wrapped"
+        | DocLiteral(wrapper) ->
             wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(p.Name.NamespaceName)))
-        | RpcEncodedCall(accessor, wrapper) ->
+        | RpcEncoded(accessor, wrapper) ->
             m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
             wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
-        | RpcLiteralCall(accessor, { Parameters = [{ Type = Some(_) } as p] }) ->
+        | RpcLiteral(accessor, { Parameters = [{ Type = Some(_) } as p] }) ->
             addParameter p (Some(accessor.LocalName)) (Some(accessor.NamespaceName))
-        | RpcLiteralCall(accessor, wrapper) ->
+        | RpcLiteral(accessor, wrapper) ->
             m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
             wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
         m
@@ -499,25 +501,27 @@ module ServiceBuilder =
             prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
         let parameters =
             match operation.OutputParameters with
-            | DocEncodedCall(encodingNamespace, wrapper) ->
+            | DocEncoded(encodingNamespace, wrapper) ->
                 wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
                 []
-            | DocLiteralCall({ Parameters = [{ Type = Some(_) } as p] }) ->
-                addParameter  p None None
+            | DocLiteralBody(content) ->
+                addParameter content.Parameters.Head None None
                 []
-            | DocLiteralCall(wrapper) ->
+            | DocLiteralWrapped(_) ->
+                failwith "doc/literal wrapped"
+            | DocLiteral(wrapper) ->
                 wrapper.Parameters
                 |> List.map (fun p ->
                     addParameter p (Some(p.Name.LocalName)) (Some(p.Name.NamespaceName))
                     (p.Name, context.GetRuntimeType(SchemaElement(p.Name))))
-            | RpcEncodedCall(accessor, wrapper) ->
+            | RpcEncoded(accessor, wrapper) ->
                 m |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
                 wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
                 []
-            | RpcLiteralCall(accessor, { Parameters = [{ Type = Some(_) } as p] }) ->
+            | RpcLiteral(accessor, { Parameters = [{ Type = Some(_) } as p] }) ->
                 addParameter p (Some(accessor.LocalName)) (Some(accessor.NamespaceName))
                 []
-            | RpcLiteralCall(accessor, wrapper) ->
+            | RpcLiteral(accessor, wrapper) ->
                 m |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
                 wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
                 []

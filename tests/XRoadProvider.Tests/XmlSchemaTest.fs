@@ -1,7 +1,7 @@
 ﻿namespace XRoadProvider.Test
 
+open FsUnit
 open NUnit.Framework
-open Swensen.Unquote
 open System.Xml.Linq
 open XRoad.TypeSchema
 open XRoad.TypeSchema.Parser
@@ -17,5 +17,5 @@ module XmlSchemaTest =
                         </schema>"""
         let node = XElement.Parse(fragment)
         let schemaNode = SchemaNode.FromNode(node)
-        raisesWith<exn> <@ node |> parseSchemaNode schemaNode @>
-                        (fun e -> <@ e.Message = "Element {http://www.w3.org/2001/XMLSchema}include inside schema element was not expected at the current position!" @>)
+        (fun () -> node |> parseSchemaNode schemaNode |> ignore)
+        |> should (throwWithMessage "Element {http://www.w3.org/2001/XMLSchema}include inside schema element was not expected at the current position!") typeof<exn>

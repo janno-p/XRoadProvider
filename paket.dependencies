@@ -23,4 +23,3 @@ group Test
     nuget FsUnit
     nuget NUnit
     nuget NUnit.Runners
-    nuget Unquote
