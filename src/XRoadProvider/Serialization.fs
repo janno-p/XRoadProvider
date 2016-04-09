@@ -206,7 +206,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer.WriteStartElement("client", XmlNamespace.XRoad40)
             if value <> null then
                 writer.WriteStartAttribute("objectType", XmlNamespace.XRoad40Id)
-                writer.WriteValue("MEMBER")
+                writer.WriteValue(if String.IsNullOrWhiteSpace(value.SubsystemCode) then "MEMBER" else "SUBSYSTEM")
                 writer.WriteEndAttribute()
                 writer.WriteStartElement("xRoadInstance", XmlNamespace.XRoad40Id)
                 if not <| String.IsNullOrEmpty(value.XRoadInstance) then
