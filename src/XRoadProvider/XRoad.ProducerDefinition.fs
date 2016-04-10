@@ -474,13 +474,19 @@ module ServiceBuilder =
             | _ -> ()
             m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
+        let addDocLiteralWrappedParameters (spec: ElementSpec) =
+            match context.GetElementDefinition(spec) |> snd |> context.GetTypeDefinition with
+            | ComplexType({ IsAbstract = false }) ->
+                ()
+            | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements."
         match operation.InputParameters with
         | DocEncoded(encodingNamespace, wrapper) ->
             wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
         | DocLiteralBody(content) ->
             addParameter content.Parameters.Head None None
-        | DocLiteralWrapped(_) ->
-            failwith "doc/literal wrapped"
+        | DocLiteralWrapped(name,_) ->
+            m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN name.LocalName name.NamespaceName)) |> ignore
+            name |> context.GetElementSpec |> addDocLiteralWrappedParameters
         | DocLiteral(wrapper) ->
             wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(p.Name.NamespaceName)))
         | RpcEncoded(accessor, wrapper) ->
