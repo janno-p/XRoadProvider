@@ -505,6 +505,11 @@ module ServiceBuilder =
             let prop = resultClass |> addProperty (parameter.Name.LocalName, runtimeType, false)
             let attr = Attributes.xrdElement (nm, ns, false)
             prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
+        let addDocLiteralWrappedParameters (spec: ElementSpec) =
+            match context.GetElementDefinition(spec) |> snd |> context.GetTypeDefinition with
+            | ComplexType({ IsAbstract = false }) ->
+                ()
+            | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements."
         let parameters =
             match operation.OutputParameters with
             | DocEncoded(encodingNamespace, wrapper) ->
@@ -513,8 +518,10 @@ module ServiceBuilder =
             | DocLiteralBody(content) ->
                 addParameter content.Parameters.Head None None
                 []
-            | DocLiteralWrapped(_) ->
-                failwith "doc/literal wrapped"
+            | DocLiteralWrapped(name,_) ->
+                m |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN name.LocalName name.NamespaceName)) |> ignore
+                name |> context.GetElementSpec |> addDocLiteralWrappedParameters
+                []
             | DocLiteral(wrapper) ->
                 wrapper.Parameters
                 |> List.map (fun p ->
