@@ -609,12 +609,12 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
     |> List.iter (fun (_,typeSchema) ->
         typeSchema.Types
         |> Seq.map (fun kvp -> SchemaType(kvp.Key))
-        |> Seq.append (
-            typeSchema.Elements
-            |> Seq.choose (fun kvp ->
-                match kvp.Value.Type with
-                | Definition(_) -> Some(SchemaElement(kvp.Key))
-                | _ -> None))
+        //|> Seq.append (
+        //    typeSchema.Elements
+        //    |> Seq.choose (fun kvp ->
+        //        match kvp.Value.Type with
+        //        | Definition(_) -> Some(SchemaElement(kvp.Key))
+        //        | _ -> None))
         |> Seq.iter (context.GetOrCreateType >> ignore))
 
     // Build all global types for each type schema definition.
@@ -629,18 +629,18 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
     |> Seq.iter (fun (rtyp, def) -> TypeBuilder.build context rtyp def)
 
     // Build all global elements for each type schema definition.
-    schema.TypeSchemas
-    |> Map.toSeq
-    |> Seq.collect (fun (_, typeSchema) -> typeSchema.Elements)
-    |> Seq.choose (fun x ->
-        match x.Value.Type with
-        | Definition(_) -> Some(context.GetRuntimeType(SchemaElement(x.Key)), x.Value)
-        | _ -> None)
-    |> Seq.iter (fun (typ, spec) ->
-        match spec.Type with
-        | Definition(def) -> TypeBuilder.build context typ def
-        | Reference(_) -> failwith "Root level element references are not allowed."
-        | Name(_) -> ())
+    //schema.TypeSchemas
+    //|> Map.toSeq
+    //|> Seq.collect (fun (_, typeSchema) -> typeSchema.Elements)
+    //|> Seq.choose (fun x ->
+    //    match x.Value.Type with
+    //    | Definition(_) -> Some(context.GetRuntimeType(SchemaElement(x.Key)), x.Value)
+    //    | _ -> None)
+    //|> Seq.iter (fun (typ, spec) ->
+    //    match spec.Type with
+    //    | Definition(def) -> TypeBuilder.build context typ def
+    //    | Reference(_) -> failwith "Root level element references are not allowed."
+    //    | Name(_) -> ())
 
     // Main class that wraps all provided functionality and types.
     let targetClass =

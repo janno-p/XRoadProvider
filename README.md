@@ -1,9 +1,9 @@
 # XRoadProvider
 
-[![NuGet](https://buildstats.info/nuget/XRoadProvider?includePreReleases=true)](https://www.nuget.org/packages/XRoadProvider/)
-
 A library containing collection of F# type providers to support easier integration with service providers over
 [X-Road](http://x-road.eu) infrastructure.
+
+[![NuGet](https://buildstats.info/nuget/XRoadProvider?includePreReleases=true)](https://www.nuget.org/packages/XRoadProvider/)
 
 ## Build Status
 
