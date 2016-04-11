@@ -92,7 +92,7 @@ module TypeBuilder =
             |> List.tryFind (fst >> ((=) context.LanguageCode))
             |> Option.map snd)
 
-    let nameGenerator name =
+    let private nameGenerator name =
         let num = ref 0
         (fun () ->
             num := !num + 1
@@ -458,7 +458,7 @@ module ServiceBuilder =
 
     let instQN (nm: string) (ns: string) = Expr.inst<XmlQualifiedName> [!^ nm; !^ ns]
 
-    let buildOperationInput (context: TypeBuilderContext) (operation: ServicePortMethod) (paramClass: CodeTypeDeclaration) m =
+    let buildOperationInput (context: TypeBuilderContext) tns (operation: ServicePortMethod) (paramClass: CodeTypeDeclaration) m =
         m |> Meth.addStmt (CodeVariableDeclarationStatement(paramClass.Name, "@__input", CodeObjectCreateExpression(paramClass.Name)))
           |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") (!+ "@__input"))
           |> ignore
@@ -476,8 +476,31 @@ module ServiceBuilder =
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
         let addDocLiteralWrappedParameters (spec: ElementSpec) =
             match context.GetElementDefinition(spec) |> snd |> context.GetTypeDefinition with
-            | ComplexType({ IsAbstract = false }) ->
-                ()
+            | ComplexType({ IsAbstract = false; Content = Particle({ Content = Some(ComplexTypeParticle.Sequence({ Content = content; MinOccurs = 1u; MaxOccurs = 1u })) }) }) ->
+                content
+                |> List.iter (fun value ->
+                    match value with
+                    | SequenceContent.Element(elementSpec) ->
+                        let name, schemaType = context.GetElementDefinition(elementSpec)
+                        let runtimeType =
+                            match schemaType with
+                            | Definition(definition) ->
+                                let subTy = Cls.create (sprintf "%s_%sType" operation.Name name) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+                                let ns = context.GetOrCreateNamespace(tns)
+                                ns.Members.Add(subTy) |> ignore
+                                let runtimeType = ProvidedType(subTy, providedTypeFullName ns.Name subTy.Name)
+                                TypeBuilder.build context runtimeType definition
+                                runtimeType
+                            | Name(typeName) ->
+                                context.GetRuntimeType(SchemaType(typeName))
+                            | Reference(_) -> failwith "never"
+                        m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) name |> ignore
+                        let prop = paramClass |> addProperty (name, runtimeType, false) |> Prop.describe (Attributes.xrdElement (None, None, false))
+                        match runtimeType with
+                        | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
+                        | _ -> ()
+                        m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> name) (!+ name)) |> ignore
+                    | _ -> failwithf "%A" value)
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements."
         match operation.InputParameters with
         | DocEncoded(encodingNamespace, wrapper) ->
@@ -550,7 +573,7 @@ module ServiceBuilder =
               |> Meth.addStmt (Stmt.ret Expr.nil)
 
     /// Build content for each individual service call method.
-    let build (context: TypeBuilderContext) _ (operation: ServicePortMethod): CodeTypeMember list =
+    let build (context: TypeBuilderContext) _ tns (operation: ServicePortMethod): CodeTypeMember list =
         let protocol = context.MessageProtocol.EnumValue
         let paramClass = Cls.create(sprintf "%sInput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
         let resultClass = Cls.create(sprintf "%sOutput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
@@ -564,7 +587,7 @@ module ServiceBuilder =
             |> iif operation.Version.IsSome (fun x -> x |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceVersion") (!^ operation.Version.Value)))
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (CodeTypeReference(resultClass.Name)) ]))
             |> addHeaderInitialization context.MessageProtocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
-            |> buildOperationInput context operation paramClass
+            |> buildOperationInput context tns operation paramClass
             |> buildOperationOutput context operation resultClass
         [m; paramClass; resultClass]
 
@@ -671,7 +694,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
             serviceTy |> Cls.addMember portTy |> ignore
 
             port.Methods
-            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context undescribedFaults op) |> ignore))
+            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context undescribedFaults service.Namespace op) |> ignore))
         targetClass |> Cls.addMember serviceTy |> ignore
         )
 

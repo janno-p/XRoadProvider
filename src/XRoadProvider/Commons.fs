@@ -682,7 +682,8 @@ module internal Wsdl =
     /// All operations defined for single producer.
     type Service =
         { Name: string
-          Ports: ServicePort list }
+          Ports: ServicePort list
+          Namespace: XNamespace }
 
 
 module internal MultipartMessage =

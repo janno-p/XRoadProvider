@@ -30,10 +30,9 @@ header.Client <- XRoadMemberIdentifier("ee-dev", "GOV", "70000310", "generic-con
 header.Producer <- XRoadMemberIdentifier("ee-dev", "GOV", "70000310", "etoimik-arendus")
 header.UserId <- "EE30101010001"
 
-let request = Types.getRandom()
-request.request <- Types.getRandom.requestType()
-request.request.seed <- "123"
+let request = Types.getRandom_requestType()
+request.seed <- "123"
 
 let response = port.getRandom(header, request)
 
-printfn "%s" response.response.content
+//printfn "%s" response.response.content

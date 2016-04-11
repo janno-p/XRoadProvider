@@ -326,12 +326,13 @@ let private parsePortBinding languageCode definitions element =
 
 /// Parse all service elements defined as immediate child elements of current element.
 /// http://www.w3.org/TR/wsdl#_services
-let parseServices languageCode definitions =
+let parseServices languageCode (definitions: XElement) =
+    let targetNamespace = definitions.Attribute(xname "targetNamespace").Value |> xns
     definitions %* xnsname "service" XmlNamespace.Wsdl
     |> Seq.map (fun service ->
         let ports =
             service %* xnsname "port" XmlNamespace.Wsdl
             |> Seq.choose (parsePortBinding languageCode definitions)
             |> List.ofSeq
-        { Name = service |> reqAttr (xname "name"); Ports = ports})
+        { Name = service |> reqAttr (xname "name"); Ports = ports; Namespace = targetNamespace })
     |> List.ofSeq
