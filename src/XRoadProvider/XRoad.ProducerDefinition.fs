@@ -110,7 +110,7 @@ module TypeBuilder =
         let seqNameGen = nameGenerator "Seq"
         // Parse schema definition and add all properties that are defined.
         match schemaType with
-        | SimpleType(SimpleTypeSpec.Restriction(spec, annotation)) ->
+        | SimpleDefinition(SimpleTypeSpec.Restriction(spec, annotation)) ->
             providedTy |> Code.comment (annotationToText context annotation) |> ignore
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | ContentType
@@ -118,11 +118,11 @@ module TypeBuilder =
                 providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.xrdContent |> ignore
             | _ ->
                 failwith "Simple types should not restrict complex types."
-        | SimpleType(ListDef) ->
+        | SimpleDefinition(ListDef) ->
             failwith "Not implemented: list in simpleType."
-        | SimpleType(Union(_)) ->
+        | SimpleDefinition(Union(_)) ->
             failwith "Not implemented: union in simpleType."
-        | ComplexType(spec) ->
+        | ComplexDefinition(spec) ->
             // Abstract types will have only protected constructor.
             if spec.IsAbstract then
                 providedTy |> Cls.addAttr TypeAttributes.Abstract
@@ -198,13 +198,12 @@ module TypeBuilder =
 
     /// Create single property definition for given attribute-s schema specification.
     and private buildAttributeProperty (context: TypeBuilderContext) (spec: AttributeSpec) =
-        let name, schemaObject = context.GetAttributeDefinition(spec)
+        let name, typeDefinition = context.GetAttributeDefinition(spec)
         // Resolve schema type for attribute:
         let schemaType =
-            match schemaObject with
-            | Definition(simpleTypeSpec) -> Definition(SimpleType(simpleTypeSpec))
+            match typeDefinition with
+            | Definition(simpleTypeSpec) -> Definition(SimpleDefinition(simpleTypeSpec))
             | Name(name) -> Name(name)
-            | Reference(ref) -> Reference(ref)
         let isOptional = match spec.Use with Required -> true | _ -> false
         let prop = buildPropertyDef schemaType 1u name false isOptional context (annotationToText context spec.Annotation)
         { prop with IsAttribute = true }
@@ -232,7 +231,6 @@ module TypeBuilder =
                     IsItemNillable = Some(itemSpec.IsNillable)
                     AddedTypes = [typ]
                     IsWrappedArray = Some(true) }
-            | _, Reference(_) -> failwith "never"
         | Definition(def) ->
             let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
             let runtimeType = ProvidedType(subTy, subTy.Name)
@@ -263,8 +261,6 @@ module TypeBuilder =
                 { propertyDef with
                     Type = x
                     IsNillable = isNillable }
-        | Reference(_) ->
-            failwith "Not implemented: schema reference to type."
 
     /// Create property definitions for sequence element specification.
     and private collectSequenceProperties _(*seqNameGen*) _(*context*) _(*spec*) : PropertyDefinition list =
@@ -476,7 +472,7 @@ module ServiceBuilder =
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
         let addDocLiteralWrappedParameters (spec: ElementSpec) =
             match context.GetElementDefinition(spec) |> snd |> context.GetTypeDefinition with
-            | ComplexType({ IsAbstract = false; Content = Particle({ Content = Some(ComplexTypeParticle.Sequence({ Content = content; MinOccurs = 1u; MaxOccurs = 1u })) }) }) ->
+            | ComplexDefinition({ IsAbstract = false; Content = Particle({ Content = Some(ComplexTypeParticle.Sequence({ Content = content; MinOccurs = 1u; MaxOccurs = 1u })) }) }) ->
                 content
                 |> List.iter (fun value ->
                     match value with
@@ -491,9 +487,7 @@ module ServiceBuilder =
                                 let runtimeType = ProvidedType(subTy, providedTypeFullName ns.Name subTy.Name)
                                 TypeBuilder.build context runtimeType definition
                                 runtimeType
-                            | Name(typeName) ->
-                                context.GetRuntimeType(SchemaType(typeName))
-                            | Reference(_) -> failwith "never"
+                            | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
                         m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) name |> ignore
                         let prop = paramClass |> addProperty (name, runtimeType, false) |> Prop.describe (Attributes.xrdElement (None, None, false))
                         match runtimeType with
@@ -528,10 +522,10 @@ module ServiceBuilder =
             let prop = resultClass |> addProperty (parameter.Name.LocalName, runtimeType, false)
             let attr = Attributes.xrdElement (nm, ns, false)
             prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
-        let addDocLiteralWrappedParameters (spec: ElementSpec) =
+        let getDocLiteralWrappedReturnValues (spec: ElementSpec) =
             match context.GetElementDefinition(spec) |> snd |> context.GetTypeDefinition with
-            | ComplexType({ IsAbstract = false }) ->
-                ()
+            | ComplexDefinition({ IsAbstract = false }) ->
+                []
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements."
         let parameters =
             match operation.OutputParameters with
@@ -543,8 +537,7 @@ module ServiceBuilder =
                 []
             | DocLiteralWrapped(name,_) ->
                 m |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN name.LocalName name.NamespaceName)) |> ignore
-                name |> context.GetElementSpec |> addDocLiteralWrappedParameters
-                []
+                name |> context.GetElementSpec |> getDocLiteralWrappedReturnValues
             | DocLiteral(wrapper) ->
                 wrapper.Parameters
                 |> List.map (fun p ->

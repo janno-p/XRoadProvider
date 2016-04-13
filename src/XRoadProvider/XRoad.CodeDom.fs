@@ -256,7 +256,7 @@ type RuntimeType =
     /// Types that are provided by generated assembly.
     | ProvidedType of CodeTypeDeclaration * string
     /// Types that represent collection or array of runtime type.
-    | CollectionType of RuntimeType * string * SchemaType option
+    | CollectionType of RuntimeType * string * SchemaTypeDefinition option
     /// Binary content types are handled separately.
     | ContentType
     /// Get type name reference for this instance.

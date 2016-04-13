@@ -18,7 +18,7 @@ module internal Pattern =
 
     /// Active pattern which checks type definition against collection characteristics.
     /// Returns match if given type should be treated as CollectionType.
-    let (|ArrayContent|_|) (schemaType: SchemaType) =
+    let (|ArrayContent|_|) (schemaType: SchemaTypeDefinition) =
         // SOAP-encoded array-s use special attribute for array type definition.
         let (|ArrayType|_|) (attributes: AttributeSpec list) =
             attributes |> List.tryFind (fun a -> a.Name = Some("arrayType") || a.RefOrType = Reference(XName.Get("arrayType", XmlNamespace.SoapEnc)))
@@ -56,7 +56,7 @@ module internal Pattern =
             | None -> None
         // Test type definitions for collection characteristics.
         match schemaType with
-        | ComplexType(spec) ->
+        | ComplexDefinition(spec) ->
             match spec.Content with
             // SOAP-encoded array-s inherit soapenc:Array type.
             | ComplexTypeContent.ComplexContent(Restriction(rstr)) when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEnc ->
@@ -66,7 +66,7 @@ module internal Pattern =
                     | Some(_, rank) when rank <> 1 -> failwith "Multidimensional SOAP encoding arrays are not supported."
                     | Some(typeName, _) ->
                         match getArrayItemElement(rstr.Content.Content) with
-                        | Some(element) -> Some({ element with Type = Name(typeName) })
+                        | Some(element) -> Some({ element with Definition = Explicit(Name(typeName)) })
                         | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Type = Name(typeName); Annotation = None })
                     | None -> failwith "Array underlying type specification is missing."
                 | _ ->
@@ -76,8 +76,8 @@ module internal Pattern =
             // Multiplicity my constrain to using collection type.
             | ComplexTypeContent.Particle(content) -> getArrayItemElement(content.Content)
             | _ -> None
-        | EmptyType
-        | SimpleType(_) -> None
+        | EmptyDefinition
+        | SimpleDefinition(_) -> None
 
 /// Combines operations and types documented in producer definitions.
 type internal ProducerDescription =
@@ -104,7 +104,7 @@ type internal TypeBuilderContext =
       /// Schema level element definition lookup.
       Elements: Map<string,ElementSpec>
       /// Schema level type definition lookup.
-      Types: Map<string,SchemaType>
+      Types: Map<string,SchemaTypeDefinition>
       /// X-Road protocol used by this producer.
       MessageProtocol: XRoadMessageProtocolVersion
       /// Language code preferred for code comments.
@@ -226,6 +226,10 @@ type internal TypeBuilderContext =
         member this.GetAttributeDefinition(spec) =
             let rec findAttributeDefinition (spec: AttributeSpec) =
                 match spec.RefOrType with
+                | Explicit(typeDefinition) ->
+                    match spec.Name with
+                    | Some(name) -> name, typeDefinition
+                    | None -> failwithf "Attribute has no name."
                 | Reference(ref) ->
                     match this.Attributes.TryFind(ref.ToString()) with
                     | Some(spec) -> findAttributeDefinition(spec)
@@ -233,25 +237,21 @@ type internal TypeBuilderContext =
                         match ref with
                         | XmlName "lang" -> "lang", Name(XName.Get("string", XmlNamespace.Xsd))
                         | _ -> failwithf "Missing referenced attribute %A." ref
-                | _ ->
-                    match spec.Name with
-                    | Some(name) -> name, spec.RefOrType
-                    | None -> failwithf "Attribute has no name."
             findAttributeDefinition(spec)
 
         /// Resolves real element definition from lookup by following the XML schema references if present.
         /// Returns value of element definitions which actually contains definition, not references other definition.
         member this.GetElementDefinition(spec) =
             let rec findElementDefinition (spec: ElementSpec) =
-                match spec.Type with
+                match spec.Definition with
+                | Explicit(typeDefinition) ->
+                    match spec.Name with
+                    | Some(name) -> name, typeDefinition
+                    | None -> failwithf "Attribute has no name."
                 | Reference(ref) ->
                     match this.Elements.TryFind(ref.ToString()) with
                     | Some(spec) -> findElementDefinition(spec)
                     | None -> failwithf "Missing referenced attribute %A." ref
-                | _ ->
-                    match spec.Name with
-                    | Some(name) -> name, spec.Type
-                    | None -> failwithf "Attribute has no name."
             findElementDefinition(spec)
 
         /// Initializes new context object from given schema definition.

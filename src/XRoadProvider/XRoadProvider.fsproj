@@ -61,6 +61,7 @@
     <Compile Include="XRoad.TypeSchema.fs" />
     <Compile Include="XRoad.CodeDom.fs" />
     <Compile Include="XRoad.TypeBuilderContext.fs" />
+    <Compile Include="XRoad.CodeDomGenerator.fs" />
     <Compile Include="XRoad.ProducerDefinition.fs" />
     <Compile Include="XRoad.SecurityServer.fs" />
     <Compile Include="XRoad.ProvidedTypes.fsi" />
