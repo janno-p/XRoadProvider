@@ -471,7 +471,7 @@ module ServiceBuilder =
             m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
         let addDocLiteralWrappedParameters (spec: ElementSpec) =
-            match context.GetElementDefinition(spec) |> snd |> context.GetTypeDefinition with
+            match context.GetElementDefinition(spec) |> snd |> context.GetSchemaTypeDefinition with
             | ComplexDefinition({ IsAbstract = false; Content = Particle({ Content = Some(ComplexTypeParticle.Sequence({ Content = content; MinOccurs = 1u; MaxOccurs = 1u })) }) }) ->
                 content
                 |> List.iter (fun value ->
@@ -523,7 +523,7 @@ module ServiceBuilder =
             let attr = Attributes.xrdElement (nm, ns, false)
             prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
         let getDocLiteralWrappedReturnValues (spec: ElementSpec) =
-            match context.GetElementDefinition(spec) |> snd |> context.GetTypeDefinition with
+            match context.GetElementDefinition(spec) |> snd |> context.GetSchemaTypeDefinition with
             | ComplexDefinition({ IsAbstract = false }) ->
                 []
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements."

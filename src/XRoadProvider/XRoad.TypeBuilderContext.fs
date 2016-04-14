@@ -67,7 +67,7 @@ module internal Pattern =
                     | Some(typeName, _) ->
                         match getArrayItemElement(rstr.Content.Content) with
                         | Some(element) -> Some({ element with Definition = Explicit(Name(typeName)) })
-                        | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Type = Name(typeName); Annotation = None })
+                        | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Definition = Explicit(Name(typeName)); Annotation = None })
                     | None -> failwith "Array underlying type specification is missing."
                 | _ ->
                     match getArrayItemElement(rstr.Content.Content) with
@@ -150,7 +150,7 @@ type internal TypeBuilderContext =
                 match name with
                 | SchemaElement(xname) ->
                     match this.GetElementSpec(xname) with
-                    | ({ Type = Name(typeName) } : ElementSpec) -> SchemaType(typeName)
+                    | ({ Definition = Explicit(Name(typeName)) } : ElementSpec) -> SchemaType(typeName)
                     | _ -> name
                 | _ -> name
             match this.CachedTypes.TryGetValue(resolvedName) with
@@ -174,8 +174,10 @@ type internal TypeBuilderContext =
                 let schemaType =
                     match name with
                     | SchemaElement(xn) ->
-                        let elementSpec = this.GetElementSpec(xn)
-                        this.GetTypeDefinition(elementSpec.Type)
+                        this.GetElementSpec(xn)
+                        |> this.GetElementDefinition
+                        |> snd
+                        |> this.GetSchemaTypeDefinition
                     | SchemaType(xn) -> this.GetSchemaType(xn)
                 match schemaType with
                 | ArrayContent element ->
@@ -186,7 +188,6 @@ type internal TypeBuilderContext =
                         let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public
                         nstyp |> Cls.addMember typ |> ignore
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
-                    | _, Reference(_) -> failwith "never"
                 | _ ->
                     let attr =
                         match name with
@@ -210,16 +211,14 @@ type internal TypeBuilderContext =
 
         /// Resolves real type definition from lookup by following the XML schema references if present.
         /// Returns value of type definitions which actually contains definition, not references other definition.
-        member this.GetTypeDefinition(schemaObj) =
-            let rec findTypeDefinition (schemaObj: SchemaObject<_>) =
-                match schemaObj with
-                | Name(xn)
-                | Reference(xn) ->
-                    match this.Types.TryFind(xn.ToString()) with
-                    | Some(schemaType) -> schemaType
-                    | None -> failwithf "Missing referenced schema type `%A`." xn
+        member this.GetSchemaTypeDefinition typeDefinition =
+            let rec findSchemaTypeDefinition typeDefinition =
+                match typeDefinition with
                 | Definition(spec) -> spec
-            findTypeDefinition schemaObj
+                | Name(xn) -> match this.Types.TryFind(xn.ToString()) with
+                              | Some(schemaType) -> schemaType
+                              | None -> failwithf "Missing referenced schema type `%A`." xn
+            findSchemaTypeDefinition typeDefinition
 
         /// Resolves real atrribute definition from lookup by following the XML schema references if present.
         /// Returns value of attribute definitions which actually contains definition, not references other definition.

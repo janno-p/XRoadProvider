@@ -59,30 +59,12 @@ type AttributeUse =
             | "required" -> AttributeUse.Required
             | x -> failwithf "Invalid attribute use value %s" x
 
-/// Schema objects can be defined using qualified name of global definition, referencing another object with
-/// `ref` attribute or give object definition in place.
-//type SchemaObject<'T> =
-//    | Name of XName
-//    | Reference of XName
-//    | Definition of 'T
-//    with
-//        static member FromNode(node) =
-//            match node |> attr (xname "name"), node |> attr (xname "ref") with
-//            | Some(_), Some(_) ->
-//                failwithf "Name and ref attributes cannot both be present (%A)" node.Name.LocalName
-//            | Some(name), _ ->
-//                Some(Name(xname name))
-//            | _, Some(ref) ->
-//                match ref.Split(':') with
-//                | [| nm |] -> Some(Reference(xname nm))
-//                | [| pr; nm |] -> Some(Reference(xnsname nm <| node.GetNamespaceOfPrefix(pr).NamespaceName))
-//                | _ -> failwith "wrong ref"
-//            | _ -> None
-
 type TypeDefinition<'T> =
     | Definition of 'T
     | Name of XName
 
+/// Schema objects can be defined using qualified name of global definition, referencing another object with
+/// `ref` attribute or give object definition in place.
 type RefOrTypeDefinition<'T> =
     | Explicit of TypeDefinition<'T>
     | Reference of XName
@@ -259,7 +241,7 @@ type SchemaNode =
       Attributes: IDictionary<XName,AttributeSpec>
       Elements: IDictionary<XName,ElementSpec>
       Types: IDictionary<XName,SchemaTypeDefinition>
-      AttributeGroups: IDictionary<XName,RefOrTypeDefinition<AttributeGroupSpec>> }
+      AttributeGroups: IDictionary<XName,TypeDefinition<AttributeGroupSpec>> }
     /// Merge schema node with another defining same namespace.
     member this.Merge(other: SchemaNode) =
         if this.QualifiedAttributes <> other.QualifiedAttributes then
@@ -704,15 +686,20 @@ module Parser =
                 TypeSpec, snode, includes, imports
             | Xsd "attributeGroup", _ ->
                 let ag = node |> parseAttributeGroup
-                match SchemaObject<_>.FromNode(node) with
-                | Some(Name(name)) ->
-                    snode.AttributeGroups.Add(xnsname name.LocalName snode.TargetNamespace.NamespaceName, Definition(ag))
-                | Some(Reference(ref)) ->
-                    let ns = match ref.NamespaceName with
-                                | "" -> snode.TargetNamespace.NamespaceName
-                                | x -> x
-                    snode.AttributeGroups.Add(xnsname ref.LocalName ns, Definition(ag))
-                | _ -> node |> notImplementedIn "schema"
+                match node |> attr (xname "name"), node |> attr (xname "ref") with
+                | Some(_), Some(_) ->
+                    failwithf "Name and ref attributes cannot both be present (%A)" node.Name.LocalName
+                | Some(name), None ->
+                    snode.AttributeGroups.Add(xnsname name snode.TargetNamespace.NamespaceName, Definition(ag))
+                | None, Some(ref) ->
+                    let name =
+                        match ref.Split(':') with
+                        | [| nm |] -> xnsname nm snode.TargetNamespace.NamespaceName
+                        | [| pr; nm |] -> xnsname nm (node.GetNamespaceOfPrefix(pr).NamespaceName)
+                        | _ -> failwith "wrong ref"
+                    snode.AttributeGroups.Add(name, Definition(ag))
+                | _ ->
+                    node |> notImplementedIn "schema"
                 TypeSpec, snode, includes, imports
             | (Xsd "group" | Xsd "notation"), _ -> node |> notImplementedIn "schema"
             | _ -> node |> notExpectedIn "schema"
