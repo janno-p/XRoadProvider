@@ -10,6 +10,7 @@ open Fake.ReleaseNotesHelper
 open Fake.Testing.NUnit3
 open Fake.UserInputHelper
 open System
+
 #if MONO
 #else
 #load "packages/build/SourceLink.Fake/tools/Fake.fsx"
