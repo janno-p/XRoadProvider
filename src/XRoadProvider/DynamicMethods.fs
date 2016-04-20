@@ -1098,6 +1098,37 @@ and findBaseTypes isEncoded (typ: Type) =
     |> Seq.choose (id)
     |> Seq.toList
 
+module XsdTypes =
+    let serializeDefault (writer: XmlWriter, value: obj, _: SerializerContext) =
+        writer.WriteValue(value)
+
+    let serializeNullable (writer: XmlWriter, value: obj, context: SerializerContext) =
+        if value |> isNull then writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
+        else serializeDefault(writer, value, context)
+
+    let deserializeNullable (reader: XmlReader) (context: SerializerContext) fdeser =
+        let nilValue = reader.GetAttribute("nil", XmlNamespace.Xsi)
+        let nilValue = if nilValue |> isNull then "" else nilValue.ToLower()
+        if nilValue = "1" || nilValue = "true" then null else fdeser(reader, context)
+
+    let deserializeBoolean (reader: XmlReader, _: SerializerContext) : obj =
+        (if reader.IsEmptyElement then false else reader.ReadContentAsBoolean()) |> box
+
+    let deserializeNullableBoolean (reader: XmlReader, context: SerializerContext) : obj =
+        deserializeNullable reader context deserializeBoolean
+
+    let addTypeMap typ ser deser =
+        let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
+        typeMaps.TryAdd(typ, typeMap) |> ignore
+
+    let mi e = match e with Call(_,mi,_) -> mi | _ -> failwith "do not use for that"
+
+    let init () =
+        addTypeMap typeof<bool> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeBoolean(null, null) @>)
+        addTypeMap typeof<Nullable<bool>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableBoolean(null, null) @>)
+
+do XsdTypes.init()
+
 let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: MemberInfo list) =
     let createTypeMap isNullable =
         let typ = if isNullable then typedefof<Nullable<_>>.MakeGenericType(typeof<'X>) else typeof<'X>
@@ -1246,9 +1277,6 @@ let initBinaryContentSerialization useXop =
     typeMaps.TryAdd(designType, TypeMap.Create(typ, deserialization, serialization, None)) |> ignore
 
 do
-    createSystemTypeMap<bool>
-        []
-        [!@ <@ (null: XmlReader).ReadContentAsBoolean() @>]
     createSystemTypeMap<decimal>
         []
         [!@ <@ (null: XmlReader).ReadContentAsDecimal() @>]
