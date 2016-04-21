@@ -1098,208 +1098,147 @@ and findBaseTypes isEncoded (typ: Type) =
     |> Seq.choose (id)
     |> Seq.toList
 
-module XsdTypes =
+module internal XsdTypes =
+    open System.IO
+
     let serializeDefault (writer: XmlWriter, value: obj, _: SerializerContext) =
         writer.WriteValue(value)
 
-    let serializeNullable (writer: XmlWriter, value: obj, context: SerializerContext) =
+    let serializeBigInteger (writer: XmlWriter, value: obj, _: SerializerContext) =
+        writer.WriteValue(value.ToString())
+
+    let serializeString (writer: XmlWriter, value: obj, _: SerializerContext) =
         if value |> isNull then writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
-        else serializeDefault(writer, value, context)
+        elif unbox value = "" then ()
+        else writer.WriteValue(value)
+
+    let serializeNullable (writer: XmlWriter) (value: obj) (context: SerializerContext) fser =
+        if value |> isNull then writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
+        else fser(writer, value, context)
 
     let deserializeNullable (reader: XmlReader) (context: SerializerContext) fdeser =
         let nilValue = reader.GetAttribute("nil", XmlNamespace.Xsi)
         let nilValue = if nilValue |> isNull then "" else nilValue.ToLower()
         if nilValue = "1" || nilValue = "true" then null else fdeser(reader, context)
 
-    let deserializeValue (reader: XmlReader) (_: SerializerContext) fread : obj =
-        if reader.IsEmptyElement then box false
+    let deserializeValue<'T> (reader: XmlReader) (_: SerializerContext) (fread: unit -> 'T) : obj =
+        if reader.IsEmptyElement then box Unchecked.defaultof<'T>
         elif reader.Read() then fread() |> box
         else failwith "Unexpected end of SOAP message."
+
+    let deserializeStringValue (reader: XmlReader, _: SerializerContext) : obj =
+        if reader.IsEmptyElement then box ""
+        elif reader.Read() then reader.ReadContentAsString() |> box
+        else failwith "Unexpected end of SOAP message."
+
+    let serializeNullableDefault (writer, value, context) = serializeNullable writer value context serializeDefault
+    let serializeNullableBigInteger (writer, value, context) = serializeNullable writer value context serializeBigInteger
 
     let deserializeBoolean (reader, context) = deserializeValue reader context reader.ReadContentAsBoolean
     let deserializeDecimal (reader, context) = deserializeValue reader context reader.ReadContentAsDecimal
     let deserializeInt32 (reader, context) = deserializeValue reader context reader.ReadContentAsInt
     let deserializeInt64 (reader, context) = deserializeValue reader context reader.ReadContentAsLong
+    let deserializeBigInteger (reader, context) = deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger)
 
     let deserializeNullableBoolean (reader, context) = deserializeNullable reader context deserializeBoolean
     let deserializeNullableDecimal (reader, context) = deserializeNullable reader context deserializeDecimal
     let deserializeNullableInt32 (reader, context) = deserializeNullable reader context deserializeInt32
     let deserializeNullableInt64 (reader, context) = deserializeNullable reader context deserializeInt64
+    let deserializeNullableBigInteger (reader, context) = deserializeNullable reader context deserializeBigInteger
+    let deserializeString (reader, context) = deserializeNullable reader context deserializeStringValue
+
+    let serializeBinaryContent (writer: XmlWriter, value: obj, context: SerializerContext) =
+        match value with
+        | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
+        | _ ->
+            let content = unbox<BinaryContent> value
+            if context.IsMultipart then
+                context.Attachments.Add(content.ContentID, content)
+                writer.WriteAttributeString("href", sprintf "cid:%s" content.ContentID)
+            else
+                let bytes = (unbox<BinaryContent> value).GetBytes()
+                writer.WriteBase64(bytes, 0, bytes.Length)
+
+    let serializeXopBinaryContent(writer: XmlWriter, value: obj, context: SerializerContext) =
+        match value with
+        | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
+        | _ ->
+            writer.WriteStartElement("xop", "Include", XmlNamespace.Xop)
+            let content = unbox<BinaryContent> value
+            context.Attachments.Add(content.ContentID, content)
+            writer.WriteAttributeString("href", sprintf "cid:%s" content.ContentID)
+            writer.WriteEndElement()
+
+    let deserializeBinaryContent (reader: XmlReader, context: SerializerContext) =
+        let nilValue = match reader.GetAttribute("nil", XmlNamespace.Xsi) with null -> "" | x -> x
+        match nilValue.ToLower() with
+        | "true" | "1" -> null
+        | _ ->
+            match reader.GetAttribute("href") with
+            | null ->
+                if reader.IsEmptyElement then BinaryContent.Create([| |])
+                else
+                    reader.Read() |> ignore
+                    let bufferSize = 4096
+                    let buffer = Array.zeroCreate<byte>(bufferSize)
+                    use stream = new MemoryStream()
+                    let rec readContents() =
+                        let readCount = reader.ReadContentAsBase64(buffer, 0, bufferSize)
+                        if readCount > 0 then stream.Write(buffer, 0, readCount)
+                        if readCount = bufferSize then readContents()
+                    readContents()
+                    stream.Flush()
+                    stream.Position <- 0L
+                    BinaryContent.Create(stream.ToArray())
+            | contentID -> context.GetAttachment(contentID)
+
+    let deserializeXopBinaryContent (reader: XmlReader, context: SerializerContext) =
+        let nilValue = match reader.GetAttribute("nil", XmlNamespace.Xsi) with null -> "" | x -> x
+        match nilValue.ToLower() with
+        | "true" | "1" -> null
+        | _ ->
+            if reader.IsEmptyElement then BinaryContent.Create([| |])
+            else
+                let depth = reader.Depth + 1
+                let rec moveToXopInclude () =
+                    if reader.Read() then
+                        if reader.NodeType = XmlNodeType.EndElement && reader.Depth < depth then false
+                        elif reader.NodeType <> XmlNodeType.Element || reader.Depth <> depth || reader.LocalName <> "Include" || reader.NamespaceURI <> XmlNamespace.Xop then moveToXopInclude()
+                        else true
+                    else false
+                if moveToXopInclude () then
+                    match reader.GetAttribute("href") with
+                    | null -> failwithf "Missing reference to multipart content in xop:Include element."
+                    | contentID -> context.GetAttachment(contentID)
+                else BinaryContent.Create([| |])
 
     let addTypeMap typ ser deser =
         let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
+        typeMaps.TryAdd(typ, typeMap) |> ignore
+
+    let addBinaryTypeMap typ ser deser =
+        let typeMap = TypeMap.Create(typeof<BinaryContent>, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
         typeMaps.TryAdd(typ, typeMap) |> ignore
 
     let mi e = match e with Call(_,mi,_) -> mi | _ -> failwith "do not use for that"
 
     let init () =
         addTypeMap typeof<bool> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeBoolean(null, null) @>)
-        addTypeMap typeof<Nullable<bool>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableBoolean(null, null) @>)
+        addTypeMap typeof<Nullable<bool>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableBoolean(null, null) @>)
         addTypeMap typeof<decimal> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeDecimal(null, null) @>)
-        addTypeMap typeof<Nullable<decimal>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableDecimal(null, null) @>)
+        addTypeMap typeof<Nullable<decimal>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableDecimal(null, null) @>)
         addTypeMap typeof<int32> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeInt32(null, null) @>)
-        addTypeMap typeof<Nullable<int32>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableInt32(null, null) @>)
+        addTypeMap typeof<Nullable<int32>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableInt32(null, null) @>)
         addTypeMap typeof<int64> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeInt64(null, null) @>)
-        addTypeMap typeof<Nullable<int64>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableInt64(null, null) @>)
+        addTypeMap typeof<Nullable<int64>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableInt64(null, null) @>)
+        addTypeMap typeof<BigInteger> (mi <@ serializeBigInteger(null, null, null) @>) (mi <@ deserializeBigInteger(null, null) @>)
+        addTypeMap typeof<Nullable<BigInteger>> (mi <@ serializeNullableBigInteger(null, null, null) @>) (mi <@ deserializeNullableBigInteger(null, null) @>)
+        addTypeMap typeof<string> (mi <@ serializeString(null, null, null) @>) (mi <@ deserializeString(null, null) @>)
+        addBinaryTypeMap typeof<BinaryContent> (mi <@ serializeBinaryContent(null, null, null) @>) (mi <@ deserializeBinaryContent(null, null) @>)
+        addBinaryTypeMap typeof<XopBinaryContent> (mi <@ serializeXopBinaryContent(null, null, null) @>) (mi <@ deserializeXopBinaryContent(null, null) @>)
+
+//    createSystemTypeMap<DateTime>
+//        []
+//        [!@ <@ (null: XmlReader).ReadContentAsDateTime() @>]
 
 do XsdTypes.init()
-
-let createSystemTypeMap<'X> (writeMethods: MemberInfo list) (readMethods: MemberInfo list) =
-    let createTypeMap isNullable =
-        let typ = if isNullable then typedefof<Nullable<_>>.MakeGenericType(typeof<'X>) else typeof<'X>
-        let serializerMethod =
-            let meth = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |])
-            let il = meth.GetILGenerator()
-            let labelEnd =
-                if isNullable || typ.IsClass then
-                    let labelEnd = il.DefineLabel()
-                    il.Emit(OpCodes.Ldarg_1)
-                    il |> EmitSerialization.emitNilAttribute labelEnd
-                    if typ = typeof<string> then
-                        il.Emit(OpCodes.Ldarg_1)
-                        il.Emit(OpCodes.Castclass, typ)
-                        il.Emit(OpCodes.Ldstr, "")
-                        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                        il.Emit(OpCodes.Brtrue_S, labelEnd)
-                    Some(labelEnd)
-                else None
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldarg_1)
-            writeMethods
-            |> List.iter (fun mi ->
-                match mi with
-                | :? MethodInfo as mi -> il.Emit(OpCodes.Callvirt, mi)
-                | _ -> failwith "not implemented"
-                il.Emit(OpCodes.Nop))
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteValue(null: obj) @>)
-            il.Emit(OpCodes.Nop)
-            labelEnd |> Option.iter il.MarkLabel
-            il.Emit(OpCodes.Ret)
-            meth
-        let deserializerMethod =
-            let meth = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
-            let il = meth.GetILGenerator()
-            let labelRead = il.DefineLabel()
-            let labelRet = il.DefineLabel()
-            let labelCast = il.DefineLabel()
-            if isNullable || typ.IsClass then
-                // var nilValue = (reader.GetAttribute("nil", XmlNamespace.Xsi) ?? "").ToLower();
-                let nilValue = il.DeclareLocal(typeof<string>)
-                let markSkipNull = il.DefineLabel()
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Ldstr, "nil")
-                il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
-                il.Emit(OpCodes.Dup)
-                il.Emit(OpCodes.Brtrue_S, markSkipNull)
-                il.Emit(OpCodes.Pop)
-                il.Emit(OpCodes.Ldstr, "")
-                il.MarkLabel(markSkipNull)
-                il.Emit(OpCodes.Callvirt, !@ <@ "".ToLower() @>)
-                il.Emit(OpCodes.Stloc, nilValue)
-
-                // if (nilValue == "1" || nilValue == "true")
-                let lbl1 = il.DefineLabel()
-                let lbl2 = il.DefineLabel()
-                let lbl3 = il.DefineLabel()
-                il.Emit(OpCodes.Ldloc, nilValue)
-                il.Emit(OpCodes.Ldstr, "1")
-                il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                il.Emit(OpCodes.Brtrue_S, lbl1)
-                il.Emit(OpCodes.Ldloc, nilValue)
-                il.Emit(OpCodes.Ldstr, "true")
-                il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                il.Emit(OpCodes.Ldc_I4_0)
-                il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Br_S, lbl2)
-                il.MarkLabel(lbl1)
-                il.Emit(OpCodes.Ldc_I4_0)
-                il.MarkLabel(lbl2)
-                il.Emit(OpCodes.Nop)
-                il.Emit(OpCodes.Brtrue_S, lbl3)
-
-                // return null;
-                il.Emit(OpCodes.Ldnull)
-                il.Emit(OpCodes.Br, labelRet)
-                il.MarkLabel(lbl3)
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
-            il.Emit(OpCodes.Brfalse_S, labelRead)
-            if typ = typeof<string> then
-                il.Emit(OpCodes.Ldstr, "")
-                il.Emit(OpCodes.Br_S, labelRet)
-            else
-                il.Emit(OpCodes.Ldtoken, typeof<'X>)
-                il.Emit(OpCodes.Call, !@ <@ Type.GetTypeFromHandle(RuntimeTypeHandle()) @>)
-                il.Emit(OpCodes.Call, !@ <@ Activator.CreateInstance(typeof<int>) @>)
-                il.Emit(OpCodes.Unbox_Any, typeof<'X>)
-                il.Emit(OpCodes.Br_S, labelCast)
-            il.MarkLabel(labelRead)
-            il |> EmitDeserialization.emitXmlReaderRead
-            il.Emit(OpCodes.Pop)
-            il.Emit(OpCodes.Ldarg_0)
-            readMethods
-            |> List.iter (fun mi ->
-                match mi with
-                | :? MethodInfo as mi -> il.Emit(OpCodes.Callvirt, mi)
-                | :? ConstructorInfo as ci -> il.Emit(OpCodes.Newobj, ci)
-                | _ -> failwith "not implemented")
-            il.MarkLabel(labelCast)
-            if isNullable then il.Emit(OpCodes.Newobj, typ.GetConstructor([| typeof<'X> |]))
-            if typ.IsValueType then il.Emit(OpCodes.Box, typ)
-            il.MarkLabel(labelRet)
-            il.Emit(OpCodes.Ret)
-            meth
-        let deserialization = { Root = deserializerMethod; Content = null; MatchType = null }
-        let serialization: Serialization = { Root = serializerMethod; Content = null }
-        typeMaps.TryAdd(typ, TypeMap.Create(typ, deserialization, serialization, None)) |> ignore
-    if typeof<'X>.IsValueType then createTypeMap true
-    createTypeMap false
-
-let initBinaryContentSerialization useXop =
-    let designType = if useXop then typeof<XopBinaryContent> else typeof<BinaryContent>
-    let typ = typeof<BinaryContent>
-    let serializeRootMethod =
-        let meth = DynamicMethod(sprintf "%s_Serialize" designType.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |])
-        let il = meth.GetILGenerator()
-        if useXop then
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Ldarg_2)
-            il.Emit(OpCodes.Call, !@ <@ BinaryContentHelper.SerializeXopBinaryContent(null, null, null) @>)
-        else
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Ldarg_2)
-            il.Emit(OpCodes.Call, !@ <@ BinaryContentHelper.SerializeBinaryContent(null, null, null) @>)
-        il.Emit(OpCodes.Ret)
-        meth
-    let deserializeRootMethod =
-        let meth = DynamicMethod(sprintf "%s_Deserialize" designType.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |])
-        let il = meth.GetILGenerator()
-        if useXop then
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Call, !@ <@ BinaryContentHelper.DeserializeXopBinaryContent(null, null) @>)
-        else
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Call, !@ <@ BinaryContentHelper.DeserializeBinaryContent(null, null) @>)
-        il.Emit(OpCodes.Ret)
-        meth
-    let deserialization = { Root = deserializeRootMethod; Content = null; MatchType = null }
-    let serialization: Serialization = { Root = serializeRootMethod; Content = null }
-    typeMaps.TryAdd(designType, TypeMap.Create(typ, deserialization, serialization, None)) |> ignore
-
-do
-    createSystemTypeMap<BigInteger>
-        [!@ <@ (null: obj).ToString() @>]
-        [!@ <@ (null: XmlReader).ReadContentAsDecimal() @>; !!@ <@ BigInteger(1M) @>]
-    createSystemTypeMap<DateTime>
-        []
-        [!@ <@ (null: XmlReader).ReadContentAsDateTime() @>]
-    createSystemTypeMap<string>
-        []
-        [!@ <@ (null: XmlReader).ReadContentAsString() @>]
-    initBinaryContentSerialization (true)
-    initBinaryContentSerialization (false)
