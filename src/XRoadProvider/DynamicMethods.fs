@@ -1111,11 +1111,20 @@ module XsdTypes =
         let nilValue = if nilValue |> isNull then "" else nilValue.ToLower()
         if nilValue = "1" || nilValue = "true" then null else fdeser(reader, context)
 
-    let deserializeBoolean (reader: XmlReader, _: SerializerContext) : obj =
-        (if reader.IsEmptyElement then false else reader.ReadContentAsBoolean()) |> box
+    let deserializeValue (reader: XmlReader) (_: SerializerContext) fread : obj =
+        if reader.IsEmptyElement then box false
+        elif reader.Read() then fread() |> box
+        else failwith "Unexpected end of SOAP message."
 
-    let deserializeNullableBoolean (reader: XmlReader, context: SerializerContext) : obj =
-        deserializeNullable reader context deserializeBoolean
+    let deserializeBoolean (reader, context) = deserializeValue reader context reader.ReadContentAsBoolean
+    let deserializeDecimal (reader, context) = deserializeValue reader context reader.ReadContentAsDecimal
+    let deserializeInt32 (reader, context) = deserializeValue reader context reader.ReadContentAsInt
+    let deserializeInt64 (reader, context) = deserializeValue reader context reader.ReadContentAsLong
+
+    let deserializeNullableBoolean (reader, context) = deserializeNullable reader context deserializeBoolean
+    let deserializeNullableDecimal (reader, context) = deserializeNullable reader context deserializeDecimal
+    let deserializeNullableInt32 (reader, context) = deserializeNullable reader context deserializeInt32
+    let deserializeNullableInt64 (reader, context) = deserializeNullable reader context deserializeInt64
 
     let addTypeMap typ ser deser =
         let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
@@ -1126,6 +1135,12 @@ module XsdTypes =
     let init () =
         addTypeMap typeof<bool> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeBoolean(null, null) @>)
         addTypeMap typeof<Nullable<bool>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableBoolean(null, null) @>)
+        addTypeMap typeof<decimal> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeDecimal(null, null) @>)
+        addTypeMap typeof<Nullable<decimal>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableDecimal(null, null) @>)
+        addTypeMap typeof<int32> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeInt32(null, null) @>)
+        addTypeMap typeof<Nullable<int32>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableInt32(null, null) @>)
+        addTypeMap typeof<int64> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeInt64(null, null) @>)
+        addTypeMap typeof<Nullable<int64>> (mi <@ serializeNullable(null, null, null) @>) (mi <@ deserializeNullableInt64(null, null) @>)
 
 do XsdTypes.init()
 
@@ -1277,15 +1292,6 @@ let initBinaryContentSerialization useXop =
     typeMaps.TryAdd(designType, TypeMap.Create(typ, deserialization, serialization, None)) |> ignore
 
 do
-    createSystemTypeMap<decimal>
-        []
-        [!@ <@ (null: XmlReader).ReadContentAsDecimal() @>]
-    createSystemTypeMap<int32>
-        []
-        [!@ <@ (null: XmlReader).ReadContentAsInt() @>]
-    createSystemTypeMap<int64>
-        []
-        [!@ <@ (null: XmlReader).ReadContentAsLong() @>]
     createSystemTypeMap<BigInteger>
         [!@ <@ (null: obj).ToString() @>]
         [!@ <@ (null: XmlReader).ReadContentAsDecimal() @>; !!@ <@ BigInteger(1M) @>]
