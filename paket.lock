@@ -5,6 +5,7 @@ NUGET
       Common.Logging.Core (>= 3.3.1)
     Common.Logging.Core (3.3.1)
     FSharp.Core (3.1.2.5)
+    NodaTime (2.0.0-alpha20150728)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
     src/ProvidedTypes.fs (ea733039c168a8e2d441e298a1c67d98f63b00f6)

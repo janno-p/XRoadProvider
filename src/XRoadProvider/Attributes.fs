@@ -22,8 +22,6 @@ type XRoadElementAttribute(name: string) =
     member val Namespace = "" with get, set
     member val MergeContent = false with get, set
     member val UseXop = false with get, set
-    member val TypeName = "" with get, set
-    member val TypeNamespace = "" with get, set
 
 type XRoadChoiceOptionAttribute(id: int, name: string) =
     inherit Attribute()

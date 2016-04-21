@@ -68,14 +68,6 @@ type XRoadElementAttribute =
     /// MTOM+XOP protocol.
     member UseXop: bool with get, set
 
-    /// Specifies type name for given element in serialization context. If not present,
-    /// then type name is detected by serializer.
-    member TypeName: string with get, set
-
-    /// Specifies type namespace for given element in serialization context. If not present,
-    /// then type namespace is detected by serializer.
-    member TypeNamespace: string with get, set
-
 
 /// Identifies each individual option for choice type element.
 /// Each option should have its unique id and display name.

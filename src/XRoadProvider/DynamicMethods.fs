@@ -1099,6 +1099,8 @@ and findBaseTypes isEncoded (typ: Type) =
     |> Seq.toList
 
 module internal XsdTypes =
+    open NodaTime
+    open NodaTime.Text
     open System.IO
 
     let serializeDefault (writer: XmlWriter, value: obj, _: SerializerContext) =
@@ -1115,6 +1117,12 @@ module internal XsdTypes =
     let serializeNullable (writer: XmlWriter) (value: obj) (context: SerializerContext) fser =
         if value |> isNull then writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
         else fser(writer, value, context)
+
+    let serializeLocalDate (writer: XmlWriter, value: obj, _: SerializerContext) =
+        writer.WriteValue(LocalDatePattern.IsoPattern.Format(unbox value))
+
+    let serializeLocalDateTime (writer: XmlWriter, value: obj, _: SerializerContext) =
+        writer.WriteValue(LocalDateTimePattern.GeneralIsoPattern.Format(unbox value))
 
     let deserializeNullable (reader: XmlReader) (context: SerializerContext) fdeser =
         let nilValue = reader.GetAttribute("nil", XmlNamespace.Xsi)
@@ -1133,18 +1141,24 @@ module internal XsdTypes =
 
     let serializeNullableDefault (writer, value, context) = serializeNullable writer value context serializeDefault
     let serializeNullableBigInteger (writer, value, context) = serializeNullable writer value context serializeBigInteger
+    let serializeNullableLocalDate (writer, value, context) = serializeNullable writer value context serializeLocalDate
+    let serializeNullableLocalDateTime (writer, value, context) = serializeNullable writer value context serializeLocalDateTime
 
     let deserializeBoolean (reader, context) = deserializeValue reader context reader.ReadContentAsBoolean
     let deserializeDecimal (reader, context) = deserializeValue reader context reader.ReadContentAsDecimal
     let deserializeInt32 (reader, context) = deserializeValue reader context reader.ReadContentAsInt
     let deserializeInt64 (reader, context) = deserializeValue reader context reader.ReadContentAsLong
     let deserializeBigInteger (reader, context) = deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger)
+    let deserializeLocalDate (reader, context) = deserializeValue reader context (reader.ReadContentAsString >> LocalDatePattern.IsoPattern.Parse)
+    let deserializeLocalDateTime (reader, context) = deserializeValue reader context (reader.ReadContentAsString >> LocalDateTimePattern.GeneralIsoPattern.Parse)
 
     let deserializeNullableBoolean (reader, context) = deserializeNullable reader context deserializeBoolean
     let deserializeNullableDecimal (reader, context) = deserializeNullable reader context deserializeDecimal
     let deserializeNullableInt32 (reader, context) = deserializeNullable reader context deserializeInt32
     let deserializeNullableInt64 (reader, context) = deserializeNullable reader context deserializeInt64
     let deserializeNullableBigInteger (reader, context) = deserializeNullable reader context deserializeBigInteger
+    let deserializeNullableLocalDate (reader, context) = deserializeNullable reader context deserializeLocalDate
+    let deserializeNullableLocalDateTime (reader, context) = deserializeNullable reader context deserializeLocalDateTime
     let deserializeString (reader, context) = deserializeNullable reader context deserializeStringValue
 
     let serializeBinaryContent (writer: XmlWriter, value: obj, context: SerializerContext) =
@@ -1233,12 +1247,12 @@ module internal XsdTypes =
         addTypeMap typeof<Nullable<int64>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableInt64(null, null) @>)
         addTypeMap typeof<BigInteger> (mi <@ serializeBigInteger(null, null, null) @>) (mi <@ deserializeBigInteger(null, null) @>)
         addTypeMap typeof<Nullable<BigInteger>> (mi <@ serializeNullableBigInteger(null, null, null) @>) (mi <@ deserializeNullableBigInteger(null, null) @>)
+        addTypeMap typeof<LocalDate> (mi <@ serializeLocalDate(null, null, null) @>) (mi <@ deserializeLocalDate(null, null) @>)
+        addTypeMap typeof<Nullable<LocalDate>> (mi <@ serializeNullableLocalDate(null, null, null) @>) (mi <@ deserializeNullableLocalDate(null, null) @>)
+        addTypeMap typeof<LocalDateTime> (mi <@ serializeLocalDateTime(null, null, null) @>) (mi <@ deserializeLocalDateTime(null, null) @>)
+        addTypeMap typeof<Nullable<LocalDateTime>> (mi <@ serializeNullableLocalDateTime(null, null, null) @>) (mi <@ deserializeNullableLocalDateTime(null, null) @>)
         addTypeMap typeof<string> (mi <@ serializeString(null, null, null) @>) (mi <@ deserializeString(null, null) @>)
         addBinaryTypeMap typeof<BinaryContent> (mi <@ serializeBinaryContent(null, null, null) @>) (mi <@ deserializeBinaryContent(null, null) @>)
         addBinaryTypeMap typeof<XopBinaryContent> (mi <@ serializeXopBinaryContent(null, null, null) @>) (mi <@ deserializeXopBinaryContent(null, null) @>)
-
-//    createSystemTypeMap<DateTime>
-//        []
-//        [!@ <@ (null: XmlReader).ReadContentAsDateTime() @>]
 
 do XsdTypes.init()
