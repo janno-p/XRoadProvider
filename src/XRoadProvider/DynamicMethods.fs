@@ -1149,8 +1149,8 @@ module internal XsdTypes =
     let deserializeInt32 (reader, context) = deserializeValue reader context reader.ReadContentAsInt
     let deserializeInt64 (reader, context) = deserializeValue reader context reader.ReadContentAsLong
     let deserializeBigInteger (reader, context) = deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger)
-    let deserializeLocalDate (reader, context) = deserializeValue reader context (reader.ReadContentAsString >> LocalDatePattern.IsoPattern.Parse)
-    let deserializeLocalDateTime (reader, context) = deserializeValue reader context (reader.ReadContentAsString >> LocalDateTimePattern.GeneralIsoPattern.Parse)
+    let deserializeLocalDate (reader, context) = deserializeValue reader context (fun () -> LocalDatePattern.IsoPattern.Parse(reader.ReadContentAsString()).GetValueOrThrow())
+    let deserializeLocalDateTime (reader, context) = deserializeValue reader context (fun () -> LocalDateTimePattern.GeneralIsoPattern.Parse(reader.ReadContentAsString()).GetValueOrThrow())
 
     let deserializeNullableBoolean (reader, context) = deserializeNullable reader context deserializeBoolean
     let deserializeNullableDecimal (reader, context) = deserializeNullable reader context deserializeDecimal
