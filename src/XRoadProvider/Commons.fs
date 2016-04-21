@@ -133,9 +133,10 @@ module XRoadHelper =
     let getUUID () = System.Guid.NewGuid().ToString()
 
     let getSystemTypeName = function
+        | "NodaTime.LocalDate" -> Some(XmlQualifiedName("date", XmlNamespace.Xsd))
+        | "NodaTime.LocalDateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
         | "System.String" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
         | "System.Boolean" -> Some(XmlQualifiedName("boolean", XmlNamespace.Xsd))
-        | "System.DateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
         | "System.Decimal" -> Some(XmlQualifiedName("decimal", XmlNamespace.Xsd))
         | "System.Double" -> Some(XmlQualifiedName("double", XmlNamespace.Xsd))
         | "System.Float" -> Some(XmlQualifiedName("float", XmlNamespace.Xsd))
@@ -379,6 +380,8 @@ module internal Wsdl =
     /// Active patterns for matching XML document nodes from various namespaces.
     [<AutoOpen>]
     module Pattern =
+        open NodaTime
+
         /// Matches names defined in `http://www.w3.org/2001/XMLSchema` namespace.
         let (|XsdName|_|) (name: XName) =
             match name.NamespaceName with
@@ -419,8 +422,8 @@ module internal Wsdl =
         let (|SystemType|_|) = function
             | XsdName "anyURI" -> Some typeof<string>
             | XsdName "boolean" -> Some typeof<bool>
-            | XsdName "date" -> Some typeof<DateTime>
-            | XsdName "dateTime" -> Some typeof<DateTime>
+            | XsdName "date" -> Some typeof<LocalDate>
+            | XsdName "dateTime" -> Some typeof<LocalDateTime>
             | XsdName "decimal" -> Some typeof<decimal>
             | XsdName "double" -> Some typeof<double>
             | XsdName "float" -> Some typeof<single>

@@ -201,6 +201,7 @@ module Compiler =
         codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<ITypeProvider>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<XRoad.BinaryContent>.Assembly.Location) |> ignore
+        codeCompileUnit.ReferencedAssemblies.Add(typeof<NodaTime.LocalDate>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Net.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
