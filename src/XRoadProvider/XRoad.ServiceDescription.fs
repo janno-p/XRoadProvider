@@ -99,15 +99,10 @@ let private parseSoapHeader element =
     { Message = messageName; Part = partName; EncodingStyle = encodingStyle; Namespace = ns }
 
 /// Get message parts from service operation binding.
-let private parseBindingParts (binding: XElement) _ (*messageName*) =
+let private parseBindingParts (binding: XElement) =
     // Validates SOAP:body contents.
     let foldBody oldBody elem isMultipart =
-        oldBody
-        |> Option.fold (fun newBody oldBody ->
-            //if newBody <> oldBody
-            //then failwithf "Multipart and non-multipart SOAP:body bindings do not match for message `%s`." messageName
-            //else oldBody
-            if isMultipart then newBody else oldBody) (parseSoapBody elem)
+        oldBody |> Option.fold (fun newBody oldBody -> if isMultipart then newBody else oldBody) (parseSoapBody elem)
     // Parse binding elements.
     binding.Elements()
     |> Seq.fold (fun (bd: SoapBody option,hd,mp) elem ->
@@ -179,7 +174,7 @@ let private parseOperationMessage style messageProtocol (binding: XElement) defi
     let msgName = abstractDef |> reqAttr (xname "name")
     let abstractParts = abstractDef |> parseAbstractParts msgName
     // Walk through message parts explicitly referenced in operation binding.
-    let bodyPart, headerParts, contentParts = parseBindingParts binding msgName
+    let bodyPart, headerParts, contentParts = parseBindingParts binding
     // Take wrapper name from body definition.
     let accessorName =
         match bodyPart with

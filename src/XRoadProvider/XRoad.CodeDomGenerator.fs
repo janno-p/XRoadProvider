@@ -201,7 +201,7 @@ module TypeBuilder =
                     IsNillable = isNillable }
 
     /// Create property definitions for sequence element specification.
-    and private collectSequenceProperties _(*seqNameGen*) _(*context*) _(*spec*) : PropertyDefinition list =
+    and private collectSequenceProperties _ _ _ : PropertyDefinition list =
         []
 
     /// Create property definitions for choice element specification.
@@ -283,46 +283,7 @@ module TypeBuilder =
                     addTryMethod (i + 1) optionName optionRuntimeType
                     Some(optionType))
 
-        let choiceProperty =
-            let prop = PropertyDefinition.Create(choiceName, false, None)
-            { prop with Type = choiceRuntimeType; AddedTypes = choiceType::addedTypes }
-
-        [choiceProperty]
-
-        (*
-            let isArray = options |> List.map (List.length) |> List.max > 1
-            let enumNameType =
-                let rt = ProvidedType(choiceEnum, choiceEnum.Name)
-                if isArray then CollectionType(rt, "", None) else rt
-            let choiceTypeProp =
-                let prop = PropertyDefinition.Create(choiceName + "Name", false, None)
-                { prop with Type = enumNameType; IsIgnored = true; AddedTypes = [choiceEnum] }
-            // Create property for holding option values.
-            let choiceItemType =
-                let rt =
-                    options
-                    |> List.collect (id)
-                    |> List.fold (fun (s: RuntimeType option) x ->
-                        match s with
-                        | None -> Some(x.Type)
-                        | Some(y) when x.Type = y -> s
-                        | _ -> Some(PrimitiveType(typeof<obj>))) None
-                    |> Option.get
-                if isArray then CollectionType(rt, "", None) else rt
-            let choiceElements = options |> List.collect (id)
-            choiceElements
-            |> List.iter (fun opt ->
-                let fld =
-                    Fld.createEnum (choiceName + "Type") opt.Name
-                    |> Fld.describe (Attributes.XmlEnum opt.Name)
-                choiceEnum
-                |> Cls.addMember fld
-                |> ignore)
-            let choiceItemProp =
-                let prop = PropertyDefinition.Create(choiceName + (if isArray then "Items" else"Item"), false, None)
-                { prop with Type = choiceItemType; ChoiceIdentifier = Some(choiceTypeProp.Name); ChoiceElements = choiceElements }
-            [ choiceTypeProp; choiceItemProp ]
-        *)
+        [{ PropertyDefinition.Create(choiceName, false, None) with Type = choiceRuntimeType; AddedTypes = choiceType::addedTypes }]
 
     /// Extract property definitions for all the elements defined in sequence element.
     and private buildSequenceMembers context (spec: SequenceSpec) =
@@ -343,9 +304,9 @@ module TypeBuilder =
     /// Populate generated type declaration with properties specified in type schema definition.
     and build (context: TypeBuilderContext) runtimeType schemaType =
         // Extract type declaration from runtime type definition.
-        let providedTy, _ (*providedTypeName*) =
+        let providedTy =
             match runtimeType with
-            | ProvidedType(decl, name) -> decl, name
+            | ProvidedType(decl,_) -> decl
             | _ -> failwith "Only generated types are accepted as arguments!"
         // Generates unique type name for every choice element.
         let choiceNameGen = nameGenerator "Choice"
@@ -386,10 +347,8 @@ module TypeBuilder =
                     failwith "Not implemented: restriction in complexType-s simpleContent."
                 | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
-                    | ProvidedType(_ (*baseDecl*),_) as baseTy ->
-                        providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
-                    | _ ->
-                        failwithf "Only complex types can be inherited! (%A)" spec.Base
+                    | ProvidedType(_) as baseTy -> providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
+                    | _ -> failwithf "Only complex types can be inherited! (%A)" spec.Base
                     Some(spec.Content)
                 | ComplexContent(ComplexContentSpec.Restriction(_)) ->
                     failwith "Not implemented: restriction in complexType-s complexContent"
@@ -413,17 +372,3 @@ module TypeBuilder =
             | Name(typeName) ->
                 context.GetRuntimeType(SchemaType(typeName))
         | Reference(_) -> failwith "Root level element references are not allowed."
-
-    // Build all global elements for each type schema definition.
-    //schema.TypeSchemas
-    //|> Map.toSeq
-    //|> Seq.collect (fun (_, typeSchema) -> typeSchema.Elements)
-    //|> Seq.choose (fun x ->
-    //    match x.Value.Type with
-    //    | Definition(_) -> Some(context.GetRuntimeType(SchemaElement(x.Key)), x.Value)
-    //    | _ -> None)
-    //|> Seq.iter (fun (typ, spec) ->
-    //    match spec.Type with
-    //    | Definition(def) -> TypeBuilder.build context typ def
-    //    | Reference(_) -> failwith "Root level element references are not allowed."
-    //    | Name(_) -> ())
