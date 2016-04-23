@@ -41,6 +41,13 @@
           </xs:sequence>
         </xs:complexType>
       </xs:element>
+      <xs:simpleType name="Car">
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Audi" />
+          <xs:enumeration value="Volkswagen" />
+          <xs:enumeration value="BMW" />
+        </xs:restriction>
+      </xs:simpleType>
     </xs:schema>
   </wsdl:types>
   <wsdl:message name="getRandomResponse">
