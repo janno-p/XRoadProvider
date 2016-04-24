@@ -76,7 +76,7 @@ module ServiceBuilder =
             let attr = Attributes.xrdElement (nm, ns, false)
             prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
             match runtimeType with
-            | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
+            | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true, false)) |> ignore
             | _ -> ()
             m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
@@ -101,7 +101,7 @@ module ServiceBuilder =
                         m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) name |> ignore
                         let prop = paramClass |> addProperty (name, runtimeType, false) |> Prop.describe (Attributes.xrdElement (None, None, false))
                         match runtimeType with
-                        | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
+                        | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true, false)) |> ignore
                         | _ -> ()
                         m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> name) (!+ name)) |> ignore
                     | _ -> failwithf "%A" value)

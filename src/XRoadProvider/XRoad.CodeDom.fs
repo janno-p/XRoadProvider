@@ -97,10 +97,11 @@ module Attributes =
         |> Attr.addArg (!^ name)
         |> Attr.addNamedArg "MergeContent" (!^ mergeContent)
 
-    let xrdCollection (itemName, isNullable) =
+    let xrdCollection (itemName, isNullable, mergeContent) =
         itemName
         |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadCollectionAttribute>
         |> iif isNullable (fun attr -> attr |> Attr.addNamedArg "ItemIsNullable" (!^ true))
+        |> iif mergeContent (fun attr -> attr |> Attr.addNamedArg "MergeContent" (!^ true))
 
 /// Functions to create and manipulate type fields.
 module Fld =
@@ -248,7 +249,7 @@ module String =
             then failwithf "invalid name %s" className
             className
         member this.toPropertyName() =
-            let fixedName = this.Replace('.', '_')
+            let fixedName = this.Replace('.', '_').Replace(' ', '_')
             if not(CodeGenerator.IsValidLanguageIndependentIdentifier(fixedName))
             then failwithf "Invalid property name `%s`." fixedName
             fixedName

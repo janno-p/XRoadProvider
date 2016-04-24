@@ -63,14 +63,13 @@ module TypeBuilder =
                 prop |> Prop.describe Attributes.XmlAttribute |> ignore
             else
                 match definition.IsWrappedArray, definition.Type with
-                | Some(true), CollectionType(_, itemName, _) ->
+                | Some(hasWrapper), CollectionType(_, itemName, _) ->
+                    let isItemNillable = definition.IsItemNillable |> Option.fold (fun _ x -> x) false
                     prop |> Prop.describe (Attributes.xrdElement(None, None, definition.IsNillable))
-                         |> Prop.describe (Attributes.xrdCollection(Some(itemName), definition.IsItemNillable.Value))
+                         |> Prop.describe (Attributes.xrdCollection(Some(itemName), isItemNillable, not hasWrapper))
                          |> ignore
-                | Some(true), _ ->
-                    failwith "Wrapped array should match to CollectionType."
-                | (None | Some(false)), _ ->
-                    prop |> Prop.describe (Attributes.xrdElement(elementName, None, definition.IsNillable)) |> ignore
+                | Some(_), _ -> failwith "Array should match to CollectionType."
+                | None, _ -> prop |> Prop.describe (Attributes.xrdElement(elementName, None, definition.IsNillable)) |> ignore
             // Add extra types to owner type declaration.
             definition.AddedTypes |> List.iter (fun x -> ownerTy |> Cls.addMember x |> ignore)
         definitions |> List.iter (addTypePropertiesFromDefinition)
@@ -102,7 +101,7 @@ module TypeBuilder =
         |> List.choose (fun x ->
             match x with
             | Enumeration(value) ->
-                Fld.createRef (runtimeType.AsCodeTypeReference(true)) value
+                Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.toPropertyName())
                 |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Static)
                 |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [!^ value])
                 |> Some
