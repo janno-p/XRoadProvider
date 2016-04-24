@@ -1,6 +1,8 @@
-﻿#r "../../../packages/Common.Logging/lib/net40/Common.Logging.dll"
-#r "../../../packages/Common.Logging.Core/lib/net40/Common.Logging.Core.dll"
-#r "../../../bin/XRoadProvider/XRoadProvider.dll"
+﻿#I "../../../bin/XRoadProvider"
+
+#r "Common.Logging"
+#r "Common.Logging.Core"
+#r "XRoadProvider"
 
 #r "System.Xml.Linq"
 
@@ -22,6 +24,9 @@ let wsdlPath = __SOURCE_DIRECTORY__ + "/../Wsdl/XRoadV6.wsdl.xml"
 
 type Xrv6 = XRoadProducer<wsdlPath>
 type Types = Xrv6.DefinedTypes.ProducerXRoadEu
+
+let car = Types.Car.Volkswagen
+printfn "%s" car.BaseValue
 
 let port = Xrv6.producerPortService.getRandomPortSoap11()
 

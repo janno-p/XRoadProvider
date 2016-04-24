@@ -107,6 +107,8 @@ module Fld =
     let create<'T> name = CodeMemberField(typeRef<'T>, name)
     let createRef (typ: CodeTypeReference) name = CodeMemberField(typ, name)
     let describe a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
+    let setAttr a (f: CodeMemberField) = f.Attributes <- a; f
+    let init e (f: CodeMemberField) = f.InitExpression <- e; f
 
 /// Functions to create and manipulate type properties.
 module Prop =
@@ -146,6 +148,7 @@ module Ctor =
     let create () = CodeConstructor()
     let setAttr a (c: CodeConstructor) = c.Attributes <- a; c
     let addParam<'T> name (c: CodeConstructor) = c.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; c
+    let addParamRef (r: CodeTypeReference) name (c: CodeConstructor) = c.Parameters.Add(CodeParameterDeclarationExpression(r, name)) |> ignore; c
     let addStmt (e: CodeStatement) (c: CodeConstructor) = c.Statements.Add(e) |> ignore; c
     let addBaseArg a (c: CodeConstructor) = c.BaseConstructorArgs.Add(a) |> ignore; c
 
@@ -261,10 +264,11 @@ type RuntimeType =
     /// Binary content types are handled separately.
     | ContentType
     /// Get type name reference for this instance.
-    member this.AsCodeTypeReference() =
+    member this.AsCodeTypeReference(?readonly) =
+        let readonly = match readonly with Some(true) -> "readonly " | _ -> ""
         match this with
         | PrimitiveType(typ) -> CodeTypeReference(typ)
-        | ProvidedType(_,name) -> CodeTypeReference(name)
+        | ProvidedType(_,name) -> CodeTypeReference(readonly + name)
         | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
         | ContentType -> CodeTypeReference(typeof<XRoad.BinaryContent>)
 
@@ -306,3 +310,13 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
             |> iif (sf.IsSome) (fun x -> x |> Prop.addSetStmt (Stmt.assign (Expr.this @=> sf.Value.Name) (!^ true)))
     owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
     p
+
+let addReadOnlyProperty (name : string, ty: RuntimeType) (owner: CodeTypeDeclaration) =
+    let fixedName = name.toPropertyName()
+    let f = Fld.createRef (ty.AsCodeTypeReference(true)) (fixedName + "__backing")
+            |> Fld.describe Attributes.DebuggerBrowsable
+    let p = Prop.createRef (ty.AsCodeTypeReference()) fixedName
+            |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+            |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
+    owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
+    (f, p)

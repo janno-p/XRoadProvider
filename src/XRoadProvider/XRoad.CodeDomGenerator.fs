@@ -97,6 +97,17 @@ module TypeBuilder =
             num := !num + 1
             sprintf "%s%d" name !num)
 
+    let private buildEnumerationConstants (runtimeType: RuntimeType) (content: RestrictionContent list) =
+        content
+        |> List.choose (fun x ->
+            match x with
+            | Enumeration(value) ->
+                Fld.createRef (runtimeType.AsCodeTypeReference(true)) value
+                |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Static)
+                |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [!^ value])
+                |> Some
+            | _ -> None)
+
     /// Collects property definitions from every content element of complexType.
     let rec private collectComplexTypeContentProperties choiceNameGen seqNameGen context (spec: ComplexTypeContentSpec) =
         // Attribute definitions
@@ -315,12 +326,20 @@ module TypeBuilder =
         match schemaType with
         | SimpleDefinition(SimpleTypeSpec.Restriction(spec, annotation)) ->
             providedTy |> Code.comment (annotationToText context annotation) |> ignore
+            let values = spec.Content |> buildEnumerationConstants runtimeType
+            values |> List.iter (providedTy.Members.Add >> ignore)
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | ContentType
             | PrimitiveType(_) as rtyp ->
-                providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.xrdContent |> ignore
-            | _ ->
-                failwith "Simple types should not restrict complex types."
+                let fld, prop = providedTy |> addReadOnlyProperty("BaseValue", rtyp)
+                prop |> Prop.describe Attributes.xrdContent |> ignore
+                Ctor.create()
+                |> Ctor.addParamRef (rtyp.AsCodeTypeReference()) "value"
+                |> Ctor.addStmt (Stmt.assign (Expr.this @=> fld.Name) (!+ "value"))
+                |> iif (values |> List.isEmpty) (fun x -> x |> Ctor.setAttr (MemberAttributes.Public))
+                |> providedTy.Members.Add
+                |> ignore
+            | _ -> failwith "Simple types should not restrict complex types."
         | SimpleDefinition(ListDef) ->
             failwith "Not implemented: list in simpleType."
         | SimpleDefinition(Union(_)) ->
