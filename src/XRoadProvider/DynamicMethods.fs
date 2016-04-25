@@ -613,7 +613,7 @@ module EmitDeserialization =
         il.Emit(OpCodes.Ldc_I4_1)
         il.Emit(OpCodes.Ceq)
 
-    let emitArrayItemDeserialization (arrayMap: ArrayMap, listInstance: LocalBuilder) (il: ILGenerator) =
+    let emitArrayItemDeserialization (arrayMap: ArrayMap, listInstance: LocalBuilder, markEnd: Label, stopIfWrongElement) (il: ILGenerator) =
         match arrayMap.ItemElement with
         | Some(name,_) ->
             let markDeserialize = il.DefineLabel()
@@ -629,16 +629,18 @@ module EmitDeserialization =
             il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
             il.Emit(OpCodes.Brtrue_S, markDeserialize)
             il.MarkLabel(markError)
-            il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-            il.Emit(OpCodes.Ldstr, name.ToString())
-            il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-            il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-            il.Emit(OpCodes.Throw)
+            if stopIfWrongElement then
+                il.Emit(OpCodes.Br_S, markEnd)
+            else
+                il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                il.Emit(OpCodes.Ldstr, name.ToString())
+                il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
+                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                il.Emit(OpCodes.Throw)
             il.MarkLabel(markDeserialize)
         | None -> ()
-
         il.Emit(OpCodes.Ldloc, listInstance)
         il |> emitPropertyValueDeserialization true arrayMap.ItemTypeMap
         il.Emit(OpCodes.Callvirt, listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
@@ -689,7 +691,7 @@ module EmitDeserialization =
         il |> emitXmlReaderNodeTypeCheck
         il.Emit(OpCodes.Brfalse_S, markLoopStart)
 
-        il |> emitArrayItemDeserialization (arrayMap, listInstance)
+        il |> emitArrayItemDeserialization (arrayMap, listInstance, markArrayEnd, arrayMap.Element.IsNone)
         il.Emit(OpCodes.Br, markLoopStart)
 
         il.MarkLabel(markArrayEnd)
