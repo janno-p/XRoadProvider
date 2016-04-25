@@ -126,7 +126,7 @@ module ServiceBuilder =
             wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
         m
 
-    let buildOperationOutput (context: TypeBuilderContext) (operation: ServicePortMethod) protocol (result: List<CodeTypeMember>) m =
+    let buildOperationOutput (context: TypeBuilderContext) (operation: ServicePortMethod) protocol (_: List<CodeTypeMember>) m =
 //        let x () =
 //            let resultClass = Cls.create(sprintf "%sOutput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
 //            m |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (CodeTypeReference(resultClass.Name)) ])) |> ignore
@@ -145,36 +145,37 @@ module ServiceBuilder =
 //            m |> Meth.returns<obj>
 //              |> Meth.addStmt (Stmt.ret Expr.nil)
         match operation.OutputParameters with
-        | DocEncoded(encodingNamespace, wrapper) ->
-//            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
-            m
-        | DocLiteralBody(content) ->
-//            addParameter content.Parameters.Head None None
-            m
-        | DocLiteralWrapped(name,x) ->
+        | DocLiteralWrapped(name,_) ->
             let runtimeType = TypeBuilder.buildResponseElementType context name
             m |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (runtimeType.AsCodeTypeReference()) ]))
               |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN name.LocalName name.NamespaceName))
               |> Meth.returnsOf (runtimeType.AsCodeTypeReference())
               |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [!+ "@__m"; !+ "@__reqOpt"; !+ "@__respOpt"]))
               |> Meth.addStmt (Stmt.ret (Expr.cast (runtimeType.AsCodeTypeReference()) ((!+ "@__r") @=> "Body")))
-        | DocLiteral(wrapper) ->
+//        | DocEncoded(encodingNamespace, wrapper) ->
+//            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
+//            m
+//        | DocLiteralBody(content) ->
+//            addParameter content.Parameters.Head None None
+//            m
+//        | DocLiteral(wrapper) ->
 //            wrapper.Parameters
 //            |> List.map (fun p ->
 //                addParameter p (Some(p.Name.LocalName)) (Some(p.Name.NamespaceName))
 //                (p.Name, context.GetRuntimeType(SchemaElement(p.Name))))
-            m
-        | RpcEncoded(accessor, wrapper) ->
+//            m
+//        | RpcEncoded(accessor, wrapper) ->
 //            m |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
-            m
-        | RpcLiteral(accessor, { Parameters = [{ Type = Some(_) } as p] }) ->
+//            m
+//        | RpcLiteral(accessor, { Parameters = [{ Type = Some(_) } as p] }) ->
 //            addParameter p (Some(accessor.LocalName)) (Some(accessor.NamespaceName))
-            m
-        | RpcLiteral(accessor, wrapper) ->
+//            m
+//        | RpcLiteral(accessor, wrapper) ->
 //            m |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
-            m
+//            m
+        | _ -> m
 
     /// Build content for each individual service call method.
     let build (context: TypeBuilderContext) _ tns (operation: ServicePortMethod): CodeTypeMember list =
