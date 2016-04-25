@@ -65,11 +65,11 @@ module TypeBuilder =
                 match definition.IsWrappedArray, definition.Type with
                 | Some(hasWrapper), CollectionType(_, itemName, _) ->
                     let isItemNillable = definition.IsItemNillable |> Option.fold (fun _ x -> x) false
-                    prop |> Prop.describe (Attributes.xrdElement(None, None, definition.IsNillable))
-                         |> Prop.describe (Attributes.xrdCollection(Some(itemName), isItemNillable, not hasWrapper))
+                    prop |> Prop.describe (Attributes.xrdElement(None, None, definition.IsNillable, not hasWrapper))
+                         |> Prop.describe (Attributes.xrdCollection(Some(itemName), isItemNillable))
                          |> ignore
                 | Some(_), _ -> failwith "Array should match to CollectionType."
-                | None, _ -> prop |> Prop.describe (Attributes.xrdElement(elementName, None, definition.IsNillable)) |> ignore
+                | None, _ -> prop |> Prop.describe (Attributes.xrdElement(elementName, None, definition.IsNillable, false)) |> ignore
             // Add extra types to owner type declaration.
             definition.AddedTypes |> List.iter (fun x -> ownerTy |> Cls.addMember x |> ignore)
         definitions |> List.iter (addTypePropertiesFromDefinition)
@@ -170,7 +170,7 @@ module TypeBuilder =
                     IsWrappedArray = Some(true) }
             | itemName, Definition(def) ->
                 let suffix = itemName.toClassName()
-                let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public
+                let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
                 { propertyDef with

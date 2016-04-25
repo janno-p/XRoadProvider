@@ -73,10 +73,9 @@ module ServiceBuilder =
             let runtimeType = context.GetRuntimeType(match parameter.Type with Some(typeName) -> SchemaType(typeName) | None -> SchemaElement(parameter.Name))
             m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) parameter.Name.LocalName |> ignore
             let prop = paramClass |> addProperty (parameter.Name.LocalName, runtimeType, false)
-            let attr = Attributes.xrdElement (nm, ns, false)
-            prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
+            prop |> Prop.describe (Attributes.xrdElement (nm, ns, false, nm.IsNone && ns.IsNone)) |> ignore
             match runtimeType with
-            | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true, false)) |> ignore
+            | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
             | _ -> ()
             m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
@@ -99,9 +98,9 @@ module ServiceBuilder =
                                 runtimeType
                             | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
                         m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) name |> ignore
-                        let prop = paramClass |> addProperty (name, runtimeType, false) |> Prop.describe (Attributes.xrdElement (None, None, false))
+                        let prop = paramClass |> addProperty (name, runtimeType, false) |> Prop.describe (Attributes.xrdElement (None, None, false, false))
                         match runtimeType with
-                        | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true, false)) |> ignore
+                        | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
                         | _ -> ()
                         m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> name) (!+ name)) |> ignore
                     | _ -> failwithf "%A" value)

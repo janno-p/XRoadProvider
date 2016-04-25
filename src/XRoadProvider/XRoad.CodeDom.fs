@@ -80,11 +80,12 @@ module Attributes =
 
     let xrdRoot = Attr.create<XRoadTypeAttribute> |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (LayoutKind.Sequence.ToString()))
 
-    let xrdElement(elementName, elementNamespace, isNullable) =
+    let xrdElement(elementName, elementNamespace, isNullable, mergeContent) =
         let attr = Attr.create<XRoadElementAttribute>
         elementName |> Option.iter (fun name -> attr |> Attr.addArg (!^ name) |> ignore)
         elementNamespace |> Option.iter (fun ns -> attr |> Attr.addNamedArg "Namespace" (!^ ns) |> ignore)
         if isNullable then attr |> Attr.addNamedArg "IsNullable" (!^ true) |> ignore
+        if mergeContent then attr |> Attr.addNamedArg "MergeContent" (!^ true) |> ignore
         attr
 
     let xrdContent =
@@ -97,11 +98,10 @@ module Attributes =
         |> Attr.addArg (!^ name)
         |> Attr.addNamedArg "MergeContent" (!^ mergeContent)
 
-    let xrdCollection (itemName, isNullable, mergeContent) =
+    let xrdCollection (itemName, isNullable) =
         itemName
         |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadCollectionAttribute>
         |> iif isNullable (fun attr -> attr |> Attr.addNamedArg "ItemIsNullable" (!^ true))
-        |> iif mergeContent (fun attr -> attr |> Attr.addNamedArg "MergeContent" (!^ true))
 
 /// Functions to create and manipulate type fields.
 module Fld =
