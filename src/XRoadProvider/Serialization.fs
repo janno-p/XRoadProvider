@@ -77,7 +77,8 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
             let stream, attachments = response |> MultipartMessage.read
             attachments |> List.iter (fun content -> message.Attachments.Add(content.ContentID, content))
             stream
-        log.Trace(fun m -> m.Invoke(stream |> Stream.toString) |> ignore)
+        if log.IsTraceEnabled then
+            log.Trace(stream |> Stream.toString)
         stream.Position <- 0L
         let reader = XmlReader.Create(stream)
         if not (reader.MoveToElement(0, "Envelope", XmlNamespace.SoapEnv)) then
@@ -341,7 +342,8 @@ type XRoadRequest(opt: XRoadRequestOptions) =
 
         writer.WriteEndDocument()
         writer.Flush()
-        log.Trace(fun m -> m.Invoke(content |> Stream.toString) |> ignore)
+        if log.IsTraceEnabled then
+            log.Trace(content |> Stream.toString)
         serializeMessage content context.Attachments
     member __.GetResponse(options) =
         new XRoadResponse(request.GetResponse(), options)
