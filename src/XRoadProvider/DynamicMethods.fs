@@ -411,7 +411,8 @@ module EmitDeserialization =
         else
             // Declare local variable to hold result.
             let instance = il.DeclareLocal(typeMap.Type)
-            il.Emit(OpCodes.Newobj, typeMap.Type.GetConstructor([| |]))
+            let ctor = typeMap.Type.GetConstructor(BindingFlags.Instance ||| BindingFlags.NonPublic ||| BindingFlags.Public, null, [| |], [| |])
+            il.Emit(OpCodes.Newobj, ctor)
             il.Emit(OpCodes.Stloc, instance)
 
             // TODO : Attributes
@@ -1059,7 +1060,7 @@ and private getProperties isEncoded (typeMap: TypeMap) : Property list =
                              ItemSimpleTypeName = XRoadHelper.getSystemTypeName (p.PropertyType.GetElementType().FullName)
                              OwnerTypeMap = typeMap
                              GetMethod = p.GetGetMethod()
-                             SetMethod = p.GetSetMethod() })
+                             SetMethod = p.GetSetMethod(true) })
             | None ->
                 let propertyTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else p.PropertyType) |> getTypeMap isEncoded
                 let element = if propertyTypeMap.Layout <> Some(LayoutKind.Choice) then element else None
@@ -1068,7 +1069,7 @@ and private getProperties isEncoded (typeMap: TypeMap) : Property list =
                                   Element = element
                                   OwnerTypeMap = typeMap
                                   GetMethod = p.GetGetMethod()
-                                  SetMethod = p.GetSetMethod() }))
+                                  SetMethod = p.GetSetMethod(true) }))
 
 and getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
     match typeMaps.TryGetValue(typ) with

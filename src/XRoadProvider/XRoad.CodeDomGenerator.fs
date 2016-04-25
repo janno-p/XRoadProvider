@@ -330,14 +330,11 @@ module TypeBuilder =
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | ContentType
             | PrimitiveType(_) as rtyp ->
-                let fld, prop = providedTy |> addReadOnlyProperty("BaseValue", rtyp)
-                prop |> Prop.describe Attributes.xrdContent |> ignore
-                Ctor.create()
-                |> Ctor.addParamRef (rtyp.AsCodeTypeReference()) "value"
-                |> Ctor.addStmt (Stmt.assign (Expr.this @=> fld.Name) (!+ "value"))
+                providedTy
+                |> addContentProperty("BaseValue", rtyp)
                 |> iif (values |> List.isEmpty) (fun x -> x |> Ctor.setAttr (MemberAttributes.Public))
-                |> providedTy.Members.Add
                 |> ignore
+                Ctor.create() |> providedTy.Members.Add |> ignore
             | _ -> failwith "Simple types should not restrict complex types."
         | SimpleDefinition(ListDef) ->
             failwith "Not implemented: list in simpleType."

@@ -110,6 +110,7 @@ module Fld =
     let describe a (f: CodeMemberField) = f.CustomAttributes.Add(a) |> ignore; f
     let setAttr a (f: CodeMemberField) = f.Attributes <- a; f
     let init e (f: CodeMemberField) = f.InitExpression <- e; f
+    let addTo (o: CodeTypeDeclaration) (f: CodeMemberField) = o.Members.Add(f) |> ignore; f
 
 /// Functions to create and manipulate type properties.
 module Prop =
@@ -152,6 +153,7 @@ module Ctor =
     let addParamRef (r: CodeTypeReference) name (c: CodeConstructor) = c.Parameters.Add(CodeParameterDeclarationExpression(r, name)) |> ignore; c
     let addStmt (e: CodeStatement) (c: CodeConstructor) = c.Statements.Add(e) |> ignore; c
     let addBaseArg a (c: CodeConstructor) = c.BaseConstructorArgs.Add(a) |> ignore; c
+    let addTo (o: CodeTypeDeclaration) (c: CodeConstructor) = o.Members.Add(c) |> ignore; c
 
 /// Functions to simplify operator usage.
 module Op =
@@ -312,12 +314,14 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
     owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
     p
 
-let addReadOnlyProperty (name : string, ty: RuntimeType) (owner: CodeTypeDeclaration) =
-    let fixedName = name.toPropertyName()
-    let f = Fld.createRef (ty.AsCodeTypeReference(true)) (fixedName + "__backing")
-            |> Fld.describe Attributes.DebuggerBrowsable
-    let p = Prop.createRef (ty.AsCodeTypeReference()) fixedName
-            |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-            |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
-    owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
-    (f, p)
+let addContentProperty (name: string, ty: RuntimeType) (owner: CodeTypeDeclaration) =
+    let name = name.toPropertyName()
+    Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
+    |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+    |> Fld.describe Attributes.xrdContent
+    |> Fld.addTo owner
+    |> ignore
+    Ctor.create()
+    |> Ctor.addParamRef (ty.AsCodeTypeReference()) "value"
+    |> Ctor.addStmt (Stmt.assign (Expr.this @=> name) (!+ "value"))
+    |> Ctor.addTo owner
