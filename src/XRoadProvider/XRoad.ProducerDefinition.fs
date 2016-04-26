@@ -177,7 +177,7 @@ module ServiceBuilder =
         | _ -> m
 
     /// Build content for each individual service call method.
-    let build (context: TypeBuilderContext) _ tns (operation: ServicePortMethod): CodeTypeMember list =
+    let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): CodeTypeMember list =
         let protocol = context.MessageProtocol.EnumValue
         let paramClass = Cls.create(sprintf "%sInput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
         let result = List<CodeTypeMember>()
@@ -198,7 +198,7 @@ module ServiceBuilder =
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, languageCode) =
+let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
     // Load schema details from specified file or network location.
     let schema = ProducerDescription.Load(resolveUri producerUri, languageCode)
 
@@ -285,7 +285,7 @@ let makeProducerType (typeNamePath: string [], producerUri, undescribedFaults, l
             serviceTy |> Cls.addMember portTy |> ignore
 
             port.Methods
-            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context undescribedFaults service.Namespace op) |> ignore))
+            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore))
         targetClass |> Cls.addMember serviceTy |> ignore
         )
 

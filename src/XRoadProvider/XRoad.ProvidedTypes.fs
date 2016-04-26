@@ -23,7 +23,6 @@ type XRoadProducerProvider() as this =
     // Available parameters to use for configuring type provider instance
     let staticParameters =
         [ ProvidedStaticParameter("ProducerUri", typeof<string>), "WSDL document location (either local file or network resource)."
-          ProvidedStaticParameter("UndescribedFaults", typeof<bool>, false), "Generate code to handle service errors even if WSDL document doesn't explicitly define error responses."
           ProvidedStaticParameter("LanguageCode", typeof<string>, "et"), "Specify language code that is extracted as documentation tooltips. Default value is estonian (et)." ]
         |> List.map (fun (parameter, doc) -> parameter.AddXmlDoc(doc); parameter :> ParameterInfo)
         |> List.toArray
@@ -34,14 +33,13 @@ type XRoadProducerProvider() as this =
             match typeWithoutArguments with
             | :? ProvidedTypeDefinition ->
                 let producerUri = unbox<string> staticArguments.[0]
-                let undescribedFaults = unbox<bool> staticArguments.[1]
-                let languageCode = unbox<string> staticArguments.[2]
+                let languageCode = unbox<string> staticArguments.[1]
 
                 // Same parameter set should have same output, so caching is reasonable.
-                let key = (String.Join(".", typeNameWithArguments), producerUri, undescribedFaults, languageCode)
+                let key = (String.Join(".", typeNameWithArguments), producerUri, languageCode)
                 match typeCache.TryGetValue(key) with
                 | false, _ ->
-                    let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, undescribedFaults, languageCode)
+                    let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, languageCode)
                     typeCache.Add(key, typ)
                     typ
                 | true, typ -> typ
