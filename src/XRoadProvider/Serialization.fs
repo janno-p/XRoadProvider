@@ -10,6 +10,11 @@ open System.Xml
 open XRoad.Serialization.Attributes
 open XRoad.DynamicMethods
 
+type XRoadFault(faultCode: string, faultString) =
+    inherit Exception(faultString)
+    member val FaultCode = faultCode with get
+    member val FaultString = faultString with get
+
 module Stream =
     let toString (stream: Stream) =
         stream.Position <- 0L
@@ -68,9 +73,30 @@ module private Response =
             isElement() || findElement()
 
 open Response
+open System.Xml.XPath
 
 type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
     let log = LogManager.GetLogger()
+
+    let checkXRoadFault (stream: Stream) =
+        let faultPath = "/*[local-name()='Envelope' and namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*[local-name()='Body' and namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*"
+        let xpath =
+            match options.Protocol with
+            | XRoadProtocol.Version40 -> faultPath
+            | XRoadProtocol.Version20 -> sprintf "%s/keha" faultPath
+            | _ -> sprintf "%s/response" faultPath
+        stream.Position <- 0L
+        use reader = XmlReader.Create(stream)
+        let doc = XPathDocument(reader)
+        let nav = doc.CreateNavigator()
+        match nav.SelectSingleNode(sprintf "%s[faultCode|faultString]" xpath) with
+        | null -> ()
+        | node ->
+            let faultCode = node.SelectSingleNode("./faultCode")
+            let faultString = node.SelectSingleNode("./faultString")
+            let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> Option.orDefault ""
+            raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
+
     member __.RetrieveMessage(): XRoadMessage =
         let message = XRoadMessage()
         use stream =
@@ -79,15 +105,13 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
             stream
         if log.IsTraceEnabled then
             log.Trace(stream |> Stream.toString)
+        stream |> checkXRoadFault
         stream.Position <- 0L
-        let reader = XmlReader.Create(stream)
+        use reader = XmlReader.Create(stream)
         if not (reader.MoveToElement(0, "Envelope", XmlNamespace.SoapEnv)) then
             failwith "Soap envelope element was not found in response message."
         if not (reader.MoveToElement(1, "Body", XmlNamespace.SoapEnv)) then
             failwith "Soap body element was not found in response message."
-        if options.ExpectUnexpected then
-            // TODO: check if unexpected exception was thrown by service.
-            ()
         let context = SerializerContext()
         context.AddAttachments(message.Attachments)
         let serializer = Serializer(options.IsEncoded)
