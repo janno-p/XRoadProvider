@@ -21,4 +21,5 @@ description
     Type providers for generating types and service interfaces for XRoad producers.
 frameworkAssemblies
     System.Xml
+    System.Xml.Linq
 
