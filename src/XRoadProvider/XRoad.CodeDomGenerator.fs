@@ -375,6 +375,15 @@ module TypeBuilder =
             |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGen seqNameGen context content)) ()
         | EmptyDefinition -> ()
 
+    let removeFaultDescription (definition: SchemaTypeDefinition) =
+        match definition with
+        | ComplexDefinition({ Content = Particle({ Content = Some(ComplexTypeParticle.Sequence(sequence) as particleContent) } as particle) } as spec) ->
+            match sequence.Content with
+            | [ SequenceContent.Choice(_) ] -> failwithf "remove"
+            | [ SequenceContent.Sequence(_) ] -> failwithf "remove"
+            | _ -> definition
+        | EmptyDefinition | ComplexDefinition(_) | SimpleDefinition(_) -> definition
+
     let buildResponseElementType (context: TypeBuilderContext) (elementName: XName) =
         let elementSpec = elementName |> context.GetElementSpec
         match elementSpec.Definition with
@@ -382,7 +391,7 @@ module TypeBuilder =
             match typeDefinition with
             | Definition(definition) ->
                 let runtimeType = context.GetOrCreateType(SchemaElement(elementName))
-                build context runtimeType definition
+                definition |> removeFaultDescription |> build context runtimeType
                 runtimeType
             | Name(typeName) ->
                 context.GetRuntimeType(SchemaType(typeName))
