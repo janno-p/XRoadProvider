@@ -37,8 +37,8 @@ module internal Pattern =
                 elif (choice.Content
                       |> List.fold (fun state ch ->
                             match state, ch with
-                            | true, ChoiceContent.Element(e) when e.MaxOccurs < 2u -> true
-                            | true, ChoiceContent.Sequence(s) when s.MaxOccurs < 2u -> true
+                            | true, Element(e) when e.MaxOccurs < 2u -> true
+                            | true, Sequence(s) when s.MaxOccurs < 2u -> true
                             | _ -> false) true)
                      then None
                 else failwith "Not implemented: array of varying choice types."
@@ -46,11 +46,11 @@ module internal Pattern =
                 if sequence.MaxOccurs > 1u then
                     match sequence.Content with
                     | [] -> None
-                    | [ SequenceContent.Element(single) ] -> Some(single)
+                    | [ Element(single) ] -> Some(single)
                     | _ -> failwith "Not implemented: array of anonymous sequence types."
                 elif sequence.MaxOccurs < 1u then None
                 else match sequence.Content with
-                     | [ SequenceContent.Element(single) ] when single.MaxOccurs > 1u -> Some(single)
+                     | [ Element(single) ] when single.MaxOccurs > 1u -> Some(single)
                      | _ -> None
             | Some(ComplexTypeParticle.Group) -> failwith "group not implemented."
             | None -> None

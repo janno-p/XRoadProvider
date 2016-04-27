@@ -174,8 +174,8 @@ and ComplexContentRestrictionSpec =
 and ComplexTypeParticle =
     | Group
     | All of AllSpec
-    | Choice of ChoiceSpec
-    | Sequence of SequenceSpec
+    | Choice of ParticleSpec
+    | Sequence of ParticleSpec
 
 /// Single attribute definition.
 and AttributeSpec =
@@ -192,36 +192,21 @@ and AllSpec =
       MaxOccurs: uint32
       Elements: ElementSpec list }
 
-/// Defines alternatives for current choice.
-and ChoiceSpec =
+/// Defines alternatives for current choice or sequence.
+and ParticleSpec =
     { Annotation: string option
       MaxOccurs: uint32
       MinOccurs: uint32
-      Content: ChoiceContent list }
+      Content: ParticleContent list }
 
-/// Sequence can contain `any` element to mark acceptance of any element; concrete element definitions;
-/// references to predefined element groups; alternatives via choice elements; or subsequences.
-and SequenceContent =
-    | Any
-    | Element of ElementSpec
-    | Group
-    | Choice of ChoiceSpec
-    | Sequence of SequenceSpec
-
-/// Wraps single `sequence` node definition.
-and SequenceSpec =
-    { MinOccurs: uint32
-      MaxOccurs: uint32
-      Content: SequenceContent list }
-
-/// Single choice alternative can contain `any` node to mark acceptance of any element; sub-choice nodes;
+/// Single choice alternative or sequence can contain `any` node to mark acceptance of any element; sub-choice nodes;
 /// concrete element definitions; references to predefined element groups; or element sequences.
-and ChoiceContent =
+and ParticleContent =
     | Any
-    | Choice of ChoiceSpec
+    | Choice of ParticleSpec
     | Element of ElementSpec
     | Group
-    | Sequence of SequenceSpec
+    | Sequence of ParticleSpec
 
 /// Wrap multiple attribute definitions into predefined group.
 and AttributeGroupSpec =
@@ -365,52 +350,32 @@ module Parser =
         | Some content -> content
         | _ -> failwith "Element complexContent is expected to contain either restriction or extension element."
 
-    /// Extracts choice element specification from schema definition.
-    and private parseChoice (node: XElement): ChoiceSpec =
+    /// Extracts choice or sequence element specification from schema definition.
+    and private parseParticle particleName (node: XElement): ParticleSpec =
         node.Elements()
-        |> Seq.fold (fun (state, spec: ChoiceSpec) node ->
+        |> Seq.fold (fun (state, spec: ParticleSpec) node ->
             match node, state with
             | Xsd "annotation", Begin ->
                 Annotation, { spec with Annotation = Some(node.Value) }
             | Xsd "any", _ ->
-                Content, { spec with Content = spec.Content @ [ChoiceContent.Any] }
+                Content, { spec with Content = spec.Content @ [ParticleContent.Any] }
             | Xsd "choice", _ ->
-                Content, { spec with Content = spec.Content @ [ChoiceContent.Choice(parseChoice(node))] }
+                Content, { spec with Content = spec.Content @ [ParticleContent.Choice(parseChoice(node))] }
             | Xsd "element", _ ->
-                Content, { spec with Content = spec.Content @ [ChoiceContent.Element(parseElement(node))] }
+                Content, { spec with Content = spec.Content @ [ParticleContent.Element(parseElement(node))] }
             | Xsd "group", _ ->
-                Content, node |> notImplementedIn "choice"
+                Content, node |> notImplementedIn particleName
             | Xsd "sequence", _ ->
-                Content, { spec with Content = spec.Content @ [ChoiceContent.Sequence(parseSequence(node))] }
-            | _ -> node |> notExpectedIn "choice"
+                Content, { spec with Content = spec.Content @ [ParticleContent.Sequence(parseSequence(node))] }
+            | _ -> node |> notExpectedIn particleName
             ) (Begin, { Annotation = None
                         MaxOccurs = readMaxOccurs node
                         MinOccurs = readMinOccurs node
                         Content = [] })
         |> snd
 
-    /// Extracts sequence element specification from schema definition.
-    and private parseSequence (node: XElement): SequenceSpec =
-        node.Elements()
-        |> Seq.fold (fun (state, spec: SequenceSpec) node ->
-            match node, state with
-            | Xsd "annotation", Begin ->
-                Annotation, spec
-            | Xsd "any", (Begin | Annotation | Content) ->
-                Content, { spec with Content = spec.Content @ [SequenceContent.Any] }
-            | Xsd "choice", (Begin | Annotation | Content) ->
-                Content, { spec with Content = spec.Content @ [SequenceContent.Choice(parseChoice(node))] }
-            | Xsd "group", (Begin | Annotation | Content) ->
-                Content, node |> notImplementedIn "sequence"
-            | Xsd "sequence", (Begin | Annotation | Content) ->
-                Content, { spec with Content = spec.Content @ [SequenceContent.Sequence(parseSequence(node))] }
-            | Xsd "element", (Begin | Annotation | Content) ->
-                Content, { spec with Content = spec.Content @ [SequenceContent.Element(parseElement(node))] }
-            | _ -> node |> notExpectedIn "sequence"
-            ) (Begin, { MinOccurs = readMinOccurs node
-                        MaxOccurs = readMaxOccurs node
-                        Content = [] })
-        |> snd
+    and private parseChoice = parseParticle "choice"
+    and private parseSequence = parseParticle "sequence"
 
     /// Extracts `all` element specification from schema definition.
     and private parseAll (node: XElement): AllSpec =

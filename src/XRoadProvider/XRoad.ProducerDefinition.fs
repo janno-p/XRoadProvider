@@ -85,7 +85,7 @@ module ServiceBuilder =
                 content
                 |> List.iter (fun value ->
                     match value with
-                    | SequenceContent.Element(elementSpec) ->
+                    | Element(elementSpec) ->
                         let name, schemaType = context.GetElementDefinition(elementSpec)
                         let runtimeType =
                             match schemaType with

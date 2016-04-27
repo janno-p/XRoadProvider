@@ -121,15 +121,15 @@ module TypeBuilder =
                 if spec.MinOccurs > 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
                 let collectSequenceProperties content =
                     match content with
-                    | SequenceContent.Choice(cspec) ->
+                    | Choice(cspec) ->
                         collectChoiceProperties choiceNameGen context cspec
-                    | SequenceContent.Element(spec) ->
+                    | Element(spec) ->
                         [ buildElementProperty context spec ]
-                    | SequenceContent.Sequence(sspec) ->
+                    | Sequence(sspec) ->
                         collectSequenceProperties seqNameGen context sspec
-                    | SequenceContent.Any ->
+                    | Any ->
                         [ buildAnyProperty() ]
-                    | SequenceContent.Group ->
+                    | Group ->
                         failwith "Not implemented: group in complexType sequence."
                 spec.Content |> List.map (collectSequenceProperties) |> List.collect (id)
             | Some(ComplexTypeParticle.Choice(cspec)) ->
@@ -271,19 +271,19 @@ module TypeBuilder =
             |> List.mapi (fun i x -> (i, x))
             |> List.choose (fun (i, choiceContent) ->
                 match choiceContent with
-                | ChoiceContent.Any ->
+                | Any ->
                     failwith "Not implemented: any in choice."
-                | ChoiceContent.Choice(_) ->
+                | Choice(_) ->
                     failwith "Not implemented: choice in choice."
-                | ChoiceContent.Element(spec) ->
+                | Element(spec) ->
                     let prop = buildElementProperty context spec
                     choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name false) |> ignore
                     addNewMethod (i + 1) prop.Name prop.Type
                     addTryMethod (i + 1) prop.Name prop.Type
                     None
-                | ChoiceContent.Group ->
+                | Group ->
                     failwith "Not implemented: group in choice."
-                | ChoiceContent.Sequence(spec) ->
+                | Sequence(spec) ->
                     let props = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
                     choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName true) |> ignore
@@ -296,20 +296,14 @@ module TypeBuilder =
         [{ PropertyDefinition.Create(choiceName, false, None) with Type = choiceRuntimeType; AddedTypes = choiceType::addedTypes }]
 
     /// Extract property definitions for all the elements defined in sequence element.
-    and private buildSequenceMembers context (spec: SequenceSpec) =
+    and private buildSequenceMembers context (spec: ParticleSpec) =
         spec.Content
-        |> List.map (
-            function
-            | SequenceContent.Any ->
-                failwith "Not implemented: any in sequence."
-            | SequenceContent.Choice(_) ->
-                failwith "Not implemented: choice in sequence."
-            | SequenceContent.Element(espec) ->
-                buildElementProperty context espec
-            | SequenceContent.Group ->
-                failwith "Not implemented: group in sequence."
-            | SequenceContent.Sequence(_) ->
-                failwith "Not implemented: sequence in sequence.")
+        |> List.map (function
+            | Any -> failwith "Not implemented: any in sequence."
+            | Choice(_) -> failwith "Not implemented: choice in sequence."
+            | Element(espec) -> buildElementProperty context espec
+            | Group -> failwith "Not implemented: group in sequence."
+            | Sequence(_) -> failwith "Not implemented: sequence in sequence.")
 
     /// Populate generated type declaration with properties specified in type schema definition.
     and build (context: TypeBuilderContext) runtimeType schemaType =
@@ -376,12 +370,18 @@ module TypeBuilder =
         | EmptyDefinition -> ()
 
     let removeFaultDescription (definition: SchemaTypeDefinition) =
+        let filterFault (particles: ParticleContent list) =
+            particles
         match definition with
-        | ComplexDefinition({ Content = Particle({ Content = Some(ComplexTypeParticle.Sequence(sequence) as particleContent) } as particle) } as spec) ->
-            match sequence.Content with
-            | [ SequenceContent.Choice(_) ] -> failwithf "remove"
-            | [ SequenceContent.Sequence(_) ] -> failwithf "remove"
-            | _ -> definition
+        | ComplexDefinition({ Content = Particle({ Content = Some(ComplexTypeParticle.Sequence(sequence)) } as particle) } as spec) ->
+            let newParticle =
+                match sequence.Content with
+                | [ ParticleContent.Choice(choice) ] ->
+                    match choice.Content |> filterFault with
+                    | [] | [_] as content -> ComplexTypeParticle.Sequence({ choice with Content = content })
+                    | content -> ComplexTypeParticle.Choice({ choice with Content = content })
+                | content -> ComplexTypeParticle.Sequence({ sequence with Content = filterFault content })
+            ComplexDefinition({ spec with Content = Particle({ particle with Content = Some(newParticle) }) })
         | EmptyDefinition | ComplexDefinition(_) | SimpleDefinition(_) -> definition
 
     let buildResponseElementType (context: TypeBuilderContext) (elementName: XName) =
