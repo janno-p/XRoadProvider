@@ -121,16 +121,11 @@ module TypeBuilder =
                 if spec.MinOccurs > 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
                 let collectSequenceProperties content =
                     match content with
-                    | Choice(cspec) ->
-                        collectChoiceProperties choiceNameGen context cspec
-                    | Element(spec) ->
-                        [ buildElementProperty context spec ]
-                    | Sequence(sspec) ->
-                        collectSequenceProperties seqNameGen context sspec
-                    | Any ->
-                        [ buildAnyProperty() ]
-                    | Group ->
-                        failwith "Not implemented: group in complexType sequence."
+                    | Choice(cspec) -> collectChoiceProperties choiceNameGen context cspec
+                    | Element(spec) -> [ buildElementProperty context spec ]
+                    | Sequence(sspec) -> collectSequenceProperties seqNameGen context sspec
+                    | Any -> [ buildAnyProperty() ]
+                    | Group -> failwith "Not implemented: group in complexType sequence."
                 spec.Content |> List.map (collectSequenceProperties) |> List.collect (id)
             | Some(ComplexTypeParticle.Choice(cspec)) ->
                 collectChoiceProperties choiceNameGen context cspec
@@ -271,18 +266,12 @@ module TypeBuilder =
             |> List.mapi (fun i x -> (i, x))
             |> List.choose (fun (i, choiceContent) ->
                 match choiceContent with
-                | Any ->
-                    failwith "Not implemented: any in choice."
-                | Choice(_) ->
-                    failwith "Not implemented: choice in choice."
                 | Element(spec) ->
                     let prop = buildElementProperty context spec
                     choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name false) |> ignore
                     addNewMethod (i + 1) prop.Name prop.Type
                     addTryMethod (i + 1) prop.Name prop.Type
                     None
-                | Group ->
-                    failwith "Not implemented: group in choice."
                 | Sequence(spec) ->
                     let props = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
@@ -291,7 +280,10 @@ module TypeBuilder =
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod (i + 1) optionName optionRuntimeType
                     addTryMethod (i + 1) optionName optionRuntimeType
-                    Some(optionType))
+                    Some(optionType)
+                | Any -> failwith "Not implemented: any in choice."
+                | Choice(_) -> failwith "Not implemented: choice in choice."
+                | Group -> failwith "Not implemented: group in choice.")
 
         [{ PropertyDefinition.Create(choiceName, false, None) with Type = choiceRuntimeType; AddedTypes = choiceType::addedTypes }]
 
@@ -370,14 +362,21 @@ module TypeBuilder =
         | EmptyDefinition -> ()
 
     let removeFaultDescription (definition: SchemaTypeDefinition) =
+        let isFault content =
+            let areFaultElements (el1: ElementSpec) (el2: ElementSpec) =
+                el1.Name = Some("faultCode") && el2.Name = Some("faultString")
+            match content with
+            | Sequence({ Content = [Element(el1); Element(el2)] }) -> areFaultElements el1 el2 || areFaultElements el2 el1
+            | _ -> false
         let filterFault (particles: ParticleContent list) =
-            particles
+            particles |> List.filter (isFault >> not)
         match definition with
         | ComplexDefinition({ Content = Particle({ Content = Some(ComplexTypeParticle.Sequence(sequence)) } as particle) } as spec) ->
             let newParticle =
                 match sequence.Content with
                 | [ ParticleContent.Choice(choice) ] ->
                     match choice.Content |> filterFault with
+                    | [Sequence(content)] -> ComplexTypeParticle.Sequence(content)
                     | [] | [_] as content -> ComplexTypeParticle.Sequence({ choice with Content = content })
                     | content -> ComplexTypeParticle.Choice({ choice with Content = content })
                 | content -> ComplexTypeParticle.Sequence({ sequence with Content = filterFault content })
