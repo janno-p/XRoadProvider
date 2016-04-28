@@ -8,12 +8,12 @@ NUGET
     NodaTime (2.0.0-alpha20150728)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
-    src/ProvidedTypes.fs (ea733039c168a8e2d441e298a1c67d98f63b00f6)
-    src/ProvidedTypes.fsi (ea733039c168a8e2d441e298a1c67d98f63b00f6)
+    src/ProvidedTypes.fs (dec7c310becf04605868cb4e916b7755e9960744)
+    src/ProvidedTypes.fsi (dec7c310becf04605868cb4e916b7755e9960744)
 GROUP Build
 NUGET
   remote: https://www.nuget.org/api/v2
-    FAKE (4.25.4)
+    FAKE (4.25.5)
     FSharp.Compiler.Service (2.0.0.6)
     FSharp.Formatting (2.14.2)
       FSharp.Compiler.Service (2.0.0.6)
@@ -31,7 +31,7 @@ NUGET
     SourceLink.Fake (1.1)
 GITHUB
   remote: fsharp/FAKE
-    modules/Octokit/Octokit.fsx (db3139b0bf8a93047a68ca10f0135f1e94a10cae)
+    modules/Octokit/Octokit.fsx (26cd2e6430a3ada972fa37a5a65606b2f7f427e3)
       Octokit
 GROUP Test
 NUGET
