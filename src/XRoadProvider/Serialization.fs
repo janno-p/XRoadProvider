@@ -184,7 +184,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         serializeMultipartMessage attachments (fun s -> writeContent s content)
 
     let writeIdHeader value ns req (writer: XmlWriter) =
-        if req |> Array.exists ((=) "id") || value |> isNull |> not then
+        if req |> Array.exists ((=) "id") || value |> isNullOrEmpty |> not then
             writer.WriteStartElement("id", ns)
             if opt.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
@@ -194,7 +194,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer.WriteEndElement()
 
     let writeStringHeader value name ns req (writer: XmlWriter) =
-        if req |> Array.exists ((=) name) || value |> isNull |> not then
+        if req |> Array.exists ((=) name) || value |> isNullOrEmpty |> not then
             writer.WriteStartElement(name, ns)
             if opt.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
@@ -216,7 +216,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer.WriteEndElement()
 
     let writeBase64Header (value: byte[]) name ns req (writer: XmlWriter) =
-        if req |> Array.exists ((=) name) || value |> isNull |> not then
+        if req |> Array.exists ((=) name) || value |> isNullOrEmptyArray |> not then
             writer.WriteStartElement(name, ns)
             if opt.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)

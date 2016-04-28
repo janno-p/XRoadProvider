@@ -39,5 +39,4 @@ let request = Types.getRandom_requestType()
 request.seed <- "123"
 
 let response = port.getRandom(header, request)
-
-//printfn "%s" response.response.content
+printfn "%s" response.response.content

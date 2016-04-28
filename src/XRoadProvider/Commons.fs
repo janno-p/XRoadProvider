@@ -83,6 +83,8 @@ module internal List =
 [<AutoOpen>]
 module Commons =
     let isNull o = (o = null)
+    let isNullOrEmpty = String.IsNullOrEmpty
+    let isNullOrEmptyArray (x: 'a []) = x |> isNull || x.Length = 0
 
 [<AutoOpen>]
 module private XRoadProtocolExtensions =

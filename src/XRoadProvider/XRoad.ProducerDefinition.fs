@@ -81,6 +81,7 @@ module ServiceBuilder =
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
         let addDocLiteralWrappedParameters (spec: ElementSpec) =
             match context.GetElementDefinition(spec) |> snd |> context.GetSchemaTypeDefinition with
+            | EmptyDefinition -> ()
             | ComplexDefinition({ IsAbstract = false; Content = Particle({ Content = Some(ComplexTypeParticle.Sequence({ Content = content; MinOccurs = 1u; MaxOccurs = 1u })) }) }) ->
                 content
                 |> List.iter (fun value ->
@@ -104,7 +105,7 @@ module ServiceBuilder =
                         | _ -> ()
                         m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> name) (!+ name)) |> ignore
                     | _ -> failwithf "%A" value)
-            | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements."
+            | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> Option.orDefault "<unknown>")
         match operation.InputParameters with
         | DocEncoded(encodingNamespace, wrapper) ->
             wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
