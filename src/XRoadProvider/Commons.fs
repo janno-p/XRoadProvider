@@ -275,7 +275,7 @@ type public XRoadDocHeader() =
 [<AllowNullLiteral>]
 type public XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, subsystemCode) =
     new () = XRoadMemberIdentifier("", "", "", "")
-    new (xRoadInstance, memberClass, memberCode) = XRoadMemberIdentifier("", "", "", "")
+    new (xRoadInstance, memberClass, memberCode) = XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, "")
     /// Code identifying the instance of the X-Road system.
     member val XRoadInstance = xRoadInstance with get, set
     /// Code identifying the member class (e.g., government agency, private enterprise, physical person).

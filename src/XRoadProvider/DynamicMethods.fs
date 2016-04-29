@@ -1142,6 +1142,11 @@ module internal XsdTypes =
         elif reader.Read() then reader.ReadContentAsString() |> box
         else failwith "Unexpected end of SOAP message."
 
+    let deserializeDateTimeValue value =
+        match LocalDateTimePattern.ExtendedIsoPattern.Parse(value) with
+        | result when result.Success -> result.Value
+        | _ -> OffsetDateTimePattern.ExtendedIsoPattern.Parse(value).GetValueOrThrow().LocalDateTime
+
     let serializeNullableDefault (writer, value, context) = serializeNullable writer value context serializeDefault
     let serializeNullableBigInteger (writer, value, context) = serializeNullable writer value context serializeBigInteger
     let serializeNullableLocalDate (writer, value, context) = serializeNullable writer value context serializeLocalDate
@@ -1153,7 +1158,7 @@ module internal XsdTypes =
     let deserializeInt64 (reader, context) = deserializeValue reader context reader.ReadContentAsLong
     let deserializeBigInteger (reader, context) = deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger)
     let deserializeLocalDate (reader, context) = deserializeValue reader context (fun () -> LocalDatePattern.IsoPattern.Parse(reader.ReadContentAsString()).GetValueOrThrow())
-    let deserializeLocalDateTime (reader, context) = deserializeValue reader context (fun () -> LocalDateTimePattern.GeneralIsoPattern.Parse(reader.ReadContentAsString()).GetValueOrThrow())
+    let deserializeLocalDateTime (reader, context) = deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateTimeValue)
 
     let deserializeNullableBoolean (reader, context) = deserializeNullable reader context deserializeBoolean
     let deserializeNullableDecimal (reader, context) = deserializeNullable reader context deserializeDecimal
