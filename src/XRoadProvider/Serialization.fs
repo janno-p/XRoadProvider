@@ -193,7 +193,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer.WriteValue(if String.IsNullOrWhiteSpace(value) then XRoadHelper.getUUID() else value)
             writer.WriteEndElement()
 
-    let writeStringHeader value name ns req (writer: XmlWriter) =
+    let writeStringHeader req ns (writer: XmlWriter) value name =
         if req |> Array.exists ((=) name) || value |> isNullOrEmpty |> not then
             writer.WriteStartElement(name, ns)
             if opt.IsEncoded then
@@ -251,6 +251,12 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                     writer.WriteEndElement()
             writer.WriteEndElement()
 
+    let getServiceName producerName =
+        let serviceName = if opt.ServiceVersion |> isNullOrEmpty then opt.ServiceCode
+                          else sprintf "%s.%s" opt.ServiceCode opt.ServiceVersion
+        if producerName |> isNullOrEmpty then serviceName
+        else sprintf "%s.%s" producerName serviceName
+
     let writeServiceHeader (value: XRoadMemberIdentifier) req (writer: XmlWriter) =
         if req |> Array.exists ((=) "service") || value <> null then
             writer.WriteStartElement("service", XmlNamespace.XRoad40)
@@ -287,51 +293,52 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     let writeXRoadHeader (msg: XRoadMessage) (writer: XmlWriter) =
         if writer.LookupPrefix(msg.HeaderNamespace) |> isNull then
             writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, msg.HeaderNamespace)
+        let writeStringHeader' = writeStringHeader msg.RequiredHeaders msg.HeaderNamespace writer
         match msg.Header with
         | :? XRoadRpcHeader as header ->
-            writer |> writeStringHeader header.Asutus "asutus" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Andmekogu "andmekogu" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Isikukood "isikukood" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Ametnik "ametnik" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' header.Asutus "asutus"
+            writeStringHeader' header.Andmekogu "andmekogu"
+            writeStringHeader' header.Isikukood "isikukood"
+            writeStringHeader' header.Ametnik "ametnik"
             writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Nimi "nimi" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Toimik "toimik" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Allasutus "allasutus" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Amet "amet" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.AmetnikNimi "ametniknimi" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' (getServiceName header.Andmekogu) "nimi"
+            writeStringHeader' header.Toimik "toimik"
+            writeStringHeader' header.Allasutus "allasutus"
+            writeStringHeader' header.Amet "amet"
+            writeStringHeader' header.AmetnikNimi "ametniknimi"
             writer |> writeBoolHeader header.Asynkroonne "asynkroonne" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Autentija "autentija" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Makstud "makstud" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Salastada "salastada" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' header.Autentija "autentija"
+            writeStringHeader' header.Makstud "makstud"
+            writeStringHeader' header.Salastada "salastada"
             writer |> writeBase64Header header.SalastadaSertifikaadiga "salastada_sertifikaadiga" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Salastatud "salastatud" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.SalastatudSertifikaadiga "salastatud_sertifikaadiga" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' header.Salastatud "salastatud"
+            writeStringHeader' header.SalastatudSertifikaadiga "salastatud_sertifikaadiga"
         | :? XRoadDocHeader as header ->
-            writer |> writeStringHeader header.Consumer "consumer" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Producer "producer" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.UserId "userId" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' header.Consumer "consumer"
+            writeStringHeader' header.Producer "producer"
+            writeStringHeader' header.UserId "userId"
             writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Service "service" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Issue "issue" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Unit "unit" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Position "position" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.UserName "userName" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' (getServiceName header.Producer) "service"
+            writeStringHeader' header.Issue "issue"
+            writeStringHeader' header.Unit "unit"
+            writeStringHeader' header.Position "position"
+            writeStringHeader' header.UserName "userName"
             writer |> writeBoolHeader header.Async "async" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Authenticator "authenticator" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Paid "paid" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Encrypt "encrypt" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' header.Authenticator "authenticator"
+            writeStringHeader' header.Paid "paid"
+            writeStringHeader' header.Encrypt "encrypt"
             writer |> writeBase64Header header.EncryptCert "encryptCert" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Encrypted "encrypted" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.EncryptedCert "encryptedCert" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' header.Encrypted "encrypted"
+            writeStringHeader' header.EncryptedCert "encryptedCert"
         | :? XRoadHeader as header ->
             if writer.LookupPrefix(XmlNamespace.XRoad40Id) |> isNull then
                 writer.WriteAttributeString("xmlns", "id", XmlNamespace.Xmlns, XmlNamespace.XRoad40Id)
             writer |> writeClientHeader header.Client msg.RequiredHeaders
             writer |> writeServiceHeader header.Producer msg.RequiredHeaders
             writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.UserId "userId" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.Issue "issue" msg.HeaderNamespace msg.RequiredHeaders
-            writer |> writeStringHeader header.ProtocolVersion "protocolVersion" msg.HeaderNamespace msg.RequiredHeaders
+            writeStringHeader' header.UserId "userId"
+            writeStringHeader' header.Issue "issue"
+            writeStringHeader' header.ProtocolVersion "protocolVersion"
         | _ -> failwithf "Unexpected X-Road header type `%s`." (msg.Header.GetType().FullName)
         msg.Header.Unresolved |> Seq.iter (fun e -> e.WriteTo(writer))
 

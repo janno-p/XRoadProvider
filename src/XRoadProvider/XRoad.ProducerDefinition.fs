@@ -37,23 +37,26 @@ module ServiceBuilder =
         | [(varName, typ)] -> (typ.AsCodeTypeReference(), !+ varName)
         | many -> getReturnTypeTuple([], many)
 
-    let addHeaderInitialization messageProtocol serviceName (reqhdrs: string list) (m: CodeMemberMethod) =
+    let addHeaderInitialization messageProtocol (reqhdrs: string list) (m: CodeMemberMethod) =
         let props, headerType =
             match messageProtocol with
             | Version20(_) ->
-                m |> Meth.addParam<XRoadRpcHeader> "header" |> ignore
-                Some("Andmekogu", "Nimi"), typeRef<XRoadRpcHeader>
+                m |> Meth.addParam<XRoadRpcHeader> "header"
+                  |> ignore
+                Some("Andmekogu"), typeRef<XRoadRpcHeader>
             | Version30(_) | Version31Ee(_) | Version31Eu(_) ->
-                m |> Meth.addParam<XRoadDocHeader> "header" |> ignore
-                Some("Producer", "Service"), typeRef<XRoadDocHeader>
+                m |> Meth.addParam<XRoadDocHeader> "header"
+                  |> ignore
+                Some("Producer"), typeRef<XRoadDocHeader>
             | Version40(_) ->
-                m |> Meth.addParam<XRoadHeader> "header" |> ignore;
+                m |> Meth.addParam<XRoadHeader> "header"
+                  |> ignore;
                 None, typeRef<XRoadHeader>
-        m |> Meth.addStmt (Stmt.condIf (Op.isNull (!+ "header")) [Stmt.assign (!+ "header") (Expr.instOf headerType [])]) |> ignore
+        m |> Meth.addStmt (Stmt.assign (!+ "header") (Expr.instOf headerType [!+ "header"]))
+          |> ignore
         match props with
-        | Some(producerPropName, servicePropName) ->
+        | Some(producerPropName) ->
             m |> Meth.addStmt (Stmt.condIf ((Expr.typeRefOf<string> @-> "IsNullOrWhiteSpace") @% [!+ "header" @=> producerPropName]) [Stmt.assign (!+ "header" @=> producerPropName) (!^ messageProtocol.ProducerName.Value)])
-              |> Meth.addStmt (Stmt.condIf ((Expr.typeRefOf<string> @-> "IsNullOrWhiteSpace") @% [!+ "header" @=> servicePropName]) [Stmt.assign (!+ "header" @=> servicePropName) ((Expr.typeRefOf<string> @-> "Format") @% [!^ (sprintf "{0}.%s" serviceName); !+ "header" @=> producerPropName])])
               |> ignore
         | None ->
             m |> Meth.addStmt (Stmt.condIf ((Expr.typeRefOf<string> @-> "IsNullOrWhiteSpace") @% [!+ "header" @=> "ProtocolVersion"]) [Stmt.assign (!+ "header" @=> "ProtocolVersion") (!^ "4.0")])
@@ -190,7 +193,7 @@ module ServiceBuilder =
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString()]))
             |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceCode") (!^ operation.Name))
             |> iif operation.Version.IsSome (fun x -> x |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceVersion") (!^ operation.Version.Value)))
-            |> addHeaderInitialization context.MessageProtocol (match operation.Version with Some v -> sprintf "%s.%s" operation.Name v | _ -> operation.Name) operation.InputParameters.RequiredHeaders
+            |> addHeaderInitialization context.MessageProtocol operation.InputParameters.RequiredHeaders
             |> buildOperationInput context tns operation paramClass
         result.Add(m)
         result.Add(paramClass)
@@ -215,12 +218,6 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
     |> List.iter (fun (_,typeSchema) ->
         typeSchema.Types
         |> Seq.map (fun kvp -> SchemaType(kvp.Key))
-        //|> Seq.append (
-        //    typeSchema.Elements
-        //    |> Seq.choose (fun kvp ->
-        //        match kvp.Value.Type with
-        //        | Definition(_) -> Some(SchemaElement(kvp.Key))
-        //        | _ -> None))
         |> Seq.iter (context.GetOrCreateType >> ignore))
 
     // Build all global types for each type schema definition.

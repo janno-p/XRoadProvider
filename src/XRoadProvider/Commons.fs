@@ -3,7 +3,6 @@
 open System
 open System.Collections.Generic
 open System.IO
-open System.Security.Cryptography
 open System.Xml
 
 [<RequireQualifiedAccessAttribute>]
@@ -83,6 +82,7 @@ module internal List =
 [<AutoOpen>]
 module Commons =
     let isNull o = (o = null)
+    let isNotNull o = (o <> null)
     let isNullOrEmpty = String.IsNullOrEmpty
     let isNullOrEmptyArray (x: 'a []) = x |> isNull || x.Length = 0
 
@@ -155,14 +155,35 @@ type public ContentEncoding =
     | Binary = 0
     | Base64 = 1
 
-[<AbstractClass>]
+[<AbstractClass; AllowNullLiteral>]
 type public AbstractXRoadHeader() =
     /// Unresolved header elements.
     member val Unresolved = List<System.Xml.Linq.XElement>() with get, set
 
 /// Combines X-Road SOAP headers for RPC style messages.
+[<AllowNullLiteral>]
 type public XRoadRpcHeader() =
     inherit AbstractXRoadHeader()
+    // Copy-constructor which initializes new header instance based on given argument.
+    new (other: XRoadRpcHeader) as this = XRoadRpcHeader() then
+        if other |> isNotNull then
+            this.Allasutus <- other.Allasutus
+            this.Amet <- other.Amet
+            this.Ametnik <- other.Ametnik
+            this.AmetnikNimi <- other.AmetnikNimi
+            this.Andmekogu <- other.Andmekogu
+            this.Asutus <- other.Asutus
+            this.Asynkroonne <- other.Asynkroonne
+            this.Autentija <- other.Autentija
+            this.Id <- other.Id
+            this.Isikukood <- other.Isikukood
+            this.Makstud <- other.Makstud
+            this.Salastada <- other.Salastada
+            this.SalastadaSertifikaadiga <- other.SalastadaSertifikaadiga
+            this.Salastatud <- other.Salastatud
+            this.SalastatudSertifikaadiga <- other.SalastatudSertifikaadiga
+            this.Toimik <- other.Toimik
+            this.Unresolved <- other.Unresolved
     /// Asutuse DNS-nimi.
     member val Asutus = "" with get, set
     /// Andmekogu DNS-nimi.
@@ -173,8 +194,6 @@ type public XRoadRpcHeader() =
     member val Ametnik = "" with get, set
     /// Teenuse väljakutse nonss (unikaalne identifikaator).
     member val Id = "" with get, set
-    /// Kutsutava teenuse nimi.
-    member val Nimi = "" with get, set
     /// Teenuse väljakutsega seonduva toimiku number (mittekohustuslik).
     member val Toimik = "" with get, set
     /// Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis).
@@ -199,8 +218,28 @@ type public XRoadRpcHeader() =
     member val SalastatudSertifikaadiga = "" with get, set
 
 /// Combines X-Road SOAP headers for document style messages.
+[<AllowNullLiteral>]
 type public XRoadDocHeader() =
     inherit AbstractXRoadHeader()
+    // Copy-constructor which initializes new header instance based on given argument.
+    new (other: XRoadDocHeader) as this = XRoadDocHeader() then
+        if other |> isNotNull then
+            this.Async <- other.Async
+            this.Authenticator <- other.Authenticator
+            this.Consumer <- other.Consumer
+            this.Encrypt <- other.Encrypt
+            this.EncryptCert <- other.EncryptCert
+            this.Encrypted <- other.Encrypted
+            this.EncryptedCert <- other.EncryptedCert
+            this.Id <- other.Id
+            this.Issue <- other.Issue
+            this.Paid <- other.Paid
+            this.Position <- other.Position
+            this.Producer <- other.Producer
+            this.Unit <- other.Unit
+            this.Unresolved <- other.Unresolved
+            this.UserId <- other.UserId
+            this.UserName <- other.UserName
     /// DNS-name of the institution
     member val Consumer = "" with get, set
     /// DNS-name of the database
@@ -209,8 +248,6 @@ type public XRoadDocHeader() =
     member val UserId = "" with get, set
     /// Service invocation nonce (unique identifier).
     member val Id = "" with get, set
-    /// Name of the service to be invoked.
-    member val Service = "" with get, set
     /// Name of file or document related to the service invocation.
     member val Issue = "" with get, set
     /// Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal).
@@ -236,8 +273,9 @@ type public XRoadDocHeader() =
 
 /// Represents identifiers that can be used by the service clients, namely X-Road members and subsystems.
 [<AllowNullLiteral>]
-type public XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, ?subsystemCode) =
-    new () = XRoadMemberIdentifier("", "", "")
+type public XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, subsystemCode) =
+    new () = XRoadMemberIdentifier("", "", "", "")
+    new (xRoadInstance, memberClass, memberCode) = XRoadMemberIdentifier("", "", "", "")
     /// Code identifying the instance of the X-Road system.
     member val XRoadInstance = xRoadInstance with get, set
     /// Code identifying the member class (e.g., government agency, private enterprise, physical person).
@@ -245,7 +283,7 @@ type public XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, ?subsy
     /// Member code that uniquely identifies the given X-Road member within its member class.
     member val MemberCode = memberCode with get, set
     /// Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
-    member val SubsystemCode = defaultArg subsystemCode "" with get, set
+    member val SubsystemCode = subsystemCode with get, set
 
 /// Represents identifiers of services.
 [<AllowNullLiteral>]
@@ -272,8 +310,22 @@ type public XRoadCentralServiceIdentifier() =
     member val ServiceCode = "" with get, set
 
 /// Combines X-Road SOAP headers for X-Road v6.
+[<AllowNullLiteral>]
 type public XRoadHeader() =
     inherit AbstractXRoadHeader()
+    // Copy-constructor which initializes new header instance based on given argument.
+    new (other: XRoadHeader) as this = XRoadHeader() then
+        if other |> isNotNull then
+            this.CentralService <- other.CentralService
+            this.Client <- other.Client
+            this.Id <- other.Id
+            this.Issue <- other.Issue
+            this.Producer <- other.Producer
+            this.ProtocolVersion <- other.ProtocolVersion
+            this.RequestHash <- other.RequestHash
+            this.RequestHashAlgorithm <- other.RequestHashAlgorithm
+            this.Unresolved <- other.Unresolved
+            this.UserId <- other.UserId
     /// Identifies a service client – an entity that initiates the service call.
     member val Client = new XRoadMemberIdentifier() with get, set
     /// Identifies the service that is invoked by the request.
