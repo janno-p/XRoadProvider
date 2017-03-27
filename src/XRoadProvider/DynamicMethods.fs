@@ -1122,10 +1122,10 @@ module internal XsdTypes =
         else fser(writer, value, context)
 
     let serializeLocalDate (writer: XmlWriter, value: obj, _: SerializerContext) =
-        writer.WriteValue(LocalDatePattern.IsoPattern.Format(unbox value))
+        writer.WriteValue(LocalDatePattern.Iso.Format(unbox value))
 
     let serializeLocalDateTime (writer: XmlWriter, value: obj, _: SerializerContext) =
-        writer.WriteValue(LocalDateTimePattern.GeneralIsoPattern.Format(unbox value))
+        writer.WriteValue(LocalDateTimePattern.GeneralIso.Format(unbox value))
 
     let deserializeNullable (reader: XmlReader) (context: SerializerContext) fdeser =
         let nilValue = reader.GetAttribute("nil", XmlNamespace.Xsi)
@@ -1143,9 +1143,9 @@ module internal XsdTypes =
         else failwith "Unexpected end of SOAP message."
 
     let deserializeDateTimeValue value =
-        match LocalDateTimePattern.ExtendedIsoPattern.Parse(value) with
+        match LocalDateTimePattern.ExtendedIso.Parse(value) with
         | result when result.Success -> result.Value
-        | _ -> OffsetDateTimePattern.ExtendedIsoPattern.Parse(value).GetValueOrThrow().LocalDateTime
+        | _ -> OffsetDateTimePattern.ExtendedIso.Parse(value).GetValueOrThrow().LocalDateTime
 
     let serializeNullableDefault (writer, value, context) = serializeNullable writer value context serializeDefault
     let serializeNullableBigInteger (writer, value, context) = serializeNullable writer value context serializeBigInteger
@@ -1157,7 +1157,7 @@ module internal XsdTypes =
     let deserializeInt32 (reader, context) = deserializeValue reader context reader.ReadContentAsInt
     let deserializeInt64 (reader, context) = deserializeValue reader context reader.ReadContentAsLong
     let deserializeBigInteger (reader, context) = deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger)
-    let deserializeLocalDate (reader, context) = deserializeValue reader context (fun () -> LocalDatePattern.IsoPattern.Parse(reader.ReadContentAsString()).GetValueOrThrow())
+    let deserializeLocalDate (reader, context) = deserializeValue reader context (fun () -> LocalDatePattern.Iso.Parse(reader.ReadContentAsString()).GetValueOrThrow())
     let deserializeLocalDateTime (reader, context) = deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateTimeValue)
 
     let deserializeNullableBoolean (reader, context) = deserializeNullable reader context deserializeBoolean

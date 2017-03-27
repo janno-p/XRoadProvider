@@ -1,56 +1,55 @@
-FRAMEWORK: NET45
+FRAMEWORK: NET46
 NUGET
   remote: https://www.nuget.org/api/v2
     Common.Logging (3.3.1)
       Common.Logging.Core (>= 3.3.1)
     Common.Logging.Core (3.3.1)
-    FSharp.Core (3.1.2.5)
-    NodaTime (2.0.0-alpha20160729)
+    FSharp.Core (4.1.0.2)
+      System.ValueTuple (>= 4.3)
+    NodaTime (2.0.0-beta20170123)
+    System.ValueTuple (4.3)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
-    src/ProvidedTypes.fs (c50ace31d335b7bcb83b102d2cfd0ce2007ed681)
-    src/ProvidedTypes.fsi (c50ace31d335b7bcb83b102d2cfd0ce2007ed681)
+    src/ProvidedTypes.fs (45f4d8780b3213ef61ba4fccc716cd495565c1a4)
+    src/ProvidedTypes.fsi (45f4d8780b3213ef61ba4fccc716cd495565c1a4)
 GROUP Build
+FRAMEWORK: NET46
 NUGET
   remote: https://www.nuget.org/api/v2
-    FAKE (4.41.6)
+    FAKE (4.57)
     FSharp.Compiler.Service (2.0.0.6)
     FSharp.Formatting (2.14.4)
       FSharp.Compiler.Service (2.0.0.6)
       FSharpVSPowerTools.Core (>= 2.3 < 2.4)
     FSharpVSPowerTools.Core (2.3)
       FSharp.Compiler.Service (>= 2.0.0.3)
-    Microsoft.Bcl (1.1.10) - framework: net10, net11, net20, net30, net35, net40, net40-full
-      Microsoft.Bcl.Build (>= 1.0.14)
-    Microsoft.Bcl.Build (1.0.21) - import_targets: false, framework: net10, net11, net20, net30, net35, net40, net40-full
-    Microsoft.Net.Http (2.2.29) - framework: net10, net11, net20, net30, net35, net40, net40-full
-      Microsoft.Bcl (>= 1.1.10)
-      Microsoft.Bcl.Build (>= 1.0.14)
-    Octokit (0.23)
-      Microsoft.Net.Http  - framework: net10, net11, net20, net30, net35, net40, net40-full
+    Octokit (0.24)
     SourceLink.Fake (1.1)
 GITHUB
   remote: fsharp/FAKE
-    modules/Octokit/Octokit.fsx (889bda9367dfb24f9abb524165a0dbe2cdd86252)
+    modules/Octokit/Octokit.fsx (566327f653a1e76b39dc99c84598eb6e4973b872)
       Octokit (>= 0.20)
 GROUP Test
+FRAMEWORK: NET46
 NUGET
   remote: https://www.nuget.org/api/v2
-    FSharp.Core (4.0.0.1)
-    FsUnit (2.3.2)
+    FSharp.Core (4.1.0.2)
+      System.ValueTuple (>= 4.3)
+    FsUnit (3.0)
       FSharp.Core (>= 3.1.2.5)
-      NUnit (3.5)
-    NUnit (3.5)
-    NUnit.ConsoleRunner (3.5)
+      NUnit (>= 3.6)
+    NUnit (3.6.1)
+    NUnit.ConsoleRunner (3.6.1)
     NUnit.Extension.NUnitProjectLoader (3.5)
-    NUnit.Extension.NUnitV2Driver (3.5)
+    NUnit.Extension.NUnitV2Driver (3.6)
     NUnit.Extension.NUnitV2ResultWriter (3.5)
     NUnit.Extension.TeamCityEventListener (1.0.2)
     NUnit.Extension.VSProjectLoader (3.5)
-    NUnit.Runners (3.5)
-      NUnit.ConsoleRunner (>= 3.5)
+    NUnit.Runners (3.6.1)
+      NUnit.ConsoleRunner (>= 3.6.1)
       NUnit.Extension.NUnitProjectLoader (>= 3.5)
-      NUnit.Extension.NUnitV2Driver (>= 3.5)
+      NUnit.Extension.NUnitV2Driver (>= 3.6)
       NUnit.Extension.NUnitV2ResultWriter (>= 3.5)
       NUnit.Extension.TeamCityEventListener (>= 1.0.2)
       NUnit.Extension.VSProjectLoader (>= 3.5)
+    System.ValueTuple (4.3)

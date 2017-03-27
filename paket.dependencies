@@ -1,15 +1,16 @@
 source https://nuget.org/api/v2
-framework: net45
+framework: net46
 
 nuget Common.Logging
-nuget FSharp.Core < 4.0.0.0
-nuget NodaTime alpha
+nuget FSharp.Core
+nuget NodaTime beta
 
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi
 
 group Build
     source https://nuget.org/api/v2
+    framework: net46
 
     nuget FAKE
     nuget FSharp.Formatting
@@ -19,8 +20,9 @@ group Build
 
 group Test
     source https://nuget.org/api/v2
+    framework: net46
 
-    nuget FSharp.Core >= 4.0.0.0
+    nuget FSharp.Core
     nuget FsUnit
     nuget NUnit
     nuget NUnit.Runners
