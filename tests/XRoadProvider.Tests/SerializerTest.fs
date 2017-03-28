@@ -55,6 +55,11 @@ module TestType =
         member val Member = Unchecked.defaultof<ComplexType> with get, set
 
     [<AbstractClass; AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
+    type AbstractBaseWithNoSubTypes() =
+        [<XRoadElement>]
+        member val BaseValue = Unchecked.defaultof<string> with get, set
+
+    [<AbstractClass; AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
     type AbstractBase() =
         [<XRoadElement>]
         member val BaseValue = Unchecked.defaultof<string> with get, set
@@ -218,7 +223,7 @@ let [<Test>] ``write qualified root name`` () =
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></wrapper>"
 
 let [<Test>] ``serializing unserializable type`` () =
-    TestDelegate(fun _ -> TestType.UnserializableType(Value = 10) |> serialize' |> ignore)
+    (fun () -> TestType.UnserializableType(Value = 10) |> serialize' |> ignore)
     |> should (throwWithMessage "Type `XRoadSerializer.Tests.SerializerTest+TestType+UnserializableType` is not serializable.") typeof<Exception>
 
 let [<Test>] ``serialize string value`` () =
@@ -241,7 +246,7 @@ let [<Test>] ``serialize nullable values`` () =
     result.Value2 |> should be Null
 
 let [<Test>] ``serialize not nullable as null`` () =
-    TestDelegate (fun _ -> TestType.ComplexType(String = null) |> serialize' |> ignore)
+    (fun () -> TestType.ComplexType(String = null) |> serialize' |> ignore)
     |> should (throwWithMessage "Not nullable property `String` of type `ComplexType` has null value.") typeof<Exception>
 
 let [<Test>] ``serialize choice with abstract root element`` () =
@@ -266,10 +271,20 @@ let [<Test>] ``serialize array with default property names`` () =
     result.Array |> should equal entity.Array
 
 let [<Test>] ``deserialize abstract type`` () =
-    TestDelegate (fun _ -> @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
-                           |> deserialize'<TestType.AbstractBase>
-                           |> ignore)
+    (fun () ->
+        @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
+        |> deserialize'<TestType.AbstractBase>
+        |> ignore)
     |> should (throwWithMessage "Cannot deserialize abstract type `AbstractBase`.") typeof<Exception>
+
+let [<Test>] ``deserialize abstract type with no sub types`` () =
+    System.Console.WriteLine("test??")
+    (fun () ->
+        @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
+        |> deserialize'<TestType.AbstractBaseWithNoSubTypes>
+        |> ignore)
+    |> should (throwWithMessage "Cannot deserialize abstract type `AbstractBaseWithNoSubTypes`.") typeof<Exception>
+    System.Console.WriteLine("testi lõpp")
 
 let [<Test>] ``serialize extended type with base type contents`` () =
     let entity = TestType.ExtendedType(OwnElement = "test", String = "test", BigInteger = 100I)
