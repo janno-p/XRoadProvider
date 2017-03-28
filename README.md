@@ -7,8 +7,8 @@ A library containing collection of F# type providers to support easier integrati
 
 ## Build Status
 
-* .NET framework: [![Windows build status](https://ci.appveyor.com/api/projects/status/t84u81v1t1r0vd8q/branch/master?svg=true)](https://ci.appveyor.com/project/janno-p/xroadprovider/branch/master)
-* Mono: [![Mono build status](https://api.travis-ci.org/janno-p/XRoadProvider.svg?branch=master)](https://travis-ci.org/janno-p/XRoadProvider/)
+[![Mono build status](https://img.shields.io/travis/janno-p/XRoadProvider/master.svg?label=Mono%20build)](https://travis-ci.org/janno-p/XRoadProvider/)  
+[![Windows build status](https://img.shields.io/appveyor/ci/janno-p/xroadprovider/master.svg?label=Windows%20build)](https://ci.appveyor.com/project/janno-p/xroadprovider)  
 
 ## Documentation
 
