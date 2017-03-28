@@ -1,19 +1,17 @@
-FRAMEWORK: NET46
+FRAMEWORK: NET45
 NUGET
   remote: https://www.nuget.org/api/v2
     Common.Logging (3.3.1)
       Common.Logging.Core (>= 3.3.1)
     Common.Logging.Core (3.3.1)
-    FSharp.Core (4.1.0.2)
-      System.ValueTuple (>= 4.3)
+    FSharp.Core (3.1.2.5)
     NodaTime (2.0.0-beta20170123)
-    System.ValueTuple (4.3)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
     src/ProvidedTypes.fs (45f4d8780b3213ef61ba4fccc716cd495565c1a4)
     src/ProvidedTypes.fsi (45f4d8780b3213ef61ba4fccc716cd495565c1a4)
 GROUP Build
-FRAMEWORK: NET46
+FRAMEWORK: NET45
 NUGET
   remote: https://www.nuget.org/api/v2
     FAKE (4.57)
@@ -30,11 +28,10 @@ GITHUB
     modules/Octokit/Octokit.fsx (566327f653a1e76b39dc99c84598eb6e4973b872)
       Octokit (>= 0.20)
 GROUP Test
-FRAMEWORK: NET46
+FRAMEWORK: NET45
 NUGET
   remote: https://www.nuget.org/api/v2
-    FSharp.Core (4.1.0.2)
-      System.ValueTuple (>= 4.3)
+    FSharp.Core (3.1.2.5)
     FsUnit (3.0)
       FSharp.Core (>= 3.1.2.5)
       NUnit (>= 3.6)
@@ -52,4 +49,3 @@ NUGET
       NUnit.Extension.NUnitV2ResultWriter (>= 3.5)
       NUnit.Extension.TeamCityEventListener (>= 1.0.2)
       NUnit.Extension.VSProjectLoader (>= 3.5)
-    System.ValueTuple (4.3)
