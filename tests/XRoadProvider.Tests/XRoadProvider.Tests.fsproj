@@ -57,6 +57,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <ItemGroup>
+    <Compile Include="CodeEmitterTests.fs" />
     <Compile Include="XRoadRpcEncodedV4Test.fs" />
     <Compile Include="XRoadDocLiteralWrappedV5Test.fs" />
     <Compile Include="XmlSchemaTest.fs" />
