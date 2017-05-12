@@ -96,14 +96,18 @@ module TypeBuilder =
             num := !num + 1
             sprintf "%s%d" name !num)
 
-    let private buildEnumerationConstants (runtimeType: RuntimeType) (content: RestrictionContent list) =
+    let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
+        let valueExpr (value: string) =
+            match itemType with
+            | PrimitiveType(t) when t = typeof<int32> -> !^ (Convert.ToInt32(value))
+            | _ -> !^ value
         content
         |> List.choose (fun x ->
             match x with
             | Enumeration(value) ->
                 Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.ToPropertyName())
                 |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Static)
-                |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [!^ value])
+                |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [valueExpr value])
                 |> Some
             | _ -> None)
 
@@ -311,11 +315,11 @@ module TypeBuilder =
         match schemaType with
         | SimpleDefinition(SimpleTypeSpec.Restriction(spec, annotation)) ->
             providedTy |> Code.comment (annotationToText context annotation) |> ignore
-            let values = spec.Content |> buildEnumerationConstants runtimeType
-            values |> List.iter (providedTy.Members.Add >> ignore)
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | ContentType
             | PrimitiveType(_) as rtyp ->
+                let values = spec.Content |> buildEnumerationConstants runtimeType rtyp
+                values |> List.iter (providedTy.Members.Add >> ignore)
                 providedTy
                 |> addContentProperty("BaseValue", rtyp)
                 |> iif (values |> List.isEmpty) (fun x -> x |> Ctor.setAttr (MemberAttributes.Public))
