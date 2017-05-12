@@ -119,7 +119,7 @@ type internal TypeBuilderContext =
                 | m when m.Success ->
                     let suffix =
                         if m.Groups.["path"].Success
-                        then sprintf "_%s" <| m.Groups.["path"].Value.toClassName()
+                        then sprintf "_%s" <| m.Groups.["path"].Value.ToClassName()
                         else ""
                     Some(sprintf "%s%s" m.Groups.["producer"].Value suffix)
                 | _ -> None
@@ -130,7 +130,7 @@ type internal TypeBuilderContext =
                     | Producer(producerName) -> producerName
                     | XmlNamespace.XRoad20 -> "xtee"
                     | XmlNamespace.XRoad31Ee -> "xroad"
-                    | ns -> ns.toClassName()
+                    | ns -> ns.ToClassName()
                 let typ = Cls.create(producerName) |> Cls.addAttr TypeAttributes.Public
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
@@ -184,7 +184,7 @@ type internal TypeBuilderContext =
                     match this.GetElementDefinition(element) with
                     | itemName, Name(xn) -> CollectionType(this.GetRuntimeType(SchemaType(xn)), itemName, None)
                     | itemName, Definition(def) ->
-                        let suffix = itemName.toClassName()
+                        let suffix = itemName.ToClassName()
                         let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public
                         nstyp |> Cls.addMember typ |> ignore
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))

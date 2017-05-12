@@ -101,7 +101,7 @@ module TypeBuilder =
         |> List.choose (fun x ->
             match x with
             | Enumeration(value) ->
-                Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.toPropertyName())
+                Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.ToPropertyName())
                 |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Static)
                 |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [!^ value])
                 |> Some
@@ -164,7 +164,7 @@ module TypeBuilder =
                     IsItemNillable = Some(itemSpec.IsNillable)
                     IsWrappedArray = Some(true) }
             | itemName, Definition(def) ->
-                let suffix = itemName.toClassName()
+                let suffix = itemName.ToClassName()
                 let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def

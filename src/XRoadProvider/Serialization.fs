@@ -63,7 +63,7 @@ type Serializer(isEncoded) as this =
 module private Response =
     type XmlReader with
         member this.MoveToElement(depth, name, ns) =
-            let isElement () = this.Depth = depth && (name = null || (this.LocalName = name && this.NamespaceURI = ns))
+            let isElement () = this.Depth = depth && (name |> isNull || (this.LocalName = name && this.NamespaceURI = ns))
             let rec findElement () =
                 if isElement() then true
                 elif this.Read() then
@@ -227,9 +227,9 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer.WriteEndElement()
 
     let writeClientHeader (value: XRoadMemberIdentifier) req (writer: XmlWriter) =
-        if req |> Array.exists ((=) "client") || value <> null then
+        if req |> Array.exists ((=) "client") || value |> isNotNull then
             writer.WriteStartElement("client", XmlNamespace.XRoad40)
-            if value <> null then
+            if value |> isNotNull then
                 writer.WriteStartAttribute("objectType", XmlNamespace.XRoad40Id)
                 writer.WriteValue(if String.IsNullOrWhiteSpace(value.SubsystemCode) then "MEMBER" else "SUBSYSTEM")
                 writer.WriteEndAttribute()
@@ -258,9 +258,9 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         else sprintf "%s.%s" producerName serviceName
 
     let writeServiceHeader (value: XRoadMemberIdentifier) req (writer: XmlWriter) =
-        if req |> Array.exists ((=) "service") || value <> null then
+        if req |> Array.exists ((=) "service") || value |> isNotNull then
             writer.WriteStartElement("service", XmlNamespace.XRoad40)
-            if value <> null then
+            if value |> isNotNull then
                 writer.WriteStartAttribute("objectType", XmlNamespace.XRoad40Id)
                 writer.WriteValue("SERVICE")
                 writer.WriteEndAttribute()
@@ -381,7 +381,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
 
 type public XRoadUtil =
     static member MakeServiceCall(message, requestOptions, responseOptions) =
-        let request = new XRoadRequest(requestOptions)
+        let request = XRoadRequest(requestOptions)
         request.SendMessage(message)
         use response = request.GetResponse(responseOptions)
         response.RetrieveMessage()
