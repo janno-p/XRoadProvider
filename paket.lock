@@ -4,8 +4,10 @@ NUGET
     Common.Logging (3.3.1)
       Common.Logging.Core (>= 3.3.1)
     Common.Logging.Core (3.3.1)
-    FSharp.Core (3.1.2.5)
+    FSharp.Core (4.1.17)
+      System.ValueTuple (>= 4.3)
     NodaTime (2.0.1)
+    System.ValueTuple (4.3.1)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
     src/ProvidedTypes.fs (1dab4f94411500794342f61f877feab772e5a754)
@@ -31,7 +33,8 @@ GROUP Test
 FRAMEWORK: NET45
 NUGET
   remote: https://www.nuget.org/api/v2
-    FSharp.Core (3.1.2.5)
+    FSharp.Core (4.1.17)
+      System.ValueTuple (>= 4.3)
     FsUnit (3.0)
       FSharp.Core (>= 3.1.2.5)
       NUnit (>= 3.6)
@@ -49,3 +52,4 @@ NUGET
       NUnit.Extension.NUnitV2ResultWriter (>= 3.5)
       NUnit.Extension.TeamCityEventListener (>= 1.0.2)
       NUnit.Extension.VSProjectLoader (>= 3.5)
+    System.ValueTuple (4.3.1)
