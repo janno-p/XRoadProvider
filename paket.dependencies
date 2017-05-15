@@ -4,6 +4,7 @@ framework: net45
 nuget Common.Logging
 nuget FSharp.Core
 nuget NodaTime
+nuget Optional
 
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi

@@ -278,13 +278,11 @@ let [<Test>] ``deserialize abstract type`` () =
     |> should (throwWithMessage "Cannot deserialize abstract type `AbstractBase`.") typeof<Exception>
 
 let [<Test>] ``deserialize abstract type with no sub types`` () =
-    System.Console.WriteLine("test??")
     (fun () ->
         @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
         |> deserialize'<TestType.AbstractBaseWithNoSubTypes>
         |> ignore)
     |> should (throwWithMessage "Cannot deserialize abstract type `AbstractBaseWithNoSubTypes`.") typeof<Exception>
-    System.Console.WriteLine("testi lõpp")
 
 let [<Test>] ``serialize extended type with base type contents`` () =
     let entity = TestType.ExtendedType(OwnElement = "test", String = "test", BigInteger = 100I)

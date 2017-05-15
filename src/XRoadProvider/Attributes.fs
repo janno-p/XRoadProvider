@@ -52,9 +52,6 @@ type XRoadElementAttribute(name: string) =
     /// Specifies if element is allowed to contain `null` values.
     member val IsNullable = false with get, set
 
-    /// Specifies if element is optional.
-    member val IsOptional = false with get, set
-
     /// Name of the element in serialization context. By default property name is used.
     member val Name = name with get
 

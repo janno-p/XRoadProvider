@@ -1,4 +1,4 @@
-﻿module private XRoad.DynamicMethods
+﻿module internal XRoad.DynamicMethods
 
 open FSharp.Quotations
 open FSharp.Quotations.Patterns
@@ -69,27 +69,30 @@ type TypeMap =
 type PropertyMap =
     { TypeMap: TypeMap
       SimpleTypeName: XmlQualifiedName option
-      Element: (XName * bool) option
+      Element: (XName * bool * bool) option
       OwnerTypeMap: TypeMap
       GetMethod: MethodInfo
-      SetMethod: MethodInfo }
+      SetMethod: MethodInfo
+      HasValueMethod: MethodInfo }
 
 type ArrayMap =
     { Type: Type
-      Element: (XName * bool) option
+      Element: (XName * bool * bool) option
       ItemTypeMap: TypeMap
-      ItemElement: (XName * bool) option
+      ItemElement: (XName * bool * bool) option
       ItemSimpleTypeName: XmlQualifiedName option
       OwnerTypeMap: TypeMap
       GetMethod: MethodInfo
-      SetMethod: MethodInfo }
+      SetMethod: MethodInfo
+      HasValueMethod: MethodInfo }
     member this.GetItemPropertyMap() =
         { TypeMap = this.ItemTypeMap
           SimpleTypeName = this.ItemSimpleTypeName
           Element = this.ItemElement
           OwnerTypeMap = this.OwnerTypeMap
           GetMethod = null
-          SetMethod = null }
+          SetMethod = null
+          HasValueMethod = null }
 
 type Property =
     | Individual of PropertyMap
@@ -101,15 +104,16 @@ type Property =
     member this.PropertyName
         with get() =
             match this with
-            | Individual { Element = Some(name,_) }
-            | Array { Element = Some(name,_) }
-            | Array { Element = None; ItemElement = Some(name,_) } -> Some(name)
+            | Individual { Element = Some(name,_,_) }
+            | Array { Element = Some(name,_,_) }
+            | Array { Element = None; ItemElement = Some(name,_,_) } -> Some(name)
             | _ -> None
     member this.SimpleTypeName
         with get() =
             match this with
             | Individual(x) -> x.SimpleTypeName
             | Array(_) -> Some(XmlQualifiedName("Array", XmlNamespace.SoapEnc))
+    member this.HasValueMethod with get() = match this with | Individual(x) -> x.HasValueMethod | Array(x) -> x.HasValueMethod
 
 let (!~>) (mi: MethodInfo) = match mi with :? DynamicMethod as dyn -> dyn | _ -> failwith "Cannot cast to dynamic method."
 
@@ -267,13 +271,34 @@ module EmitSerialization =
             il.Emit(OpCodes.Nop)
         | _ -> ()
 
+    let emitOptionalFieldSerialization (property: Property) (emitContent: unit -> unit) (il: ILGenerator) =
+        match property.Element with
+        | Some(_,_,true) ->
+            let endContentLabel = il.DefineLabel()
+            let optionalType = il.DeclareLocal(property.HasValueMethod.DeclaringType)
+
+            il.Emit(OpCodes.Ldarg_1)
+            il.Emit(OpCodes.Castclass, property.OwnerTypeMap.Type)
+            il.Emit(OpCodes.Callvirt, property.GetMethod)
+            il.Emit(OpCodes.Stloc, optionalType)
+            il.Emit(OpCodes.Ldloca, optionalType)
+            il.Emit(OpCodes.Call, property.HasValueMethod)
+            il.Emit(OpCodes.Brfalse, endContentLabel)
+            il.Emit(OpCodes.Nop)
+
+            emitContent()
+
+            il.MarkLabel(endContentLabel)
+            il.Emit(OpCodes.Nop)
+        | _ -> ()
+
     /// Emit single property content serialization.
     let rec private emitPropertyContentSerialization (il: ILGenerator) (emitValue: Type -> unit) isEncoded (property: Property) =
         let markReturn = il.DefineLabel()
 
         // Write start element of the propery if its not merged with content.
         match property.Element with
-        | Some(name, isNullable) ->
+        | Some(name, isNullable, _) ->
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Ldstr, name.LocalName)
             match name.NamespaceName with
@@ -615,7 +640,7 @@ module EmitDeserialization =
 
     let emitArrayItemDeserialization (arrayMap: ArrayMap, listInstance: LocalBuilder, markEnd: Label, stopIfWrongElement) (il: ILGenerator) =
         match arrayMap.ItemElement with
-        | Some(name,_) ->
+        | Some(name,_,_) ->
             let markDeserialize = il.DefineLabel()
             let markError = il.DefineLabel()
             il.Emit(OpCodes.Ldarg_0)
@@ -680,7 +705,7 @@ module EmitDeserialization =
         let markLoopStart = il.DefineLabel()
 
         il.MarkLabel(markLoopStart)
-        il |> emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map fst)
+        il |> emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map (fun (x,_,_) -> x))
         il.MarkLabel(markSkipRead)
 
         il |> emitArrayContentEndCheck (markArrayEnd, varDepth)
@@ -719,9 +744,9 @@ module EmitDeserialization =
         | Some(Individual { Element = None })
         | Some(Array { Element = None; ItemElement = None }) ->
             il.Emit(OpCodes.Ldc_I4_0)
-        | Some(Individual { Element = Some(name,_) })
-        | Some(Array { Element = Some(name,_) })
-        | Some(Array { Element = None; ItemElement = Some(name,_) }) ->
+        | Some(Individual { Element = Some(name,_,_) })
+        | Some(Array { Element = Some(name,_,_) })
+        | Some(Array { Element = None; ItemElement = Some(name,_,_) }) ->
             il.Emit(OpCodes.Ldarg_0)
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
             il.Emit(OpCodes.Ldstr, name.LocalName)
@@ -807,9 +832,9 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
                 il.Emit(OpCodes.Clt)
                 il.Emit(OpCodes.Brfalse_S, markSuccess2)
                 match prop with
-                | Individual { Element = Some(name,_) }
-                | Array { Element = Some(name,_) }
-                | Array { ItemElement = Some(name,_) } ->
+                | Individual { Element = Some(name,_,_) }
+                | Array { Element = Some(name,_,_) }
+                | Array { ItemElement = Some(name,_,_) } ->
                     il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." (name.ToString()))
                 | _ -> il.Emit(OpCodes.Ldstr, "Invalid message: unexpected element `</{0}>`.")
                 il.Emit(OpCodes.Ldarg_0)
@@ -835,8 +860,8 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
                 il.Emit(OpCodes.Brfalse_S, markLoopStart)
 
                 match prop with
-                | Individual { Element = Some(name,_) }
-                | Array { Element = Some(name,_) } ->
+                | Individual { Element = Some(name,_,_) }
+                | Array { Element = Some(name,_,_) } ->
                     // reader.LocalName != property.Name
                     let markDeserialize = il.DefineLabel()
                     let markError = il.DefineLabel()
@@ -1041,37 +1066,44 @@ and private getProperties isEncoded (typeMap: TypeMap) : Property list =
     |> List.ofArray
     |> List.sortBy (fun p -> p.MetadataToken)
     |> List.choose (fun p ->
+        let propertyType, isOptionalType, hasValueMethod =
+            if p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() = typedefof<Optional.Option<_>> then
+                p.PropertyType.GenericTypeArguments.[0], true, p.PropertyType.GetProperty("HasValue").GetGetMethod()
+            else p.PropertyType, false, null
         match p.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj with
         | None -> None
         | Some(attr) ->
             let name = match attr.Name with null | "" -> p.Name | name -> name
             let xname = match attr.Namespace with "" -> XName.Get(name) | ns -> XName.Get(name, ns)
-            let element = if attr.MergeContent then None else Some(xname, attr.IsNullable)
+            let element = if attr.MergeContent then None else Some(xname, attr.IsNullable, isOptionalType)
             match p.GetCustomAttribute<XRoadCollectionAttribute>() |> Option.ofObj with
             | Some(cattr) ->
-                let itemTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else p.PropertyType.GetElementType()) |> getTypeMap isEncoded
+                let elementType = propertyType.GetElementType()
+                let itemTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else elementType) |> getTypeMap isEncoded
                 let itemName = match cattr.ItemName with null | "" -> "item" | name -> name
                 let itemXName = match cattr.ItemNamespace with "" -> XName.Get(itemName) | ns -> XName.Get(itemName, ns)
                 let itemElement = if itemTypeMap.Layout <> Some(LayoutKind.Choice)
-                                  then if cattr.MergeContent then None else Some(itemXName, cattr.ItemIsNullable)
+                                  then if cattr.MergeContent then None else Some(itemXName, cattr.ItemIsNullable, true)
                                   else None
-                Some(Array { Type = p.PropertyType
+                Some(Array { Type = propertyType
                              Element = element
                              ItemTypeMap = itemTypeMap
                              ItemElement = itemElement
-                             ItemSimpleTypeName = XRoadHelper.getSystemTypeName (p.PropertyType.GetElementType().FullName)
+                             ItemSimpleTypeName = XRoadHelper.getSystemTypeName elementType.FullName
                              OwnerTypeMap = typeMap
                              GetMethod = p.GetGetMethod()
-                             SetMethod = p.GetSetMethod(true) })
+                             SetMethod = p.GetSetMethod(true)
+                             HasValueMethod = hasValueMethod })
             | None ->
-                let propertyTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else p.PropertyType) |> getTypeMap isEncoded
+                let propertyTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else propertyType) |> getTypeMap isEncoded
                 let element = if propertyTypeMap.Layout <> Some(LayoutKind.Choice) then element else None
                 Some(Individual { TypeMap = propertyTypeMap
-                                  SimpleTypeName = XRoadHelper.getSystemTypeName (p.PropertyType.FullName)
+                                  SimpleTypeName = XRoadHelper.getSystemTypeName (propertyType.FullName)
                                   Element = element
                                   OwnerTypeMap = typeMap
                                   GetMethod = p.GetGetMethod()
-                                  SetMethod = p.GetSetMethod(true) }))
+                                  SetMethod = p.GetSetMethod(true)
+                                  HasValueMethod = hasValueMethod }))
 
 and getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
     match typeMaps.TryGetValue(typ) with

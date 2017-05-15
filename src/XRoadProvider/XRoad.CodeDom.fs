@@ -208,6 +208,7 @@ module Compiler =
         codeCompileUnit.ReferencedAssemblies.Add(typeof<ITypeProvider>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<XRoad.BinaryContent>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<NodaTime.LocalDate>.Assembly.Location) |> ignore
+        codeCompileUnit.ReferencedAssemblies.Add(typeof<Optional.Option>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Net.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore
@@ -268,13 +269,20 @@ type RuntimeType =
     /// Binary content types are handled separately.
     | ContentType
     /// Get type name reference for this instance.
-    member this.AsCodeTypeReference(?readonly) =
+    member this.AsCodeTypeReference(?readonly, ?optional): CodeTypeReference =
         let readonly = match readonly with Some(true) -> "readonly " | _ -> ""
-        match this with
-        | PrimitiveType(typ) -> CodeTypeReference(typ)
-        | ProvidedType(_,name) -> CodeTypeReference(readonly + name)
-        | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
-        | ContentType -> CodeTypeReference(typeof<XRoad.BinaryContent>)
+        let ctr =
+            match this with
+            | PrimitiveType(typ) -> CodeTypeReference(typ)
+            | ProvidedType(_,name) -> CodeTypeReference(readonly + name)
+            | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
+            | ContentType -> CodeTypeReference(typeof<XRoad.BinaryContent>)
+        match optional with
+        | Some(true) ->
+            let optionalType = CodeTypeReference(typedefof<Optional.Option<_>>)
+            optionalType.TypeArguments.Add(ctr) |> ignore
+            optionalType
+        | _ -> ctr
 
 /// Create property with backing field.
 let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
@@ -295,23 +303,12 @@ let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
 /// For optional members, extra field is added to notify if property was assigned or not.
 let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration) =
     let fixedName = name.ToPropertyName()
-    let sf =
-        if isOptional then
-            let f = Fld.create<bool> (fixedName + "__specified")
-                    |> Fld.describe Attributes.DebuggerBrowsable
-            let p = Prop.create<bool> (fixedName + "Specified")
-                    |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-                    |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
-            owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
-            Some(f)
-        else None
-    let f = Fld.createRef (ty.AsCodeTypeReference()) (fixedName + "__backing")
+    let f = Fld.createRef (ty.AsCodeTypeReference(optional=isOptional)) (fixedName + "__backing")
             |> Fld.describe Attributes.DebuggerBrowsable
-    let p = Prop.createRef (ty.AsCodeTypeReference()) fixedName
+    let p = Prop.createRef (ty.AsCodeTypeReference(optional=isOptional)) fixedName
             |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
             |> Prop.addSetStmt (Stmt.assign (Expr.this @=> f.Name) (Prop.setValue))
-            |> iif (sf.IsSome) (fun x -> x |> Prop.addSetStmt (Stmt.assign (Expr.this @=> sf.Value.Name) (!^ true)))
     owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
     p
 

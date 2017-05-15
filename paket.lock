@@ -7,6 +7,7 @@ NUGET
     FSharp.Core (4.1.17)
       System.ValueTuple (>= 4.3)
     NodaTime (2.0.1)
+    Optional (3.2)
     System.ValueTuple (4.3.1)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack

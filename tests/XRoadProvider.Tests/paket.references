@@ -1,4 +1,5 @@
 ﻿FSharp.Core
+Optional
 
 group Test
 FsUnit
