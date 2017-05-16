@@ -115,6 +115,10 @@ type Property =
             | Array(_) -> Some(XmlQualifiedName("Array", XmlNamespace.SoapEnc))
     member this.HasValueMethod with get() = match this with | Individual(x) -> x.HasValueMethod | Array(x) -> x.HasValueMethod
 
+let firstRequired (properties: Property list) =
+    properties
+    |> List.tryPick (fun p -> match p.Element with Some(name,_,false) -> Some(p) | _ -> None)
+
 let (!~>) (mi: MethodInfo) = match mi with :? DynamicMethod as dyn -> dyn | _ -> failwith "Cannot cast to dynamic method."
 
 type private XopBinaryContent() =
@@ -412,6 +416,13 @@ module EmitDeserialization =
         il.Emit(OpCodes.Br, markReturn)
         il.MarkLabel(markNotNull)
         il.Emit(OpCodes.Nop)
+
+    let emitOptionalFieldDeserialization (property: Property) (emitContent: unit -> unit) (il: ILGenerator) =
+        match property.Element with
+        | Some(_,_,true) ->
+            
+            ()
+        | _ -> ()
 
     /// Emit type (and its base types) content deserialization.
     let rec private emitContentDeserialization (instance: LocalBuilder) (typeMap: TypeMap) (il: ILGenerator) =
@@ -760,14 +771,99 @@ module EmitDeserialization =
             il.Emit(OpCodes.Div)
         il.Emit(OpCodes.Ret)
 
-let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
-    let emitDeserialization (prop: Property) =
+    let emitPropertyDeserialization (prop: Property) (il: ILGenerator) =
         match prop with
         | Individual propertyMap ->
-            il |> EmitDeserialization.emitIndividualPropertyDeserialization propertyMap
+            il |> emitIndividualPropertyDeserialization propertyMap
         | Array arrayMap ->
-            il |> EmitDeserialization.emitArrayPropertyDeserialization arrayMap
+            il |> emitArrayPropertyDeserialization arrayMap
 
+    let emitSequenceDeserialization (contentStartLabel: Label, returnLabel: Label) (depthVar: LocalBuilder) (properties: Property list) (il: ILGenerator) =
+        let rec emitPropertyDeser isFirst startLabel (propList: Property list) =
+            match propList with
+            | [] -> failwithf "never"
+            | prop::xs ->
+                il.MarkLabel(startLabel)
+                il |> emitXmlReaderReadOrExcept prop.PropertyName
+                if isFirst then il.MarkLabel(contentStartLabel)
+
+                let markSuccess2 = il.DefineLabel()
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
+                il.Emit(OpCodes.Ldc_I4, int32 XmlNodeType.EndElement)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Brfalse_S, markSuccess2)
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
+                il.Emit(OpCodes.Ldloc, depthVar)
+                il.Emit(OpCodes.Clt)
+                il.Emit(OpCodes.Brfalse_S, markSuccess2)
+
+                match propList |> firstRequired with
+                | Some(Individual { Element = Some(name,_,_) })
+                | Some(Array { Element = Some(name,_,_) })
+                | Some(Array { ItemElement = Some(name,_,_) }) ->
+                    il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." (name.ToString()))
+                | Some(_) -> il.Emit(OpCodes.Ldstr, "Invalid message: unexpected element `</{0}>`.")
+                | None -> il.Emit(OpCodes.Br, returnLabel)
+
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
+                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                il.Emit(OpCodes.Throw)
+                il.MarkLabel(markSuccess2)
+                il.Emit(OpCodes.Nop)
+
+                // reader.Depth != depth
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
+                il.Emit(OpCodes.Ldloc, depthVar)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Brfalse_S, startLabel)
+
+                // reader.NodeType != XmlNodeType.Element
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
+                il.Emit(OpCodes.Ldc_I4_1)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Brfalse_S, startLabel)
+
+                match prop with
+                | Individual { Element = Some(name,_,_) }
+                | Array { Element = Some(name,_,_) } ->
+                    // reader.LocalName != property.Name
+                    let markDeserialize = il.DefineLabel()
+                    let markError = il.DefineLabel()
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, name.LocalName)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                    il.Emit(OpCodes.Brfalse_S, markError)
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
+                    il.Emit(OpCodes.Ldstr, name.NamespaceName)
+                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                    il.Emit(OpCodes.Brtrue_S, markDeserialize)
+                    il.MarkLabel(markError)
+                    il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, name.ToString())
+                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
+                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                    il.Emit(OpCodes.Throw)
+                    il.MarkLabel(markDeserialize)
+                | _ -> ()
+
+                // Deserialize property
+                il |> emitPropertyDeserialization prop
+
+                if xs |> List.isEmpty |> not then
+                    emitPropertyDeser false (il.DefineLabel()) xs
+        match properties with [] -> () | _ -> properties |> emitPropertyDeser true (il.DefineLabel())
+
+let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
     let (|Content|_|) (properties: Property list) =
         match properties with
         | [Individual({ Element = None; TypeMap = typeMap }) as prop]
@@ -777,8 +873,10 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
             | _ -> Some(prop)
         | _ -> None
 
+    let returnLabel = il.DefineLabel()
+
     match properties with
-    | Content(prop) -> emitDeserialization prop
+    | Content(prop) -> il |> EmitDeserialization.emitPropertyDeserialization prop
     | _ ->
         let varDepth = il.DeclareLocal(typeof<int>)
         il.Emit(OpCodes.Ldarg_0)
@@ -810,86 +908,29 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
         | LayoutKind.Choice ->
             ()
         | LayoutKind.Sequence ->
-            properties
-            |> List.iteri (fun i prop ->
-                let markLoopStart = il.DefineLabel()
-
-                il.MarkLabel(markLoopStart)
-
-                il |> EmitDeserialization.emitXmlReaderReadOrExcept prop.PropertyName
-
-                if i = 0 then il.MarkLabel(skipLabel)
-
-                let markSuccess2 = il.DefineLabel()
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
-                il.Emit(OpCodes.Ldc_I4, int32 XmlNodeType.EndElement)
-                il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse_S, markSuccess2)
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-                il.Emit(OpCodes.Ldloc, varDepth)
-                il.Emit(OpCodes.Clt)
-                il.Emit(OpCodes.Brfalse_S, markSuccess2)
-                match prop with
-                | Individual { Element = Some(name,_,_) }
-                | Array { Element = Some(name,_,_) }
-                | Array { ItemElement = Some(name,_,_) } ->
-                    il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." (name.ToString()))
-                | _ -> il.Emit(OpCodes.Ldstr, "Invalid message: unexpected element `</{0}>`.")
+            let requiredProperty = properties |> firstRequired
+            let label = il.DefineLabel()
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
+            match requiredProperty with
+            | Some(p) ->
+                let (name,_,_) = p.Element |> Option.get
+                il.Emit(OpCodes.Brfalse_S, label)
+                il.Emit(OpCodes.Ldstr, "Element `{0}` requires child element `{1}` to be present.")
                 il.Emit(OpCodes.Ldarg_0)
                 il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
+                il.Emit(OpCodes.Ldstr, name.ToString())
+                il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
                 il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                 il.Emit(OpCodes.Throw)
-                il.MarkLabel(markSuccess2)
-                il.Emit(OpCodes.Nop)
-
-                // reader.Depth != depth
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-                il.Emit(OpCodes.Ldloc, varDepth)
-                il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse_S, markLoopStart)
-
-                // reader.NodeType != XmlNodeType.Element
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
-                il.Emit(OpCodes.Ldc_I4_1)
-                il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse_S, markLoopStart)
-
-                match prop with
-                | Individual { Element = Some(name,_,_) }
-                | Array { Element = Some(name,_,_) } ->
-                    // reader.LocalName != property.Name
-                    let markDeserialize = il.DefineLabel()
-                    let markError = il.DefineLabel()
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, name.LocalName)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Brfalse_S, markError)
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
-                    il.Emit(OpCodes.Ldstr, name.NamespaceName)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Brtrue_S, markDeserialize)
-                    il.MarkLabel(markError)
-                    il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, name.ToString())
-                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                    il.Emit(OpCodes.Throw)
-                    il.MarkLabel(markDeserialize)
-                | _ -> ()
-
-                // Deserialize property
-                emitDeserialization prop
-                )
+            | None ->
+                il.Emit(OpCodes.Brtrue, returnLabel)
+            il.MarkLabel(label)
+            il.Emit(OpCodes.Nop)
+            EmitDeserialization.emitSequenceDeserialization (skipLabel, returnLabel) varDepth properties il
         | _ -> failwith "Not implemented"
+
+    il.MarkLabel(returnLabel)
     il.Emit(OpCodes.Ret)
 
 and createTypeMap (isEncoded: bool) (typ: Type) =
