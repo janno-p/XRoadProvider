@@ -175,15 +175,18 @@ type internal TypeBuilderContext =
                     match name with
                     | SchemaElement(xn) ->
                         this.GetElementSpec(xn)
-                        |> this.GetElementDefinition
+                        |> this.DereferenceElementSpec
                         |> snd
                         |> this.GetSchemaTypeDefinition
                     | SchemaType(xn) -> this.GetSchemaType(xn)
                 match schemaType with
                 | ArrayContent element ->
-                    match this.GetElementDefinition(element) with
-                    | itemName, Name(xn) -> CollectionType(this.GetRuntimeType(SchemaType(xn)), itemName, None)
-                    | itemName, Definition(def) ->
+                    match this.DereferenceElementSpec(element) with
+                    | dspec, Name(xn) ->
+                        let itemName = dspec.Name |> Option.get
+                        CollectionType(this.GetRuntimeType(SchemaType(xn)), itemName, None)
+                    | dspec, Definition(def) ->
+                        let itemName = dspec.Name |> Option.get
                         let suffix = itemName.ToClassName()
                         let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public
                         nstyp |> Cls.addMember typ |> ignore
@@ -240,12 +243,12 @@ type internal TypeBuilderContext =
 
         /// Resolves real element definition from lookup by following the XML schema references if present.
         /// Returns value of element definitions which actually contains definition, not references other definition.
-        member this.GetElementDefinition(spec) =
+        member this.DereferenceElementSpec(spec): ElementSpec * TypeDefinition<SchemaTypeDefinition> =
             let rec findElementDefinition (spec: ElementSpec) =
                 match spec.Definition with
                 | Explicit(typeDefinition) ->
                     match spec.Name with
-                    | Some(name) -> name, typeDefinition
+                    | Some(_) -> spec, typeDefinition
                     | None -> failwithf "Attribute has no name."
                 | Reference(ref) ->
                     match this.Elements.TryFind(ref.ToString()) with

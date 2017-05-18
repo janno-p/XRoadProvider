@@ -83,14 +83,15 @@ module ServiceBuilder =
             m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
             ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
         let addDocLiteralWrappedParameters (spec: ElementSpec) =
-            match context.GetElementDefinition(spec) |> snd |> context.GetSchemaTypeDefinition with
+            match context.DereferenceElementSpec(spec) |> snd |> context.GetSchemaTypeDefinition with
             | EmptyDefinition -> ()
             | ComplexDefinition({ IsAbstract = false; Content = Particle({ Content = Some(ComplexTypeParticle.Sequence({ Content = content; MinOccurs = 1u; MaxOccurs = 1u })) }) }) ->
                 content
                 |> List.iter (fun value ->
                     match value with
                     | Element(elementSpec) ->
-                        let name, schemaType = context.GetElementDefinition(elementSpec)
+                        let dspec, schemaType = context.DereferenceElementSpec(elementSpec)
+                        let name = dspec.Name |> Option.get
                         let runtimeType =
                             match schemaType with
                             | Definition(definition) ->
@@ -101,8 +102,8 @@ module ServiceBuilder =
                                 TypeBuilder.build context runtimeType definition
                                 runtimeType
                             | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
-                        m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) name |> ignore
-                        let prop = paramClass |> addProperty (name, runtimeType, false) |> Prop.describe (Attributes.xrdElement (None, None, false, false))
+                        m |> Meth.addParamRef (runtimeType.AsCodeTypeReference(optional=(dspec.MinOccurs = 0u))) name |> ignore
+                        let prop = paramClass |> addProperty (name, runtimeType, dspec.MinOccurs = 0u) |> Prop.describe (Attributes.xrdElement (None, None, false, false))
                         match runtimeType with
                         | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
                         | _ -> ()

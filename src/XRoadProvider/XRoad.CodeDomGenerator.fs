@@ -140,7 +140,8 @@ module TypeBuilder =
 
     /// Create single property definition for given element-s schema specification.
     and private buildElementProperty (context: TypeBuilderContext) (spec: ElementSpec) =
-        let name, schemaType = context.GetElementDefinition(spec)
+        let dspec, schemaType = context.DereferenceElementSpec(spec)
+        let name = dspec.Name |> Option.get
         buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (spec.MinOccurs = 0u) context (annotationToText context spec.Annotation)
 
     /// Create single property definition for given attribute-s schema specification.
@@ -160,14 +161,16 @@ module TypeBuilder =
         let propertyDef = PropertyDefinition.Create(name, isOptional, doc)
         match schemaType with
         | Definition(ArrayContent itemSpec) ->
-            match context.GetElementDefinition(itemSpec) with
-            | itemName, Name(n) ->
+            match context.DereferenceElementSpec(itemSpec) with
+            | dspec, Name(n) ->
+                let itemName = dspec.Name |> Option.get
                 { propertyDef with
                     Type = CollectionType(context.GetRuntimeType(SchemaType(n)), itemName, None)
                     IsNillable = isNillable
                     IsItemNillable = Some(itemSpec.IsNillable)
                     IsWrappedArray = Some(true) }
-            | itemName, Definition(def) ->
+            | dspec, Definition(def) ->
+                let itemName = dspec.Name |> Option.get
                 let suffix = itemName.ToClassName()
                 let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
