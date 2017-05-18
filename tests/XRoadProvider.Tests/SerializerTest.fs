@@ -515,3 +515,28 @@ let [<Test; Ignore("Not implemented")>] ``serialize array of system type values`
     let resultXml = [| "1"; "2"; "3" |] |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><item>1</item><item>2</item><item>3</item></keha></wrapper>"
     resultXml |> deserialize'<string> |> should equal [| "1"; "2"; "3" |]
+
+[<XRoadType>]
+type HasOptionalElements () =
+    [<XRoadElement>]
+    member val Value1 = Optional.Option.None<string>() with get, set
+    [<XRoadElement>]
+    member val Value2 = Optional.Option.None<int>() with get, set
+
+let [<Test>] ``can serialize type with optional reference type members`` () =
+    let resultXml = HasOptionalElements(Value1 = Optional.Option.Some<string>("value")) |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>value</Value1></keha></wrapper>"
+    let result = resultXml |> deserialize'<HasOptionalElements>
+    result |> should not' (be Null)
+    result.Value1.HasValue |> should be True
+    result.Value1.Or("") |> should equal "value"
+    result.Value2.HasValue |> should be False
+
+let [<Test>] ``can serialize type with optional value type members`` () =
+    let resultXml = HasOptionalElements(Value2 = Optional.Option.Some<int32>(15)) |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value2>15</Value2></keha></wrapper>"
+    let result = resultXml |> deserialize'<HasOptionalElements>
+    result |> should not' (be Null)
+    result.Value1.HasValue |> should be False
+    result.Value2.HasValue |> should be True
+    result.Value2.Or(0) |> should equal 15
