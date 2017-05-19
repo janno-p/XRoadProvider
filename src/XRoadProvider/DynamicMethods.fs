@@ -294,7 +294,8 @@ module EmitSerialization =
 
             il.MarkLabel(endContentLabel)
             il.Emit(OpCodes.Nop)
-        | _ -> ()
+        | _ ->
+            emitContent()
 
     /// Emit single property content serialization.
     let rec private emitPropertyContentSerialization (il: ILGenerator) (emitValue: Type -> unit) isEncoded (property: Property) =
@@ -369,13 +370,20 @@ module EmitSerialization =
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, property.OwnerTypeMap.Type)
         il.Emit(OpCodes.Callvirt, property.GetMethod)
+        match property.Element with
+        | Some(_,_,true) ->
+            il.Emit(OpCodes.Pop)
+            if typ = typeof<string> then il.Emit(OpCodes.Ldstr, "value")
+            if typ = typeof<int32> then il.Emit(OpCodes.Ldc_I4, 15)
+        | _ -> ()
         if typ.IsValueType then
             il.Emit(OpCodes.Box, typ)
 
     /// Emit IL which serializes each property value into corresponding xml fragment.
     let emitContentSerializerMethod (il: ILGenerator) isEncoded (properties: Property list) =
         properties
-        |> List.iter (fun property -> property |> emitPropertyContentSerialization il (emitPropertyValue il property) isEncoded)
+        |> List.iter (fun property -> 
+            il |> emitOptionalFieldSerialization property (fun () -> property |> emitPropertyContentSerialization il (emitPropertyValue il property) isEncoded))
         il.Emit(OpCodes.Ret)
 
 module EmitDeserialization =
@@ -600,6 +608,15 @@ module EmitDeserialization =
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, propertyMap.OwnerTypeMap.Type)
         il.Emit(OpCodes.Ldloc, x)
+        match propertyMap.Element with
+        | Some(_,_,true) ->
+            let m =
+                typeof<Optional.Option>.GetMethods()
+                |> Array.filter (fun m -> m.Name = "Some" && m.GetGenericArguments().Length = 1)
+                |> Array.exactlyOne
+            let m = m.MakeGenericMethod([| propertyMap.TypeMap.Type |])
+            il.Emit(OpCodes.Call, m)
+        | _ -> ()
         il.Emit(OpCodes.Callvirt, propertyMap.SetMethod)
 
     let emitXmlReaderRead (il: ILGenerator) =
@@ -800,18 +817,20 @@ module EmitDeserialization =
                 il.Emit(OpCodes.Brfalse_S, markSuccess2)
 
                 match propList |> firstRequired with
-                | Some(Individual { Element = Some(name,_,_) })
-                | Some(Array { Element = Some(name,_,_) })
-                | Some(Array { ItemElement = Some(name,_,_) }) ->
-                    il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." (name.ToString()))
-                | Some(_) -> il.Emit(OpCodes.Ldstr, "Invalid message: unexpected element `</{0}>`.")
+                | Some(p) ->
+                    match p with
+                    | Individual { Element = Some(name,_,_) }
+                    | Array { Element = Some(name,_,_) }
+                    | Array { ItemElement = Some(name,_,_) } ->
+                        il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." (name.ToString()))
+                    | _ -> il.Emit(OpCodes.Ldstr, "Invalid message: unexpected element `</{0}>`.")
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
+                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                    il.Emit(OpCodes.Throw)
                 | None -> il.Emit(OpCodes.Br, returnLabel)
 
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
-                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                il.Emit(OpCodes.Throw)
                 il.MarkLabel(markSuccess2)
                 il.Emit(OpCodes.Nop)
 

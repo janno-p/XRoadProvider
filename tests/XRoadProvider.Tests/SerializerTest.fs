@@ -529,7 +529,7 @@ let [<Test>] ``can serialize type with optional reference type members`` () =
     let result = resultXml |> deserialize'<HasOptionalElements>
     result |> should not' (be Null)
     result.Value1.HasValue |> should be True
-    result.Value1.Or("") |> should equal "value"
+    result.Value1.ValueOr("") |> should equal "value"
     result.Value2.HasValue |> should be False
 
 let [<Test>] ``can serialize type with optional value type members`` () =
@@ -539,4 +539,12 @@ let [<Test>] ``can serialize type with optional value type members`` () =
     result |> should not' (be Null)
     result.Value1.HasValue |> should be False
     result.Value2.HasValue |> should be True
-    result.Value2.Or(0) |> should equal 15
+    result.Value2.ValueOr(0) |> should equal 15
+
+let [<Test>] ``can serialize type with no optional members set`` () =
+    let resultXml = HasOptionalElements() |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha /></wrapper>"
+    let result = resultXml |> deserialize'<HasOptionalElements>
+    result |> should not' (be Null)
+    result.Value1.HasValue |> should be False
+    result.Value2.HasValue |> should be False
