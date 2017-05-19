@@ -375,14 +375,13 @@ module EmitSerialization =
             let opt = il.DeclareLocal(property.HasValueMethod.DeclaringType)
             il.Emit(OpCodes.Stloc, opt)
             il.Emit(OpCodes.Ldloca, opt)
-            let m = property.HasValueMethod.DeclaringType.GetMethod("ValueOr", [| typ |])
             if typ.IsValueType then
                 let temp = il.DeclareLocal(typ)
-                il.Emit(OpCodes.Ldarga, temp)
+                il.Emit(OpCodes.Ldloca, temp)
                 il.Emit(OpCodes.Initobj, typ)
                 il.Emit(OpCodes.Ldloc, temp)
             else il.Emit(OpCodes.Ldnull)
-            il.Emit(OpCodes.Call, m)
+            il.Emit(OpCodes.Call, property.HasValueMethod.DeclaringType.GetMethod("ValueOr", [| typ |]))
         | _ -> ()
         if typ.IsValueType then
             il.Emit(OpCodes.Box, typ)
