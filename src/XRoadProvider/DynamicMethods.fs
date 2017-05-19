@@ -795,14 +795,20 @@ module EmitDeserialization =
         | Array arrayMap ->
             il |> emitArrayPropertyDeserialization arrayMap
 
-    let emitSequenceDeserialization (contentStartLabel: Label, returnLabel: Label) (depthVar: LocalBuilder) (properties: Property list) (il: ILGenerator) =
+    let emitSequenceDeserialization (startLabel: Label, returnLabel: Label) (skipRead: LocalBuilder, depthVar: LocalBuilder) (properties: Property list) (il: ILGenerator) =
         let rec emitPropertyDeser isFirst startLabel (propList: Property list) =
             match propList with
             | [] -> failwithf "never"
             | prop::xs ->
+                let skipReadLabel = il.DefineLabel()
+
                 il.MarkLabel(startLabel)
+                il.Emit(OpCodes.Ldloc, skipRead)
+                il.Emit(OpCodes.Brtrue_S, skipReadLabel)
                 il |> emitXmlReaderReadOrExcept prop.PropertyName
-                if isFirst then il.MarkLabel(contentStartLabel)
+                il.MarkLabel(skipReadLabel)
+                il.Emit(OpCodes.Ldc_I4_0)
+                il.Emit(OpCodes.Stloc, skipRead)
 
                 let markSuccess2 = il.DefineLabel()
                 il.Emit(OpCodes.Ldarg_0)
@@ -848,9 +854,11 @@ module EmitDeserialization =
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse_S, startLabel)
 
+                let nextLabel = il.DefineLabel()
+
                 match prop with
-                | Individual { Element = Some(name,_,_) }
-                | Array { Element = Some(name,_,_) } ->
+                | Individual { Element = Some(name,_,isOptional) }
+                | Array { Element = Some(name,_,isOptional) } ->
                     // reader.LocalName != property.Name
                     let markDeserialize = il.DefineLabel()
                     let markError = il.DefineLabel()
@@ -865,22 +873,37 @@ module EmitDeserialization =
                     il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
                     il.Emit(OpCodes.Brtrue_S, markDeserialize)
                     il.MarkLabel(markError)
-                    il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, name.ToString())
-                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                    il.Emit(OpCodes.Throw)
+                    if isOptional then
+                        il.Emit(OpCodes.Ldc_I4_1)
+                        il.Emit(OpCodes.Stloc, skipRead)
+                        il.Emit(OpCodes.Br, nextLabel)
+                    else
+                        il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
+                        il.Emit(OpCodes.Ldarg_0)
+                        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                        il.Emit(OpCodes.Ldstr, name.ToString())
+                        il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
+                        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                        il.Emit(OpCodes.Throw)
                     il.MarkLabel(markDeserialize)
                 | _ -> ()
 
                 // Deserialize property
                 il |> emitPropertyDeserialization prop
 
-                if xs |> List.isEmpty |> not then
-                    emitPropertyDeser false (il.DefineLabel()) xs
-        match properties with [] -> () | _ -> properties |> emitPropertyDeser true (il.DefineLabel())
+                match xs with
+                | [] ->
+                    il.Emit(OpCodes.Br, returnLabel)
+                    il.MarkLabel(nextLabel)
+                    il.Emit(OpCodes.Ldstr, "Unexpected element `{0}` found in type `{1}`.")
+                    il.Emit(OpCodes.Ldarg_0)
+                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                    il.Emit(OpCodes.Ldstr, prop.OwnerTypeMap.Name)
+                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
+                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                    il.Emit(OpCodes.Throw)
+                | _ -> emitPropertyDeser false nextLabel xs
+        match properties with [] -> () | _ -> properties |> emitPropertyDeser true startLabel
 
 let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
     let (|Content|_|) (properties: Property list) =
@@ -902,11 +925,18 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
         il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
         il.Emit(OpCodes.Stloc, varDepth)
 
+        let skipRead = il.DeclareLocal(typeof<bool>)
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Stloc, skipRead)
+
         let label = il.DefineLabel()
-        let skipLabel = il.DefineLabel()
+        let startLabel = il.DefineLabel()
+
         il.Emit(OpCodes.Ldarg_2)
         il.Emit(OpCodes.Brfalse_S, label)
-        il.Emit(OpCodes.Br, skipLabel)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Stloc, skipRead)
+        il.Emit(OpCodes.Br, startLabel)
         il.MarkLabel(label)
         il.Emit(OpCodes.Ldloc, varDepth)
         il.Emit(OpCodes.Ldc_I4_1)
@@ -946,7 +976,7 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
                 il.Emit(OpCodes.Brtrue, returnLabel)
             il.MarkLabel(label)
             il.Emit(OpCodes.Nop)
-            EmitDeserialization.emitSequenceDeserialization (skipLabel, returnLabel) varDepth properties il
+            EmitDeserialization.emitSequenceDeserialization (startLabel, returnLabel) (skipRead, varDepth) properties il
         | _ -> failwith "Not implemented"
 
     il.MarkLabel(returnLabel)
