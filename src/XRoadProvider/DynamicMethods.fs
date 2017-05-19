@@ -117,7 +117,7 @@ type Property =
 
 let firstRequired (properties: Property list) =
     properties
-    |> List.tryPick (fun p -> match p.Element with Some(name,_,false) -> Some(p) | _ -> None)
+    |> List.tryPick (fun p -> match p.Element with Some(_,_,false) -> Some(p) | _ -> None)
 
 let (!~>) (mi: MethodInfo) = match mi with :? DynamicMethod as dyn -> dyn | _ -> failwith "Cannot cast to dynamic method."
 
@@ -372,9 +372,17 @@ module EmitSerialization =
         il.Emit(OpCodes.Callvirt, property.GetMethod)
         match property.Element with
         | Some(_,_,true) ->
-            il.Emit(OpCodes.Pop)
-            if typ = typeof<string> then il.Emit(OpCodes.Ldstr, "value")
-            if typ = typeof<int32> then il.Emit(OpCodes.Ldc_I4, 15)
+            let opt = il.DeclareLocal(property.HasValueMethod.DeclaringType)
+            il.Emit(OpCodes.Stloc, opt)
+            il.Emit(OpCodes.Ldloca, opt)
+            let m = property.HasValueMethod.DeclaringType.GetMethod("ValueOr", [| typ |])
+            if typ.IsValueType then
+                let temp = il.DeclareLocal(typ)
+                il.Emit(OpCodes.Ldarga, temp)
+                il.Emit(OpCodes.Initobj, typ)
+                il.Emit(OpCodes.Ldloc, temp)
+            else il.Emit(OpCodes.Ldnull)
+            il.Emit(OpCodes.Call, m)
         | _ -> ()
         if typ.IsValueType then
             il.Emit(OpCodes.Box, typ)
@@ -424,13 +432,6 @@ module EmitDeserialization =
         il.Emit(OpCodes.Br, markReturn)
         il.MarkLabel(markNotNull)
         il.Emit(OpCodes.Nop)
-
-    let emitOptionalFieldDeserialization (property: Property) (emitContent: unit -> unit) (il: ILGenerator) =
-        match property.Element with
-        | Some(_,_,true) ->
-            
-            ()
-        | _ -> ()
 
     /// Emit type (and its base types) content deserialization.
     let rec private emitContentDeserialization (instance: LocalBuilder) (typeMap: TypeMap) (il: ILGenerator) =
@@ -796,7 +797,7 @@ module EmitDeserialization =
             il |> emitArrayPropertyDeserialization arrayMap
 
     let emitSequenceDeserialization (startLabel: Label, returnLabel: Label) (skipRead: LocalBuilder, depthVar: LocalBuilder) (properties: Property list) (il: ILGenerator) =
-        let rec emitPropertyDeser isFirst startLabel (propList: Property list) =
+        let rec emitPropertyDeser startLabel (propList: Property list) =
             match propList with
             | [] -> failwithf "never"
             | prop::xs ->
@@ -902,8 +903,8 @@ module EmitDeserialization =
                     il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
                     il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                     il.Emit(OpCodes.Throw)
-                | _ -> emitPropertyDeser false nextLabel xs
-        match properties with [] -> () | _ -> properties |> emitPropertyDeser true startLabel
+                | _ -> emitPropertyDeser nextLabel xs
+        match properties with [] -> () | _ -> properties |> emitPropertyDeser startLabel
 
 let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
     let (|Content|_|) (properties: Property list) =
