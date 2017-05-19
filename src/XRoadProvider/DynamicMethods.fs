@@ -760,6 +760,16 @@ module EmitDeserialization =
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Castclass, arrayMap.OwnerTypeMap.Type)
         il.Emit(OpCodes.Ldloc, instance)
+
+        match arrayMap.Element with
+        | Some(_,_,true) ->
+            let m =
+                typeof<Optional.Option>.GetMethods()
+                |> Array.filter (fun m -> m.Name = "Some" && m.GetGenericArguments().Length = 1)
+                |> Array.exactlyOne
+            il.Emit(OpCodes.Call, m.MakeGenericMethod([| arrayMap.Type |]))
+        | _ -> ()
+
         il.Emit(OpCodes.Callvirt, arrayMap.SetMethod)
 
     let emitMatchType property (il: ILGenerator) =
