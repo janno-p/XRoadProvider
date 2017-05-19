@@ -522,6 +522,8 @@ type HasOptionalElements () =
     member val Value1 = Optional.Option.None<string>() with get, set
     [<XRoadElement>]
     member val Value2 = Optional.Option.None<int>() with get, set
+    [<XRoadElement; XRoadCollection("item")>]
+    member val Array1 = Optional.Option.None<int[]>() with get, set
 
 let [<Test>] ``can serialize type with optional reference type members`` () =
     let resultXml = HasOptionalElements(Value1 = Optional.Option.Some<string>("value")) |> serialize'
@@ -531,6 +533,7 @@ let [<Test>] ``can serialize type with optional reference type members`` () =
     result.Value1.HasValue |> should be True
     result.Value1.ValueOr("") |> should equal "value"
     result.Value2.HasValue |> should be False
+    result.Array1.HasValue |> should be False
 
 let [<Test>] ``can serialize type with optional value type members`` () =
     let resultXml = HasOptionalElements(Value2 = Optional.Option.Some<int32>(15)) |> serialize'
@@ -540,6 +543,17 @@ let [<Test>] ``can serialize type with optional value type members`` () =
     result.Value1.HasValue |> should be False
     result.Value2.HasValue |> should be True
     result.Value2.ValueOr(0) |> should equal 15
+    result.Array1.HasValue |> should be False
+
+let [<Test>] ``can serialize type with optional array type members`` () =
+    let resultXml = HasOptionalElements(Array1 = Optional.Option.Some<int[]>([| 1; 2; 3 |])) |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array1><item>1</item><item>2</item><item>3</item></Array1></keha></wrapper>"
+    let result = resultXml |> deserialize'<HasOptionalElements>
+    result |> should not' (be Null)
+    result.Value1.HasValue |> should be False
+    result.Value2.HasValue |> should be False
+    result.Array1.HasValue |> should be True
+    result.Array1.ValueOr(null: int[]) |> should equal [| 1; 2; 3 |]
 
 let [<Test>] ``can serialize type with no optional members set`` () =
     let resultXml = HasOptionalElements() |> serialize'
