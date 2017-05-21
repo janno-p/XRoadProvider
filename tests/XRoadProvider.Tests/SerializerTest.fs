@@ -156,6 +156,40 @@ module TestType =
         [<XRoadCollection(ItemIsNullable=true)>]
         member val Array = Unchecked.defaultof<bool[]> with get, set
 
+    [<XRoadType(LayoutKind.Sequence)>]
+    type WithBinaryContent() =
+        [<XRoadElement>]
+        member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
+
+    [<XRoadType(LayoutKind.Sequence)>]
+    type WithXopBinaryContent() =
+        [<XRoadElement(UseXop=true)>]
+        member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
+
+    [<XRoadType>]
+    type HasOptionalElements () =
+        [<XRoadElement>]
+        member val Value1 = Optional.Option.None<string>() with get, set
+        [<XRoadElement>]
+        member val Value2 = Optional.Option.None<int>() with get, set
+        [<XRoadElement; XRoadCollection("item")>]
+        member val Array1 = Optional.Option.None<int[]>() with get, set
+
+   [<XRoadType>]
+   type Level1 () =
+       [<XRoadElement>]
+       member val Value1 = Nullable<int>() with get, set
+
+    [<XRoadType>]
+    type Level2 () =
+        inherit Level1()
+        member val Value2 = Nullable<int>() with get, set
+
+    [<XRoadType>]
+    type Level3 () =
+        inherit Level2()
+        member val Value3 = Nullable<int>() with get, set
+
 let serializeWithContext<'T> qn (nslist: (string * string) list) (context: SerializerContext) value =
     let serializer = Serializer(false)
     use stream = new MemoryStream()
@@ -450,19 +484,14 @@ let [<Test>] ``serialize null array`` () =
     result |> should not' (be Null)
     result.Array |> should be Null
 
-[<XRoadType(LayoutKind.Sequence)>]
-type WithBinaryContent() =
-    [<XRoadElement>]
-    member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
-
 let [<Test>] ``serialize inline file`` () =
     let context = SerializerContext()
-    let entity = WithBinaryContent(BinaryContent=BinaryContent.Create([| 1uy; 2uy; 3uy; 4uy |]))
+    let entity = TestType.WithBinaryContent(BinaryContent=BinaryContent.Create([| 1uy; 2uy; 3uy; 4uy |]))
     let resultXml = entity |> serializeWithContext' context
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent>AQIDBA==</BinaryContent></keha></wrapper>"
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 0
-    let result = resultXml |> deserializeWithContext'<WithBinaryContent> context
+    let result = resultXml |> deserializeWithContext'<TestType.WithBinaryContent> context
     result |> should not' (be Null)
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 0
@@ -472,13 +501,13 @@ let [<Test>] ``serialize inline file`` () =
 
 let [<Test>] ``serialize multipart file`` () =
     let context = SerializerContext(IsMultipart=true)
-    let entity = WithBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
+    let entity = TestType.WithBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
     let resultXml = entity |> serializeWithContext' context
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent href=""cid:Content-ID"" /></keha></wrapper>"
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 1
     context.Attachments.ContainsKey("Content-ID") |> should equal true
-    let result = resultXml |> deserializeWithContext'<WithBinaryContent> context
+    let result = resultXml |> deserializeWithContext'<TestType.WithBinaryContent> context
     result |> should not' (be Null)
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 1
@@ -488,20 +517,15 @@ let [<Test>] ``serialize multipart file`` () =
     result.BinaryContent |> should be (sameAs context.Attachments.["Content-ID"])
     result.BinaryContent.GetBytes() |> should equal [| 1uy; 2uy; 3uy; 4uy |]
 
-[<XRoadType(LayoutKind.Sequence)>]
-type WithXopBinaryContent() =
-    [<XRoadElement(UseXop=true)>]
-    member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
-
 let [<Test>] ``serialize xop file`` () =
     let context = SerializerContext()
-    let entity = WithXopBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
+    let entity = TestType.WithXopBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
     let resultXml = entity |> serializeWithContext' context
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BinaryContent><xop:Include href=""cid:Content-ID"" xmlns:xop=""http://www.w3.org/2004/08/xop/include"" /></BinaryContent></keha></wrapper>"
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 1
     context.Attachments.ContainsKey("Content-ID") |> should equal true
-    let result = resultXml |> deserializeWithContext'<WithXopBinaryContent> context
+    let result = resultXml |> deserializeWithContext'<TestType.WithXopBinaryContent> context
     result |> should not' (be Null)
     context.Attachments |> should not' (be Null)
     context.Attachments.Count |> should equal 1
@@ -511,24 +535,10 @@ let [<Test>] ``serialize xop file`` () =
     result.BinaryContent |> should be (sameAs context.Attachments.["Content-ID"])
     result.BinaryContent.GetBytes() |> should equal [| 1uy; 2uy; 3uy; 4uy |]
 
-let [<Test; Ignore("Not implemented")>] ``serialize array of system type values`` () =
-    let resultXml = [| "1"; "2"; "3" |] |> serialize'
-    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><item>1</item><item>2</item><item>3</item></keha></wrapper>"
-    resultXml |> deserialize'<string> |> should equal [| "1"; "2"; "3" |]
-
-[<XRoadType>]
-type HasOptionalElements () =
-    [<XRoadElement>]
-    member val Value1 = Optional.Option.None<string>() with get, set
-    [<XRoadElement>]
-    member val Value2 = Optional.Option.None<int>() with get, set
-    [<XRoadElement; XRoadCollection("item")>]
-    member val Array1 = Optional.Option.None<int[]>() with get, set
-
 let [<Test>] ``can serialize type with optional reference type members`` () =
-    let resultXml = HasOptionalElements(Value1 = Optional.Option.Some<string>("value")) |> serialize'
+    let resultXml = TestType.HasOptionalElements(Value1 = Optional.Option.Some<string>("value")) |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>value</Value1></keha></wrapper>"
-    let result = resultXml |> deserialize'<HasOptionalElements>
+    let result = resultXml |> deserialize'<TestType.HasOptionalElements>
     result |> should not' (be Null)
     result.Value1.HasValue |> should be True
     result.Value1.ValueOr("") |> should equal "value"
@@ -536,9 +546,9 @@ let [<Test>] ``can serialize type with optional reference type members`` () =
     result.Array1.HasValue |> should be False
 
 let [<Test>] ``can serialize type with optional value type members`` () =
-    let resultXml = HasOptionalElements(Value2 = Optional.Option.Some<int32>(15)) |> serialize'
+    let resultXml = TestType.HasOptionalElements(Value2 = Optional.Option.Some<int32>(15)) |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value2>15</Value2></keha></wrapper>"
-    let result = resultXml |> deserialize'<HasOptionalElements>
+    let result = resultXml |> deserialize'<TestType.HasOptionalElements>
     result |> should not' (be Null)
     result.Value1.HasValue |> should be False
     result.Value2.HasValue |> should be True
@@ -546,9 +556,9 @@ let [<Test>] ``can serialize type with optional value type members`` () =
     result.Array1.HasValue |> should be False
 
 let [<Test>] ``can serialize type with optional array type members`` () =
-    let resultXml = HasOptionalElements(Array1 = Optional.Option.Some<int[]>([| 1; 2; 3 |])) |> serialize'
+    let resultXml = TestType.HasOptionalElements(Array1 = Optional.Option.Some<int[]>([| 1; 2; 3 |])) |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Array1><item>1</item><item>2</item><item>3</item></Array1></keha></wrapper>"
-    let result = resultXml |> deserialize'<HasOptionalElements>
+    let result = resultXml |> deserialize'<TestType.HasOptionalElements>
     result |> should not' (be Null)
     result.Value1.HasValue |> should be False
     result.Value2.HasValue |> should be False
@@ -556,9 +566,32 @@ let [<Test>] ``can serialize type with optional array type members`` () =
     result.Array1.ValueOr(null: int[]) |> should equal [| 1; 2; 3 |]
 
 let [<Test>] ``can serialize type with no optional members set`` () =
-    let resultXml = HasOptionalElements() |> serialize'
+    let resultXml = TestType.HasOptionalElements() |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha /></wrapper>"
-    let result = resultXml |> deserialize'<HasOptionalElements>
+    let result = resultXml |> deserialize'<TestType.HasOptionalElements>
     result |> should not' (be Null)
     result.Value1.HasValue |> should be False
     result.Value2.HasValue |> should be False
+
+let [<Test>] ``serialize array of system type values`` () =
+    let resultXml = [| "1"; "2"; "3" |] |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><item>1</item><item>2</item><item>3</item></keha></wrapper>"
+    resultXml |> deserialize'<string> |> should equal [| "1"; "2"; "3" |]
+
+let [<Test>] ``serialize root optional some value`` () =
+    let initial = Optional.Option.Some<int>(202)
+    let resultXml = initial |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>202</keha></wrapper>"
+    resultXml |> deserialize'<Optional.Option<int>> |> should equal initial
+
+let [<Test>] ``serialize root optional none value`` () =
+    let initial = Optional.Option.None<int>()
+    let resultXml = initial |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" />"
+    resultXml |> deserialize'<Optional.Option<int>> |> should equal initial
+
+let [<Test>] ``serialize multiple levels of inheritance`` () =
+    let initial = Level3(Value1 = Nullable<int>(1), Value2 = Nullable<int>(2), Value3 = Nullable<int>(3))
+    let resultXml = initial |> serialize'
+    resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>1</Value1><Value2>2</Value2><Value3>3</Value3></keha></wrapper>"
+    resultXml |> deserialize'<Level3> |> should equal initial
