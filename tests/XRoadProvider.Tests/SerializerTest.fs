@@ -183,11 +183,13 @@ module TestType =
     [<XRoadType>]
     type Level2 () =
         inherit Level1()
+        [<XRoadElement>]
         member val Value2 = Nullable<int>() with get, set
 
     [<XRoadType>]
     type Level3 () =
         inherit Level2()
+        [<XRoadElement>]
         member val Value3 = Nullable<int>() with get, set
 
 let serializeWithContext<'T> qn (nslist: (string * string) list) (context: SerializerContext) value =
