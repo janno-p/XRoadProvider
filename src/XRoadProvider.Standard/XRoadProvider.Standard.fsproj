@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fsi">
+      <Link>ProvidedTypes.fsi</Link>
+    </Compile>
+    <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
+      <Link>ProvidedTypes.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\AssemblyInfo.fs">
+      <Link>AssemblyInfo.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\AssemblyInfo.Build.fs">
+      <Link>AssemblyInfo.Build.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\Attributes.fs">
+      <Link>Attributes.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\Commons.fs">
+      <Link>Commons.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\DynamicMethods.fs">
+      <Link>DynamicMethods.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\Serialization.fs">
+      <Link>Serialization.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\XRoad.ServiceDescription.fs">
+      <Link>XRoad.ServiceDescription.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\XRoad.TypeSchema.fs">
+      <Link>XRoad.TypeSchema.fs</Link>
+    </Compile>
+    <!--
+    <Compile Include="..\XRoadProvider\XRoad.CodeDom.fs">
+      <Link>XRoad.CodeDom.fs</Link>
+    </Compile>
+    -->
+    <Compile Include="..\XRoadProvider\XRoad.TypeBuilderContext.fs">
+      <Link>XRoad.TypeBuilderContext.fs</Link>
+    </Compile>
+    <!--
+    <Compile Include="..\XRoadProvider\XRoad.CodeDomGenerator.fs">
+      <Link>XRoad.CodeDomGenerator.fs</Link>
+    </Compile>
+    -->
+    <Compile Include="..\XRoadProvider\XRoad.ProducerDefinition.fs">
+      <Link>XRoad.ProducerDefinition.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\XRoad.SecurityServer.fs">
+      <Link>XRoad.SecurityServer.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\XRoad.ProvidedTypes.fsi">
+      <Link>XRoad.ProvidedTypes.fsi</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\XRoad.ProvidedTypes.fs">
+      <Link>XRoad.ProvidedTypes.fs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>

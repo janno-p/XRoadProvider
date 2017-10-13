@@ -1,5 +1,7 @@
 ﻿namespace XRoad
 
+(*
+
 open System
 open System.CodeDom
 open System.Collections.Generic
@@ -286,3 +288,5 @@ type internal TypeBuilderContext =
                   |> Map.ofSeq
               MessageProtocol = messageProtocol
               LanguageCode = languageCode }
+
+*)

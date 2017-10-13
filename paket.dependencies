@@ -9,6 +9,9 @@ nuget Optional
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi
 
+github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fsi
+github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
+
 group Build
 source https://nuget.org/api/v2
 framework: net45
@@ -26,3 +29,11 @@ framework: net45
 nuget FsUnit
 nuget NUnit
 nuget NUnit.Runners
+
+group Standard
+source https://www.nuget.org/api/v2
+
+nuget Common.Logging.Core
+nuget FSharp.Core
+nuget NodaTime
+nuget Optional

@@ -1,5 +1,8 @@
 ﻿module internal XRoad.ProducerDefinition
 
+do ()
+
+(*
 open System
 open System.CodeDom
 open System.Collections.Generic
@@ -200,6 +203,7 @@ module ServiceBuilder =
         result.Add(paramClass)
         m |> buildOperationOutput context operation protocol result |> ignore
         result |> Seq.toList
+*)
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.

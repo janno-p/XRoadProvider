@@ -1,0 +1,5 @@
+group Standard
+NodaTime
+Optional
+FSharp.Core
+Common.Logging.Core

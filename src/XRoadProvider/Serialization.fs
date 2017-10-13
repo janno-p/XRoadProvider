@@ -75,8 +75,8 @@ module private Response =
 open Response
 open System.Xml.XPath
 
-type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
-    let log = LogManager.GetLogger()
+type XRoadResponse(response: WebResponse, options: XRoadResponseOptions, logManager: ILogManager) =
+    let log = logManager.GetLogger()
 
     let checkXRoadFault (stream: Stream) =
         let faultPath = "/*[local-name()='Envelope' and namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*[local-name()='Body' and namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*"
@@ -135,8 +135,8 @@ type XRoadStreamReader() =
     class
     end
 
-type XRoadRequest(opt: XRoadRequestOptions) =
-    let log = LogManager.GetLogger()
+type XRoadRequest(opt: XRoadRequestOptions, logManager: ILogManager) =
+    let log = logManager.GetLogger()
 
     let request = WebRequest.Create(opt.Uri, Method="POST", ContentType="text/xml; charset=utf-8")
     do request.Headers.Set("SOAPAction", "")
@@ -376,8 +376,8 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         if log.IsTraceEnabled then
             log.Trace(content |> Stream.toString)
         serializeMessage content context.Attachments
-    member __.GetResponse(options) =
-        new XRoadResponse(request.GetResponse(), options)
+    member __.GetResponse(options, logManager: ILogManager) =
+        new XRoadResponse(request.GetResponse(), options, logManager)
 
 type public XRoadUtil =
     static member MakeServiceCall(message, requestOptions, responseOptions) =
