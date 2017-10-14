@@ -1,6 +1,7 @@
 ﻿module internal XRoad.ProducerDefinition
 
-do ()
+open ProviderImplementation.ProvidedTypes
+open System
 
 (*
 open System
@@ -207,16 +208,19 @@ module ServiceBuilder =
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
+let makeProducerType (producerUri, languageCode, typeName) (targetType: ProvidedTypeDefinition) (ctx: ProvidedTypesContext) =
+    (*
     // Load schema details from specified file or network location.
     let schema = ProducerDescription.Load(resolveUri producerUri, languageCode)
 
     // Initialize type and schema element lookup context.
     let context = TypeBuilderContext.FromSchema(schema, languageCode)
-
+    *)
+    
     // Create base type which holds types generated from all provided schema-s.
-    let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
+    let definedTypesType = ctx.ProvidedTypeDefinition("DefinedTypes", None, true, isErased = false)
 
+    (*
     // Create stubs for each type before building them, because of circular dependencies.
     schema.TypeSchemas
     |> Map.toList
@@ -235,14 +239,12 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
         | CollectionType(_, _, None) -> None
         | rtyp -> Some(rtyp, x.Value))
     |> Seq.iter (fun (rtyp, def) -> TypeBuilder.build context rtyp def)
+    *)
 
-    // Main class that wraps all provided functionality and types.
-    let targetClass =
-        Cls.create typeNamePath.[typeNamePath.Length - 1]
-        |> Cls.setAttr TypeAttributes.Public
-        |> Cls.asStatic
-        |> Cls.addMember serviceTypesTy
+    // Main type that wraps all provided functionality and types.
+    targetType.AddMember(definedTypesType)
 
+    (*
     // Create methods for all operation bindings.
     schema.Services
     |> List.iter (fun service ->
@@ -302,3 +304,6 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
     // Compile the assembly and return to type provider.
     let assembly = Compiler.buildAssembly(codeNamespace)
     assembly.GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)
+    *)
+    
+    targetType

@@ -23,18 +23,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "content", "content", "{8E6D
 		docs\content\tutorial.fsx = docs\content\tutorial.fsx
 	EndProjectSection
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XRoadProvider", "src\XRoadProvider\XRoadProvider.fsproj", "{4E04C5A5-00B9-4D7C-8501-31B4B7389671}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{BF60BC93-E09B-4E5F-9D85-95A519479D54}"
 	ProjectSection(SolutionItems) = preProject
 		build.fsx = build.fsx
 		README.md = README.md
 		RELEASE_NOTES.md = RELEASE_NOTES.md
 	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{ED8079DD-2B06-4030-9F0F-DC548F98E1C4}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XRoadProvider.Tests", "tests\XRoadProvider.Tests\XRoadProvider.Tests.fsproj", "{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "XRoadProvider.Standard", "src\XRoadProvider.Standard\XRoadProvider.Standard.fsproj", "{8544A83D-B44A-4029-A640-14A845A00C0F}"
 EndProject
@@ -44,13 +38,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4E04C5A5-00B9-4D7C-8501-31B4B7389671}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8544A83D-B44A-4029-A640-14A845A00C0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8544A83D-B44A-4029-A640-14A845A00C0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8544A83D-B44A-4029-A640-14A845A00C0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -62,7 +49,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{83F16175-43B1-4C90-A1EE-8E351C33435D} = {A6A6AF7D-D6E3-442D-9B1E-58CC91879BE1}
 		{8E6D5255-776D-4B61-85F9-73C37AA1FB9A} = {A6A6AF7D-D6E3-442D-9B1E-58CC91879BE1}
-		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790} = {ED8079DD-2B06-4030-9F0F-DC548F98E1C4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {12280892-6B62-430F-8396-13523B91A5E9}
