@@ -35,5 +35,6 @@ source https://www.nuget.org/api/v2
 
 nuget Common.Logging.Core
 nuget FSharp.Core
+nuget Microsoft.CodeAnalysis.CSharp
 nuget NodaTime
 nuget Optional

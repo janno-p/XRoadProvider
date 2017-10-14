@@ -3,3 +3,4 @@ NodaTime
 Optional
 FSharp.Core
 Common.Logging.Core
+Microsoft.CodeAnalysis.CSharp

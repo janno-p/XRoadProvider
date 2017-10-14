@@ -1,5 +1,6 @@
 ﻿module internal XRoad.CodeDomGenerator
 
+open ProviderImplementation.ProvidedTypes
 open System
 open System.CodeDom
 open System.Reflection
@@ -23,7 +24,7 @@ module TypeBuilder =
           /// Can array items be nil values?
           IsItemNillable: bool option
           /// Extra types to add as nested type declarations to owner type.
-          AddedTypes: CodeTypeDeclaration list
+          AddedTypes: ProvidedTypeDefinition list
           /// Can property value be unspecified in resulting SOAP message.
           IsOptional: bool
           /// Does array type property specify wrapper element around items?
@@ -49,11 +50,11 @@ module TypeBuilder =
               Documentation = doc }
 
     /// Build property declarations from property definitions and add them to owner type.
-    let private addTypeProperties definitions ownerTy =
+    let private addTypeProperties definitions ownerTy ctxt =
         let addTypePropertiesFromDefinition definition =
             // Most of the conditions handle XmlSerializer specific attributes.
-            let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional)
-                               |> Code.comment (definition.Documentation)
+            let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional) ctxt
+            definition.Documentation |> Option.iter prop.AddXmlDoc
             let elementName = if prop.Name <> definition.Name then Some(definition.Name) else None
             if definition.IsIgnored then
                 prop |> Prop.describe Attributes.XmlIgnore |> ignore
@@ -96,7 +97,7 @@ module TypeBuilder =
             num := !num + 1
             sprintf "%s%d" name !num)
 
-    let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
+    let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) (ctxt: ProvidedTypesContext) =
         let valueExpr (value: string) =
             match itemType with
             | PrimitiveType(t) when t = typeof<int32> -> !^ (Convert.ToInt32(value))
@@ -105,10 +106,10 @@ module TypeBuilder =
         |> List.choose (fun x ->
             match x with
             | Enumeration(value) ->
-                Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.ToPropertyName())
-                |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Static)
-                |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [valueExpr value])
-                |> Some
+                let fld = ctxt.ProvidedField(value.ToPropertyName(), runtimeType.AsCodeTypeReference(true))
+                fld.SetFieldAttributes(FieldAttributes.Public ||| FieldAttributes.InitOnly ||| FieldAttributes.Static)
+                // Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [valueExpr value])
+                Some(fld)
             | _ -> None)
 
     /// Collects property definitions from every content element of complexType.

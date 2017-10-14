@@ -1,17 +1,53 @@
 ﻿namespace XRoad
 
-(*
-
+open ProviderImplementation.ProvidedTypes
 open System
-open System.CodeDom
 open System.Collections.Generic
 open System.Reflection
 open System.Text.RegularExpressions
 open System.Xml.Linq
-open XRoad.Serialization.Attributes
 open XRoad.CodeDom
+open XRoad.CodeDom.Attributes
+open XRoad.Serialization.Attributes
 open XRoad.Wsdl
 open XRoad.TypeSchema
+
+[<AutoOpen>]
+module String =
+    open System.Globalization
+
+    /// Joins sequence of elements with given separator to string.
+    let join (sep: string) (arr: seq<'T>) = String.Join(sep, arr)
+    
+    let private isValidIdentifier =
+        Microsoft.CodeAnalysis.CSharp.SyntaxFacts.IsValidIdentifier
+
+    type String with
+        /// Converts given XML namespace to class name.
+        member this.ToClassName() =
+            // Remove `http://` prefix from namespace if present.
+            let str =
+                match this.StartsWith("http://") with
+                | true -> this.Substring(7)
+                | _ -> this
+            // Remove special symbols from class name.
+            let className =
+                str.Split('/')
+                |> Array.map (fun p ->
+                    p.Split('.')
+                    |> Array.map (fun x -> CultureInfo.InvariantCulture.TextInfo.ToTitleCase(x.ToLower()).Replace("-", ""))
+                    |> join "")
+                |> join "_"
+            // Check validity of generated class name.
+            if not (isValidIdentifier className) then
+                failwithf "invalid name %s" className
+            className
+        member this.ToPropertyName() =
+            let fixedName = this.Replace('.', '_').Replace(' ', '_')
+            let fixedName = if this.[0] |> Char.IsDigit then sprintf "_%s" fixedName else fixedName
+            if not (isValidIdentifier fixedName) then
+                failwithf "Invalid property name `%s`." fixedName
+            fixedName
 
 [<AutoOpen>]
 module internal Pattern =
@@ -100,7 +136,7 @@ type internal TypeBuilderContext =
     { /// Provided types generated from type schema definitions.
       CachedTypes: Dictionary<SchemaName,RuntimeType>
       /// Provided types generated to group types from same namespace.
-      CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
+      CachedNamespaces: Dictionary<XNamespace,ProvidedTypeDefinition>
       /// Schema level attribute definition lookup.
       Attributes: Map<string,AttributeSpec>
       /// Schema level element definition lookup.
@@ -110,7 +146,9 @@ type internal TypeBuilderContext =
       /// X-Road protocol used by this producer.
       MessageProtocol: XRoadMessageProtocolVersion
       /// Language code preferred for code comments.
-      LanguageCode: string }
+      LanguageCode: string
+      /// Type provider context
+      Context: ProvidedTypesContext}
     with
         /// Find generated type that corresponds to given namespace name.
         /// If type exists, the existing instance is used; otherwise new type is generated.
@@ -133,7 +171,7 @@ type internal TypeBuilderContext =
                     | XmlNamespace.XRoad20 -> "xtee"
                     | XmlNamespace.XRoad31Ee -> "xroad"
                     | ns -> ns.ToClassName()
-                let typ = Cls.create(producerName) |> Cls.addAttr TypeAttributes.Public
+                let typ = this.Context.ProvidedTypeDefinition(producerName, None, isErased = false)
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
             | true, typ -> typ
@@ -190,16 +228,15 @@ type internal TypeBuilderContext =
                     | dspec, Definition(def) ->
                         let itemName = dspec.Name |> Option.get
                         let suffix = itemName.ToClassName()
-                        let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public
-                        nstyp |> Cls.addMember typ |> ignore
+                        let typ = this.Context.ProvidedTypeDefinition(name.XName.LocalName + suffix, None, isErased = false)
+                        nstyp.AddMember(typ)
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
                 | _ ->
-                    let attr =
-                        match name with
-                        | SchemaElement(_) -> Attributes.xrdType name.XName LayoutKind.Sequence
-                        | SchemaType(_) -> Attributes.xrdType name.XName LayoutKind.Sequence
-                    let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
-                    nstyp |> Cls.addMember typ |> ignore
+                    let typ = this.Context.ProvidedTypeDefinition(name.XName.LocalName, None, isErased = true)
+                    typ.AddCustomAttribute(match name with
+                                           | SchemaElement(_)
+                                           | SchemaType(_) -> mkXrdType name.XName LayoutKind.Sequence)
+                    nstyp.AddMember(typ)
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
 
         /// Finds element specification from schema-level element lookup.
@@ -259,7 +296,7 @@ type internal TypeBuilderContext =
             findElementDefinition(spec)
 
         /// Initializes new context object from given schema definition.
-        static member FromSchema(schema, languageCode) =
+        static member FromSchema(schema, languageCode, ctxt: ProvidedTypesContext) =
             // Validates that schema contains single operation style, as required by X-Road specification.
             let messageProtocol =
                 let reduceStyle s1 s2 =
@@ -287,6 +324,5 @@ type internal TypeBuilderContext =
                   |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
               MessageProtocol = messageProtocol
-              LanguageCode = languageCode }
-
-*)
+              LanguageCode = languageCode
+              Context = ctxt }

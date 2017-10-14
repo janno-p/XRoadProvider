@@ -34,19 +34,15 @@
     <Compile Include="..\XRoadProvider\XRoad.TypeSchema.fs">
       <Link>XRoad.TypeSchema.fs</Link>
     </Compile>
-    <!--
     <Compile Include="..\XRoadProvider\XRoad.CodeDom.fs">
       <Link>XRoad.CodeDom.fs</Link>
     </Compile>
-    -->
     <Compile Include="..\XRoadProvider\XRoad.TypeBuilderContext.fs">
       <Link>XRoad.TypeBuilderContext.fs</Link>
     </Compile>
-    <!--
     <Compile Include="..\XRoadProvider\XRoad.CodeDomGenerator.fs">
       <Link>XRoad.CodeDomGenerator.fs</Link>
     </Compile>
-    -->
     <Compile Include="..\XRoadProvider\XRoad.ProducerDefinition.fs">
       <Link>XRoad.ProducerDefinition.fs</Link>
     </Compile>
