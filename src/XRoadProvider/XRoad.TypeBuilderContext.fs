@@ -232,7 +232,7 @@ type internal TypeBuilderContext =
                         nstyp.AddMember(typ)
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
                 | _ ->
-                    let typ = this.Context.ProvidedTypeDefinition(name.XName.LocalName, None, isErased = true)
+                    let typ = this.Context.ProvidedTypeDefinition(name.XName.LocalName, None, isErased = false)
                     typ.AddCustomAttribute(match name with
                                            | SchemaElement(_)
                                            | SchemaType(_) -> mkXrdType name.XName LayoutKind.Sequence)

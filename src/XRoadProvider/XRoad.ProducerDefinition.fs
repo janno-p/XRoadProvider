@@ -287,17 +287,9 @@ let makeProducerType (producerUri, languageCode, typeName) (targetType: Provided
             |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore))
         targetClass |> Cls.addMember serviceTy |> ignore
         )
+    *)
 
     // Create types for all type namespaces.
-    context.CachedNamespaces |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
-
-    // Initialize default namespace to hold main type.
-    let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))
-    codeNamespace.Types.Add(targetClass) |> ignore
-
-    // Compile the assembly and return to type provider.
-    let assembly = Compiler.buildAssembly(codeNamespace)
-    assembly.GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)
-    *)
+    context.CachedNamespaces.Values |> Seq.toList |> definedTypesType.AddMembers
     
     targetType
