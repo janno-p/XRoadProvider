@@ -2,22 +2,16 @@
 
 open ProviderImplementation.ProvidedTypes
 open System
+open XRoad.CodeDom
+open XRoad.CodeDomGenerator
+open XRoad.Wsdl
 
 (*
-open System
-open System.CodeDom
 open System.Collections.Generic
 open System.IO
 open System.Reflection
 open System.Xml
 open XRoad.Serialization.Attributes
-open XRoad.CodeDom
-*)
-
-open XRoad.CodeDomGenerator
-open XRoad.Wsdl
-
-(*
 open XRoad.TypeSchema
 
 /// Functions and types to handle building methods for services and operation bindings.

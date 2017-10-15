@@ -1,5 +1,6 @@
 ﻿module internal XRoad.CodeDomGenerator
 
+open Microsoft.FSharp.Quotations
 open ProviderImplementation.ProvidedTypes
 open System
 open System.CodeDom
@@ -57,22 +58,23 @@ module TypeBuilder =
             definition.Documentation |> Option.iter prop.AddXmlDoc
             let elementName = if prop.Name <> definition.Name then Some(definition.Name) else None
             if definition.IsIgnored then
-                prop |> Prop.describe Attributes.XmlIgnore |> ignore
+                prop.AddCustomAttribute(Attributes.mkXmlIgnore())
             elif definition.IsAny then
-                prop |> Prop.describe Attributes.XmlAnyElement |> ignore
+                prop.AddCustomAttribute(Attributes.mkXmlAnyElement())
             elif definition.IsAttribute then
-                prop |> Prop.describe Attributes.XmlAttribute |> ignore
+                prop.AddCustomAttribute(Attributes.mkXmlAttribute())
             else
                 match definition.IsWrappedArray, definition.Type with
                 | Some(hasWrapper), CollectionType(_, itemName, _) ->
                     let isItemNillable = definition.IsItemNillable |> Option.fold (fun _ x -> x) false
-                    prop |> Prop.describe (Attributes.xrdElement(None, None, definition.IsNillable, not hasWrapper))
-                         |> Prop.describe (Attributes.xrdCollection(Some(itemName), isItemNillable))
-                         |> ignore
-                | Some(_), _ -> failwith "Array should match to CollectionType."
-                | None, _ -> prop |> Prop.describe (Attributes.xrdElement(elementName, None, definition.IsNillable, false)) |> ignore
+                    prop.AddCustomAttribute(Attributes.mkXrdElement(None, None, definition.IsNillable, not hasWrapper))
+                    prop.AddCustomAttribute(Attributes.mkXrdCollection(Some(itemName), isItemNillable))
+                | Some(_), _ ->
+                    failwith "Array should match to CollectionType."
+                | None, _ ->
+                    prop.AddCustomAttribute(Attributes.mkXrdElement(elementName, None, definition.IsNillable, false))
             // Add extra types to owner type declaration.
-            definition.AddedTypes |> List.iter (fun x -> ownerTy |> Cls.addMember x |> ignore)
+            definition.AddedTypes |> List.iter (fun x -> ownerTy.AddMember(x))
         definitions |> List.iter (addTypePropertiesFromDefinition)
 
     /// Create definition of property that accepts any element not defined in schema.
@@ -100,8 +102,8 @@ module TypeBuilder =
     let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) (ctxt: ProvidedTypesContext) =
         let valueExpr (value: string) =
             match itemType with
-            | PrimitiveType(t) when t = typeof<int32> -> !^ (Convert.ToInt32(value))
-            | _ -> !^ value
+            | PrimitiveType(t) when t = typeof<int32> -> Expr.Value(Convert.ToInt32(value))
+            | _ -> Expr.Value(value)
         content
         |> List.choose (fun x ->
             match x with
@@ -109,7 +111,7 @@ module TypeBuilder =
                 let fld = ctxt.ProvidedField(value.ToPropertyName(), runtimeType.AsCodeTypeReference(true))
                 fld.SetFieldAttributes(FieldAttributes.Public ||| FieldAttributes.InitOnly ||| FieldAttributes.Static)
                 // Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [valueExpr value])
-                Some(fld)
+                Some(fld, valueExpr(value))
             | _ -> None)
 
     /// Collects property definitions from every content element of complexType.
@@ -173,7 +175,8 @@ module TypeBuilder =
             | dspec, Definition(def) ->
                 let itemName = dspec.Name |> Option.get
                 let suffix = itemName.ToClassName()
-                let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+                let typ = context.Context.ProvidedTypeDefinition(name + suffix, Some(typeof<obj>), isErased = false)
+                typ.AddCustomAttribute(Attributes.mkXrdDefType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
                 { propertyDef with
@@ -183,7 +186,8 @@ module TypeBuilder =
                     AddedTypes = [typ]
                     IsWrappedArray = Some(true) }
         | Definition(def) ->
-            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+            let subTy = context.Context.ProvidedTypeDefinition(name + "Type", Some(typeof<obj>), isErased = false)
+            subTy.AddCustomAttribute(Attributes.mkXrdDefType LayoutKind.Sequence)
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then
@@ -219,53 +223,63 @@ module TypeBuilder =
 
     /// Create property definitions for choice element specification.
     and private collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition list =
-        let idField = Fld.create<int> "__id"
-        let valueField = Fld.create<obj> "__value"
+        let ctxt = context.Context
+
+        let idField = ctxt.ProvidedField("__id", typeof<int>)
+        let valueField = ctxt.ProvidedField("__value", typeof<obj>)
 
         let ctor =
-            Ctor.create()
-            |> Ctor.setAttr MemberAttributes.Private
-            |> Ctor.addParam<int> "id"
-            |> Ctor.addParam<obj> "value"
-            |> Ctor.addStmt (Stmt.assign (Expr.this @=> "__id") (!+ "id"))
-            |> Ctor.addStmt (Stmt.assign (Expr.this @=> "__value") (!+ "value"))
+            ctxt.ProvidedConstructor(
+                [ ctxt.ProvidedParameter("id", typeof<int>)
+                  ctxt.ProvidedParameter("value", typeof<obj>) ],
+                invokeCode = (fun args -> Expr.Sequential(Expr.FieldSet(idField, args.[0]), Expr.FieldSet(valueField, args.[1]))))
+        // ctor.MethodAttributes(MemberAttributes.Private)
 
         let choiceName = choiceNameGenerator()
-        let choiceType =
-            Cls.create (choiceName + "Type")
-            |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Sealed)
-            |> Cls.describe (Attributes.xrdDefType LayoutKind.Choice)
-            |> Cls.addMembers [idField; valueField; ctor]
+        let choiceType = ctxt.ProvidedTypeDefinition(choiceName + "Type", Some(typeof<obj>), isErased = false)
+        choiceType.AddCustomAttribute(Attributes.mkXrdDefType LayoutKind.Choice)
+        choiceType.AddMembers([idField; valueField])
+        choiceType.AddMember(ctor)
 
         let choiceRuntimeType = ProvidedType(choiceType, choiceType.Name)
 
         let createOptionType name (propList: PropertyDefinition list) =
-            let optionType =
-                Cls.create (name + "Type")
-                |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
-            optionType |> addTypeProperties propList
+            let optionType = ctxt.ProvidedTypeDefinition(name + "Type", Some(typeof<obj>), isErased = false)
+            optionType.AddCustomAttribute(Attributes.mkXrdDefType LayoutKind.Sequence)
+            addTypeProperties propList optionType ctxt
             optionType
 
         let addTryMethod (id: int) (name: string) (runtimeType: RuntimeType) =
             let tryMethod =
-                Meth.create (sprintf "TryGet%s%s" (if Char.IsLower(name.[0]) then "_" else "") name)
-                |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-                |> Meth.returns<bool>
-                |> Meth.addOutParamRef (runtimeType.AsCodeTypeReference()) "value"
-                |> Meth.addStmt (Stmt.assign (!+ "value") (Expr.defaultValue (runtimeType.AsCodeTypeReference())))
-                |> Meth.addStmt (Stmt.condIf (Op.equals (Expr.this @=> "__id") (!^ id))
-                                             [Stmt.assign (!+ "value") (Expr.cast (runtimeType.AsCodeTypeReference()) (Expr.this @=> "__value"))])
-                |> Meth.addStmt (Stmt.ret (Op.equals (Expr.this @=> "__id") (!^ id)))
-            choiceType |> Cls.addMember(tryMethod) |> ignore
+                let rty = runtimeType.AsCodeTypeReference()
+                ctxt.ProvidedMethod(
+                    sprintf "TryGet%s%s" (if Char.IsLower(name.[0]) then "_" else "") name,
+                    [ ctxt.ProvidedParameter("value", rty, isOut = true) ],
+                    typeof<bool>,
+                    invokeCode =
+                        (fun args ->
+                            Expr.Sequential(
+                                Expr.VarSet(Var("value", rty), Expr.Value(if rty.IsClass then null else Activator.CreateInstance(rty))),
+                                Expr.Sequential(
+                                    Expr.IfThenElse(
+                                        <@@ (%%(Expr.FieldGet(idField)): int32) = id @@>,
+                                        Expr.VarSet(Var("value", rty), Expr.FieldGet(valueField)),
+                                        Expr.Value(())),
+                                    <@@ (%%(Expr.FieldGet(idField)): int32) = id @@>
+                                )) 
+                            ))
+            choiceType.AddMember(tryMethod)
 
         let addNewMethod id (name: string) (runtimeType: RuntimeType) =
             let newMethod =
-                Meth.create (sprintf "New%s%s" (if Char.IsLower(name.[0]) then "_" else "") name)
-                |> Meth.setAttr (MemberAttributes.Static ||| MemberAttributes.Public)
-                |> Meth.returnsOf (choiceRuntimeType.AsCodeTypeReference())
-                |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) "value"
-                |> Meth.addStmt (Stmt.ret (Expr.instOf (choiceRuntimeType.AsCodeTypeReference()) [!^ id; !+ "value"]))
-            choiceType |> Cls.addMember(newMethod) |> ignore
+                let rty = runtimeType.AsCodeTypeReference()
+                ctxt.ProvidedMethod(
+                    sprintf "New%s%s" (if Char.IsLower(name.[0]) then "_" else "") name,
+                    [ ctxt.ProvidedParameter("value", rty) ],
+                    choiceRuntimeType.AsCodeTypeReference(),
+                    isStatic = true,
+                    invokeCode = (fun args -> Expr.NewObject(ctor, [Expr.Value(id); args.[0]])))
+            choiceType.AddMember(newMethod)
 
         let optionNameGenerator = nameGenerator (sprintf "%sOption" choiceName)
 
@@ -276,14 +290,14 @@ module TypeBuilder =
                 match choiceContent with
                 | Element(spec) ->
                     let prop = buildElementProperty context spec
-                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name false) |> ignore
+                    choiceType.AddCustomAttribute(Attributes.mkXrdChoiceOption (i + 1) prop.Name false)
                     addNewMethod (i + 1) prop.Name prop.Type
                     addTryMethod (i + 1) prop.Name prop.Type
                     None
                 | Sequence(spec) ->
                     let props = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
-                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName true) |> ignore
+                    choiceType.AddCustomAttribute(Attributes.mkXrdChoiceOption (i + 1) optionName true)
                     let optionType = createOptionType optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod (i + 1) optionName optionRuntimeType
@@ -318,17 +332,18 @@ module TypeBuilder =
         // Parse schema definition and add all properties that are defined.
         match schemaType with
         | SimpleDefinition(SimpleTypeSpec.Restriction(spec, annotation)) ->
-            providedTy |> Code.comment (annotationToText context annotation) |> ignore
+            annotationToText context annotation |> Option.iter providedTy.AddXmlDoc
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | ContentType
             | PrimitiveType(_) as rtyp ->
-                let values = spec.Content |> buildEnumerationConstants runtimeType rtyp
-                values |> List.iter (providedTy.Members.Add >> ignore)
+                let values = buildEnumerationConstants runtimeType rtyp spec.Content context.Context
+                values |> List.iter (fst >> providedTy.AddMember >> ignore)
                 providedTy
-                |> addContentProperty("BaseValue", rtyp)
-                |> iif (values |> List.isEmpty) (fun x -> x |> Ctor.setAttr (MemberAttributes.Public))
+                |> addContentProperty("BaseValue", rtyp) context.Context
+                //|> iif (values |> List.isEmpty) (fun x -> x |> Ctor.setAttr (MemberAttributes.Public))
                 |> ignore
-                Ctor.create() |> providedTy.Members.Add |> ignore
+                let ct = context.Context.ProvidedConstructor([], invokeCode = (fun args -> <@@ () @@>))
+                providedTy.AddMember(ct)
             | _ -> failwith "Simple types should not restrict complex types."
         | SimpleDefinition(ListDef) ->
             failwith "Not implemented: list in simpleType."
@@ -337,10 +352,11 @@ module TypeBuilder =
         | ComplexDefinition(spec) ->
             // Abstract types will have only protected constructor.
             if spec.IsAbstract then
-                providedTy |> Cls.addAttr TypeAttributes.Abstract
-                           |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Family)
-                           |> Code.comment (annotationToText context spec.Annotation)
-                           |> ignore
+                providedTy.SetAttributes(TypeAttributes.Abstract)
+                let ct = context.Context.ProvidedConstructor([], invokeCode = (fun _ -> <@@ () @@>))
+                // MemberAttributes.Family
+                providedTy.AddMember(ct)
+                annotationToText context spec.Annotation |> Option.iter providedTy.AddXmlDoc
             // Handle complex type content and add properties for attributes and elements.
             let specContent =
                 match spec.Content with
@@ -348,7 +364,8 @@ module TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
-                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.xrdContent |> ignore
+                        let prop = providedTy |> addProperty ("BaseValue", rtyp, false) context.Context
+                        prop.AddCustomAttribute(Attributes.mkXrdContent())
                         Some(spec.Content)
                     | _ ->
                         failwith "ComplexType-s simpleContent should not extend complex types."
@@ -356,7 +373,7 @@ module TypeBuilder =
                     failwith "Not implemented: restriction in complexType-s simpleContent."
                 | ComplexContent(ComplexContentSpec.Extension(spec)) ->
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
-                    | ProvidedType(_) as baseTy -> providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
+                    | ProvidedType(_) as baseTy -> providedTy.SetBaseType(baseTy.AsCodeTypeReference())
                     | _ -> failwithf "Only complex types can be inherited! (%A)" spec.Base
                     Some(spec.Content)
                 | ComplexContent(ComplexContentSpec.Restriction(_)) ->
@@ -366,7 +383,7 @@ module TypeBuilder =
                 | ComplexTypeContent.Empty ->
                     None
             specContent
-            |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGen seqNameGen context content)) ()
+            |> Option.fold (fun _ content -> addTypeProperties (collectComplexTypeContentProperties choiceNameGen seqNameGen context content) providedTy context.Context) ()
         | EmptyDefinition -> ()
 
     let removeFaultDescription (definition: SchemaTypeDefinition) =

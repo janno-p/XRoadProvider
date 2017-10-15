@@ -21,7 +21,82 @@ let forall args f x = args |> List.iter (f x); x
 /// Predefined attributes for code generator.
 module Attributes =
     open System.Xml.Linq
+    open System.Xml.Serialization
+    open System.Xml.Schema
     open XRoad.Serialization.Attributes
+    
+    let mkXmlAttribute () =
+        let typ = typeof<XmlAttributeAttribute>
+        let nsprop = typ.GetProperty("Form")
+        { new CustomAttributeData() with
+            member __.Constructor = typ.GetConstructor([| |])
+            member __.ConstructorArguments = upcast [| |]
+            member __.NamedArguments = upcast [| CustomAttributeNamedArgument(nsprop, CustomAttributeTypedArgument(typeof<XmlSchemaForm>, XmlSchemaForm.Unqualified)) |] }
+    
+    let mkXmlAnyElement () =
+        let typ = typeof<XmlAnyElementAttribute>
+        { new CustomAttributeData() with
+            member __.Constructor = typ.GetConstructor([| |])
+            member __.ConstructorArguments = upcast [| |]
+            member __.NamedArguments = upcast [| |] }
+            
+    let mkXrdChoiceOption (id: int) (name: string) (mergeContent: bool) =
+        let typ = typeof<XRoadChoiceOptionAttribute>
+        { new CustomAttributeData() with
+            member __.Constructor = typ.GetConstructor([| typeof<int>; typeof<string> |])
+            member __.ConstructorArguments = upcast [| CustomAttributeTypedArgument(typeof<int>, id); CustomAttributeTypedArgument(typeof<string>, name) |]
+            member __.NamedArguments = upcast [| CustomAttributeNamedArgument(typ.GetProperty("MergeContent"), CustomAttributeTypedArgument(typeof<bool>, mergeContent)) |] }
+            
+    let mkXrdCollection (itemName, isNullable) =
+        let typ = typeof<XRoadCollectionAttribute>
+        let ct, ctArgs =
+            match itemName with
+            | Some(name) -> typ.GetConstructor([| typeof<string> |]), [| CustomAttributeTypedArgument(typeof<string>, name) |]
+            | None -> typ.GetConstructor([| |]), [| |]
+        let namedArgs = if isNullable then [| CustomAttributeNamedArgument(typ.GetProperty("ItemIsNullable"), CustomAttributeTypedArgument(typeof<bool>, true)) |] else [| |]
+        { new CustomAttributeData() with
+            member __.Constructor = ct
+            member __.ConstructorArguments = upcast ctArgs
+            member __.NamedArguments = upcast namedArgs }
+            
+    let mkXrdDefType (layout: LayoutKind) =
+        let typ = typeof<XRoadTypeAttribute>
+        { new CustomAttributeData() with
+            member __.Constructor = typ.GetConstructor([| typeof<LayoutKind> |])
+            member __.ConstructorArguments = upcast [| CustomAttributeTypedArgument(typeof<LayoutKind>, layout) |]
+            member __.NamedArguments = upcast [| |] }
+            
+    let mkXrdElement (elementName, elementNamespace, isNullable, mergeContent) =
+        let typ = typeof<XRoadElementAttribute>
+        let ct, ctArgs =
+            match elementName with
+            | Some(name) -> typ.GetConstructor([| typeof<string> |]), [| CustomAttributeTypedArgument(typeof<string>, name) |]
+            | None -> typ.GetConstructor([| |]), [| |]
+        let namedArgs =
+            [ yield elementNamespace |> Option.map (fun x -> CustomAttributeNamedArgument(typ.GetProperty("Namespace"), CustomAttributeTypedArgument(typeof<string>, x)))
+              yield if isNullable then Some(CustomAttributeNamedArgument(typ.GetProperty("IsNullable"), CustomAttributeTypedArgument(typeof<bool>, true))) else None
+              yield if mergeContent then Some(CustomAttributeNamedArgument(typ.GetProperty("MergeContent"), CustomAttributeTypedArgument(typeof<bool>, true))) else None ]
+            |> List.choose id
+            |> List.toArray
+        { new CustomAttributeData() with
+            member __.Constructor = ct
+            member __.ConstructorArguments = upcast ctArgs
+            member __.NamedArguments = upcast namedArgs }
+    
+    let mkXmlIgnore () =
+        let typ = typeof<XmlIgnoreAttribute>
+        { new CustomAttributeData() with
+            member __.Constructor = typ.GetConstructor([| |])
+            member __.ConstructorArguments = upcast [| |]
+            member __.NamedArguments = upcast [| |] }
+    
+    let mkXrdContent () =
+            let typ = typeof<XRoadElementAttribute>
+            let nsprop = typ.GetProperty("MergeContent")
+            { new CustomAttributeData() with
+                member __.Constructor = typ.GetConstructor([| |])
+                member __.ConstructorArguments = upcast [| |]
+                member __.NamedArguments = upcast [| CustomAttributeNamedArgument(nsprop, CustomAttributeTypedArgument(typeof<bool>, true)) |] }
 
     let mkXrdType (typeName: XName) (layout: LayoutKind) =
         let typ = typeof<XRoadTypeAttribute>
@@ -36,47 +111,9 @@ module Attributes =
     open System.Xml.Serialization
     open XRoad.Serialization.Attributes
 
-    let private addUnqualifiedForm a = a |> Attr.addNamedArg "Form" (Expr.enumValue<XmlSchemaForm> "Unqualified")
-
     let DebuggerBrowsable = Attr.create<DebuggerBrowsableAttribute> |> Attr.addArg (Expr.enumValue<DebuggerBrowsableState> "Never")
-    let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
-    let XmlIgnore = Attr.create<XmlIgnoreAttribute>
-    let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
-
-    let xrdDefType (layout: LayoutKind) =
-        Attr.create<XRoadTypeAttribute>
-        |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
-
-    let xrdType (typeName: XName) (layout: LayoutKind) =
-        Attr.create<XRoadTypeAttribute>
-        |> Attr.addArg (!^ typeName.LocalName)
-        |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
-        |> Attr.addNamedArg "Namespace" (!^ typeName.NamespaceName)
 
     let xrdRoot = Attr.create<XRoadTypeAttribute> |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (LayoutKind.Sequence.ToString()))
-
-    let xrdElement(elementName, elementNamespace, isNullable, mergeContent) =
-        let attr = Attr.create<XRoadElementAttribute>
-        elementName |> Option.iter (fun name -> attr |> Attr.addArg (!^ name) |> ignore)
-        elementNamespace |> Option.iter (fun ns -> attr |> Attr.addNamedArg "Namespace" (!^ ns) |> ignore)
-        if isNullable then attr |> Attr.addNamedArg "IsNullable" (!^ true) |> ignore
-        if mergeContent then attr |> Attr.addNamedArg "MergeContent" (!^ true) |> ignore
-        attr
-
-    let xrdContent =
-        Attr.create<XRoadElementAttribute>
-        |> Attr.addNamedArg "MergeContent" (!^ true)
-
-    let xrdChoiceOption (id: int) (name: string) (mergeContent: bool) =
-        Attr.create<XRoadChoiceOptionAttribute>
-        |> Attr.addArg (!^ id)
-        |> Attr.addArg (!^ name)
-        |> Attr.addNamedArg "MergeContent" (!^ mergeContent)
-
-    let xrdCollection (itemName, isNullable) =
-        itemName
-        |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadCollectionAttribute>
-        |> iif isNullable (fun attr -> attr |> Attr.addNamedArg "ItemIsNullable" (!^ true))
     *)
 
 /// Extensions for String module and class.
@@ -139,19 +176,17 @@ type RuntimeType =
         | _ -> ctr
 
 /// Create property with backing field.
-let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
-    let backingField =
-        Fld.create<'T> (name + "__backing")
-        |> Fld.describe Attributes.DebuggerBrowsable
-    let property =
-        Prop.create<'T> name
-        |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-        |> Prop.addGetStmt (Expr.this |> Expr.fldref backingField |> Stmt.ret)
-        |> Prop.addSetStmt (Prop.setValue |> Stmt.assign (Expr.this |> Expr.fldref backingField))
-        |> Code.comment doc
-    ownerType
-    |> Cls.addMember backingField
-    |> Cls.addMember property
+let createProperty<'T> name doc (ctxt: ProvidedTypesContext) (owner: ProvidedTypeDefinition) =
+    let backingField = ctxt.ProvidedField(sprintf "%s__backing" name, typeof<'T>)
+    // Attributes.DebuggerBrowsable
+
+    let property = ctxt.ProvidedProperty(name, typeof<'T>, getterCode = (fun args -> Expr.FieldGet(args.[0], backingField)), setterCode = (fun args -> Expr.FieldSet(args.[0], backingField, args.[1])))
+    property.AddXmlDoc(doc)
+    // MemberAttributes.Public ||| MemberAttributes.Final
+    
+    owner.AddMember(backingField)
+    owner.AddMember(property)
+    owner
 
 /// Add property to given type with backing field.
 /// For optional members, extra field is added to notify if property was assigned or not.
@@ -171,14 +206,19 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (ctxt: ProvidedType
 
     p
 
-let addContentProperty (name: string, ty: RuntimeType) (owner: CodeTypeDeclaration) =
+let addContentProperty (name: string, ty: RuntimeType) (ctxt: ProvidedTypesContext) (owner: ProvidedTypeDefinition) =
     let name = name.ToPropertyName()
-    Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
-    |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-    |> Fld.describe Attributes.xrdContent
-    |> Fld.addTo owner
-    |> ignore
-    Ctor.create()
-    |> Ctor.addParamRef (ty.AsCodeTypeReference()) "value"
-    |> Ctor.addStmt (Stmt.assign (Expr.this @=> name) (!+ "value"))
-    |> Ctor.addTo owner
+    
+    let f = ctxt.ProvidedField(sprintf "%s__backing" name, ty.AsCodeTypeReference(true))
+    f.SetFieldAttributes(FieldAttributes.InitOnly ||| FieldAttributes.Private)
+    
+    let p = ctxt.ProvidedProperty(name, ty.AsCodeTypeReference(true), getterCode = (fun args -> Expr.FieldGet(args.[0], f)))
+    p.AddCustomAttribute(Attributes.mkXrdContent())
+     
+    let ct = ctxt.ProvidedConstructor([ctxt.ProvidedParameter("value", ty.AsCodeTypeReference())], invokeCode = (fun args -> Expr.FieldSet(f, args.[0])))
+
+    owner.AddMember(f)
+    owner.AddMember(p)
+    owner.AddMember(ct)
+    
+    owner
