@@ -39,8 +39,11 @@ type XRoadProducerTypeProvider(config: TypeProviderConfig) as this =
                 typeName
 
             typeCache.GetOrAdd(arguments, fun args ->
-                let targetType = ctxt.ProvidedTypeDefinition(asm, ns, typeName, None, true, isErased = false)
-                ctxt |> XRoad.ProducerDefinition.makeProducerType args targetType
+                let targetAssembly = ProvidedAssembly(ctxt)
+                let targetType = ctxt |> (ctxt.ProvidedTypeDefinition(targetAssembly, ns, typeName, None, true, isErased = false) |> XRoad.ProducerDefinition.makeProducerType args)
+                targetAssembly.AddTypes([targetType])
+                ctxt.
+                targetType
                 )
         )
         
