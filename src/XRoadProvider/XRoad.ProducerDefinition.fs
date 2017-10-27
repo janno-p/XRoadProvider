@@ -206,15 +206,15 @@ module ServiceBuilder =
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (producerUri, languageCode, typeName) (targetType: ProvidedTypeDefinition) (ctxt: ProvidedTypesContext) =
+let makeProducerType (producerUri, languageCode, typeName) (targetType: ProvidedTypeDefinition) =
     // Load schema details from specified file or network location.
     let schema = ProducerDescription.Load(resolveUri producerUri, languageCode)
 
     // Initialize type and schema element lookup context.
-    let context = TypeBuilderContext.FromSchema(schema, languageCode, ctxt)
+    let context = TypeBuilderContext.FromSchema(schema, languageCode)
     
     // Create base type which holds types generated from all provided schema-s.
-    let definedTypesType = ctxt.ProvidedTypeDefinition("DefinedTypes", None, true, isErased = false)
+    let definedTypesType = ProvidedTypeDefinition("DefinedTypes", None, true, isErased = false)
 
     // Create stubs for each type before building them, because of circular dependencies.
     schema.TypeSchemas

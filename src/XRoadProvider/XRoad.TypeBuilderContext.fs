@@ -146,9 +146,7 @@ type internal TypeBuilderContext =
       /// X-Road protocol used by this producer.
       MessageProtocol: XRoadMessageProtocolVersion
       /// Language code preferred for code comments.
-      LanguageCode: string
-      /// Type provider context
-      Context: ProvidedTypesContext}
+      LanguageCode: string }
     with
         /// Find generated type that corresponds to given namespace name.
         /// If type exists, the existing instance is used; otherwise new type is generated.
@@ -171,7 +169,7 @@ type internal TypeBuilderContext =
                     | XmlNamespace.XRoad20 -> "xtee"
                     | XmlNamespace.XRoad31Ee -> "xroad"
                     | ns -> ns.ToClassName()
-                let typ = this.Context.ProvidedTypeDefinition(producerName, None, isErased = false)
+                let typ = ProvidedTypeDefinition(producerName, None, isErased = false)
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
             | true, typ -> typ
@@ -228,11 +226,11 @@ type internal TypeBuilderContext =
                     | dspec, Definition(def) ->
                         let itemName = dspec.Name |> Option.get
                         let suffix = itemName.ToClassName()
-                        let typ = this.Context.ProvidedTypeDefinition(name.XName.LocalName + suffix, None, isErased = false)
+                        let typ = ProvidedTypeDefinition(name.XName.LocalName + suffix, None, isErased = false)
                         nstyp.AddMember(typ)
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
                 | _ ->
-                    let typ = this.Context.ProvidedTypeDefinition(name.XName.LocalName, None, isErased = false)
+                    let typ = ProvidedTypeDefinition(name.XName.LocalName, None, isErased = false)
                     typ.AddCustomAttribute(match name with
                                            | SchemaElement(_)
                                            | SchemaType(_) -> mkXrdType name.XName LayoutKind.Sequence)
@@ -296,7 +294,7 @@ type internal TypeBuilderContext =
             findElementDefinition(spec)
 
         /// Initializes new context object from given schema definition.
-        static member FromSchema(schema, languageCode, ctxt: ProvidedTypesContext) =
+        static member FromSchema(schema, languageCode) =
             // Validates that schema contains single operation style, as required by X-Road specification.
             let messageProtocol =
                 let reduceStyle s1 s2 =
@@ -324,5 +322,4 @@ type internal TypeBuilderContext =
                   |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
               MessageProtocol = messageProtocol
-              LanguageCode = languageCode
-              Context = ctxt }
+              LanguageCode = languageCode }

@@ -177,10 +177,10 @@ type RuntimeType =
 
 /// Create property with backing field.
 let createProperty<'T> name doc (ctxt: ProvidedTypesContext) (owner: ProvidedTypeDefinition) =
-    let backingField = ctxt.ProvidedField(sprintf "%s__backing" name, typeof<'T>)
+    let backingField = ProvidedField(sprintf "%s__backing" name, typeof<'T>)
     // Attributes.DebuggerBrowsable
 
-    let property = ctxt.ProvidedProperty(name, typeof<'T>, getterCode = (fun args -> Expr.FieldGet(args.[0], backingField)), setterCode = (fun args -> Expr.FieldSet(args.[0], backingField, args.[1])))
+    let property = ProvidedProperty(name, typeof<'T>, getterCode = (fun args -> Expr.FieldGet(args.[0], backingField)), setterCode = (fun args -> Expr.FieldSet(args.[0], backingField, args.[1])))
     property.AddXmlDoc(doc)
     // MemberAttributes.Public ||| MemberAttributes.Final
     
@@ -190,32 +190,32 @@ let createProperty<'T> name doc (ctxt: ProvidedTypesContext) (owner: ProvidedTyp
 
 /// Add property to given type with backing field.
 /// For optional members, extra field is added to notify if property was assigned or not.
-let addProperty (name : string, ty: RuntimeType, isOptional) (ctxt: ProvidedTypesContext) (owner: ProvidedTypeDefinition) =
+let addProperty (name : string, ty: RuntimeType, isOptional) (owner: ProvidedTypeDefinition) =
     let fixedName = name.ToPropertyName()
     
     let typ = ty.AsCodeTypeReference(optional = isOptional)
 
-    let f = ctxt.ProvidedField((sprintf "%s__backing" fixedName), typ)
+    let f = ProvidedField((sprintf "%s__backing" fixedName), typ)
     f.SetFieldAttributes(FieldAttributes.Private)
     // f.AddCustomAttribute(DebuggerBrowsable)
     owner.AddMember(f)
 
-    let p = ctxt.ProvidedProperty(fixedName, typ, getterCode = (fun args -> Expr.FieldGet(args.[0], f)), setterCode = (fun args -> Expr.FieldSet(args.[0], f, args.[1])))
+    let p = ProvidedProperty(fixedName, typ, getterCode = (fun args -> Expr.FieldGet(args.[0], f)), setterCode = (fun args -> Expr.FieldSet(args.[0], f, args.[1])))
     // MemberAttributes.Public ||| MemberAttributes.Final
     owner.AddMember(p)
 
     p
 
-let addContentProperty (name: string, ty: RuntimeType) (ctxt: ProvidedTypesContext) (owner: ProvidedTypeDefinition) =
+let addContentProperty (name: string, ty: RuntimeType) (owner: ProvidedTypeDefinition) =
     let name = name.ToPropertyName()
     
-    let f = ctxt.ProvidedField(sprintf "%s__backing" name, ty.AsCodeTypeReference(true))
+    let f = ProvidedField(sprintf "%s__backing" name, ty.AsCodeTypeReference(true))
     f.SetFieldAttributes(FieldAttributes.InitOnly ||| FieldAttributes.Private)
     
-    let p = ctxt.ProvidedProperty(name, ty.AsCodeTypeReference(true), getterCode = (fun args -> Expr.FieldGet(args.[0], f)))
+    let p = ProvidedProperty(name, ty.AsCodeTypeReference(true), getterCode = (fun args -> Expr.FieldGet(args.[0], f)))
     p.AddCustomAttribute(Attributes.mkXrdContent())
      
-    let ct = ctxt.ProvidedConstructor([ctxt.ProvidedParameter("value", ty.AsCodeTypeReference())], invokeCode = (fun args -> Expr.FieldSet(f, args.[0])))
+    let ct = ProvidedConstructor([ProvidedParameter("value", ty.AsCodeTypeReference())], invokeCode = (fun args -> Expr.FieldSet(f, args.[0])))
 
     owner.AddMember(f)
     owner.AddMember(p)
