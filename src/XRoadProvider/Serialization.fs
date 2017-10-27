@@ -7,6 +7,7 @@ open System.Collections.Generic
 open System.IO
 open System.Net
 open System.Xml
+open System.Reflection
 open XRoad.Serialization.Attributes
 open XRoad.DynamicMethods
 
@@ -20,45 +21,6 @@ module Stream =
         stream.Position <- 0L
         let reader = new StreamReader(stream)
         reader.ReadToEnd()
-
-type Serializer(isEncoded) as this =
-    let rec skipRoot (depth: int) (reader: XmlReader) =
-        if reader.Read() && reader.Depth > depth then
-            if reader.NodeType = XmlNodeType.Element && reader.Depth = (depth + 1) then true
-            else skipRoot depth reader
-        else false
-
-    member __.Deserialize<'T>(reader, context) : 'T =
-        this.DeserializeObject(reader, typeof<'T>, context) |> Option.fold (fun _ x -> unbox x) Unchecked.defaultof<'T>
-
-    member __.Deserialize(reader, typ, context) =
-        this.DeserializeObject(reader, typ, context) |> Option.fold (fun _ x -> x) null
-
-    member __.Serialize<'T>(writer: XmlWriter, value: 'T, rootName: XmlQualifiedName, context) =
-        this.Serialize(writer, typeof<'T>, value, rootName, context)
-
-    member __.Serialize(writer: XmlWriter, value: obj, context: SerializerContext) =
-        this.SerializeObject(writer, value.GetType(), value, context)
-
-    member __.Serialize(writer: XmlWriter, typ, value: obj, rootName: XmlQualifiedName, context) =
-        match rootName.Namespace with
-        | null | "" -> writer.WriteStartElement(rootName.Name)
-        | _ -> writer.WriteStartElement(rootName.Name, rootName.Namespace)
-        this.SerializeObject(writer, typ, value, context)
-        writer.WriteEndElement()
-
-    member private __.DeserializeObject(reader: XmlReader, typ, context) =
-        match reader.GetAttribute("nil", XmlNamespace.Xsi) |> Option.ofObj |> Option.map (fun x -> x.ToLower()) with
-        | Some("true") | Some("1") -> None
-        | _ ->
-            let typeMap = typ |> getTypeMap isEncoded
-            if typeMap.Layout = Some(LayoutKind.Choice) && not (skipRoot reader.Depth reader) then None
-            else Some(typeMap.Deserialize(reader, context))
-
-    member private __.SerializeObject(writer: XmlWriter, typ, value, context) =
-        match value with
-        | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
-        | _ -> (typ |> getTypeMap isEncoded).Serialize(writer, value, context) |> ignore
 
 module private Response =
     type XmlReader with
@@ -97,8 +59,8 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
             let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> Option.orDefault ""
             raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
 
-    member __.RetrieveMessage(): XRoadMessage =
-        let message = XRoadMessage()
+    member __.RetrieveMessage(methodMap: MethodMap): XRoadMessage =
+        let message = XRoadMessage(methodMap)
         use stream =
             let stream, attachments = response |> MultipartMessage.read
             attachments |> List.iter (fun content -> message.Attachments.Add(content.ContentID, content))
@@ -114,13 +76,11 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
             failwith "Soap body element was not found in response message."
         let context = SerializerContext()
         context.AddAttachments(message.Attachments)
-        let serializer = Serializer(options.IsEncoded)
         if not (reader.MoveToElement(2, null, null)) then
             failwith "Soap message has empty payload in response."
-        message.Body <-
-            match reader.LocalName, reader.NamespaceURI with
-            | "Fault", XmlNamespace.SoapEnv -> failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
-            | _ -> serializer.Deserialize(reader, options.ResponseType, context)
+        match reader.LocalName, reader.NamespaceURI with
+        | "Fault", XmlNamespace.SoapEnv -> failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
+        | _ -> message.Deserialize(reader, context)
         message
 
     interface IDisposable with
@@ -359,16 +319,9 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
         writer |> writeXRoadHeader msg
         writer.WriteEndElement()
-
-        let serializeAccessor funContent =
-            match opt.Accessor with
-            | null -> funContent()
-            | _ -> writer.WriteStartElement(opt.Accessor.Name, opt.Accessor.Namespace)
-                   funContent()
-                   writer.WriteEndElement()
-
+        
         writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
-        serializeAccessor (fun _ -> Serializer(opt.IsEncoded).Serialize(writer, msg.Body, context))
+        msg.Serialize(writer, context)
         writer.WriteEndElement()
 
         writer.WriteEndDocument()
@@ -384,4 +337,7 @@ type public XRoadUtil =
         let request = XRoadRequest(requestOptions)
         request.SendMessage(message)
         use response = request.GetResponse(responseOptions)
-        response.RetrieveMessage()
+        response.RetrieveMessage(message.MethodMap)
+
+    static member GetMethodMap(mi, isEncoded) =
+        getMethodMap mi isEncoded

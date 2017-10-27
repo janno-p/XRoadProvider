@@ -124,7 +124,8 @@ let (!~>) (mi: MethodInfo) = match mi with :? DynamicMethod as dyn -> dyn | _ ->
 type private XopBinaryContent() =
     inherit BinaryContent("", Data [| |])
 
-let typeMaps = ConcurrentDictionary<Type, TypeMap>()
+let private typeMaps = ConcurrentDictionary<Type, TypeMap>()
+let operationMaps = ConcurrentDictionary<MethodInfo, MethodMap>();
 
 let (|Serializable|NotSerializable|) (typ: Type) =
     match typ.GetCustomAttribute<XRoadTypeAttribute>() with
@@ -992,7 +993,7 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
     il.MarkLabel(returnLabel)
     il.Emit(OpCodes.Ret)
 
-and createTypeMap (isEncoded: bool) (typ: Type) =
+and private createTypeMap (isEncoded: bool) (typ: Type) =
     let addTypeMap (init: TypeMap -> unit) (typ: Type) =
         let serialization, deserialization = typ |> Serialization.Create, typ |> Deserialization.Create
         let typeMap = TypeMap.Create(typ, deserialization, serialization, typ |> findBaseType isEncoded)
@@ -1205,7 +1206,7 @@ and private getProperties isEncoded (typeMap: TypeMap) : Property list =
                                   SetMethod = p.GetSetMethod(true)
                                   HasValueMethod = hasValueMethod }))
 
-and getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
+and private getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
     match typeMaps.TryGetValue(typ) with
     | true, typeMap -> typeMap
     | false, _ -> typ |> createTypeMap isEncoded
@@ -1232,6 +1233,15 @@ and findBaseTypes isEncoded (typ: Type) =
     |> Seq.unfold (fun typ -> if typ = typeof<obj> then None else Some(typ |> findTypeMap isEncoded, typ.BaseType))
     |> Seq.choose (id)
     |> Seq.toList
+    
+let createMethodMap (_mi: MethodInfo) (_isEncoded: bool) =
+    failwithf "not implemented: createMethodMap"
+    { Serializer = null; Deserializer = null }
+    
+let getMethodMap mi isEncoded =
+    match operationMaps.TryGetValue(mi) with
+    | true, mm -> mm
+    | _ -> operationMaps.GetOrAdd(mi, (createMethodMap mi isEncoded))
 
 module internal XsdTypes =
     open NodaTime
@@ -1366,11 +1376,11 @@ module internal XsdTypes =
                     | contentID -> context.GetAttachment(contentID)
                 else BinaryContent.Create([| |])
 
-    let addTypeMap typ ser deser =
+    let private addTypeMap typ ser deser =
         let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
         typeMaps.TryAdd(typ, typeMap) |> ignore
 
-    let addBinaryTypeMap typ ser deser =
+    let private addBinaryTypeMap typ ser deser =
         let typeMap = TypeMap.Create(typeof<BinaryContent>, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
         typeMaps.TryAdd(typ, typeMap) |> ignore
 

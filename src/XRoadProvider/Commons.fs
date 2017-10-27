@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Xml
+open System.Reflection
 
 [<RequireQualifiedAccessAttribute>]
 module internal XmlNamespace =
@@ -369,18 +370,46 @@ type public BinaryContent internal (contentID: string, content: ContentType) =
     static member Create(data) = BinaryContent("", Data(data))
     static member Create(contentID, data) = BinaryContent(contentID, Data(data))
 
+[<AllowNullLiteral>]
+type SerializerContext() =
+    let attachments = Dictionary<string, BinaryContent>()
+    member val IsMultipart = false with get, set
+    member val Attachments = attachments with get
+    member this.AddAttachments(attachments: IDictionary<_,_>) =
+        match attachments with
+        | null -> ()
+        | _ -> attachments |> Seq.iter (fun kvp -> this.Attachments.Add(kvp.Key, kvp.Value))
+    member __.GetAttachment(href: string) =
+        if href.StartsWith("cid:") then
+            let contentID = href.Substring(4)
+            match attachments.TryGetValue(contentID) with
+            | true, value -> value
+            | _ -> failwithf "Multipart message doesn't contain content part with ID `%s`." contentID
+        else failwithf "Invalid multipart content reference: `%s`." href
+
+type MethodMap =
+    { Deserializer: MethodInfo
+      Serializer: MethodInfo }
+    member this.Deserialize(reader: XmlReader, context: SerializerContext) =
+        this.Deserializer.Invoke(null, [| reader; context |])
+    member this.Serialize(writer: XmlWriter, context: SerializerContext, args: obj[]) =
+        this.Serializer.Invoke(null, [| writer; context; args |]) |> ignore
+
 type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
     member val Name = name with get
     member val Value = value with get
     member val IsRequired = required with get
 
-type XRoadMessage() =
+type XRoadMessage (methodMap: MethodMap) as this =
     member val Header = Unchecked.defaultof<AbstractXRoadHeader> with get, set
     member val RequiredHeaders = Unchecked.defaultof<string[]> with get, set
     member val HeaderNamespace = "" with get, set
-    member val Body: obj = null with get, set
+    member val Body: obj[] = Unchecked.defaultof<obj[]> with get, set
     member val Attachments = Dictionary<string, BinaryContent>() with get, set
     member val Namespaces = List<string>() with get
+    member val MethodMap = methodMap with get
+    member __.Deserialize(reader, context) = this.Body <- [| methodMap.Deserialize(reader, context) |]
+    member __.Serialize(writer, context) = methodMap.Serialize(writer, context, this.Body)
 
 type XRoadRequestOptions(uri: string, isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol) =
     member val IsEncoded = isEncoded with get
@@ -398,23 +427,6 @@ type XRoadResponseOptions(isEncoded: bool, isMultipart: bool, protocol: XRoadPro
     member val ResponseType = responseType with get
     member val Accessor: XmlQualifiedName = null with get, set
     member val ExpectUnexpected = false with get, set
-
-[<AllowNullLiteral>]
-type SerializerContext() =
-    let attachments = Dictionary<string, BinaryContent>()
-    member val IsMultipart = false with get, set
-    member val Attachments = attachments with get
-    member this.AddAttachments(attachments: IDictionary<_,_>) =
-        match attachments with
-        | null -> ()
-        | _ -> attachments |> Seq.iter (fun kvp -> this.Attachments.Add(kvp.Key, kvp.Value))
-    member __.GetAttachment(href: string) =
-        if href.StartsWith("cid:") then
-            let contentID = href.Substring(4)
-            match attachments.TryGetValue(contentID) with
-            | true, value -> value
-            | _ -> failwithf "Multipart message doesn't contain content part with ID `%s`." contentID
-        else failwithf "Invalid multipart content reference: `%s`." href
 
 module internal Wsdl =
     open System.Xml.Linq

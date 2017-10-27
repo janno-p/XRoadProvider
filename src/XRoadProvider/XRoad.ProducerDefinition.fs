@@ -69,7 +69,7 @@ module ServiceBuilder =
 
     let buildOperationInput (context: TypeBuilderContext) tns (operation: ServicePortMethod) (paramClass: CodeTypeDeclaration) m =
         m |> Meth.addStmt (CodeVariableDeclarationStatement(paramClass.Name, "@__input", CodeObjectCreateExpression(paramClass.Name)))
-          |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") (!+ "@__input"))
+          |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") (Arr.create<obj> [ !+ "@__input" ]))
           |> ignore
         let namespaceSet = SortedSet<_>()
         let addParameter (parameter: Parameter) nm ns =
@@ -155,7 +155,7 @@ module ServiceBuilder =
               |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN name.LocalName name.NamespaceName))
               |> Meth.returnsOf (runtimeType.AsCodeTypeReference())
               |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [!+ "@__m"; !+ "@__reqOpt"; !+ "@__respOpt"]))
-              |> Meth.addStmt (Stmt.ret (Expr.cast (runtimeType.AsCodeTypeReference()) ((!+ "@__r") @=> "Body")))
+              |> Meth.addStmt (Stmt.ret (Expr.cast (runtimeType.AsCodeTypeReference()) (Arr.first ((!+ "@__r") @=> "Body"))))
 //        | DocEncoded(encodingNamespace, wrapper) ->
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
 //            m
@@ -190,7 +190,12 @@ module ServiceBuilder =
             Meth.create operation.Name
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Code.comment operation.Documentation
-            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__m" (Expr.inst<XRoad.XRoadMessage> []))
+            |> Meth.addStmt
+                (Stmt.declVarWith<XRoad.XRoadMessage>
+                    "@__m"
+                    (Expr.inst<XRoad.XRoadMessage>
+                        [((Expr.typeRefOf<XRoad.XRoadUtil> @-> "GetMethodMap")
+                            @% [((((Expr.this @-> "GetType") @% []) @-> "GetMethod") @% [!^ operation.Name ]); !^ operation.InputParameters.IsEncoded])]))
             |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString()]))
             |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceCode") (!^ operation.Name))
             |> iif operation.Version.IsSome (fun x -> x |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceVersion") (!^ operation.Version.Value)))

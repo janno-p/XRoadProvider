@@ -199,6 +199,7 @@ module Code =
 /// Functions to create and manipulate arrays.
 module Arr =
     let create<'T> (args: CodeExpression list) = CodeArrayCreateExpression(typeRef<'T>, args |> Array.ofList) :> CodeExpression
+    let first arr = CodeArrayIndexerExpression(arr, !^ 0)
 
 module Compiler =
     /// Builds new assembly for provided namespace.
