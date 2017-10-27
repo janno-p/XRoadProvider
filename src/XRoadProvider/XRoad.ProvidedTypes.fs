@@ -93,8 +93,8 @@ type XRoadProducerProvider() as this =
 /// Currently only one type provider is available, which acquires list of all producers from
 /// security server.
 [<TypeProvider>]
-type XRoadProviders() as this =
-    inherit TypeProviderForNamespaces()
+type XRoadProviders(config: TypeProviderConfig) as this =
+    inherit TypeProviderForNamespaces(config)
 
     let theAssembly = typeof<XRoadProviders>.Assembly
     let namespaceName = "XRoad.Providers"
@@ -117,7 +117,7 @@ type XRoadProviders() as this =
                 match parameterValues with
                 | [| :? string as serverIP |] ->
                     // Create field which holds default service endpoint for the security server.
-                    let requestUri = ProvidedLiteralField("RequestUri", typeof<string>, sprintf "http://%s/cgi-bin/consumer_proxy" serverIP)
+                    let requestUri = ProvidedField.Literal("RequestUri", typeof<string>, sprintf "http://%s/cgi-bin/consumer_proxy" serverIP)
                     thisTy.AddMember(requestUri)
                     // Create type which holds producer list.
                     let producersTy = ProvidedTypeDefinition("Producers", Some baseTy, HideObjectMethods=true)
@@ -127,8 +127,8 @@ type XRoadProviders() as this =
                     SecurityServer.discoverProducers(serverIP)
                     |> List.map (fun producer ->
                         let producerTy = ProvidedTypeDefinition(producer.Name, Some baseTy, HideObjectMethods=true)
-                        producerTy.AddMember(ProvidedLiteralField("ProducerName", typeof<string>, producer.Name))
-                        producerTy.AddMember(ProvidedLiteralField("WsdlUri", typeof<string>, producer.WsdlUri))
+                        producerTy.AddMember(ProvidedField.Literal("ProducerName", typeof<string>, producer.Name))
+                        producerTy.AddMember(ProvidedField.Literal("WsdlUri", typeof<string>, producer.WsdlUri))
                         producerTy.AddXmlDoc(producer.Description)
                         producerTy)
                     |> producersTy.AddMembers
@@ -136,7 +136,7 @@ type XRoadProviders() as this =
                 thisTy)
 
     let noteProperty message : MemberInfo =
-        let property = ProvidedProperty("<Note>", typeof<string>, GetterCode = (fun _ -> <@@ "" @@>), IsStatic = true)
+        let property = ProvidedProperty("<Note>", typeof<string>, getterCode = (fun _ -> <@@ "" @@>), isStatic = true)
         property.AddXmlDoc(message)
         upcast property
 
@@ -170,7 +170,7 @@ type XRoadProviders() as this =
             |> List.map (fun memberClass ->
                 let classTy = ProvidedTypeDefinition(memberClass.Name, Some baseTy, HideObjectMethods = true)
                 classTy.AddXmlDoc(memberClass.Name)
-                classTy.AddMember(ProvidedLiteralField("ClassName", typeof<string>, memberClass.Name))
+                classTy.AddMember(ProvidedField.Literal("ClassName", typeof<string>, memberClass.Name))
                 classTy.AddMembersDelayed (fun () ->
                     memberClass.Members
                     |> List.map (fun memberItem ->
@@ -180,12 +180,12 @@ type XRoadProviders() as this =
                                 let service: SecurityServerV6.Service = { Provider = provider; ServiceCode = "listMethods"; ServiceVersion = None }
                                 match addNote, SecurityServerV6.downloadMethodsList securityServerUri client service with
                                 | true, [] -> [noteProperty "No services are listed in this X-Road member."]
-                                | _, ss -> ss |> List.map (fun x -> ProvidedLiteralField((sprintf "SERVICE:%s" x.ServiceCode), typeof<string>, Uri(securityServerUri, x.WsdlPath).ToString()) :> MemberInfo)
+                                | _, ss -> ss |> List.map (fun x -> ProvidedField.Literal((sprintf "SERVICE:%s" x.ServiceCode), typeof<string>, Uri(securityServerUri, x.WsdlPath).ToString()) :> MemberInfo)
                             with e -> [noteProperty e.Message]
                         let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
                         memberTy.AddXmlDoc(memberItem.Name)
-                        memberTy.AddMember(ProvidedLiteralField("Name", typeof<string>, memberItem.Name))
-                        memberTy.AddMember(ProvidedLiteralField("Code", typeof<string>, memberItem.Code))
+                        memberTy.AddMember(ProvidedField.Literal("Name", typeof<string>, memberItem.Name))
+                        memberTy.AddMember(ProvidedField.Literal("Code", typeof<string>, memberItem.Code))
                         memberTy.AddMembersDelayed(fun _ -> addServices memberId false)
                         memberTy.AddMembersDelayed(fun () ->
                             memberItem.Subsystems
@@ -193,7 +193,7 @@ type XRoadProviders() as this =
                                 let subsystemId = memberId.GetSubsystem(subsystem)
                                 let subsystemTy = ProvidedTypeDefinition(sprintf "%s:%s" subsystemId.ObjectId subsystem, Some baseTy, HideObjectMethods = true)
                                 subsystemTy.AddXmlDoc(sprintf "Subsystem %s of X-Road member %s (%s)." subsystem memberItem.Name memberItem.Code)
-                                subsystemTy.AddMember(ProvidedLiteralField("Name", typeof<string>, subsystem))
+                                subsystemTy.AddMember(ProvidedField.Literal("Name", typeof<string>, subsystem))
                                 subsystemTy.AddMembersDelayed(fun _ -> addServices subsystemId true)
                                 subsystemTy))
                         memberTy))
@@ -202,7 +202,7 @@ type XRoadProviders() as this =
         centralServicesTy.AddMembersDelayed (fun _ ->
             match SecurityServerV6.downloadCentralServiceList securityServerUri xRoadInstance refresh with
             | [] -> [noteProperty "No central services are listed in this X-Road instance."]
-            | services -> services |> List.map (fun serviceCode -> upcast ProvidedLiteralField(serviceCode, typeof<string>, serviceCode)))
+            | services -> services |> List.map (fun serviceCode -> upcast ProvidedField.Literal(serviceCode, typeof<string>, serviceCode)))
 
         thisTy
 

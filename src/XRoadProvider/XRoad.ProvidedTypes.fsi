@@ -17,4 +17,4 @@ type XRoadProviders =
     inherit ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces
 
     /// Initializes new type provider instance
-    new: unit -> XRoadProviders
+    new: Microsoft.FSharp.Core.CompilerServices.TypeProviderConfig -> XRoadProviders

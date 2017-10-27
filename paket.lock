@@ -1,20 +1,18 @@
-FRAMEWORK: NET45
+RESTRICTION: == net45
 NUGET
   remote: https://www.nuget.org/api/v2
     Common.Logging (3.3.1)
       Common.Logging.Core (>= 3.3.1)
     Common.Logging.Core (3.3.1)
-    FSharp.Core (4.1.17)
-      System.ValueTuple (>= 4.3)
+    FSharp.Core (4.2.3)
     NodaTime (2.0.1)
     Optional (3.2)
-    System.ValueTuple (4.3.1)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
-    src/ProvidedTypes.fs (1dab4f94411500794342f61f877feab772e5a754)
-    src/ProvidedTypes.fsi (1dab4f94411500794342f61f877feab772e5a754)
+    src/ProvidedTypes.fs (e75f056b5a675d04445649d872aa020439a6442a)
+    src/ProvidedTypes.fsi (e75f056b5a675d04445649d872aa020439a6442a)
 GROUP Build
-FRAMEWORK: NET45
+RESTRICTION: == net45
 NUGET
   remote: https://www.nuget.org/api/v2
     FAKE (4.61.2)
@@ -31,11 +29,10 @@ GITHUB
     modules/Octokit/Octokit.fsx (43917109af4ef38194d8993215c3e7c862b19d36)
       Octokit (>= 0.20)
 GROUP Test
-FRAMEWORK: NET45
+RESTRICTION: == net45
 NUGET
   remote: https://www.nuget.org/api/v2
-    FSharp.Core (4.1.17)
-      System.ValueTuple (>= 4.3)
+    FSharp.Core (4.2.3)
     FsUnit (3.0)
       FSharp.Core (>= 3.1.2.5)
       NUnit (>= 3.6)
