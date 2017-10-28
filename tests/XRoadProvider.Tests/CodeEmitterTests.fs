@@ -1,5 +1,6 @@
 module CodeEmitterTests
 
+(*
 open FsUnit
 open NUnit.Framework
 open System
@@ -75,3 +76,6 @@ module OptionalElements =
         HasOptionalElements(Value2 = Optional.Option.Some<int>(15))
         |> serializeOptionalProperty
         |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><Test>content</Test>"
+*)
+
+do ()

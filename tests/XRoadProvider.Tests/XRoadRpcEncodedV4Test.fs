@@ -1,5 +1,6 @@
 ﻿namespace XRoadProvider.Test
 
+(*
 open FsUnit
 open NUnit.Framework
 open System.IO
@@ -17,3 +18,6 @@ module XRoadRpcEncodedV4Test =
         typeSchemas.ContainsKey "http://x-tee.riik.ee/xsd/xtee.xsd" |> should be True
         let mainSchema = typeSchemas.["http://producers.maakataster.xtee.riik.ee/producer/maakataster"]
         mainSchema.TargetNamespace.NamespaceName |> should equal "http://producers.maakataster.xtee.riik.ee/producer/maakataster"
+*)
+
+do ()

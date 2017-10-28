@@ -1,21 +1,23 @@
-RESTRICTION: == net45
+RESTRICTION: == net461
 NUGET
   remote: https://www.nuget.org/api/v2
-    Common.Logging (3.3.1)
-      Common.Logging.Core (>= 3.3.1)
-    Common.Logging.Core (3.3.1)
+    Common.Logging (3.4.1)
+      Common.Logging.Core (>= 3.4.1)
+    Common.Logging.Core (3.4.1)
+      Microsoft.CSharp (>= 4.0.1)
     FSharp.Core (4.2.3)
-    NodaTime (2.0.1)
+    Microsoft.CSharp (4.4)
+    NodaTime (2.2.2)
     Optional (3.2)
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
     src/ProvidedTypes.fs (e75f056b5a675d04445649d872aa020439a6442a)
     src/ProvidedTypes.fsi (e75f056b5a675d04445649d872aa020439a6442a)
 GROUP Build
-RESTRICTION: == net45
+RESTRICTION: == net461
 NUGET
   remote: https://www.nuget.org/api/v2
-    FAKE (4.61.2)
+    FAKE (4.63.2)
     FSharp.Compiler.Service (2.0.0.6)
     FSharp.Formatting (2.14.4)
       FSharp.Compiler.Service (2.0.0.6)
@@ -26,27 +28,16 @@ NUGET
     SourceLink.Fake (1.1)
 GITHUB
   remote: fsharp/FAKE
-    modules/Octokit/Octokit.fsx (43917109af4ef38194d8993215c3e7c862b19d36)
+    modules/Octokit/Octokit.fsx (838f43e1e6ac18014b2515799fe7fa0e23186fbc)
       Octokit (>= 0.20)
 GROUP Test
-RESTRICTION: == net45
+RESTRICTION: == net461
 NUGET
   remote: https://www.nuget.org/api/v2
+    Argu (3.7)
+    Expecto (5.0.1)
+      Argu (>= 3.7)
+      FSharp.Core (>= 4.1.12)
+      Mono.Cecil (>= 0.10.0-beta5)
     FSharp.Core (4.2.3)
-    FsUnit (3.0)
-      FSharp.Core (>= 3.1.2.5)
-      NUnit (>= 3.6)
-    NUnit (3.6.1)
-    NUnit.ConsoleRunner (3.6.1)
-    NUnit.Extension.NUnitProjectLoader (3.5)
-    NUnit.Extension.NUnitV2Driver (3.6)
-    NUnit.Extension.NUnitV2ResultWriter (3.5)
-    NUnit.Extension.TeamCityEventListener (1.0.2)
-    NUnit.Extension.VSProjectLoader (3.5)
-    NUnit.Runners (3.6.1)
-      NUnit.ConsoleRunner (>= 3.6.1)
-      NUnit.Extension.NUnitProjectLoader (>= 3.5)
-      NUnit.Extension.NUnitV2Driver (>= 3.6)
-      NUnit.Extension.NUnitV2ResultWriter (>= 3.5)
-      NUnit.Extension.TeamCityEventListener (>= 1.0.2)
-      NUnit.Extension.VSProjectLoader (>= 3.5)
+    Mono.Cecil (0.10.0-beta6)

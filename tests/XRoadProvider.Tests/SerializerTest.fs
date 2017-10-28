@@ -1,5 +1,6 @@
 ﻿module XRoadSerializer.Tests.SerializerTest
 
+(*
 open FsUnit
 open NUnit.Framework
 open System
@@ -597,3 +598,6 @@ let [<Test>] ``serialize multiple levels of inheritance`` () =
     let resultXml = initial |> serialize'
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>1</Value1><Value2>2</Value2><Value3>3</Value3></keha></wrapper>"
     resultXml |> deserialize'<Level3> |> should equal initial
+*)
+
+do ()

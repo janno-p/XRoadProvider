@@ -1,5 +1,6 @@
 ﻿namespace XRoadProvider.Test
 
+(*
 open FsUnit
 open NUnit.Framework
 open XRoad
@@ -95,3 +96,6 @@ module XRoadDocLiteralWrappedV5Test =
         mainSchema.QualifiedElements |> should be False
         mainSchema.Elements.Count |> should equal 18
         mainSchema.Types.Count |> should equal 4
+*)
+
+do ()
