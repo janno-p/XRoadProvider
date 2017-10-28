@@ -41,5 +41,3 @@ NUGET
       Mono.Cecil (>= 0.10.0-beta5)
     FSharp.Core (4.2.3)
     Mono.Cecil (0.10.0-beta6)
-    Suave (2.2.1)
-      FSharp.Core (>= 4.0.0.1)
