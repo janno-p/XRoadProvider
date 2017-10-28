@@ -2,25 +2,14 @@ source https://nuget.org/api/v2
 framework: net461
 
 nuget Common.Logging
+nuget Expecto
+nuget FAKE >= 5 beta
 nuget FSharp.Core
+nuget FSharp.Formatting
 nuget NodaTime
 nuget Optional
-
-github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
-github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi
-
-group Build
-source https://nuget.org/api/v2
-framework: net461
-
-nuget FAKE >= 5 beta
-nuget FSharp.Formatting
 nuget SourceLink.Fake
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
-
-group Test
-source https://www.nuget.org/api/v2
-framework: net461
-
-nuget Expecto
+github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
+github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi

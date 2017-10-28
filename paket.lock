@@ -1,43 +1,33 @@
 RESTRICTION: == net461
 NUGET
   remote: https://www.nuget.org/api/v2
+    Argu (3.7)
     Common.Logging (3.4.1)
       Common.Logging.Core (>= 3.4.1)
     Common.Logging.Core (3.4.1)
       Microsoft.CSharp (>= 4.0.1)
-    FSharp.Core (4.2.3)
-    Microsoft.CSharp (4.4)
-    NodaTime (2.2.2)
-    Optional (3.2)
-GITHUB
-  remote: fsprojects/FSharp.TypeProviders.StarterPack
-    src/ProvidedTypes.fs (e75f056b5a675d04445649d872aa020439a6442a)
-    src/ProvidedTypes.fsi (e75f056b5a675d04445649d872aa020439a6442a)
-GROUP Build
-RESTRICTION: == net461
-NUGET
-  remote: https://www.nuget.org/api/v2
+    Expecto (5.0.1)
+      Argu (>= 3.7)
+      FSharp.Core (>= 4.1.12)
+      Mono.Cecil (>= 0.10.0-beta5)
     FAKE (5.0.0-beta008)
     FSharp.Compiler.Service (2.0.0.6)
+    FSharp.Core (4.2.3)
     FSharp.Formatting (2.14.4)
       FSharp.Compiler.Service (2.0.0.6)
       FSharpVSPowerTools.Core (>= 2.3 < 2.4)
     FSharpVSPowerTools.Core (2.3)
       FSharp.Compiler.Service (>= 2.0.0.3)
-    Octokit (0.24)
+    Microsoft.CSharp (4.4)
+    Mono.Cecil (0.10.0-beta6)
+    NodaTime (2.2.2)
+    Octokit (0.27)
+    Optional (3.2)
     SourceLink.Fake (1.1)
 GITHUB
   remote: fsharp/FAKE
     modules/Octokit/Octokit.fsx (838f43e1e6ac18014b2515799fe7fa0e23186fbc)
       Octokit (>= 0.20)
-GROUP Test
-RESTRICTION: == net461
-NUGET
-  remote: https://www.nuget.org/api/v2
-    Argu (3.7)
-    Expecto (5.0.1)
-      Argu (>= 3.7)
-      FSharp.Core (>= 4.1.12)
-      Mono.Cecil (>= 0.10.0-beta5)
-    FSharp.Core (4.2.3)
-    Mono.Cecil (0.10.0-beta6)
+  remote: fsprojects/FSharp.TypeProviders.StarterPack
+    src/ProvidedTypes.fs (e75f056b5a675d04445649d872aa020439a6442a)
+    src/ProvidedTypes.fsi (e75f056b5a675d04445649d872aa020439a6442a)

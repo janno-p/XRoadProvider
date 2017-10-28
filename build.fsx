@@ -2,7 +2,7 @@
 // FAKE build script
 // --------------------------------------------------------------------------------------
 
-#r @"packages/build/FAKE/tools/FakeLib.dll"
+#r @"packages/FAKE/tools/FakeLib.dll"
 open Fake.ChangeWatcher
 open Fake.Core
 open Fake.Core.BuildServer
@@ -22,7 +22,7 @@ open Fake.Tools
 
 #if MONO
 #else
-#load "packages/build/SourceLink.Fake/tools/Fake.fsx"
+#load "packages/SourceLink.Fake/tools/Fake.fsx"
 open SourceLink
 #endif
 
