@@ -7,7 +7,6 @@ open System.IO
 open System.Reflection.Emit
 open System.Xml
 open System.Xml.Linq
-
 open XRoad
 open XRoad.DynamicMethods
 open XRoad.DynamicMethods.EmitSerialization
