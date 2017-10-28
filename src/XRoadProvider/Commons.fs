@@ -5,6 +5,7 @@ open System.Collections.Generic
 open System.IO
 open System.Xml
 open System.Reflection
+open XRoad.Serialization.Attributes
 
 [<RequireQualifiedAccessAttribute>]
 module internal XmlNamespace =
@@ -31,14 +32,6 @@ module internal XmlNamespace =
     /// Defines namespaces which are handled separately (not generated).
     let predefined =
         [ Http; Mime; Soap; SoapEnc; SoapEnv; Wsdl; Xmime; Xml; Xmlns; Xop; Xsd; Xsi; XRoad40; XRoad40Id; XRoad40Repr ]
-
-type XRoadProtocol =
-    | Undefined = 0
-    | Version20 = 1
-    | Version30 = 2
-    | Version31Ee = 3
-    | Version31Eu = 4
-    | Version40 = 5
 
 type XRoadMessageProtocolVersion =
     | Version20 of string
@@ -389,7 +382,15 @@ type SerializerContext() =
 
 type MethodMap =
     { Deserializer: MethodInfo
-      Serializer: MethodInfo }
+      Serializer: MethodInfo
+      Protocol: XRoadProtocol
+      IsEncoded: bool
+      IsMultipart: bool
+      ServiceCode: string
+      ServiceVersion: string option
+      Namespaces: string list
+      Accessor: XmlQualifiedName option
+      RequiredHeaders: IDictionary<string, string[]> }
     member this.Deserialize(reader: XmlReader, context: SerializerContext) =
         this.Deserializer.Invoke(null, [| reader; context |])
     member this.Serialize(writer: XmlWriter, context: SerializerContext, args: obj[]) =

@@ -13,6 +13,15 @@ type LayoutKind =
     | Sequence = 2
 
 
+type XRoadProtocol =
+    | Undefined = 0
+    | Version20 = 1
+    | Version30 = 2
+    | Version31Ee = 3
+    | Version31Eu = 4
+    | Version40 = 5
+
+
 /// Attribute which identifies serializable type.
 /// Provides overrides for content layout, type name and namespace.
 /// Default constructor initializes new attribute by giving type name and content layout.
@@ -109,3 +118,52 @@ type XRoadCollectionAttribute(itemName: string) =
     /// When true, no extra element is serialized for this property. Instead, all collection
     /// item elements become direct child elements of property owner element.
     member val MergeContent = false with get, set
+
+
+/// Describes required header elements of specified X-Road operation.
+[<AllowNullLiteral>]
+[<AttributeUsage(AttributeTargets.Method, AllowMultiple = true)>]
+type XRoadRequiredHeadersAttribute(ns: string, [<ParamArray>] names: string []) =
+    inherit Attribute()
+    
+    /// XML namespace of listed header names.
+    member val Namespace = ns with get
+    
+    /// List of required header names.
+    member val Names = names with get
+    
+
+/// Metadata of X-Road operation.
+[<AllowNullLiteral>]
+[<AttributeUsage(AttributeTargets.Method)>]
+type XRoadOperationAttribute(serviceCode: string, serviceVersion: string, protocol: XRoadProtocol) =
+    inherit Attribute()
+    
+    member val ServiceCode = serviceCode with get
+    member val ServiceVersion = serviceVersion with get
+    member val Protocol = protocol with get
+    member val ProtocolVersion = Unchecked.defaultof<string> with get, set
+
+
+/// Describes accessor element for X-Road operation request.
+[<AllowNullLiteral>]
+[<AttributeUsage(AttributeTargets.Method)>]
+type XRoadRequestAttribute(name: string, ns: string) =
+    inherit Attribute()
+    
+    member val Name = name with get
+    member val Namespace = ns with get
+    member val Encoded = false with get, set
+    member val Multipart = false with get, set
+
+
+/// Describes accessor element for X-Road operation response.
+[<AllowNullLiteral>]
+[<AttributeUsage(AttributeTargets.Method)>]
+type XRoadResponseAccessorAttribute(name: string, ns: string) =
+    inherit Attribute()
+    
+    member val Name = name with get
+    member val Namespace = ns with get
+    member val Encoded = false with get, set
+    member val Multipart = false with get, set

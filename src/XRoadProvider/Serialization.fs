@@ -37,13 +37,13 @@ module private Response =
 open Response
 open System.Xml.XPath
 
-type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
+type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
     let log = LogManager.GetLogger()
 
     let checkXRoadFault (stream: Stream) =
         let faultPath = "/*[local-name()='Envelope' and namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*[local-name()='Body' and namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*"
         let xpath =
-            match options.Protocol with
+            match methodMap.Protocol with
             | XRoadProtocol.Version40 -> faultPath
             | XRoadProtocol.Version20 -> sprintf "%s/keha" faultPath
             | _ -> sprintf "%s/response" faultPath
@@ -59,7 +59,7 @@ type XRoadResponse(response: WebResponse, options: XRoadResponseOptions) =
             let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> Option.orDefault ""
             raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
 
-    member __.RetrieveMessage(methodMap: MethodMap): XRoadMessage =
+    member __.RetrieveMessage(): XRoadMessage =
         let message = XRoadMessage(methodMap)
         use stream =
             let stream, attachments = response |> MultipartMessage.read
@@ -95,11 +95,18 @@ type XRoadStreamReader() =
     class
     end
 
-type XRoadRequest(opt: XRoadRequestOptions) =
+type XRoadRequest(producerUri: string, methodMap: MethodMap) =
     let log = LogManager.GetLogger()
 
-    let request = WebRequest.Create(opt.Uri, Method="POST", ContentType="text/xml; charset=utf-8")
+    let request = WebRequest.Create(producerUri, Method="POST", ContentType="text/xml; charset=utf-8")
     do request.Headers.Set("SOAPAction", "")
+    
+    let addNamespace =
+        let mutable i = 0
+        (fun ns (writer: XmlWriter) ->
+            if writer.LookupPrefix(ns) |> isNull then
+                i <- i + 1
+                writer.WriteAttributeString("xmlns", sprintf "ns%d" i, XmlNamespace.Xmlns, ns))
 
     let writeContent (stream: Stream) (content: Stream) =
         let buffer = Array.create 1000 0uy
@@ -146,7 +153,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     let writeIdHeader value ns req (writer: XmlWriter) =
         if req |> Array.exists ((=) "id") || value |> isNullOrEmpty |> not then
             writer.WriteStartElement("id", ns)
-            if opt.IsEncoded then
+            if methodMap.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("string", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
@@ -156,7 +163,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     let writeStringHeader req ns (writer: XmlWriter) value name =
         if req |> Array.exists ((=) name) || value |> isNullOrEmpty |> not then
             writer.WriteStartElement(name, ns)
-            if opt.IsEncoded then
+            if methodMap.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("string", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
@@ -167,7 +174,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     let writeBoolHeader (value: Nullable<bool>) name ns req (writer: XmlWriter) =
         if req |> Array.exists ((=) name) || value.HasValue then
             writer.WriteStartElement(name, ns)
-            if opt.IsEncoded then
+            if methodMap.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("boolean", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
@@ -178,7 +185,7 @@ type XRoadRequest(opt: XRoadRequestOptions) =
     let writeBase64Header (value: byte[]) name ns req (writer: XmlWriter) =
         if req |> Array.exists ((=) name) || value |> isNullOrEmptyArray |> not then
             writer.WriteStartElement(name, ns)
-            if opt.IsEncoded then
+            if methodMap.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("base64", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
@@ -212,8 +219,9 @@ type XRoadRequest(opt: XRoadRequestOptions) =
             writer.WriteEndElement()
 
     let getServiceName producerName =
-        let serviceName = if opt.ServiceVersion |> isNullOrEmpty then opt.ServiceCode
-                          else sprintf "%s.%s" opt.ServiceCode opt.ServiceVersion
+        let serviceName = match methodMap.ServiceVersion with
+                          | Some(version) -> sprintf "%s.%s" methodMap.ServiceCode version
+                          | None -> methodMap.ServiceCode
         if producerName |> isNullOrEmpty then serviceName
         else sprintf "%s.%s" producerName serviceName
 
@@ -241,87 +249,90 @@ type XRoadRequest(opt: XRoadRequestOptions) =
                     writer.WriteValue(value.SubsystemCode)
                     writer.WriteEndElement()
                 writer.WriteStartElement("serviceCode", XmlNamespace.XRoad40Id)
-                if not <| String.IsNullOrEmpty(opt.ServiceCode) then
-                    writer.WriteValue(opt.ServiceCode)
+                if not <| String.IsNullOrEmpty(methodMap.ServiceCode) then
+                    writer.WriteValue(methodMap.ServiceCode)
                 writer.WriteEndElement()
-                if String.IsNullOrWhiteSpace(opt.ServiceVersion) |> not then
+                match methodMap.ServiceVersion with
+                | Some(version) ->
                     writer.WriteStartElement("serviceVersion", XmlNamespace.XRoad40Id)
-                    writer.WriteValue(opt.ServiceVersion)
+                    writer.WriteValue(version)
                     writer.WriteEndElement()
+                | None -> ()
             writer.WriteEndElement()
 
-    let writeXRoadHeader (msg: XRoadMessage) (writer: XmlWriter) =
-        if writer.LookupPrefix(msg.HeaderNamespace) |> isNull then
-            writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, msg.HeaderNamespace)
-        let writeStringHeader' = writeStringHeader msg.RequiredHeaders msg.HeaderNamespace writer
-        match msg.Header with
+    let writeXRoadHeader (header: AbstractXRoadHeader) (writer: XmlWriter) =
+        methodMap.RequiredHeaders.Keys |> Seq.iter (fun ns -> writer |> addNamespace ns)
+        let headerNamespace = protocolNamespace methodMap.Protocol
+        let requiredHeaders = match methodMap.RequiredHeaders.TryGetValue(headerNamespace) with true, xs -> xs | _ -> [||]
+        let writeStringHeader' = writeStringHeader requiredHeaders headerNamespace writer
+        match header with
         | :? XRoadRpcHeader as header ->
             writeStringHeader' header.Asutus "asutus"
             writeStringHeader' header.Andmekogu "andmekogu"
             writeStringHeader' header.Isikukood "isikukood"
             writeStringHeader' header.Ametnik "ametnik"
-            writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeIdHeader header.Id headerNamespace requiredHeaders
             writeStringHeader' (getServiceName header.Andmekogu) "nimi"
             writeStringHeader' header.Toimik "toimik"
             writeStringHeader' header.Allasutus "allasutus"
             writeStringHeader' header.Amet "amet"
             writeStringHeader' header.AmetnikNimi "ametniknimi"
-            writer |> writeBoolHeader header.Asynkroonne "asynkroonne" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeBoolHeader header.Asynkroonne "asynkroonne" headerNamespace requiredHeaders
             writeStringHeader' header.Autentija "autentija"
             writeStringHeader' header.Makstud "makstud"
             writeStringHeader' header.Salastada "salastada"
-            writer |> writeBase64Header header.SalastadaSertifikaadiga "salastada_sertifikaadiga" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeBase64Header header.SalastadaSertifikaadiga "salastada_sertifikaadiga" headerNamespace requiredHeaders
             writeStringHeader' header.Salastatud "salastatud"
             writeStringHeader' header.SalastatudSertifikaadiga "salastatud_sertifikaadiga"
         | :? XRoadDocHeader as header ->
             writeStringHeader' header.Consumer "consumer"
             writeStringHeader' header.Producer "producer"
             writeStringHeader' header.UserId "userId"
-            writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeIdHeader header.Id headerNamespace requiredHeaders
             writeStringHeader' (getServiceName header.Producer) "service"
             writeStringHeader' header.Issue "issue"
             writeStringHeader' header.Unit "unit"
             writeStringHeader' header.Position "position"
             writeStringHeader' header.UserName "userName"
-            writer |> writeBoolHeader header.Async "async" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeBoolHeader header.Async "async" headerNamespace requiredHeaders
             writeStringHeader' header.Authenticator "authenticator"
             writeStringHeader' header.Paid "paid"
             writeStringHeader' header.Encrypt "encrypt"
-            writer |> writeBase64Header header.EncryptCert "encryptCert" msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeBase64Header header.EncryptCert "encryptCert" headerNamespace requiredHeaders
             writeStringHeader' header.Encrypted "encrypted"
             writeStringHeader' header.EncryptedCert "encryptedCert"
         | :? XRoadHeader as header ->
             if writer.LookupPrefix(XmlNamespace.XRoad40Id) |> isNull then
                 writer.WriteAttributeString("xmlns", "id", XmlNamespace.Xmlns, XmlNamespace.XRoad40Id)
-            writer |> writeClientHeader header.Client msg.RequiredHeaders
-            writer |> writeServiceHeader header.Producer msg.RequiredHeaders
-            writer |> writeIdHeader header.Id msg.HeaderNamespace msg.RequiredHeaders
+            writer |> writeClientHeader header.Client requiredHeaders
+            writer |> writeServiceHeader header.Producer requiredHeaders
+            writer |> writeIdHeader header.Id headerNamespace requiredHeaders
             writeStringHeader' header.UserId "userId"
             writeStringHeader' header.Issue "issue"
             writeStringHeader' header.ProtocolVersion "protocolVersion"
-        | _ -> failwithf "Unexpected X-Road header type `%s`." (msg.Header.GetType().FullName)
-        msg.Header.Unresolved |> Seq.iter (fun e -> e.WriteTo(writer))
+        | _ -> failwithf "Unexpected X-Road header type `%s`." (header.GetType().FullName)
+        header.Unresolved |> Seq.iter (fun e -> e.WriteTo(writer))
 
-    member __.SendMessage(msg: XRoadMessage) =
+    member __.SendMessage(header: AbstractXRoadHeader, args: obj[]) =
         use content = new MemoryStream()
         use sw = new StreamWriter(content)
-        let context = SerializerContext(IsMultipart = opt.IsMultipart)
+        let context = SerializerContext(IsMultipart = methodMap.IsMultipart)
         use writer = XmlWriter.Create(sw)
         writer.WriteStartDocument()
         writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
         writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
-        writer.WriteAttributeString("xmlns", protocolPrefix opt.Protocol, XmlNamespace.Xmlns, protocolNamespace opt.Protocol)
-        msg.Namespaces |> Seq.iteri (fun i ns -> writer.WriteAttributeString("xmlns", sprintf "ns%d" i, XmlNamespace.Xmlns, ns))
-        match opt.Accessor with | null -> () | acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace)
-        if opt.IsEncoded then
+        writer.WriteAttributeString("xmlns", protocolPrefix methodMap.Protocol, XmlNamespace.Xmlns, protocolNamespace methodMap.Protocol)
+        methodMap.Namespaces |> Seq.iteri (fun i ns -> writer.WriteAttributeString("xmlns", sprintf "ns%d" i, XmlNamespace.Xmlns, ns))
+        methodMap.Accessor |> Option.iter (fun acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace))
+        if methodMap.IsEncoded then
             writer.WriteAttributeString("xmlns", "xsd", XmlNamespace.Xmlns, XmlNamespace.Xsd)
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
-        writer |> writeXRoadHeader msg
+        writer |> writeXRoadHeader header
         writer.WriteEndElement()
         
         writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
-        msg.Serialize(writer, context)
+        methodMap.Serialize(writer, context, args)
         writer.WriteEndElement()
 
         writer.WriteEndDocument()
@@ -329,15 +340,14 @@ type XRoadRequest(opt: XRoadRequestOptions) =
         if log.IsTraceEnabled then
             log.Trace(content |> Stream.toString)
         serializeMessage content context.Attachments
-    member __.GetResponse(options) =
-        new XRoadResponse(request.GetResponse(), options)
+    member __.GetResponse(methodMap: MethodMap) =
+        new XRoadResponse(request.GetResponse(), methodMap)
 
 type public XRoadUtil =
-    static member MakeServiceCall(message, requestOptions, responseOptions) =
-        let request = XRoadRequest(requestOptions)
-        request.SendMessage(message)
-        use response = request.GetResponse(responseOptions)
-        response.RetrieveMessage(message.MethodMap)
-
-    static member GetMethodMap(mi, isEncoded) =
-        getMethodMap mi isEncoded
+    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, header: AbstractXRoadHeader, args: obj[]) =
+        let serviceMethod = serviceType.GetMethod(methodName)
+        let serviceMethodMap = getMethodMap serviceMethod 
+        let request = XRoadRequest(producerUri, serviceMethodMap)
+        request.SendMessage(header, args)
+        use response = request.GetResponse(serviceMethodMap)
+        response.RetrieveMessage()

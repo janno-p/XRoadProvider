@@ -1234,14 +1234,13 @@ and findBaseTypes isEncoded (typ: Type) =
     |> Seq.choose (id)
     |> Seq.toList
     
-let createMethodMap (_mi: MethodInfo) (_isEncoded: bool) =
+let createMethodMap (_mi: MethodInfo) : MethodMap =
     failwithf "not implemented: createMethodMap"
-    { Serializer = null; Deserializer = null }
     
-let getMethodMap mi isEncoded =
+let getMethodMap mi =
     match operationMaps.TryGetValue(mi) with
     | true, mm -> mm
-    | _ -> operationMaps.GetOrAdd(mi, (createMethodMap mi isEncoded))
+    | _ -> operationMaps.GetOrAdd(mi, (createMethodMap mi))
 
 module internal XsdTypes =
     open NodaTime

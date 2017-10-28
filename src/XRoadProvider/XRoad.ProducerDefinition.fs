@@ -14,6 +14,8 @@ open XRoad.TypeSchema
 
 /// Functions and types to handle building methods for services and operation bindings.
 module ServiceBuilder =
+    open XRoad.Serialization.Attributes
+
     /// Creates return type for the operation.
     /// To support returning multiple output parameters, they are wrapped into tuples accordingly:
     /// Single parameter responses return that single parameter.
@@ -151,7 +153,7 @@ module ServiceBuilder =
         match operation.OutputParameters with
         | DocLiteralWrapped(name,_) ->
             let runtimeType = TypeBuilder.buildResponseElementType context name
-            m |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (runtimeType.AsCodeTypeReference()) ]))
+            m |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (runtimeType.AsCodeTypeReference()) ]))
               |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN name.LocalName name.NamespaceName))
               |> Meth.returnsOf (runtimeType.AsCodeTypeReference())
               |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [!+ "@__m"; !+ "@__reqOpt"; !+ "@__respOpt"]))
@@ -196,7 +198,7 @@ module ServiceBuilder =
                     (Expr.inst<XRoad.XRoadMessage>
                         [((Expr.typeRefOf<XRoad.XRoadUtil> @-> "GetMethodMap")
                             @% [((((Expr.this @-> "GetType") @% []) @-> "GetMethod") @% [!^ operation.Name ]); !^ operation.InputParameters.IsEncoded])]))
-            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString()]))
+            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoadProtocol> @=> protocol.ToString()]))
             |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceCode") (!^ operation.Name))
             |> iif operation.Version.IsSome (fun x -> x |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceVersion") (!^ operation.Version.Value)))
             |> addHeaderInitialization context.MessageProtocol operation.InputParameters.RequiredHeaders
