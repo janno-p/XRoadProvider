@@ -1,4 +1,4 @@
-// --------------------------------------------------------------------------------------
+﻿// --------------------------------------------------------------------------------------
 // Builds the documentation from `.fsx` and `.md` files in the 'docs/content' directory
 // (the generated documentation is stored in the 'docs/output' directory)
 // --------------------------------------------------------------------------------------
@@ -18,7 +18,7 @@ let githubLink = "http://github.com/janno-p/XRoadProvider"
 // Specify more information about your project
 let info =
   [ "project-name", "XRoadProvider"
-    "project-author", "Janno P�ldma"
+    "project-author", "Janno Põldma"
     "project-summary", "Type providers for generating types and service interfaces for XRoad producers."
     "project-github", githubLink
     "project-nuget", "http://nuget.org/packages/XRoadProvider" ]
@@ -30,9 +30,10 @@ let info =
 #load "../../packages/build/FSharp.Formatting/FSharp.Formatting.fsx"
 #I "../../packages/build/FAKE/tools/"
 #r "FakeLib.dll"
-open Fake
+open Fake.Core.Trace
+open Fake.IO
+open Fake.IO.FileSystemOperators
 open System.IO
-open Fake.FileHelper
 open FSharp.Literate
 open FSharp.MetadataFormat
 
@@ -41,55 +42,55 @@ open FSharp.MetadataFormat
 #if RELEASE
 let root = website
 #else
-let root = "file://" + (__SOURCE_DIRECTORY__ @@ "../output")
+let root = "file://" + (__SOURCE_DIRECTORY__ </> "../output")
 #endif
 
 // Paths with template/source/output locations
-let bin        = __SOURCE_DIRECTORY__ @@ "../../bin"
-let content    = __SOURCE_DIRECTORY__ @@ "../content"
-let output     = __SOURCE_DIRECTORY__ @@ "../output"
-let files      = __SOURCE_DIRECTORY__ @@ "../files"
-let templates  = __SOURCE_DIRECTORY__ @@ "templates"
-let formatting = __SOURCE_DIRECTORY__ @@ "../../packages/build/FSharp.Formatting/"
+let bin        = __SOURCE_DIRECTORY__ </> "../../bin"
+let content    = __SOURCE_DIRECTORY__ </> "../content"
+let output     = __SOURCE_DIRECTORY__ </> "../output"
+let files      = __SOURCE_DIRECTORY__ </> "../files"
+let templates  = __SOURCE_DIRECTORY__ </> "templates"
+let formatting = __SOURCE_DIRECTORY__ </> "../../packages/build/FSharp.Formatting/"
 let docTemplate = "docpage.cshtml"
 
 // Where to look for *.csproj templates (in this order)
 let layoutRootsAll = new System.Collections.Generic.Dictionary<string, string list>()
-layoutRootsAll.Add("en",[ templates; formatting @@ "templates"
-                          formatting @@ "templates/reference" ])
-subDirectories (directoryInfo templates)
+layoutRootsAll.Add("en",[ templates; formatting </> "templates"
+                          formatting </> "templates/reference" ])
+DirectoryInfo.getSubDirectories (DirectoryInfo.ofPath templates)
 |> Seq.iter (fun d ->
                 let name = d.Name
                 if name.Length = 2 || name.Length = 3 then
                     layoutRootsAll.Add(
-                            name, [templates @@ name
-                                   formatting @@ "templates"
-                                   formatting @@ "templates/reference" ]))
+                            name, [templates </> name
+                                   formatting </> "templates"
+                                   formatting </> "templates/reference" ]))
 
 // Copy static files and CSS + JS from F# Formatting
 let copyFiles () =
-  CopyRecursive files output true |> Log "Copying file: "
-  ensureDirectory (output @@ "content")
-  CopyRecursive (formatting @@ "styles") (output @@ "content") true 
+  Shell.CopyRecursive files output true |> Log "Copying file: "
+  Directory.ensure (output </> "content")
+  Shell.CopyRecursive (formatting </> "styles") (output </> "content") true 
     |> Log "Copying styles and scripts: "
 
 let binaries =
     let manuallyAdded = 
         referenceBinaries 
-        |> List.map (fun b -> bin @@ b)
+        |> List.map (fun b -> bin </> b)
     
     let conventionBased = 
-        directoryInfo bin 
-        |> subDirectories
-        |> Array.map (fun d -> d.FullName @@ (sprintf "%s.dll" d.Name))
+        DirectoryInfo.ofPath bin 
+        |> DirectoryInfo.getSubDirectories
+        |> Array.map (fun d -> d.FullName </> (sprintf "%s.dll" d.Name))
         |> List.ofArray
 
     conventionBased @ manuallyAdded
 
 let libDirs =
     let conventionBasedbinDirs =
-        directoryInfo bin 
-        |> subDirectories
+        DirectoryInfo.ofPath bin 
+        |> DirectoryInfo.getSubDirectories
         |> Array.map (fun d -> d.FullName)
         |> List.ofArray
 
@@ -97,12 +98,12 @@ let libDirs =
 
 // Build API reference from XML comments
 let buildReference () =
-  CleanDir (output @@ "reference")
+  Shell.CleanDir (output </> "reference")
   MetadataFormat.Generate
-    ( binaries, output @@ "reference", layoutRootsAll.["en"],
+    ( binaries, output </> "reference", layoutRootsAll.["en"],
       parameters = ("root", root)::info,
-      sourceRepo = githubLink @@ "tree/master",
-      sourceFolder = __SOURCE_DIRECTORY__ @@ ".." @@ "..",
+      sourceRepo = (githubLink </> "tree/master"),
+      sourceFolder = (__SOURCE_DIRECTORY__ </> ".." </> ".."),
       publicOnly = true,libDirs = libDirs )
 
 // Build documentation from `fsx` and `md` files in `docs/content`
@@ -121,7 +122,7 @@ let buildDocumentation () =
 
   let subdirs = Directory.EnumerateDirectories(content, "*", SearchOption.TopDirectoryOnly)
   for dir in subdirs do
-    let dirname = (new DirectoryInfo(dir)).Name
+    let dirname = (DirectoryInfo(dir)).Name
     let layoutRoots =
         // Check whether this directory name is for specific language
         let key = layoutRootsAll.Keys
@@ -131,7 +132,7 @@ let buildDocumentation () =
         | None -> layoutRootsAll.["en"] // "en" is the default language
 
     Literate.ProcessDirectory
-      ( dir, docTemplate, output @@ dirname, replacements = ("root", root)::info,
+      ( dir, docTemplate, output </> dirname, replacements = ("root", root)::info,
         layoutRoots = layoutRoots,
         generateAnchors = true )
 
