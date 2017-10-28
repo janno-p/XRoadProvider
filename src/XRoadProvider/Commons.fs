@@ -401,34 +401,6 @@ type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
     member val Value = value with get
     member val IsRequired = required with get
 
-type XRoadMessage (methodMap: MethodMap) as this =
-    member val Header = Unchecked.defaultof<AbstractXRoadHeader> with get, set
-    member val RequiredHeaders = Unchecked.defaultof<string[]> with get, set
-    member val HeaderNamespace = "" with get, set
-    member val Body: obj[] = Unchecked.defaultof<obj[]> with get, set
-    member val Attachments = Dictionary<string, BinaryContent>() with get, set
-    member val Namespaces = List<string>() with get
-    member val MethodMap = methodMap with get
-    member __.Deserialize(reader, context) = this.Body <- [| methodMap.Deserialize(reader, context) |]
-    member __.Serialize(writer, context) = methodMap.Serialize(writer, context, this.Body)
-
-type XRoadRequestOptions(uri: string, isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol) =
-    member val IsEncoded = isEncoded with get
-    member val IsMultipart = isMultipart with get
-    member val Protocol = protocol with get
-    member val Uri = uri with get
-    member val Accessor: XmlQualifiedName = null with get, set
-    member val ServiceCode = "" with get, set
-    member val ServiceVersion = "" with get, set
-
-type XRoadResponseOptions(isEncoded: bool, isMultipart: bool, protocol: XRoadProtocol, responseType: Type) =
-    member val IsEncoded = isEncoded with get
-    member val IsMultipart = isMultipart with get
-    member val Protocol = protocol with get
-    member val ResponseType = responseType with get
-    member val Accessor: XmlQualifiedName = null with get, set
-    member val ExpectUnexpected = false with get, set
-
 module internal Wsdl =
     open System.Xml.Linq
 

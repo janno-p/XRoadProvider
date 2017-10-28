@@ -39,51 +39,47 @@ module ServiceBuilder =
         | [(varName, typ)] -> (typ.AsCodeTypeReference(), !+ varName)
         | many -> getReturnTypeTuple([], many)
 
-    let addHeaderInitialization messageProtocol (reqhdrs: string list) (m: CodeMemberMethod) =
-        let props, headerType =
-            match messageProtocol with
-            | Version20(_) ->
-                m |> Meth.addParam<XRoadRpcHeader> "header"
-                  |> ignore
-                Some("Andmekogu"), typeRef<XRoadRpcHeader>
-            | Version30(_) | Version31Ee(_) | Version31Eu(_) ->
-                m |> Meth.addParam<XRoadDocHeader> "header"
-                  |> ignore
-                Some("Producer"), typeRef<XRoadDocHeader>
-            | Version40(_) ->
-                m |> Meth.addParam<XRoadHeader> "header"
-                  |> ignore;
-                None, typeRef<XRoadHeader>
-        m |> Meth.addStmt (Stmt.assign (!+ "header") (Expr.instOf headerType [!+ "header"]))
-          |> ignore
-        match props with
-        | Some(producerPropName) ->
-            m |> Meth.addStmt (Stmt.condIf ((Expr.typeRefOf<string> @-> "IsNullOrWhiteSpace") @% [!+ "header" @=> producerPropName]) [Stmt.assign (!+ "header" @=> producerPropName) (!^ messageProtocol.ProducerName.Value)])
-              |> ignore
-        | None ->
-            m |> Meth.addStmt (Stmt.condIf ((Expr.typeRefOf<string> @-> "IsNullOrWhiteSpace") @% [!+ "header" @=> "ProtocolVersion"]) [Stmt.assign (!+ "header" @=> "ProtocolVersion") (!^ "4.0")])
-              |> ignore
-        m |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "RequiredHeaders") (reqhdrs |> List.map (fun x -> !^ x) |> Arr.create<string>))
-          |> Meth.addStmt (Stmt.assign ((!+ "@__m") @=> "Header") (!+ "header"))
-          |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "HeaderNamespace") (!^ messageProtocol.HeaderNamespace))
-
     let instQN (nm: string) (ns: string) = Expr.inst<XmlQualifiedName> [!^ nm; !^ ns]
 
-    let buildOperationInput (context: TypeBuilderContext) tns (operation: ServicePortMethod) (paramClass: CodeTypeDeclaration) m =
-        m |> Meth.addStmt (CodeVariableDeclarationStatement(paramClass.Name, "@__input", CodeObjectCreateExpression(paramClass.Name)))
-          |> Meth.addStmt (Stmt.assign (!+ "@__m" @=> "Body") (Arr.create<obj> [ !+ "@__input" ]))
-          |> ignore
-        let namespaceSet = SortedSet<_>()
-        let addParameter (parameter: Parameter) nm ns =
-            let runtimeType = context.GetRuntimeType(match parameter.Type with Some(typeName) -> SchemaType(typeName) | None -> SchemaElement(parameter.Name))
-            m |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) parameter.Name.LocalName |> ignore
-            let prop = paramClass |> addProperty (parameter.Name.LocalName, runtimeType, false)
-            prop |> Prop.describe (Attributes.xrdElement (nm, ns, false, nm.IsNone && ns.IsNone)) |> ignore
-            match runtimeType with
-            | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
-            | _ -> ()
-            m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> parameter.Name.LocalName) (!+ parameter.Name.LocalName)) |> ignore
-            ns |> Option.iter (fun ns -> if (not (String.IsNullOrWhiteSpace(ns))) && namespaceSet.Add(ns) then m |> Meth.addExpr (((!+ "@__m" @=> "Namespaces") @-> "Add") @% [!^ ns]) |> ignore)
+//    let buildOperationOutput (context: TypeBuilderContext) (operation: ServicePortMethod) protocol (_: List<CodeTypeMember>) m =
+//        let x () =
+//            let resultClass = Cls.create(sprintf "%sOutput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
+//            m |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (CodeTypeReference(resultClass.Name)) ])) |> ignore
+//        let addParameter (parameter: Parameter) nm ns =
+//            let runtimeType = context.GetRuntimeType(match parameter.Type with Some(typeName) -> SchemaType(typeName) | None -> SchemaElement(parameter.Name))
+//            let prop = resultClass |> addProperty (parameter.Name.LocalName, runtimeType, false)
+//            let attr = Attributes.xrdElement (nm, ns, false)
+//            prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
+//        match parameters with
+//        | [] ->
+//            m |> Meth.addStmt (Stmt.ret Expr.empty)
+//        | [(name, typ)] ->
+//            m |> Meth.returnsOf (typ.AsCodeTypeReference())
+//              |> Meth.addStmt (Stmt.ret ((Expr.cast (CodeTypeReference(resultClass.Name)) ((!+ "@__r") @=> "Body")) @=> name.LocalName))
+//        | _ ->
+//            m |> Meth.returns<obj>
+//              |> Meth.addStmt (Stmt.ret Expr.nil)
+//        | _ -> m
+
+    /// Build content for each individual service call method.
+    let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): CodeMemberMethod =
+        let protocol = context.MessageProtocol.EnumValue
+        let m =
+            Meth.create operation.Name
+            |> Meth.describe (Attributes.xrdOperation operation.Name operation.Version protocol context.MessageProtocol)
+            |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+            |> Code.comment operation.Documentation
+            |> Meth.describe (Attributes.xrdRequiredHeaders context.MessageProtocol.HeaderNamespace operation.InputParameters.RequiredHeaders)
+
+        m |>
+            match context.MessageProtocol with
+            | Version20(_) -> Meth.addParam<XRoadRpcHeader> "header"
+            | Version30(_) | Version31Ee(_) | Version31Eu(_) -> Meth.addParam<XRoadDocHeader> "header"
+            | Version40(_) -> Meth.addParam<XRoadHeader> "header"
+        |> ignore
+
+        let argumentExpressions = ResizeArray<_>()
+
         let addDocLiteralWrappedParameters (spec: ElementSpec) =
             match context.DereferenceElementSpec(spec) |> snd |> context.GetSchemaTypeDefinition with
             | EmptyDefinition -> ()
@@ -105,59 +101,47 @@ module ServiceBuilder =
                                 runtimeType
                             | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
                         m |> Meth.addParamRef (runtimeType.AsCodeTypeReference(optional=(dspec.MinOccurs = 0u))) name |> ignore
-                        let prop = paramClass |> addProperty (name, runtimeType, dspec.MinOccurs = 0u) |> Prop.describe (Attributes.xrdElement (None, None, false, false))
-                        match runtimeType with
-                        | CollectionType(_,itemName,_) -> prop |> Prop.describe (Attributes.xrdCollection(Some(itemName), true)) |> ignore
-                        | _ -> ()
-                        m |> Meth.addStmt(Stmt.assign (!+ "@__input" @=> name) (!+ name)) |> ignore
+                        argumentExpressions.Add((!+ name))
                     | _ -> failwithf "%A" value)
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> Option.orDefault "<unknown>")
-        match operation.InputParameters with
-        | DocEncoded(encodingNamespace, wrapper) ->
-            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
-        | DocLiteralBody(content) ->
-            addParameter content.Parameters.Head None None
-        | DocLiteralWrapped(name,_) ->
-            m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN name.LocalName name.NamespaceName)) |> ignore
-            name |> context.GetElementSpec |> addDocLiteralWrappedParameters
-        | DocLiteral(wrapper) ->
-            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(p.Name.NamespaceName)))
-        | RpcEncoded(accessor, wrapper) ->
-            m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
-            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
-        | RpcLiteral(accessor, { Parameters = [{ Type = Some(_) } as p] }) ->
-            addParameter p (Some(accessor.LocalName)) (Some(accessor.NamespaceName))
-        | RpcLiteral(accessor, wrapper) ->
-            m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
-            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
-        m
 
-    let buildOperationOutput (context: TypeBuilderContext) (operation: ServicePortMethod) protocol (_: List<CodeTypeMember>) m =
-//        let x () =
-//            let resultClass = Cls.create(sprintf "%sOutput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
-//            m |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (CodeTypeReference(resultClass.Name)) ])) |> ignore
-//        let addParameter (parameter: Parameter) nm ns =
-//            let runtimeType = context.GetRuntimeType(match parameter.Type with Some(typeName) -> SchemaType(typeName) | None -> SchemaElement(parameter.Name))
-//            let prop = resultClass |> addProperty (parameter.Name.LocalName, runtimeType, false)
-//            let attr = Attributes.xrdElement (nm, ns, false)
-//            prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
-//        match parameters with
-//        | [] ->
-//            m |> Meth.addStmt (Stmt.ret Expr.empty)
-//        | [(name, typ)] ->
-//            m |> Meth.returnsOf (typ.AsCodeTypeReference())
-//              |> Meth.addStmt (Stmt.ret ((Expr.cast (CodeTypeReference(resultClass.Name)) ((!+ "@__r") @=> "Body")) @=> name.LocalName))
-//        | _ ->
-//            m |> Meth.returns<obj>
-//              |> Meth.addStmt (Stmt.ret Expr.nil)
+        match operation.InputParameters with
+//        | DocEncoded(encodingNamespace, wrapper) ->
+//            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
+//        | DocLiteralBody(content) ->
+//            addParameter content.Parameters.Head None None
+        | DocLiteralWrapped(name, content) ->
+            m |> Meth.describe (Attributes.xrdRequest name.LocalName name.NamespaceName false content.HasMultipartContent) |> ignore
+            name |> context.GetElementSpec |> addDocLiteralWrappedParameters
+//        | DocLiteral(wrapper) ->
+//            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(p.Name.NamespaceName)))
+//        | RpcEncoded(accessor, wrapper) ->
+//            m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
+//            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
+//        | RpcLiteral(accessor, { Parameters = [{ Type = Some(_) } as p] }) ->
+//            addParameter p (Some(accessor.LocalName)) (Some(accessor.NamespaceName))
+//        | RpcLiteral(accessor, wrapper) ->
+//            m |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
+//            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
+        | _ -> ()
+
+        // buildOperationOutput context operation protocol result |> ignore
         match operation.OutputParameters with
-        | DocLiteralWrapped(name,_) ->
+        | DocLiteralWrapped(name, content) ->
             let runtimeType = TypeBuilder.buildResponseElementType context name
-            m |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (runtimeType.AsCodeTypeReference()) ]))
-              |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN name.LocalName name.NamespaceName))
-              |> Meth.returnsOf (runtimeType.AsCodeTypeReference())
-              |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadMessage> "@__r" ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall") @% [!+ "@__m"; !+ "@__reqOpt"; !+ "@__respOpt"]))
-              |> Meth.addStmt (Stmt.ret (Expr.cast (runtimeType.AsCodeTypeReference()) (Arr.first ((!+ "@__r") @=> "Body"))))
+            m |> Meth.returnsOf (runtimeType.AsCodeTypeReference())
+              |> Meth.addStmt
+                (Stmt.ret
+                    (Expr.cast
+                        (runtimeType.AsCodeTypeReference())
+                            ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
+                                @% [(Expr.this @-> "GetType") @% []
+                                    !^ operation.Name
+                                    Expr.this @=> "ProducerUri"
+                                    Expr.this @=> "ProducerName"
+                                    !+ "header"
+                                    Arr.create (argumentExpressions |> Seq.toList)])))
+              |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent)
 //        | DocEncoded(encodingNamespace, wrapper) ->
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
 //            m
@@ -182,31 +166,6 @@ module ServiceBuilder =
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
 //            m
         | _ -> m
-
-    /// Build content for each individual service call method.
-    let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): CodeTypeMember list =
-        let protocol = context.MessageProtocol.EnumValue
-        let paramClass = Cls.create(sprintf "%sInput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
-        let result = List<CodeTypeMember>()
-        let m =
-            Meth.create operation.Name
-            |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-            |> Code.comment operation.Documentation
-            |> Meth.addStmt
-                (Stmt.declVarWith<XRoad.XRoadMessage>
-                    "@__m"
-                    (Expr.inst<XRoad.XRoadMessage>
-                        [((Expr.typeRefOf<XRoad.XRoadUtil> @-> "GetMethodMap")
-                            @% [((((Expr.this @-> "GetType") @% []) @-> "GetMethod") @% [!^ operation.Name ]); !^ operation.InputParameters.IsEncoded])]))
-            |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadRequestOptions> "@__reqOpt" (Expr.inst<XRoad.XRoadRequestOptions> [Expr.this @=> "ProducerUri"; !^ operation.InputParameters.IsEncoded; !^ operation.InputParameters.IsMultipart; Expr.typeRefOf<XRoadProtocol> @=> protocol.ToString()]))
-            |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceCode") (!^ operation.Name))
-            |> iif operation.Version.IsSome (fun x -> x |> Meth.addStmt (Stmt.assign (!+ "@__reqOpt" @=> "ServiceVersion") (!^ operation.Version.Value)))
-            |> addHeaderInitialization context.MessageProtocol operation.InputParameters.RequiredHeaders
-            |> buildOperationInput context tns operation paramClass
-        result.Add(m)
-        result.Add(paramClass)
-        m |> buildOperationOutput context operation protocol result |> ignore
-        result |> Seq.toList
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
@@ -291,7 +250,7 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
             serviceTy |> Cls.addMember portTy |> ignore
 
             port.Methods
-            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore))
+            |> List.iter (fun op -> portTy |> Cls.addMember (ServiceBuilder.build context service.Namespace op) |> ignore))
         targetClass |> Cls.addMember serviceTy |> ignore
         )
 

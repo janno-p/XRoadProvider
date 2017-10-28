@@ -102,6 +102,33 @@ module Attributes =
         itemName
         |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadCollectionAttribute>
         |> iif isNullable (fun attr -> attr |> Attr.addNamedArg "ItemIsNullable" (!^ true))
+    
+    let xrdOperation name (version: string option) (protocol: XRoadProtocol) messageProtocol =
+        Attr.create<XRoadOperationAttribute>
+        |> Attr.addArg (!^ name)
+        |> Attr.addArg (!^ (version |> Option.orDefault null))
+        |> Attr.addArg (Expr.typeRefOf<XRoadProtocol> @=> protocol.ToString())
+        |> iif (messageProtocol = XRoadMessageProtocolVersion.Version40) (fun attr -> attr |> Attr.addNamedArg "ProtocolVersion" (!^ "4.0"))
+    
+    let xrdRequest name ns isEncoded isMultipart =
+            Attr.create<XRoadRequestAttribute>
+            |> Attr.addArg (!^ name)
+            |> Attr.addArg (!^ ns)
+            |> iif isEncoded (fun attr -> attr |> Attr.addNamedArg "Encoded" (!^ true))
+            |> iif isMultipart (fun attr -> attr |> Attr.addNamedArg "Multipart" (!^ true))
+        
+    let xrdResponse name ns isEncoded isMultipart =
+        Attr.create<XRoadResponseAttribute>
+        |> Attr.addArg (!^ name)
+        |> Attr.addArg (!^ ns)
+        |> iif isEncoded (fun attr -> attr |> Attr.addNamedArg "Encoded" (!^ true))
+        |> iif isMultipart (fun attr -> attr |> Attr.addNamedArg "Multipart" (!^ true))
+        
+    let xrdRequiredHeaders ns hdrs =
+        hdrs
+        |> List.fold
+            (fun attr hdr -> attr |> Attr.addArg (!^ hdr))
+            (Attr.create<XRoadRequiredHeadersAttribute> |> Attr.addArg (!^ ns))
 
 /// Functions to create and manipulate type fields.
 module Fld =
@@ -144,6 +171,7 @@ module Meth =
     let addStmt (e: CodeStatement) (m: CodeMemberMethod) = m.Statements.Add(e) |> ignore; m
     let returns<'T> (m: CodeMemberMethod) = m.ReturnType <- typeRef<'T>; m
     let returnsOf (t: CodeTypeReference) (m: CodeMemberMethod) = m.ReturnType <- t; m
+    let describe a (m: CodeMemberMethod) = m.CustomAttributes.Add(a) |> ignore; m
 
 /// Functions to create and manipulate type constructors.
 module Ctor =

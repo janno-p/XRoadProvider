@@ -160,7 +160,7 @@ type XRoadRequestAttribute(name: string, ns: string) =
 /// Describes accessor element for X-Road operation response.
 [<AllowNullLiteral>]
 [<AttributeUsage(AttributeTargets.Method)>]
-type XRoadResponseAccessorAttribute(name: string, ns: string) =
+type XRoadResponseAttribute(name: string, ns: string) =
     inherit Attribute()
     
     member val Name = name with get

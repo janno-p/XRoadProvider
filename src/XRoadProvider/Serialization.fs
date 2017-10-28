@@ -59,11 +59,11 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
             let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> Option.orDefault ""
             raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
 
-    member __.RetrieveMessage(): XRoadMessage =
-        let message = XRoadMessage(methodMap)
+    member __.RetrieveMessage() =
+        let attachments = Dictionary<string, BinaryContent>()
         use stream =
-            let stream, attachments = response |> MultipartMessage.read
-            attachments |> List.iter (fun content -> message.Attachments.Add(content.ContentID, content))
+            let stream, atts = response |> MultipartMessage.read
+            atts |> List.iter (fun content -> attachments.Add(content.ContentID, content))
             stream
         if log.IsTraceEnabled then
             log.Trace(stream |> Stream.toString)
@@ -75,13 +75,12 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
         if not (reader.MoveToElement(1, "Body", XmlNamespace.SoapEnv)) then
             failwith "Soap body element was not found in response message."
         let context = SerializerContext()
-        context.AddAttachments(message.Attachments)
+        context.AddAttachments(attachments)
         if not (reader.MoveToElement(2, null, null)) then
             failwith "Soap message has empty payload in response."
         match reader.LocalName, reader.NamespaceURI with
         | "Fault", XmlNamespace.SoapEnv -> failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
-        | _ -> message.Deserialize(reader, context)
-        message
+        | _ -> methodMap.Deserialize(reader, context)
 
     interface IDisposable with
         member __.Dispose() =
@@ -344,7 +343,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
         new XRoadResponse(request.GetResponse(), methodMap)
 
 type public XRoadUtil =
-    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, header: AbstractXRoadHeader, args: obj[]) =
+    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, producerName: string, header: AbstractXRoadHeader, args: obj[]) =
         let serviceMethod = serviceType.GetMethod(methodName)
         let serviceMethodMap = getMethodMap serviceMethod 
         let request = XRoadRequest(producerUri, serviceMethodMap)
