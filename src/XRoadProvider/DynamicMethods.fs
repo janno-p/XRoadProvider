@@ -1251,6 +1251,9 @@ let createMethodMap (mi: MethodInfo) : MethodMap =
               typeof<obj>,
               [| typeof<XmlReader>; typeof<SerializerContext> |],
               true )
+    let ilDeser = deserializer.GetILGenerator()
+    ilDeser.Emit(OpCodes.Ldnull)
+    ilDeser.Emit(OpCodes.Ret)
     
     let serializer = 
         DynamicMethod

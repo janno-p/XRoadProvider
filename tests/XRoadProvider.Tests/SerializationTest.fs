@@ -1,3 +1,4 @@
+
 module XRoadProvider.Tests.SerializationTest
 
 open Expecto
@@ -8,16 +9,19 @@ open Suave.Successful
 open System.Threading
 open XRoad
 open XRoad.Serialization.Attributes
+open XRoadProvider.Tests.SoapUtil
 
 let [<Literal>] producerName = "producer"
 let [<Literal>] producerNamespace = "http://producer.x-road.eu/"
 
 let producerUri resourceName = sprintf "http://127.0.0.1:8080/%s" resourceName
 
+let [<Literal>] service2Response = @"<response><item /><item /></response>"
+
 let routes =
     POST >=> choose
         [ path "/service1" >=> OK "Hello, World!"
-          path "/service2" >=> OK @"<?xml version=""1.0"" encoding=""utf-8""?><doc />" ]
+          path "/service2" >=> OK (makeSoapResponse service2Response) ]
 
 module Types =
     type Type1 =
