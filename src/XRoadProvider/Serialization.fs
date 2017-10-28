@@ -152,7 +152,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
     let writeIdHeader value ns req (writer: XmlWriter) =
         if req |> Array.exists ((=) "id") || value |> isNullOrEmpty |> not then
             writer.WriteStartElement("id", ns)
-            if methodMap.IsEncoded then
+            if methodMap.Request.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("string", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
@@ -162,7 +162,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
     let writeStringHeader req ns (writer: XmlWriter) value name =
         if req |> Array.exists ((=) name) || value |> isNullOrEmpty |> not then
             writer.WriteStartElement(name, ns)
-            if methodMap.IsEncoded then
+            if methodMap.Request.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("string", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
@@ -173,7 +173,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
     let writeBoolHeader (value: Nullable<bool>) name ns req (writer: XmlWriter) =
         if req |> Array.exists ((=) name) || value.HasValue then
             writer.WriteStartElement(name, ns)
-            if methodMap.IsEncoded then
+            if methodMap.Request.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("boolean", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
@@ -184,7 +184,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
     let writeBase64Header (value: byte[]) name ns req (writer: XmlWriter) =
         if req |> Array.exists ((=) name) || value |> isNullOrEmptyArray |> not then
             writer.WriteStartElement(name, ns)
-            if methodMap.IsEncoded then
+            if methodMap.Request.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("base64", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
@@ -315,15 +315,15 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
     member __.SendMessage(header: AbstractXRoadHeader, args: obj[]) =
         use content = new MemoryStream()
         use sw = new StreamWriter(content)
-        let context = SerializerContext(IsMultipart = methodMap.IsMultipart)
+        let context = SerializerContext(IsMultipart = methodMap.Request.IsMultipart)
         use writer = XmlWriter.Create(sw)
         writer.WriteStartDocument()
         writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
         writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
         writer.WriteAttributeString("xmlns", protocolPrefix methodMap.Protocol, XmlNamespace.Xmlns, protocolNamespace methodMap.Protocol)
         methodMap.Namespaces |> Seq.iteri (fun i ns -> writer.WriteAttributeString("xmlns", sprintf "ns%d" i, XmlNamespace.Xmlns, ns))
-        methodMap.Accessor |> Option.iter (fun acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace))
-        if methodMap.IsEncoded then
+        methodMap.Request.Accessor |> Option.iter (fun acc -> writer.WriteAttributeString("xmlns", "acc", XmlNamespace.Xmlns, acc.Namespace))
+        if methodMap.Request.IsEncoded then
             writer.WriteAttributeString("xmlns", "xsd", XmlNamespace.Xmlns, XmlNamespace.Xsd)
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)

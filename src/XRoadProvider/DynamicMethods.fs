@@ -1234,8 +1234,50 @@ and findBaseTypes isEncoded (typ: Type) =
     |> Seq.choose (id)
     |> Seq.toList
     
-let createMethodMap (_mi: MethodInfo) : MethodMap =
-    failwithf "not implemented: createMethodMap"
+let requiredOpAttr<'T when 'T :> Attribute and 'T : null and 'T : equality> (mi: MethodInfo) : 'T =
+    mi.GetCustomAttribute<'T>()
+    |> Option.ofObj
+    |> Option.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
+    
+let createMethodMap (mi: MethodInfo) : MethodMap =
+    let operationAttr = mi |> requiredOpAttr<XRoadOperationAttribute>
+    let requestAttr = mi |> requiredOpAttr<XRoadRequestAttribute>
+    let responseAttr = mi |> requiredOpAttr<XRoadResponseAttribute>
+    let requiredHeadersAttr = mi.GetCustomAttribute<XRoadRequiredHeadersAttribute>() |> Option.ofObj
+    
+    let deserializer =
+        DynamicMethod
+            ( sprintf "deserialize_%s" mi.Name,
+              typeof<obj>,
+              [| typeof<XmlReader>; typeof<SerializerContext> |],
+              true )
+    
+    let serializer = 
+        DynamicMethod
+            ( sprintf "serialize_%s" mi.Name,
+              null,
+              [| typeof<XmlWriter>; typeof<SerializerContext>; typeof<obj[]> |],
+              true )
+    let ilSer = serializer.GetILGenerator()
+    ilSer.Emit(OpCodes.Ret)
+    
+    { Deserializer = deserializer
+      Serializer = serializer
+      Protocol = operationAttr.Protocol
+      Request =
+        { IsEncoded = requestAttr.Encoded
+          IsMultipart = requestAttr.Multipart
+          Accessor = Some(XmlQualifiedName(requestAttr.Name, requestAttr.Namespace)) }
+      Response =
+        { IsEncoded = responseAttr.Encoded
+          IsMultipart = responseAttr.Multipart
+          Accessor = Some(XmlQualifiedName(responseAttr.Name, responseAttr.Namespace)) }
+      ServiceCode = operationAttr.ServiceCode
+      ServiceVersion = operationAttr.ServiceVersion |> Option.ofObj
+      Namespaces = []
+      RequiredHeaders = dict [ match requiredHeadersAttr with
+                               | Some(attr) -> yield (attr.Namespace, attr.Names)
+                               | None -> () ] }
     
 let getMethodMap mi =
     match operationMaps.TryGetValue(mi) with

@@ -380,16 +380,20 @@ type SerializerContext() =
             | _ -> failwithf "Multipart message doesn't contain content part with ID `%s`." contentID
         else failwithf "Invalid multipart content reference: `%s`." href
 
+type MethodPartMap =
+    { IsEncoded: bool
+      IsMultipart: bool
+      Accessor: XmlQualifiedName option }
+
 type MethodMap =
     { Deserializer: MethodInfo
       Serializer: MethodInfo
       Protocol: XRoadProtocol
-      IsEncoded: bool
-      IsMultipart: bool
+      Request: MethodPartMap
+      Response: MethodPartMap
       ServiceCode: string
       ServiceVersion: string option
       Namespaces: string list
-      Accessor: XmlQualifiedName option
       RequiredHeaders: IDictionary<string, string[]> }
     member this.Deserialize(reader: XmlReader, context: SerializerContext) =
         this.Deserializer.Invoke(null, [| reader; context |])
