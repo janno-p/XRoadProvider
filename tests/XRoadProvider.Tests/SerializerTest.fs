@@ -3,11 +3,13 @@
 (*
 open FsUnit
 open NUnit.Framework
-open System
 open System.IO
-open System.Runtime.InteropServices
 open System.Text
 open System.Xml
+*)
+
+open System
+open System.Runtime.InteropServices
 open XRoad
 open XRoad.Serialization.Attributes
 
@@ -193,6 +195,7 @@ module TestType =
         [<XRoadElement>]
         member val Value3 = Nullable<int>() with get, set
 
+(*
 let serializeWithContext<'T> qn (nslist: (string * string) list) (context: SerializerContext) value =
     let serializer = Serializer(false)
     use stream = new MemoryStream()
@@ -599,5 +602,3 @@ let [<Test>] ``serialize multiple levels of inheritance`` () =
     resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>1</Value1><Value2>2</Value2><Value3>3</Value3></keha></wrapper>"
     resultXml |> deserialize'<Level3> |> should equal initial
 *)
-
-do ()
