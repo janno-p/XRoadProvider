@@ -350,7 +350,7 @@ Target.Create "ReleaseDocs" (fun _ ->
     Git.Branches.push tempDocsDir
 )
 
-#load "paket-files/build/fsharp/FAKE/modules/Octokit/Octokit.fsx"
+#load "paket-files/fsharp/FAKE/modules/Octokit/Octokit.fsx"
 open Octokit
 
 Target.Create "Release" (fun _ ->
