@@ -1,4 +1,3 @@
-
 module XRoadProvider.Tests.SerializationTest
 
 open Expecto
@@ -31,7 +30,7 @@ let deserialize<'T> (nm: string) (xml: string) : 'T =
     map.Deserialize(reader, SerializerContext()) |> unbox
 
 let [<Tests>] tests =
-    testList "serialization tests" [
+    ptestList "serialization tests" [
         test "can handle actions" {
             Expect.throwsT<exn>
                 (fun _ -> @"" |> deserialize<unit> "Service1")

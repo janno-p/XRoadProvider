@@ -1206,7 +1206,7 @@ and private getProperties isEncoded (typeMap: TypeMap) : Property list =
                                   SetMethod = p.GetSetMethod(true)
                                   HasValueMethod = hasValueMethod }))
 
-and private getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
+and internal getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
     match typeMaps.TryGetValue(typ) with
     | true, typeMap -> typeMap
     | false, _ -> typ |> createTypeMap isEncoded
