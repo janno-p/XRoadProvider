@@ -396,7 +396,7 @@ type MethodMap =
       Namespaces: string list
       RequiredHeaders: IDictionary<string, string[]> }
     member this.Deserialize(reader: XmlReader, context: SerializerContext) =
-        this.Deserializer.Invoke(null, [| reader; context |])
+        this.Deserializer.Invoke(null, [| reader; context |]) |> unbox<obj[]>
     member this.Serialize(writer: XmlWriter, context: SerializerContext, args: obj[]) =
         this.Serializer.Invoke(null, [| writer; context; args |]) |> ignore
 

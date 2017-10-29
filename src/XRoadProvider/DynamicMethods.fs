@@ -1252,7 +1252,8 @@ let createMethodMap (mi: MethodInfo) : MethodMap =
               [| typeof<XmlReader>; typeof<SerializerContext> |],
               true )
     let ilDeser = deserializer.GetILGenerator()
-    ilDeser.Emit(OpCodes.Ldnull)
+    ilDeser.Emit(OpCodes.Ldc_I4_0)
+    ilDeser.Emit(OpCodes.Newarr, typeof<obj>)
     ilDeser.Emit(OpCodes.Ret)
     
     let serializer = 
@@ -1262,6 +1263,12 @@ let createMethodMap (mi: MethodInfo) : MethodMap =
               [| typeof<XmlWriter>; typeof<SerializerContext>; typeof<obj[]> |],
               true )
     let ilSer = serializer.GetILGenerator()
+    ilSer.Emit(OpCodes.Ldarg_0)
+    ilSer.Emit(OpCodes.Ldstr, requestAttr.Name)
+    ilSer.Emit(OpCodes.Ldstr, requestAttr.Namespace)
+    ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
+    ilSer.Emit(OpCodes.Ldarg_0)
+    ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
     ilSer.Emit(OpCodes.Ret)
     
     { Deserializer = deserializer
