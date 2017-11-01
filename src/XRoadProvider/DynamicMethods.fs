@@ -1265,8 +1265,37 @@ let createMethodMap (mi: MethodInfo) : MethodMap =
     let ilSer = serializer.GetILGenerator()
     ilSer.Emit(OpCodes.Ldarg_0)
     ilSer.Emit(OpCodes.Ldstr, requestAttr.Name)
-    ilSer.Emit(OpCodes.Ldstr, requestAttr.Namespace)
-    ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
+    match requestAttr.Namespace with
+    | null | "" ->
+        ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
+    | _ ->
+        ilSer.Emit(OpCodes.Ldstr, requestAttr.Namespace)
+        ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
+
+    mi.GetParameters()
+    |> Array.choose
+        (fun p ->
+            match p.GetCustomAttribute<XRoadParamAttribute>() with
+            | null -> None
+            | attr -> Some(p, attr))
+    |> Array.iteri
+        (fun i (p, attr) ->
+            ilSer.Emit(OpCodes.Ldarg_0)
+            ilSer.Emit(OpCodes.Ldstr, attr.Name)
+            ilSer.Emit(OpCodes.Ldstr, attr.Namespace)
+            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
+
+            let typeMap = p.ParameterType |> getTypeMap requestAttr.Encoded 
+            ilSer.Emit(OpCodes.Ldarg_0)
+            ilSer.Emit(OpCodes.Ldarg_2)
+            ilSer.Emit(OpCodes.Ldc_I4_0)
+            ilSer.Emit(OpCodes.Ldelem, typeof<obj>)
+            ilSer.Emit(OpCodes.Ldarg_1)
+            ilSer.Emit(OpCodes.Call, typeMap.Serialization.Root)
+            
+            ilSer.Emit(OpCodes.Ldarg_0)
+            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>))
+
     ilSer.Emit(OpCodes.Ldarg_0)
     ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
     ilSer.Emit(OpCodes.Ret)

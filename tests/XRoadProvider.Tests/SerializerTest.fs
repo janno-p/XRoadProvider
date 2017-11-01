@@ -234,22 +234,6 @@ let simpleTypeEntity =
 
 let [<Tests>] tests =
     ptestList "serializer tests" [
-        test "can serialize simple value" {
-            failtest "needs review"
-            (*
-            let resultXml = simpleTypeEntity |> serialize'
-            resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></keha></wrapper>"
-            let result = resultXml |> deserialize'<TestType.SimpleType>
-            result |> should not' (be Null)
-            result.Value |> should equal 13
-            result.ComplexValue |> should not' (be Null)
-            result.ComplexValue.BigInteger |> should equal 100I
-            result.ComplexValue.String |> should equal "test"
-            result.SubContent |> should not' (be Null)
-            result.SubContent.ContentValue |> should equal true
-            *)
-        }
-        
         test "serialize null value" {
             failtest "needs review"
             (*

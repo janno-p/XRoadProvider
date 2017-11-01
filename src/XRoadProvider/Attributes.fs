@@ -167,3 +167,13 @@ type XRoadResponseAttribute(name: string, ns: string) =
     member val Namespace = ns with get
     member val Encoded = false with get, set
     member val Multipart = false with get, set
+
+[<AllowNullLiteral>]
+[<AttributeUsage(AttributeTargets.Parameter ||| AttributeTargets.ReturnValue)>]
+type XRoadParamAttribute(name: string, ns: string) =
+    inherit Attribute()
+    
+    new(name: string) = XRoadParamAttribute(name, "")
+    
+    member val Name = name with get
+    member val Namespace = ns with get
