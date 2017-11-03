@@ -1285,10 +1285,10 @@ let createMethodMap (mi: MethodInfo) : MethodMap =
             ilSer.Emit(OpCodes.Ldstr, attr.Namespace)
             ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
 
-            let typeMap = p.ParameterType |> getTypeMap requestAttr.Encoded 
+            let typeMap = p.ParameterType |> getTypeMap requestAttr.Encoded
             ilSer.Emit(OpCodes.Ldarg_0)
             ilSer.Emit(OpCodes.Ldarg_2)
-            ilSer.Emit(OpCodes.Ldc_I4_0)
+            ilSer.Emit(OpCodes.Ldc_I4, i)
             ilSer.Emit(OpCodes.Ldelem, typeof<obj>)
             ilSer.Emit(OpCodes.Ldarg_1)
             ilSer.Emit(OpCodes.Call, typeMap.Serialization.Root)
