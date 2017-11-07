@@ -15,9 +15,8 @@ let [<Literal>] producerName = "producer"
 let [<Literal>] producerNamespace = "http://producer.x-road.eu/"
 
 module Types =
-    type Type1 =
-        class
-        end
+    type UnserializableType() =
+        member val Value = Unchecked.defaultof<int> with get, set
         
     [<XRoadType(LayoutKind.Sequence)>]
     type WithContent() =
@@ -50,7 +49,7 @@ type Services =
     [<XRoadOperation("Service2", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("Service2", producerNamespace)>]
     [<XRoadResponse("Service2Response", producerNamespace)>]
-    abstract Service2: int64 -> Types.Type1[]
+    abstract Service2: int64 -> string[]
     
     [<XRoadOperation("SimpleValueService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("SimpleValueService", producerNamespace)>]
@@ -66,6 +65,11 @@ type Services =
     [<XRoadRequest("QualifiedRootService", producerNamespace)>]
     [<XRoadResponse("QualifiedRootServiceResponse", producerNamespace)>]
     abstract QualifiedRootService: [<XRoadParam("root", "urn:some-namespace")>] request: Types.SimpleType -> [<return: XRoadParam("root", "urn:some-namespace")>] Types.SimpleType
+    
+    [<XRoadOperation("UnserializableService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("UnserializableService", producerNamespace)>]
+    [<XRoadResponse("UnserializableServiceResponse", producerNamespace)>]
+    abstract UnserializableService: [<XRoadParam("request")>] request: Types.UnserializableType -> [<return: XRoadParam("response")>] Types.UnserializableType
 
 let deserialize (nm: string) (xml: string) =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
@@ -95,7 +99,7 @@ let [<Tests>] tests =
     testList "serialization tests" [
         ptest "can handle array type response" {
             let xml = @"<response><item /><item /></response>"
-            let response = xml |> deserialize "Service2" |> unbox<Types.Type1[]>
+            let response = xml |> deserialize "Service2" |> unbox<string[]>
             Expect.isNotNull response "response should have value"
             Expect.equal response.Length 2 "response should have exactly 2 items"
         }
@@ -144,21 +148,23 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><QualifiedRootService xmlns=""http://producer.x-road.eu/""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></QualifiedRootService>" "invalid xml result"
         }
         
-        ptest "serializing unserializable type" {
-            failtest "needs review"
-            (*
-            (fun () -> TestType.UnserializableType(Value = 10) |> serialize' |> ignore)
-            |> should (throwWithMessage "Type `XRoadSerializer.Tests.SerializerTest+TestType+UnserializableType` is not serializable.") typeof<Exception>
-            *)
+        test "serializing unserializable type" {
+            Expect.throwsC
+                (fun _ ->
+                    let value = Types.UnserializableType(Value = 10)
+                    serialize "UnserializableService" [| value |] |> ignore)
+                (fun e -> Expect.equal e.Message "Type `XRoadProvider.Tests.SerializationTest+Types+UnserializableType` is not serializable." "invalid exception")
         }
         
-        ptest "serialize string value" {
-            failtest "needs review"
-            (*
-            let resultXml = "string value" |> serialize'
-            resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>string value</keha></wrapper>"
-            resultXml |> deserialize'<string> |> should equal "string value"
-            *)
+        test "serialize string value" {
+            let xml = serialize "StringService" [| "string value" |]
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><StringService xmlns=""http://producer.x-road.eu/""><request xmlns="""">string value</request></StringService>" "invalid serialization result"
+        }
+        
+        ptest "deserialize string value" {
+            let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><StringServiceResponse xmlns=""http://producer.x-road.eu/""><response xmlns="""">string value</response></StringServiceResponse>"
+            let response = xml |> deserialize "StringService" |> unbox<string>
+            Expect.equal response "string value" "response not equal to 'string value'"
         }
         
         ptest "serialize integer value" {

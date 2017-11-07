@@ -11,9 +11,6 @@ open XRoad.DynamicMethods
 open XRoad.Serialization.Attributes
 
 module TestType =
-    type UnserializableType() =
-        member val Value = Unchecked.defaultof<int> with get, set
-
     [<XRoadType(LayoutKind.Sequence)>]
     type WithContent() =
         [<XRoadElement(MergeContent=true)>]
