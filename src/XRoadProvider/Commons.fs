@@ -60,27 +60,6 @@ type XRoadMessageProtocolVersion =
             | Version40(_) -> XmlNamespace.XRoad40
 
 [<AutoOpen>]
-module internal Option =
-    /// Convert nullable value to option type.
-    let ofObj o =
-        if o = null then None else Some(o)
-
-    /// Use default value in case of None.
-    let orDefault value opt =
-        opt |> Option.fold (fun _ t -> t) value
-
-[<AutoOpen>]
-module internal List =
-    let tryHead lst = match lst with [] -> None | x::_ -> Some(x)
-
-[<AutoOpen>]
-module Commons =
-    let isNull o = (o = null)
-    let isNotNull o = (o <> null)
-    let isNullOrEmpty = String.IsNullOrEmpty
-    let isNullOrEmptyArray (x: 'a []) = x |> isNull || x.Length = 0
-
-[<AutoOpen>]
 module private XRoadProtocolExtensions =
     open System.Xml.Linq
 
@@ -160,7 +139,7 @@ type public XRoadRpcHeader() =
     inherit AbstractXRoadHeader()
     // Copy-constructor which initializes new header instance based on given argument.
     new (other: XRoadRpcHeader) as this = XRoadRpcHeader() then
-        if other |> isNotNull then
+        if not (other |> isNull) then
             this.Allasutus <- other.Allasutus
             this.Amet <- other.Amet
             this.Ametnik <- other.Ametnik
@@ -217,7 +196,7 @@ type public XRoadDocHeader() =
     inherit AbstractXRoadHeader()
     // Copy-constructor which initializes new header instance based on given argument.
     new (other: XRoadDocHeader) as this = XRoadDocHeader() then
-        if other |> isNotNull then
+        if not (other |> isNull) then
             this.Async <- other.Async
             this.Authenticator <- other.Authenticator
             this.Consumer <- other.Consumer
@@ -309,7 +288,7 @@ type public XRoadHeader() =
     inherit AbstractXRoadHeader()
     // Copy-constructor which initializes new header instance based on given argument.
     new (other: XRoadHeader) as this = XRoadHeader() then
-        if other |> isNotNull then
+        if not (other |> isNull) then
             this.CentralService <- other.CentralService
             this.Client <- other.Client
             this.Id <- other.Id
@@ -542,7 +521,7 @@ module internal Wsdl =
     /// Extracts optional attribute value from current element.
     /// Return default value if attribute is missing.
     let attrOrDefault name value element =
-        element |> attr name |> Option.orDefault value
+        element |> attr name |> Option.defaultValue value
 
     /// Extracts value of required attribute from current element.
     /// When attribute is not found, exception is thrown.

@@ -56,7 +56,7 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
         | node ->
             let faultCode = node.SelectSingleNode("./faultCode")
             let faultString = node.SelectSingleNode("./faultString")
-            let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> Option.orDefault ""
+            let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> Option.defaultValue ""
             raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
 
     member __.RetrieveMessage() =
@@ -150,7 +150,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
         serializeMultipartMessage attachments (fun s -> writeContent s content)
 
     let writeIdHeader value ns req (writer: XmlWriter) =
-        if req |> Array.exists ((=) "id") || value |> isNullOrEmpty |> not then
+        if req |> Array.exists ((=) "id") || value |> String.IsNullOrEmpty |> not then
             writer.WriteStartElement("id", ns)
             if methodMap.Request.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
@@ -160,7 +160,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
             writer.WriteEndElement()
 
     let writeStringHeader req ns (writer: XmlWriter) value name =
-        if req |> Array.exists ((=) name) || value |> isNullOrEmpty |> not then
+        if req |> Array.exists ((=) name) || value |> String.IsNullOrEmpty |> not then
             writer.WriteStartElement(name, ns)
             if methodMap.Request.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
@@ -182,20 +182,21 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
             writer.WriteEndElement()
 
     let writeBase64Header (value: byte[]) name ns req (writer: XmlWriter) =
-        if req |> Array.exists ((=) name) || value |> isNullOrEmptyArray |> not then
+        let value = value |> Option.ofObj |> Option.defaultWith (fun _ -> [||])
+        if req |> Array.exists ((=) name) || value |> Array.isEmpty |> not then
             writer.WriteStartElement(name, ns)
             if methodMap.Request.IsEncoded then
                 writer.WriteStartAttribute("type", XmlNamespace.Xsi)
                 writer.WriteQualifiedName("base64", XmlNamespace.Xsd)
                 writer.WriteEndAttribute()
-            if value |> isNull |> not && value |> Array.isEmpty |> not then
+            if value |> Array.isEmpty |> not then
                 writer.WriteValue(value)
             writer.WriteEndElement()
 
     let writeClientHeader (value: XRoadMemberIdentifier) req (writer: XmlWriter) =
-        if req |> Array.exists ((=) "client") || value |> isNotNull then
+        if req |> Array.exists ((=) "client") || not (value |> isNull) then
             writer.WriteStartElement("client", XmlNamespace.XRoad40)
-            if value |> isNotNull then
+            if not (value |> isNull) then
                 writer.WriteStartAttribute("objectType", XmlNamespace.XRoad40Id)
                 writer.WriteValue(if String.IsNullOrWhiteSpace(value.SubsystemCode) then "MEMBER" else "SUBSYSTEM")
                 writer.WriteEndAttribute()
@@ -221,13 +222,13 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
         let serviceName = match methodMap.ServiceVersion with
                           | Some(version) -> sprintf "%s.%s" methodMap.ServiceCode version
                           | None -> methodMap.ServiceCode
-        if producerName |> isNullOrEmpty then serviceName
+        if producerName |> String.IsNullOrEmpty then serviceName
         else sprintf "%s.%s" producerName serviceName
 
     let writeServiceHeader (value: XRoadMemberIdentifier) req (writer: XmlWriter) =
-        if req |> Array.exists ((=) "service") || value |> isNotNull then
+        if req |> Array.exists ((=) "service") || not (value |> isNull) then
             writer.WriteStartElement("service", XmlNamespace.XRoad40)
-            if value |> isNotNull then
+            if not (value |> isNull) then
                 writer.WriteStartAttribute("objectType", XmlNamespace.XRoad40Id)
                 writer.WriteValue("SERVICE")
                 writer.WriteEndAttribute()

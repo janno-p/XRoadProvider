@@ -85,7 +85,7 @@ let private parseSoapBody element =
         element
         |> attr (xname "parts")
         |> Option.map (fun value -> value.Split(' ') |> List.ofArray)
-        |> Option.orDefault []
+        |> Option.defaultValue []
     // Apply specified namespace to operation root (body) element.
     { Parts = parts; EncodingStyle = encodingStyle; Namespace = ns }
 
@@ -182,7 +182,7 @@ let private parseOperationMessage style messageProtocol (binding: XElement) defi
             part.EncodingStyle
             |> Option.map (fun enc ->
                 match enc with
-                | XmlNamespace.SoapEnc -> xnsname opName (part.Namespace |> Option.orDefault ns)
+                | XmlNamespace.SoapEnc -> xnsname opName (part.Namespace |> Option.defaultValue ns)
                 | _ -> failwithf "Unknown encoding style `%s` for `%s` operation SOAP:body." enc msgName)
         | None -> failwithf "X-Road operation binding `%s` doesn't define SOAP:body." msgName
     // Build service parameters.

@@ -1,7 +1,6 @@
 ﻿module internal XRoad.DynamicMethods
 
-open FSharp.Quotations
-open FSharp.Quotations.Patterns
+open Quotations.Patterns
 open System
 open System.Collections.Concurrent
 open System.Numerics
@@ -43,7 +42,8 @@ type TypeMap =
       SerializeDelegate: Lazy<SerializerDelegate>
       Serialization: Serialization
       CanHaveNullAsValue: bool
-      BaseType: TypeMap option }
+      BaseType: TypeMap option
+      mutable IsComplete: bool }
     member this.Serialize(writer: XmlWriter, value: obj, context: SerializerContext) =
         this.SerializeDelegate.Value.Invoke(writer, value, context)
     member this.Deserialize(reader: XmlReader, context: SerializerContext) =
@@ -64,7 +64,8 @@ type TypeMap =
           Serialization = serialization
           SerializeDelegate = lazy (serialization.Root.CreateDelegate(typeof<SerializerDelegate>) |> unbox)
           CanHaveNullAsValue = (not (Nullable.GetUnderlyingType(typ) |> isNull)) || (typ.IsClass && layout <> Some(LayoutKind.Choice))
-          BaseType = baseType }
+          BaseType = baseType
+          IsComplete = false }
 
 type PropertyMap =
     { TypeMap: TypeMap
@@ -123,9 +124,6 @@ let (!~>) (mi: MethodInfo) = match mi with :? DynamicMethod as dyn -> dyn | _ ->
 
 type private XopBinaryContent() =
     inherit BinaryContent("", Data [| |])
-
-let private typeMaps = ConcurrentDictionary<Type, TypeMap>()
-let operationMaps = ConcurrentDictionary<MethodInfo, MethodMap>();
 
 let (|Serializable|NotSerializable|) (typ: Type) =
     match typ.GetCustomAttribute<XRoadTypeAttribute>() with
@@ -993,20 +991,6 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
     il.MarkLabel(returnLabel)
     il.Emit(OpCodes.Ret)
 
-and private createTypeMap (isEncoded: bool) (typ: Type) =
-    let addTypeMap (init: TypeMap -> unit) (typ: Type) =
-        let serialization, deserialization = typ |> Serialization.Create, typ |> Deserialization.Create
-        let typeMap = TypeMap.Create(typ, deserialization, serialization, typ |> findBaseType isEncoded)
-        if typeMaps.TryAdd(typ, typeMap) then typeMap |> init; typeMap else typeMaps.[typ]
-    match typ with
-    | NotSerializable ->
-        failwithf "Type `%s` is not serializable." typ.FullName
-    | Serializable(typeAttribute) ->
-        typ |> addTypeMap (fun typeMap ->
-            match typeAttribute.Layout with
-            | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers isEncoded
-            | _ -> typeMap |> createTypeSerializers isEncoded)
-
 and createTypeSerializers isEncoded (typeMap: TypeMap) =
     let properties = typeMap |> getProperties isEncoded
     let directSubTypes = typeMap.Type |> findDirectSubTypes isEncoded
@@ -1206,6 +1190,23 @@ and private getProperties isEncoded (typeMap: TypeMap) : Property list =
                                   SetMethod = p.GetSetMethod(true)
                                   HasValueMethod = hasValueMethod }))
 
+and private typeMaps = ConcurrentDictionary<Type, TypeMap>()
+
+and private createTypeMap (isEncoded: bool) (typ: Type) =
+    let addTypeMap (init: TypeMap -> unit) (typ: Type) =
+        let serialization, deserialization = typ |> Serialization.Create, typ |> Deserialization.Create
+        let typeMap = TypeMap.Create(typ, deserialization, serialization, typ |> findBaseType isEncoded)
+        if typeMaps.TryAdd(typ, typeMap) then typeMap |> init; typeMap else typeMaps.[typ]
+    match typ with
+    | NotSerializable ->
+        failwithf "Type `%s` is not serializable." typ.FullName
+    | Serializable(typeAttribute) ->
+        typ |> addTypeMap (fun typeMap ->
+            match typeAttribute.Layout with
+            | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers isEncoded
+            | _ -> typeMap |> createTypeSerializers isEncoded
+            typeMap.IsComplete <- true)
+
 and internal getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
     match typeMaps.TryGetValue(typ) with
     | true, typeMap -> typeMap
@@ -1238,6 +1239,12 @@ let requiredOpAttr<'T when 'T :> Attribute and 'T : null and 'T : equality> (mi:
     mi.GetCustomAttribute<'T>()
     |> Option.ofObj
     |> Option.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
+    
+let getCompleteTypeMap isEncoded typ =
+    let typeMap = getTypeMap isEncoded typ
+    while not typeMap.IsComplete do
+        System.Threading.Thread.Sleep(100)
+    typeMap
     
 let createMethodMap (mi: MethodInfo) : MethodMap =
     let operationAttr = mi |> requiredOpAttr<XRoadOperationAttribute>
@@ -1285,7 +1292,7 @@ let createMethodMap (mi: MethodInfo) : MethodMap =
             ilSer.Emit(OpCodes.Ldstr, attr.Namespace)
             ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
 
-            let typeMap = p.ParameterType |> getTypeMap requestAttr.Encoded
+            let typeMap = p.ParameterType |> getCompleteTypeMap requestAttr.Encoded
             ilSer.Emit(OpCodes.Ldarg_0)
             ilSer.Emit(OpCodes.Ldarg_2)
             ilSer.Emit(OpCodes.Ldc_I4, i)
@@ -1317,11 +1324,13 @@ let createMethodMap (mi: MethodInfo) : MethodMap =
       RequiredHeaders = dict [ match requiredHeadersAttr with
                                | Some(attr) -> yield (attr.Namespace, attr.Names)
                                | None -> () ] }
-    
-let getMethodMap mi =
-    match operationMaps.TryGetValue(mi) with
-    | true, mm -> mm
-    | _ -> operationMaps.GetOrAdd(mi, (createMethodMap mi))
+
+let getMethodMap: MethodInfo -> MethodMap =
+    let operationMaps = ConcurrentDictionary<MethodInfo, MethodMap>();
+    (fun mi ->
+        match operationMaps.TryGetValue(mi) with
+        | true, mm -> mm
+        | _ -> operationMaps.GetOrAdd(mi, (createMethodMap mi)))
 
 module internal XsdTypes =
     open NodaTime
@@ -1458,10 +1467,12 @@ module internal XsdTypes =
 
     let private addTypeMap typ ser deser =
         let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
+        typeMap.IsComplete <- true
         typeMaps.TryAdd(typ, typeMap) |> ignore
 
     let private addBinaryTypeMap typ ser deser =
         let typeMap = TypeMap.Create(typeof<BinaryContent>, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
+        typeMap.IsComplete <- true
         typeMaps.TryAdd(typ, typeMap) |> ignore
 
     let mi e = match e with Call(_,mi,_) -> mi | _ -> failwith "do not use for that"

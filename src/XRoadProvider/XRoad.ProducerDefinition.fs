@@ -103,7 +103,7 @@ module ServiceBuilder =
                         m |> Meth.addParamRef (runtimeType.AsCodeTypeReference(optional=(dspec.MinOccurs = 0u))) name |> ignore
                         argumentExpressions.Add((!+ name))
                     | _ -> failwithf "%A" value)
-            | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> Option.orDefault "<unknown>")
+            | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> Option.defaultValue "<unknown>")
 
         match operation.InputParameters with
 //        | DocEncoded(encodingNamespace, wrapper) ->

@@ -61,6 +61,11 @@ type Services =
     [<XRoadRequest("StringService", producerNamespace)>]
     [<XRoadResponse("StringServiceResponse", producerNamespace)>]
     abstract StringService: [<XRoadParam("request")>] request: string -> [<return: XRoadParam("response")>] string
+    
+    [<XRoadOperation("QualifiedRootService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("QualifiedRootService", producerNamespace)>]
+    [<XRoadResponse("QualifiedRootServiceResponse", producerNamespace)>]
+    abstract QualifiedRootService: [<XRoadParam("root", "urn:some-namespace")>] request: Types.SimpleType -> [<return: XRoadParam("root", "urn:some-namespace")>] Types.SimpleType
 
 let deserialize (nm: string) (xml: string) =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
@@ -134,12 +139,9 @@ let [<Tests>] tests =
             Expect.isNull response "response should be null"
         }
         
-        ptest "write qualified root name" {
-            failtest "needs review"
-            (*
-            let resultXml = simpleTypeEntity |> serializeWithContext (XmlQualifiedName("root", "urn:some-namespace")) [] (SerializerContext())
-            resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></wrapper>"
-            *)
+        test "write qualified root name" {
+            let xml = serialize "QualifiedRootService" [| simpleTypeEntity |]
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><QualifiedRootService xmlns=""http://producer.x-road.eu/""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></QualifiedRootService>" "invalid xml result"
         }
         
         ptest "serializing unserializable type" {
