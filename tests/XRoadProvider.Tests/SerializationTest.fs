@@ -1,6 +1,7 @@
 module XRoadProvider.Tests.SerializationTest
 
 open Expecto
+open System
 open System.IO
 open System.Text
 open System.Threading
@@ -40,6 +41,13 @@ module Types =
         member val SubContent = Unchecked.defaultof<WithContent> with get, set
         member val IgnoredValue = true with get, set
 
+    [<XRoadType(LayoutKind.Sequence)>]
+    type WithNullableMembers() =
+        [<XRoadElement(IsNullable=true)>]
+        member val Value1 = Unchecked.defaultof<Nullable<int>> with get, set
+        [<XRoadElement(IsNullable=true)>]
+        member val Value2 = Unchecked.defaultof<Nullable<int>> with get, set
+
 type Services =
     [<XRoadOperation("Service1", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("Service1", producerNamespace)>]
@@ -60,6 +68,21 @@ type Services =
     [<XRoadRequest("StringService", producerNamespace)>]
     [<XRoadResponse("StringServiceResponse", producerNamespace)>]
     abstract StringService: [<XRoadParam("request")>] request: string -> [<return: XRoadParam("response")>] string
+    
+    [<XRoadOperation("IntService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("IntService", producerNamespace)>]
+    [<XRoadResponse("IntServiceResponse", producerNamespace)>]
+    abstract IntService: [<XRoadParam("request")>] request: int32 -> [<return: XRoadParam("response")>] int32
+    
+    [<XRoadOperation("NullableService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("NullableService", producerNamespace)>]
+    [<XRoadResponse("NullableServiceResponse", producerNamespace)>]
+    abstract NullableService: [<XRoadParam("request")>] request: Types.WithNullableMembers -> [<return: XRoadParam("response")>] Types.WithNullableMembers
+    
+    [<XRoadOperation("ComplexTypeService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("ComplexTypeService", producerNamespace)>]
+    [<XRoadResponse("ComplexTypeServiceResponse", producerNamespace)>]
+    abstract ComplexTypeService: [<XRoadParam("request")>] request: Types.ComplexType -> [<return: XRoadParam("response")>] Types.ComplexType
     
     [<XRoadOperation("QualifiedRootService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("QualifiedRootService", producerNamespace)>]
@@ -167,7 +190,12 @@ let [<Tests>] tests =
             Expect.equal response "string value" "response not equal to 'string value'"
         }
         
-        ptest "serialize integer value" {
+        test "serialize int value" {
+            let xml = serialize "IntService" [| 32 |]
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><IntService xmlns=""http://producer.x-road.eu/""><request xmlns="""">32</request></IntService>" "invalid serialization result"
+        }
+        
+        ptest "deserialize int value" {
             failtest "needs review"
             (*
             let resultXml = 32 |> serialize'
@@ -176,11 +204,14 @@ let [<Tests>] tests =
             *)
         }
         
-        ptest "serialize nullable values" {
+        test "serialize nullable values" {
+            let xml = serialize "NullableService" [| Types.WithNullableMembers(Value1 = Nullable(13)) |]
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><NullableService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Value1>13</Value1><Value2 p3:nil=""true"" xmlns:p3=""http://www.w3.org/2001/XMLSchema-instance"" /></request></NullableService>" "invalid serialization result"
+        }
+        
+        ptest "deserialize nullable values" {
             failtest "needs review"
             (*
-            let resultXml = TestType.WithNullableMembers(Value1 = Nullable(13)) |> serialize'
-            resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><Value1>13</Value1><Value2 xsi:nil=""true"" /></keha></wrapper>"
             let result = resultXml |> deserialize'<TestType.WithNullableMembers>
             result |> should not' (be Null)
             result.Value1 |> should not' (be Null)
@@ -189,12 +220,12 @@ let [<Tests>] tests =
             *)
         }
         
-        ptest "serialize not nullable as null" {
-            failtest "needs review"
-            (*
-            (fun () -> TestType.ComplexType(String = null) |> serialize' |> ignore)
-            |> should (throwWithMessage "Not nullable property `String` of type `ComplexType` has null value.") typeof<Exception>
-            *)
+        test "serialize not nullable as null" {
+            Expect.throwsC
+                (fun _ -> serialize "ComplexTypeService" [| Types.ComplexType(String = null) |] |> ignore)
+                (fun e ->
+                    let e = e :?> System.Reflection.TargetInvocationException
+                    Expect.equal e.InnerException.Message "Not nullable property `String` of type `ComplexType` has null value." "invalid exception message")
         }
         
         ptest "serialize choice with abstract root element" {

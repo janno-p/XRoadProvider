@@ -16,30 +16,7 @@ module TestType =
         [<XRoadElement(MergeContent=true)>]
         member val ContentValue = Unchecked.defaultof<bool> with get, set
 
-    [<XRoadType(LayoutKind.Sequence)>]
-    type ComplexType() =
-        [<XRoadElement>]
-        member val String = Unchecked.defaultof<string> with get, set
-        [<XRoadElement>]
-        member val BigInteger = Unchecked.defaultof<bigint> with get, set
-
-    [<XRoadType(LayoutKind.Sequence)>]
-    type SimpleType() =
-        [<XRoadElement>]
-        member val Value = Unchecked.defaultof<int> with get, set
-        [<XRoadElement>]
-        member val ComplexValue = Unchecked.defaultof<ComplexType> with get, set
-        [<XRoadElement>]
-        member val SubContent = Unchecked.defaultof<WithContent> with get, set
-        member val IgnoredValue = true with get, set
-
-    [<XRoadType(LayoutKind.Sequence)>]
-    type WithNullableMembers() =
-        [<XRoadElement(IsNullable=true)>]
-        member val Value1 = Unchecked.defaultof<Nullable<int>> with get, set
-        [<XRoadElement(IsNullable=true)>]
-        member val Value2 = Unchecked.defaultof<Nullable<int>> with get, set
-
+    (*
     [<XRoadType(LayoutKind.Sequence)>]
     type ExtendedType() =
         inherit ComplexType()
@@ -50,7 +27,8 @@ module TestType =
     type UseBaseClass() =
         [<XRoadElement>]
         member val Member = Unchecked.defaultof<ComplexType> with get, set
-
+    *)
+    
     [<AbstractClass; AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
     type AbstractBaseWithNoSubTypes() =
         [<XRoadElement>]
