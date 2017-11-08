@@ -62,7 +62,6 @@
     <Compile Include="XRoadRpcEncodedV4Test.fs" />
     <Compile Include="XRoadDocLiteralWrappedV5Test.fs" />
     <Compile Include="XmlSchemaTest.fs" />
-    <Compile Include="SerializerTest.fs" />
     <Compile Include="Program.fs" />
     <None Include="Wsdl\AktorstestService.wsdl.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
