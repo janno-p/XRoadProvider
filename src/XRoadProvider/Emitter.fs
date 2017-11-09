@@ -1420,7 +1420,7 @@ module internal DynamicMethods =
         let deserializer =
             DynamicMethod
                 ( sprintf "deserialize_%s" mi.Name,
-                  typeof<obj>,
+                  typeof<obj[]>,
                   [| typeof<XmlReader>; typeof<SerializerContext> |],
                   true )
         let ilDeser = deserializer.GetILGenerator()
@@ -1471,9 +1471,9 @@ module internal DynamicMethods =
         ilSer.Emit(OpCodes.Ldarg_0)
         ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
         ilSer.Emit(OpCodes.Ret)
-        
-        { Deserializer = deserializer
-          Serializer = serializer
+
+        { Deserializer = deserializer.CreateDelegate(typeof<OperationDeserializerDelegate>) |> unbox
+          Serializer = serializer.CreateDelegate(typeof<OperationSerializerDelegate>) |> unbox
           Protocol = operationAttr.Protocol
           Request =
             { IsEncoded = requestAttr.Encoded
@@ -1489,13 +1489,13 @@ module internal DynamicMethods =
           RequiredHeaders = dict [ match requiredHeadersAttr with
                                    | Some(attr) -> yield (attr.Namespace, attr.Names)
                                    | None -> () ] }
-    
-    let getMethodMap: MethodInfo -> MethodMap =
-        let operationMaps = ConcurrentDictionary<MethodInfo, MethodMap>();
-        (fun mi ->
-            match operationMaps.TryGetValue(mi) with
-            | true, mm -> mm
-            | _ -> operationMaps.GetOrAdd(mi, (createMethodMap mi)))
+
+    let private methodMaps = ConcurrentDictionary<MethodInfo, MethodMap>()
+
+    let internal getMethodMap mi =
+        match methodMaps.TryGetValue(mi) with
+        | true, mm -> mm
+        | _ -> methodMaps.GetOrAdd(mi, (createMethodMap mi))
 
 let getMethodMap = DynamicMethods.getMethodMap
 

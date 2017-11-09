@@ -312,7 +312,7 @@ type Services =
 let deserialize (nm: string) (xml: string) =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
     use reader = XDocument.Parse(xml).CreateReader()
-    map.Deserialize(reader, SerializerContext())
+    map.Deserializer.Invoke(reader, SerializerContext())
 
 let serialize nm value context =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
@@ -320,7 +320,7 @@ let serialize nm value context =
     use sw = new StreamWriter(stream, Encoding.UTF8)
     use writer = XmlWriter.Create(sw)
     writer.WriteStartDocument()
-    map.Serialize(writer, context, value)
+    map.Serializer.Invoke(writer, context, value)
     writer.WriteEndDocument()
     writer.Flush()
     stream.Position <- 0L
@@ -441,9 +441,7 @@ let [<Tests>] tests =
         test "serialize not nullable as null" {
             Expect.throwsC
                 (fun _ -> serialize' "ComplexTypeService" [| Types.ComplexType(String = null) |] |> ignore)
-                (fun e ->
-                    let e = e :?> System.Reflection.TargetInvocationException
-                    Expect.equal e.InnerException.Message "Not nullable property `String` of type `ComplexType` has null value." "invalid exception message")
+                (fun e -> Expect.equal e.Message "Not nullable property `String` of type `ComplexType` has null value." "invalid exception message")
         }
         
         test "serialize choice with abstract root element" {

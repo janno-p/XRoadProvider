@@ -80,7 +80,7 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
             failwith "Soap message has empty payload in response."
         match reader.LocalName, reader.NamespaceURI with
         | "Fault", XmlNamespace.SoapEnv -> failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
-        | _ -> methodMap.Deserialize(reader, context)
+        | _ -> methodMap.Deserializer.Invoke(reader, context)
 
     interface IDisposable with
         member __.Dispose() =
@@ -332,7 +332,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
         writer.WriteEndElement()
         
         writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
-        methodMap.Serialize(writer, context, args)
+        methodMap.Serializer.Invoke(writer, context, args)
         writer.WriteEndElement()
 
         writer.WriteEndDocument()

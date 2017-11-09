@@ -364,9 +364,12 @@ type MethodPartMap =
       IsMultipart: bool
       Accessor: XmlQualifiedName option }
 
+type OperationDeserializerDelegate = delegate of XmlReader * SerializerContext -> obj[]
+type OperationSerializerDelegate = delegate of XmlWriter * SerializerContext * obj[] -> unit
+
 type MethodMap =
-    { Deserializer: MethodInfo
-      Serializer: MethodInfo
+    { Deserializer: OperationDeserializerDelegate
+      Serializer: OperationSerializerDelegate
       Protocol: XRoadProtocol
       Request: MethodPartMap
       Response: MethodPartMap
@@ -374,10 +377,6 @@ type MethodMap =
       ServiceVersion: string option
       Namespaces: string list
       RequiredHeaders: IDictionary<string, string[]> }
-    member this.Deserialize(reader: XmlReader, context: SerializerContext) =
-        this.Deserializer.Invoke(null, [| reader; context |]) |> unbox<obj[]>
-    member this.Serialize(writer: XmlWriter, context: SerializerContext, args: obj[]) =
-        this.Serializer.Invoke(null, [| writer; context; args |]) |> ignore
 
 type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
     member val Name = name with get
