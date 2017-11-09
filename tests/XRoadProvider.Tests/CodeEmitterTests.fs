@@ -7,8 +7,8 @@ open System.Reflection.Emit
 open System.Xml
 open System.Xml.Linq
 open XRoad
-open XRoad.DynamicMethods
-open XRoad.DynamicMethods.EmitSerialization
+open XRoad.Emitter
+open XRoad.Emitter.EmitSerialization
 open XRoad.Serialization.Attributes
 
 [<XRoadType>]

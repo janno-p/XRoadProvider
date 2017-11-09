@@ -9,7 +9,7 @@ open System.Threading
 open System.Xml
 open System.Xml.Linq
 open XRoad
-open XRoad.DynamicMethods
+open XRoad.Emitter
 open XRoad.Serialization.Attributes
 open XRoadProvider.Tests.SoapUtil
 

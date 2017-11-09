@@ -53,17 +53,17 @@
     <Compile Include="AssemblyInfo.Build.fs" />
     <Compile Include="Attributes.fs" />
     <Compile Include="Commons.fs" />
-    <Compile Include="DynamicMethods.fs" />
+    <Compile Include="Emitter.fs" />
     <Compile Include="Serialization.fs" />
-    <Compile Include="XRoad.ServiceDescription.fs" />
-    <Compile Include="XRoad.TypeSchema.fs" />
-    <Compile Include="XRoad.CodeDom.fs" />
-    <Compile Include="XRoad.TypeBuilderContext.fs" />
-    <Compile Include="XRoad.CodeDomGenerator.fs" />
-    <Compile Include="XRoad.ProducerDefinition.fs" />
-    <Compile Include="XRoad.SecurityServer.fs" />
-    <Compile Include="XRoad.ProvidedTypes.fsi" />
-    <Compile Include="XRoad.ProvidedTypes.fs" />
+    <Compile Include="ServiceDescription.fs" />
+    <Compile Include="TypeSchema.fs" />
+    <Compile Include="CodeDom.fs" />
+    <Compile Include="TypeBuilderContext.fs" />
+    <Compile Include="CodeDomGenerator.fs" />
+    <Compile Include="ProducerDefinition.fs" />
+    <Compile Include="SecurityServer.fs" />
+    <Compile Include="XRoadProvidedTypes.fsi" />
+    <Compile Include="XRoadProvidedTypes.fs" />
     <None Include="paket.references" />
     <None Include="paket.template" />
   </ItemGroup>

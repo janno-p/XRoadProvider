@@ -1,4 +1,4 @@
-﻿module internal XRoad.DynamicMethods
+﻿module internal XRoad.Emitter
 
 open Quotations.Patterns
 open System
@@ -1234,103 +1234,12 @@ and findBaseTypes isEncoded (typ: Type) =
     |> Seq.unfold (fun typ -> if typ = typeof<obj> then None else Some(typ |> findTypeMap isEncoded, typ.BaseType))
     |> Seq.choose (id)
     |> Seq.toList
-    
-let requiredOpAttr<'T when 'T :> Attribute and 'T : null and 'T : equality> (mi: MethodInfo) : 'T =
-    mi.GetCustomAttribute<'T>()
-    |> Option.ofObj
-    |> Option.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
-    
+
 let getCompleteTypeMap isEncoded typ =
     let typeMap = getTypeMap isEncoded typ
     while not typeMap.IsComplete do
         System.Threading.Thread.Sleep(100)
     typeMap
-    
-let createMethodMap (mi: MethodInfo) : MethodMap =
-    let operationAttr = mi |> requiredOpAttr<XRoadOperationAttribute>
-    let requestAttr = mi |> requiredOpAttr<XRoadRequestAttribute>
-    let responseAttr = mi |> requiredOpAttr<XRoadResponseAttribute>
-    let requiredHeadersAttr = mi.GetCustomAttribute<XRoadRequiredHeadersAttribute>() |> Option.ofObj
-    
-    let deserializer =
-        DynamicMethod
-            ( sprintf "deserialize_%s" mi.Name,
-              typeof<obj>,
-              [| typeof<XmlReader>; typeof<SerializerContext> |],
-              true )
-    let ilDeser = deserializer.GetILGenerator()
-    ilDeser.Emit(OpCodes.Ldc_I4_0)
-    ilDeser.Emit(OpCodes.Newarr, typeof<obj>)
-    ilDeser.Emit(OpCodes.Ret)
-    
-    let serializer = 
-        DynamicMethod
-            ( sprintf "serialize_%s" mi.Name,
-              null,
-              [| typeof<XmlWriter>; typeof<SerializerContext>; typeof<obj[]> |],
-              true )
-    let ilSer = serializer.GetILGenerator()
-    ilSer.Emit(OpCodes.Ldarg_0)
-    ilSer.Emit(OpCodes.Ldstr, requestAttr.Name)
-    match requestAttr.Namespace with
-    | null | "" ->
-        ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
-    | _ ->
-        ilSer.Emit(OpCodes.Ldstr, requestAttr.Namespace)
-        ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
-
-    mi.GetParameters()
-    |> Array.choose
-        (fun p ->
-            match p.GetCustomAttribute<XRoadParamAttribute>() with
-            | null -> None
-            | attr -> Some(p, attr))
-    |> Array.iteri
-        (fun i (p, attr) ->
-            ilSer.Emit(OpCodes.Ldarg_0)
-            ilSer.Emit(OpCodes.Ldstr, attr.Name)
-            ilSer.Emit(OpCodes.Ldstr, attr.Namespace)
-            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
-
-            let typeMap = p.ParameterType |> getCompleteTypeMap requestAttr.Encoded
-            ilSer.Emit(OpCodes.Ldarg_0)
-            ilSer.Emit(OpCodes.Ldarg_2)
-            ilSer.Emit(OpCodes.Ldc_I4, i)
-            ilSer.Emit(OpCodes.Ldelem, typeof<obj>)
-            ilSer.Emit(OpCodes.Ldarg_1)
-            ilSer.Emit(OpCodes.Call, typeMap.Serialization.Root)
-            
-            ilSer.Emit(OpCodes.Ldarg_0)
-            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>))
-
-    ilSer.Emit(OpCodes.Ldarg_0)
-    ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
-    ilSer.Emit(OpCodes.Ret)
-    
-    { Deserializer = deserializer
-      Serializer = serializer
-      Protocol = operationAttr.Protocol
-      Request =
-        { IsEncoded = requestAttr.Encoded
-          IsMultipart = requestAttr.Multipart
-          Accessor = Some(XmlQualifiedName(requestAttr.Name, requestAttr.Namespace)) }
-      Response =
-        { IsEncoded = responseAttr.Encoded
-          IsMultipart = responseAttr.Multipart
-          Accessor = Some(XmlQualifiedName(responseAttr.Name, responseAttr.Namespace)) }
-      ServiceCode = operationAttr.ServiceCode
-      ServiceVersion = operationAttr.ServiceVersion |> Option.ofObj
-      Namespaces = []
-      RequiredHeaders = dict [ match requiredHeadersAttr with
-                               | Some(attr) -> yield (attr.Namespace, attr.Names)
-                               | None -> () ] }
-
-let getMethodMap: MethodInfo -> MethodMap =
-    let operationMaps = ConcurrentDictionary<MethodInfo, MethodMap>();
-    (fun mi ->
-        match operationMaps.TryGetValue(mi) with
-        | true, mm -> mm
-        | _ -> operationMaps.GetOrAdd(mi, (createMethodMap mi)))
 
 module internal XsdTypes =
     open NodaTime
@@ -1495,5 +1404,99 @@ module internal XsdTypes =
         addTypeMap typeof<string> (mi <@ serializeString(null, null, null) @>) (mi <@ deserializeString(null, null) @>)
         addBinaryTypeMap typeof<BinaryContent> (mi <@ serializeBinaryContent(null, null, null) @>) (mi <@ deserializeBinaryContent(null, null) @>)
         addBinaryTypeMap typeof<XopBinaryContent> (mi <@ serializeXopBinaryContent(null, null, null) @>) (mi <@ deserializeXopBinaryContent(null, null) @>)
+
+module internal DynamicMethods =
+    let requiredOpAttr<'T when 'T :> Attribute and 'T : null and 'T : equality> (mi: MethodInfo) : 'T =
+        mi.GetCustomAttribute<'T>()
+        |> Option.ofObj
+        |> Option.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
+        
+    let createMethodMap (mi: MethodInfo) : MethodMap =
+        let operationAttr = mi |> requiredOpAttr<XRoadOperationAttribute>
+        let requestAttr = mi |> requiredOpAttr<XRoadRequestAttribute>
+        let responseAttr = mi |> requiredOpAttr<XRoadResponseAttribute>
+        let requiredHeadersAttr = mi.GetCustomAttribute<XRoadRequiredHeadersAttribute>() |> Option.ofObj
+        
+        let deserializer =
+            DynamicMethod
+                ( sprintf "deserialize_%s" mi.Name,
+                  typeof<obj>,
+                  [| typeof<XmlReader>; typeof<SerializerContext> |],
+                  true )
+        let ilDeser = deserializer.GetILGenerator()
+        ilDeser.Emit(OpCodes.Ldc_I4_0)
+        ilDeser.Emit(OpCodes.Newarr, typeof<obj>)
+        ilDeser.Emit(OpCodes.Ret)
+        
+        let serializer = 
+            DynamicMethod
+                ( sprintf "serialize_%s" mi.Name,
+                  null,
+                  [| typeof<XmlWriter>; typeof<SerializerContext>; typeof<obj[]> |],
+                  true )
+        let ilSer = serializer.GetILGenerator()
+        ilSer.Emit(OpCodes.Ldarg_0)
+        ilSer.Emit(OpCodes.Ldstr, requestAttr.Name)
+        match requestAttr.Namespace with
+        | null | "" ->
+            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
+        | _ ->
+            ilSer.Emit(OpCodes.Ldstr, requestAttr.Namespace)
+            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
+    
+        mi.GetParameters()
+        |> Array.choose
+            (fun p ->
+                match p.GetCustomAttribute<XRoadParamAttribute>() with
+                | null -> None
+                | attr -> Some(p, attr))
+        |> Array.iteri
+            (fun i (p, attr) ->
+                ilSer.Emit(OpCodes.Ldarg_0)
+                ilSer.Emit(OpCodes.Ldstr, attr.Name)
+                ilSer.Emit(OpCodes.Ldstr, attr.Namespace)
+                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
+    
+                let typeMap = p.ParameterType |> getCompleteTypeMap requestAttr.Encoded
+                ilSer.Emit(OpCodes.Ldarg_0)
+                ilSer.Emit(OpCodes.Ldarg_2)
+                ilSer.Emit(OpCodes.Ldc_I4, i)
+                ilSer.Emit(OpCodes.Ldelem, typeof<obj>)
+                ilSer.Emit(OpCodes.Ldarg_1)
+                ilSer.Emit(OpCodes.Call, typeMap.Serialization.Root)
+                
+                ilSer.Emit(OpCodes.Ldarg_0)
+                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>))
+    
+        ilSer.Emit(OpCodes.Ldarg_0)
+        ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
+        ilSer.Emit(OpCodes.Ret)
+        
+        { Deserializer = deserializer
+          Serializer = serializer
+          Protocol = operationAttr.Protocol
+          Request =
+            { IsEncoded = requestAttr.Encoded
+              IsMultipart = requestAttr.Multipart
+              Accessor = Some(XmlQualifiedName(requestAttr.Name, requestAttr.Namespace)) }
+          Response =
+            { IsEncoded = responseAttr.Encoded
+              IsMultipart = responseAttr.Multipart
+              Accessor = Some(XmlQualifiedName(responseAttr.Name, responseAttr.Namespace)) }
+          ServiceCode = operationAttr.ServiceCode
+          ServiceVersion = operationAttr.ServiceVersion |> Option.ofObj
+          Namespaces = []
+          RequiredHeaders = dict [ match requiredHeadersAttr with
+                                   | Some(attr) -> yield (attr.Namespace, attr.Names)
+                                   | None -> () ] }
+    
+    let getMethodMap: MethodInfo -> MethodMap =
+        let operationMaps = ConcurrentDictionary<MethodInfo, MethodMap>();
+        (fun mi ->
+            match operationMaps.TryGetValue(mi) with
+            | true, mm -> mm
+            | _ -> operationMaps.GetOrAdd(mi, (createMethodMap mi)))
+
+let getMethodMap = DynamicMethods.getMethodMap
 
 do XsdTypes.init()

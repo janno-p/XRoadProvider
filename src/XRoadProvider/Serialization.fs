@@ -9,7 +9,7 @@ open System.Net
 open System.Xml
 open System.Reflection
 open XRoad.Serialization.Attributes
-open XRoad.DynamicMethods
+open XRoad.Emitter
 
 type XRoadFault(faultCode: string, faultString) =
     inherit Exception(faultString)
