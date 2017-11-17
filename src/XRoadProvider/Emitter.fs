@@ -1411,38 +1411,38 @@ module internal DynamicMethods =
         |> Option.ofObj
         |> Option.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
         
-    let createMethodMap (mi: MethodInfo) : MethodMap =
-        let operationAttr = mi |> requiredOpAttr<XRoadOperationAttribute>
-        let requestAttr = mi |> requiredOpAttr<XRoadRequestAttribute>
-        let responseAttr = mi |> requiredOpAttr<XRoadResponseAttribute>
-        let requiredHeadersAttr = mi.GetCustomAttribute<XRoadRequiredHeadersAttribute>() |> Option.ofObj
-        
-        let deserializer =
+    let emitDeserializer (mi: MethodInfo) (responseAttr: XRoadResponseAttribute) : OperationDeserializerDelegate =
+        let method =
             DynamicMethod
                 ( sprintf "deserialize_%s" mi.Name,
                   typeof<obj[]>,
                   [| typeof<XmlReader>; typeof<SerializerContext> |],
                   true )
-        let ilDeser = deserializer.GetILGenerator()
-        ilDeser.Emit(OpCodes.Ldc_I4_0)
-        ilDeser.Emit(OpCodes.Newarr, typeof<obj>)
-        ilDeser.Emit(OpCodes.Ret)
+
+        let il = method.GetILGenerator()
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Newarr, typeof<obj>)
+        il.Emit(OpCodes.Ret)
+
+        method.CreateDelegate(typeof<OperationDeserializerDelegate>) |> unbox
         
-        let serializer = 
+    let emitSerializer (mi: MethodInfo) (requestAttr: XRoadRequestAttribute) : OperationSerializerDelegate =
+        let method = 
             DynamicMethod
                 ( sprintf "serialize_%s" mi.Name,
                   null,
                   [| typeof<XmlWriter>; typeof<SerializerContext>; typeof<obj[]> |],
                   true )
-        let ilSer = serializer.GetILGenerator()
-        ilSer.Emit(OpCodes.Ldarg_0)
-        ilSer.Emit(OpCodes.Ldstr, requestAttr.Name)
+
+        let il = method.GetILGenerator()
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Ldstr, requestAttr.Name)
         match requestAttr.Namespace with
         | null | "" ->
-            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("") @>)
         | _ ->
-            ilSer.Emit(OpCodes.Ldstr, requestAttr.Namespace)
-            ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
+            il.Emit(OpCodes.Ldstr, requestAttr.Namespace)
+            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
     
         mi.GetParameters()
         |> Array.choose
@@ -1452,28 +1452,36 @@ module internal DynamicMethods =
                 | attr -> Some(p, attr))
         |> Array.iteri
             (fun i (p, attr) ->
-                ilSer.Emit(OpCodes.Ldarg_0)
-                ilSer.Emit(OpCodes.Ldstr, attr.Name)
-                ilSer.Emit(OpCodes.Ldstr, attr.Namespace)
-                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Ldstr, attr.Name)
+                il.Emit(OpCodes.Ldstr, attr.Namespace)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
     
                 let typeMap = p.ParameterType |> getCompleteTypeMap requestAttr.Encoded
-                ilSer.Emit(OpCodes.Ldarg_0)
-                ilSer.Emit(OpCodes.Ldarg_2)
-                ilSer.Emit(OpCodes.Ldc_I4, i)
-                ilSer.Emit(OpCodes.Ldelem, typeof<obj>)
-                ilSer.Emit(OpCodes.Ldarg_1)
-                ilSer.Emit(OpCodes.Call, typeMap.Serialization.Root)
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Ldarg_2)
+                il.Emit(OpCodes.Ldc_I4, i)
+                il.Emit(OpCodes.Ldelem, typeof<obj>)
+                il.Emit(OpCodes.Ldarg_1)
+                il.Emit(OpCodes.Call, typeMap.Serialization.Root)
                 
-                ilSer.Emit(OpCodes.Ldarg_0)
-                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>))
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>))
     
-        ilSer.Emit(OpCodes.Ldarg_0)
-        ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
-        ilSer.Emit(OpCodes.Ret)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
+        il.Emit(OpCodes.Ret)
+        
+        method.CreateDelegate(typeof<OperationSerializerDelegate>) |> unbox
+        
+    let createMethodMap (mi: MethodInfo) : MethodMap =
+        let operationAttr = mi |> requiredOpAttr<XRoadOperationAttribute>
+        let requestAttr = mi |> requiredOpAttr<XRoadRequestAttribute>
+        let responseAttr = mi |> requiredOpAttr<XRoadResponseAttribute>
+        let requiredHeadersAttr = mi.GetCustomAttribute<XRoadRequiredHeadersAttribute>() |> Option.ofObj
 
-        { Deserializer = deserializer.CreateDelegate(typeof<OperationDeserializerDelegate>) |> unbox
-          Serializer = serializer.CreateDelegate(typeof<OperationSerializerDelegate>) |> unbox
+        { Deserializer = emitDeserializer mi responseAttr
+          Serializer = emitSerializer mi requestAttr
           Protocol = operationAttr.Protocol
           Request =
             { IsEncoded = requestAttr.Encoded
