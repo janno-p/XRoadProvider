@@ -919,7 +919,7 @@ let [<Tests>] tests =
         test "serialize root optional none value" {
             let initial = Optional.Option.None<int>()
             let xml = serialize' "OptionalIntService" [| initial |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:OptionalIntService><request /></tns:OptionalIntService></Body>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:OptionalIntService /></Body>" "invalid serialization result"
         }
         
         ptest "deserialize root optional none value" {

@@ -313,10 +313,11 @@ module EmitSerialization =
         | Method (mi, i) ->
             il.Emit(OpCodes.Ldarg_1)
             il.Emit(OpCodes.Ldc_I4, i)
-            il.Emit(OpCodes.Ldelem, typeof<obj>)
+            il.Emit(OpCodes.Ldelem_Ref)
+            let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> Option.defaultWith (fun _ -> property.Type)
             match property.Type.IsValueType with
-            | true -> il.Emit(OpCodes.Unbox_Any, property.Type)
-            | _ -> il.Emit(OpCodes.Castclass, property.Type)
+            | true -> il.Emit(OpCodes.Unbox_Any, ty)
+            | _ -> il.Emit(OpCodes.Castclass, ty)
         | Type tm ->
             il.Emit(OpCodes.Ldarg_1)
             il.Emit(OpCodes.Castclass, tm.Type)
