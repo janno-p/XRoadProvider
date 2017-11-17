@@ -20,4 +20,6 @@ IF NOT EXIST build.fsx (
   packages\FAKE\tools\FAKE.exe init.fsx
 )
 
+del .fake\*_warnings.txt
+
 packages\FAKE\tools\FAKE.exe build.fsx %*

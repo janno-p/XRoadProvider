@@ -13,7 +13,6 @@ open Fake.Core.String
 open Fake.Core.TargetOperators
 open Fake.Core.Trace
 open Fake.DotNet
-open Fake.DotNet.MsBuild
 open Fake.IO
 open Fake.IO.FileSystemOperators
 open Fake.ReleaseNotesHelper
@@ -56,6 +55,8 @@ let tags = "F# fsharp x-road xroad typeproviders x-tee xtee"
 
 // File system information
 let solutionFile  = "XRoadProvider.sln"
+let projectPath = __SOURCE_DIRECTORY__ </> "src" </> "XRoadProvider"
+let testProjectPath = __SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests"
 
 // Pattern specifying assemblies to be tested using NUnit
 let testAssemblies = "tests/**/bin/Debug/*Tests*.exe"
@@ -146,30 +147,34 @@ Target.Create "CleanDocs" (fun _ ->
 // Build library & test project
 
 Target.Create "BuildDebug" (fun _ ->
-    !! solutionFile
-#if MONO
-    |> MSBuild "" "Rebuild" [ ("Configuration", "Debug"); ("DefineConstants", "MONO"); ("DefineConstants", "DEBUG") ]
-#else
-    |> MSBuildDebug "" "Rebuild"
-#endif
-    |> ignore
+    Fake.DotNetCli.Restore (fun p -> { p with WorkingDir = projectPath })
+    Fake.DotNetCli.Build
+        (fun p ->
+            { p with
+                Configuration = "Debug"
+                WorkingDir = projectPath })
 )
 
 Target.Create "Build" (fun _ ->
-    !! solutionFile
-#if MONO
-    |> MSBuildReleaseExt "" [ ("DefineConstants","MONO") ] "Rebuild"
-#else
-    |> MSBuildRelease "" "Rebuild"
-#endif
-    |> ignore
+    Fake.DotNetCli.Restore (fun p -> { p with WorkingDir = projectPath })
+    Fake.DotNetCli.Build
+        (fun p ->
+            { p with
+                AdditionalArgs = [(sprintf "/p:Version=%s" release.NugetVersion)]
+                Configuration = "Release"
+                WorkingDir = projectPath })
 )
 
 // --------------------------------------------------------------------------------------
 // Run the unit tests using test runner
 
 Target.Create "RunTests" (fun _ ->
-    !! testAssemblies |> Expecto.Expecto id
+    Fake.DotNetCli.Restore (fun p -> { p with WorkingDir = testProjectPath })
+    Fake.DotNetCli.Test
+        (fun p ->
+            { p with
+                Configuration = "Debug"
+                WorkingDir = testProjectPath })
 )
 
 #if MONO
@@ -217,7 +222,7 @@ let fakeStartInfo script workingDirectory args fsiargs environmentVars =
     (fun (info: ProcStartInfo) ->
         let environmentVars: Map<string, string> =
             Map.ofSeq environmentVars
-            |> Map.add "MSBuild" msBuildExe
+            |> Map.add "MSBuild" MsBuild.msBuildExe
             |> Map.add "GIT" Git.CommandHelper.gitPath
             |> Map.add "FSI" Fake.FSIHelper.fsiPath
         { info with
