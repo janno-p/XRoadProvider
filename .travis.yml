@@ -11,6 +11,6 @@ before_install:
   - sudo apt-get -y install dotnet-sdk-2.0.2
 
 script:
-  - which mono
-  - dotnet --info
-  - ./build.sh RunTests
+  - dotnet restore tests/XRoadProvider.Tests/XRoadProvider.Tests.fsproj
+  - dotnet build tests/XRoadProvider.Tests/XRoadProvider.Tests.fsproj --configuration Debug /property:FrameworkPathOverride=/usr/lib/mono/4.5/
+  - mono ./tests/XRoadProvider.Tests/bin/Debug/net461/XRoadProvider.Tests.exe
