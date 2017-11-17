@@ -332,7 +332,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
         writer.WriteEndElement()
         
         writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
-        methodMap.Serializer.Invoke(writer, context, args)
+        methodMap.Serializer.Invoke(writer, args, context)
         writer.WriteEndElement()
 
         writer.WriteEndDocument()

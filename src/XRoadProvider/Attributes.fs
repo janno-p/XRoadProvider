@@ -26,7 +26,7 @@ type XRoadProtocol =
 /// Provides overrides for content layout, type name and namespace.
 /// Default constructor initializes new attribute by giving type name and content layout.
 [<AllowNullLiteral>]
-[<System.AttributeUsage(System.AttributeTargets.Class)>]
+[<AttributeUsage(AttributeTargets.Class)>]
 type XRoadTypeAttribute(name: string, layout: LayoutKind) =
     inherit Attribute()
 
@@ -51,7 +51,7 @@ type XRoadTypeAttribute(name: string, layout: LayoutKind) =
 /// Attribute which identifies serializable property.
 /// Provides overrides for property serialization.
 [<AllowNullLiteral>]
-[<System.AttributeUsage(System.AttributeTargets.Property)>]
+[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Parameter)>]
 type XRoadElementAttribute(name: string) =
     inherit Attribute()
 
@@ -81,7 +81,7 @@ type XRoadElementAttribute(name: string) =
 /// Initializes new attribute with unique id for current choice option
 /// and name which is used for type members.
 [<AllowNullLiteral>]
-[<System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true)>]
+[<AttributeUsage(AttributeTargets.Class, AllowMultiple = true)>]
 type XRoadChoiceOptionAttribute(id: int, name: string) =
     inherit Attribute()
 
@@ -90,6 +90,8 @@ type XRoadChoiceOptionAttribute(id: int, name: string) =
 
     /// Name which is used for members which are tied to this choice option.
     member val Name = name with get
+    
+    member val Namespace = "" with get
 
     /// When true, no extra element is serialized for this option. Instead, type
     /// contents become direct child elements of owner element.
@@ -99,7 +101,7 @@ type XRoadChoiceOptionAttribute(id: int, name: string) =
 /// Provides serialization option for various collection types.
 /// Initializes new attribute with item element name.
 [<AllowNullLiteral>]
-[<System.AttributeUsage(System.AttributeTargets.Property)>]
+[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Parameter)>]
 type XRoadCollectionAttribute(itemName: string) =
     inherit Attribute()
 
@@ -167,13 +169,3 @@ type XRoadResponseAttribute(name: string, ns: string) =
     member val Namespace = ns with get
     member val Encoded = false with get, set
     member val Multipart = false with get, set
-
-[<AllowNullLiteral>]
-[<AttributeUsage(AttributeTargets.Parameter ||| AttributeTargets.ReturnValue)>]
-type XRoadParamAttribute(name: string, ns: string) =
-    inherit Attribute()
-    
-    new(name: string) = XRoadParamAttribute(name, "")
-    
-    member val Name = name with get
-    member val Namespace = ns with get

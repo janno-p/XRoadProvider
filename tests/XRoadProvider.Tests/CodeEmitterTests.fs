@@ -43,10 +43,10 @@ let serializeOptionalProperty (v: HasOptionalElements) =
     let property = Individual { TypeMap = propertyTypeMap
                                 SimpleTypeName = XRoadHelper.getSystemTypeName (propertyType.FullName)
                                 Element = Some(XName.Get("Value2"), false, true)
-                                OwnerTypeMap = ownerTypeMap
-                                GetMethod = p.GetGetMethod()
-                                SetMethod = p.GetSetMethod(true)
-                                HasValueMethod = p.PropertyType.GetProperty("HasValue").GetGetMethod() }
+                                Wrapper = Type ownerTypeMap
+                                GetMethod = Some(p.GetGetMethod())
+                                SetMethod = Some(p.GetSetMethod(true))
+                                HasValueMethod = Some(p.PropertyType.GetProperty("HasValue").GetGetMethod()) }
     let dynMethod = DynamicMethod("Serialize", null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |], true)
     let il = dynMethod.GetILGenerator()
     il |> emitOptionalFieldSerialization property (fun () -> serializeContent il)

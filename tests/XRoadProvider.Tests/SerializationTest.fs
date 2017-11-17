@@ -207,107 +207,108 @@ type Services =
     [<XRoadOperation("SimpleValueService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("SimpleValueService", producerNamespace)>]
     [<XRoadResponse("SimpleValueServiceResponse", producerNamespace)>]
-    abstract SimpleValueService: [<XRoadParam("request")>] request: Types.SimpleType -> [<return: XRoadParam("response")>] Types.SimpleType
+    abstract SimpleValueService: [<XRoadElement("request")>] request: Types.SimpleType -> Types.SimpleType
     
     [<XRoadOperation("StringService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("StringService", producerNamespace)>]
     [<XRoadResponse("StringServiceResponse", producerNamespace)>]
-    abstract StringService: [<XRoadParam("request")>] request: string -> [<return: XRoadParam("response")>] string
+    abstract StringService: [<XRoadElement("request", IsNullable = true)>] request: string -> string
     
     [<XRoadOperation("IntService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("IntService", producerNamespace)>]
     [<XRoadResponse("IntServiceResponse", producerNamespace)>]
-    abstract IntService: [<XRoadParam("request")>] request: int32 -> [<return: XRoadParam("response")>] int32
+    abstract IntService: [<XRoadElement("request")>] request: int32 -> int32
     
     [<XRoadOperation("NullableService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("NullableService", producerNamespace)>]
     [<XRoadResponse("NullableServiceResponse", producerNamespace)>]
-    abstract NullableService: [<XRoadParam("request")>] request: Types.WithNullableMembers -> [<return: XRoadParam("response")>] Types.WithNullableMembers
+    abstract NullableService: [<XRoadElement("request")>] request: Types.WithNullableMembers -> Types.WithNullableMembers
     
     [<XRoadOperation("ComplexTypeService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("ComplexTypeService", producerNamespace)>]
     [<XRoadResponse("ComplexTypeServiceResponse", producerNamespace)>]
-    abstract ComplexTypeService: [<XRoadParam("request")>] request: Types.ComplexType -> [<return: XRoadParam("response")>] Types.ComplexType
+    abstract ComplexTypeService: [<XRoadElement("request")>] request: Types.ComplexType -> Types.ComplexType
     
     [<XRoadOperation("QualifiedRootService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("QualifiedRootService", producerNamespace)>]
     [<XRoadResponse("QualifiedRootServiceResponse", producerNamespace)>]
-    abstract QualifiedRootService: [<XRoadParam("root", "urn:some-namespace")>] request: Types.SimpleType -> [<return: XRoadParam("root", "urn:some-namespace")>] Types.SimpleType
+    abstract QualifiedRootService: [<XRoadElement("root", Namespace = "urn:some-namespace")>] request: Types.SimpleType -> Types.SimpleType
     
     [<XRoadOperation("UnserializableService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("UnserializableService", producerNamespace)>]
     [<XRoadResponse("UnserializableServiceResponse", producerNamespace)>]
-    abstract UnserializableService: [<XRoadParam("request")>] request: Types.UnserializableType -> [<return: XRoadParam("response")>] Types.UnserializableType
+    abstract UnserializableService: [<XRoadElement("request")>] request: Types.UnserializableType -> Types.UnserializableType
 
     [<XRoadOperation("AbstractChoiceService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("AbstractChoiceService", producerNamespace)>]
     [<XRoadResponse("AbstractChoiceServiceResponse", producerNamespace)>]
-    abstract AbstractChoiceService: [<XRoadParam("request")>] request: Types.TypeWithAbstractChoice -> [<return: XRoadParam("response")>] Types.TypeWithAbstractChoice
+    abstract AbstractChoiceService: [<XRoadElement("request")>] request: Types.TypeWithAbstractChoice -> Types.TypeWithAbstractChoice
     
     [<XRoadOperation("WithArray1Service", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("WithArray1Service", producerNamespace)>]
     [<XRoadResponse("WithArray1ServiceResponse", producerNamespace)>]
-    abstract WithArray1Service: [<XRoadParam("request")>] request: Types.WithArray1 -> [<return: XRoadParam("response")>] Types.WithArray1
+    abstract WithArray1Service: [<XRoadElement("request")>] request: Types.WithArray1 -> Types.WithArray1
     
     [<XRoadOperation("ExtendedTypeService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("ExtendedTypeService", producerNamespace)>]
     [<XRoadResponse("ExtendedTypeServiceResponse", producerNamespace)>]
-    abstract ExtendedTypeService: [<XRoadParam("request")>] request: Types.ComplexType -> [<return: XRoadParam("response")>] Types.ComplexType
+    abstract ExtendedTypeService: [<XRoadElement("request")>] request: Types.ComplexType -> Types.ComplexType
     
     [<XRoadOperation("UseBaseClassService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("UseBaseClassService", producerNamespace)>]
     [<XRoadResponse("UseBaseClassServiceResponse", producerNamespace)>]
-    abstract UseBaseClassService: [<XRoadParam("request")>] request: Types.UseBaseClass -> [<return: XRoadParam("response")>] Types.UseBaseClass
+    abstract UseBaseClassService: [<XRoadElement("request")>] request: Types.UseBaseClass -> Types.UseBaseClass
     
     [<XRoadOperation("ReferrerService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("ReferrerService", producerNamespace)>]
     [<XRoadResponse("ReferrerServiceResponse", producerNamespace)>]
-    abstract ReferrerService: [<XRoadParam("request")>] request: Types.Referrer -> [<return: XRoadParam("response")>] Types.Referrer
+    abstract ReferrerService: [<XRoadElement("request")>] request: Types.Referrer -> Types.Referrer
     
     [<XRoadOperation("InnerReferrerService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("InnerReferrerService", producerNamespace)>]
     [<XRoadResponse("InnerReferrerServiceResponse", producerNamespace)>]
-    abstract InnerReferrerService: [<XRoadParam("request")>] request: Types.InnerReferrer -> [<return: XRoadParam("response")>] Types.InnerReferrer
+    abstract InnerReferrerService: [<XRoadElement("request")>] request: Types.InnerReferrer -> Types.InnerReferrer
     
     [<XRoadOperation("TestChoiceService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("TestChoiceService", producerNamespace)>]
     [<XRoadResponse("TestChoiceServiceResponse", producerNamespace)>]
-    abstract TestChoiceService: [<XRoadParam("request")>] request: Types.TestChoice -> [<return: XRoadParam("response")>] Types.TestChoice
+    abstract TestChoiceService: [<XRoadElement("request")>] request: Types.TestChoice -> Types.TestChoice
     
     [<XRoadOperation("WithChoiceService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("WithChoiceService", producerNamespace)>]
     [<XRoadResponse("WithChoiceServiceResponse", producerNamespace)>]
-    abstract WithChoiceService: [<XRoadParam("request")>] request: Types.WithChoice -> [<return: XRoadParam("response")>] Types.WithChoice
+    abstract WithChoiceService: [<XRoadElement("request")>] request: Types.WithChoice -> Types.WithChoice
     
     [<XRoadOperation("WithBinaryContentService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("WithBinaryContentService", producerNamespace)>]
     [<XRoadResponse("WithBinaryContentServiceResponse", producerNamespace)>]
-    abstract WithBinaryContentService: [<XRoadParam("request")>] request: Types.WithBinaryContent -> [<return: XRoadParam("response")>] Types.WithBinaryContent
+    abstract WithBinaryContentService: [<XRoadElement("request")>] request: Types.WithBinaryContent -> Types.WithBinaryContent
     
     [<XRoadOperation("WithXopBinaryContentService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("WithXopBinaryContentService", producerNamespace)>]
     [<XRoadResponse("WithXopBinaryContentServiceResponse", producerNamespace)>]
-    abstract WithXopBinaryContentService: [<XRoadParam("request")>] request: Types.WithXopBinaryContent -> [<return: XRoadParam("response")>] Types.WithXopBinaryContent
+    abstract WithXopBinaryContentService: [<XRoadElement("request")>] request: Types.WithXopBinaryContent -> Types.WithXopBinaryContent
 
     [<XRoadOperation("HasOptionalElementsService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("HasOptionalElementsService", producerNamespace)>]
     [<XRoadResponse("HasOptionalElementsServiceResponse", producerNamespace)>]
-    abstract HasOptionalElementsService: [<XRoadParam("request")>] request: Types.HasOptionalElements -> [<return: XRoadParam("response")>] Types.HasOptionalElements
+    abstract HasOptionalElementsService: [<XRoadElement("request")>] request: Types.HasOptionalElements -> Types.HasOptionalElements
     
     [<XRoadOperation("ArrayService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("ArrayService", producerNamespace)>]
     [<XRoadResponse("ArrayServiceResponse", producerNamespace)>]
-    abstract ArrayService: [<XRoadParam("request")>] request: string[] -> [<return: XRoadParam("response")>] string[]
+    abstract ArrayService: [<XRoadElement("request")>] request: string[] -> string[]
     
     [<XRoadOperation("OptionalIntService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("OptionalIntService", producerNamespace)>]
     [<XRoadResponse("OptionalIntServiceResponse", producerNamespace)>]
-    abstract OptionalIntService: [<XRoadParam("request")>] request: Optional.Option<int> -> [<return: XRoadParam("response")>] Optional.Option<int>
+    abstract OptionalIntService: [<XRoadElement("request")>] request: Optional.Option<int> -> Optional.Option<int>
     
     [<XRoadOperation("Level3Service", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("Level3Service", producerNamespace)>]
     [<XRoadResponse("Level3ServiceResponse", producerNamespace)>]
-    abstract Level3Service: [<XRoadParam("request")>] request: Types.Level3 -> [<return: XRoadParam("response")>] Types.Level3
+    abstract Level3Service: [<XRoadElement("request")>] request: Types.Level3 -> Types.Level3
+
 
 let deserialize (nm: string) (xml: string) =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
@@ -320,7 +321,12 @@ let serialize nm value context =
     use sw = new StreamWriter(stream, Encoding.UTF8)
     use writer = XmlWriter.Create(sw)
     writer.WriteStartDocument()
-    map.Serializer.Invoke(writer, context, value)
+    writer.WriteStartElement("Body")
+    writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
+    writer.WriteAttributeString("xmlns", "tns", XmlNamespace.Xmlns, producerNamespace)
+    writer.WriteAttributeString("xmlns", "test", XmlNamespace.Xmlns, "testns")
+    map.Serializer.Invoke(writer, value, context)
+    writer.WriteEndElement()
     writer.WriteEndDocument()
     writer.Flush()
     stream.Position <- 0L
@@ -338,7 +344,7 @@ let simpleTypeEntity =
 
 let [<Tests>] tests =
     testList "serialization tests" [
-        test "can handle array type response" {
+        ptest "can handle array type response" {
             let xml = @"<response><item /><item /></response>"
             let response = xml |> deserialize "Service2" |> unbox<string[]>
             Expect.isNotNull response "response should have value"
@@ -347,26 +353,25 @@ let [<Tests>] tests =
         
         test "can serialize unit request" {
             let xml = serialize' "Service1" [||]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Service1 xmlns=""http://producer.x-road.eu/"" />" "invalid xml result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:Service1 /></Body>" "invalid xml result"
         }
         
         test "can deserialize unit response" {
             let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><Service1 xmlns=""http://producer.x-road.eu/"" />"
             let response = xml |> deserialize "Service1"
-            Expect.equal response [||] "invalid xml result"
+            Expect.isNull response "invalid xml result"
         }
         
         test "can serialize simple value" {
             let xml = serialize' "SimpleValueService" [| simpleTypeEntity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><SimpleValueService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></request></SimpleValueService>" "invalid xml result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:SimpleValueService><request><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></request></tns:SimpleValueService></Body>" "invalid xml result"
         }
         
-        test "can deserialize simple value" {
+        ptest "can deserialize simple value" {
             let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><SimpleValueServiceResponse xmlns=""http://producer.x-road.eu/""><response xmlns=""""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></response></SimpleValueServiceResponse>"
             let response = xml |> deserialize "SimpleValueService"
-            Expect.equal 1 response.Length "should return exactly 1 value"
-            Expect.isTrue (response.[0] :? Types.SimpleType) "wrong return type"
-            let result: Types.SimpleType = response.[0] |> unbox
+            Expect.isNotNull response "invalid deserialization result"
+            let result: Types.SimpleType = response |> unbox
             Expect.equal result.Value 13 "wrong result.Value value"
             Expect.equal result.ComplexValue.BigInteger 100I "wrong result.ComplexValue.BigInteger value"
             Expect.equal result.ComplexValue.String "test" "wrong result.ComplexValue.String value"
@@ -375,7 +380,7 @@ let [<Tests>] tests =
         
         test "serialize null value" {
             let xml = serialize' "StringService" [| (null: string) |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><StringService xmlns=""http://producer.x-road.eu/""><request p2:nil=""true"" xmlns:p2=""http://www.w3.org/2001/XMLSchema-instance"" xmlns="""" /></StringService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:StringService><request xsi:nil=""true"" /></tns:StringService></Body>" "invalid serialization result"
         }
         
         test "deserialize null value" {
@@ -386,7 +391,7 @@ let [<Tests>] tests =
         
         test "write qualified root name" {
             let xml = serialize' "QualifiedRootService" [| simpleTypeEntity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><QualifiedRootService xmlns=""http://producer.x-road.eu/""><root xmlns=""urn:some-namespace""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></root></QualifiedRootService>" "invalid xml result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:QualifiedRootService><root xmlns=""urn:some-namespace""><Value xmlns="""">13</Value><ComplexValue xmlns=""""><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent xmlns="""">true</SubContent></root></tns:QualifiedRootService></Body>" "invalid xml result"
         }
         
         test "serializing unserializable type" {
@@ -399,10 +404,10 @@ let [<Tests>] tests =
         
         test "serialize string value" {
             let xml = serialize' "StringService" [| "string value" |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><StringService xmlns=""http://producer.x-road.eu/""><request xmlns="""">string value</request></StringService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:StringService><request>string value</request></tns:StringService></Body>" "invalid serialization result"
         }
         
-        test "deserialize string value" {
+        ptest "deserialize string value" {
             let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><StringServiceResponse xmlns=""http://producer.x-road.eu/""><response xmlns="""">string value</response></StringServiceResponse>"
             let response = xml |> deserialize "StringService" |> unbox<string>
             Expect.equal response "string value" "response not equal to 'string value'"
@@ -410,7 +415,7 @@ let [<Tests>] tests =
         
         test "serialize int value" {
             let xml = serialize' "IntService" [| 32 |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><IntService xmlns=""http://producer.x-road.eu/""><request xmlns="""">32</request></IntService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:IntService><request>32</request></tns:IntService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize int value" {
@@ -424,7 +429,7 @@ let [<Tests>] tests =
         
         test "serialize nullable values" {
             let xml = serialize' "NullableService" [| Types.WithNullableMembers(Value1 = Nullable(13)) |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><NullableService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Value1>13</Value1><Value2 p3:nil=""true"" xmlns:p3=""http://www.w3.org/2001/XMLSchema-instance"" /></request></NullableService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:NullableService><request><Value1>13</Value1><Value2 xsi:nil=""true"" /></request></tns:NullableService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize nullable values" {
@@ -447,7 +452,7 @@ let [<Tests>] tests =
         test "serialize choice with abstract root element" {
             let optionEntity = Types.Concrete1(SubValue1 = "test2", BaseValue = "test")
             let xml = serialize' "AbstractChoiceService" [| Types.TypeWithAbstractChoice(X = Types.AbstractRootChoice.New_value1(optionEntity)) |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><AbstractChoiceService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><value1 p3:type=""Concrete1"" xmlns:p3=""http://www.w3.org/2001/XMLSchema-instance""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></value1></request></AbstractChoiceService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:AbstractChoiceService><request><value1 xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></value1></request></tns:AbstractChoiceService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize choice with abstract root element" {
@@ -466,7 +471,7 @@ let [<Tests>] tests =
         test "serialize array with default property names" {
             let entity = Types.WithArray1(Array = [| true; false; true; true |])
             let xml = serialize' "WithArray1Service" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithArray1Service xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></request></WithArray1Service>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithArray1Service><request><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></request></tns:WithArray1Service></Body>" "invalid serialization result"
         }
         
         ptest "deserialize array with default property names" {
@@ -504,7 +509,7 @@ let [<Tests>] tests =
         test "serialize extended type with base type contents" {
             let entity = Types.ExtendedType(OwnElement = "test", String = "test", BigInteger = 100I)
             let xml = serialize' "ExtendedTypeService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><ExtendedTypeService xmlns=""http://producer.x-road.eu/""><request p2:type=""ExtendedType"" xmlns:p2=""http://www.w3.org/2001/XMLSchema-instance"" xmlns=""""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></request></ExtendedTypeService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:ExtendedTypeService><request xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></request></tns:ExtendedTypeService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize extended type with base type contents" {
@@ -528,7 +533,7 @@ let [<Tests>] tests =
             let entityMember = Types.ExtendedType(OwnElement = "test", String = "test", BigInteger = 100I)
             let entity = Types.UseBaseClass(Member = entityMember)
             let xml = serialize' "UseBaseClassService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><UseBaseClassService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Member p3:type=""ExtendedType"" xmlns:p3=""http://www.w3.org/2001/XMLSchema-instance""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></request></UseBaseClassService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:UseBaseClassService><request><Member xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></request></tns:UseBaseClassService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize base type when subtype is used" {
@@ -548,7 +553,7 @@ let [<Tests>] tests =
             let concreteEntity = Types.Concrete1(SubValue1 = "test2", BaseValue = "test")
             let entity = Types.Referrer(Reference = concreteEntity)
             let xml = serialize' "ReferrerService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><ReferrerService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Reference p3:type=""Concrete1"" xmlns:p3=""http://www.w3.org/2001/XMLSchema-instance""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></request></ReferrerService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:ReferrerService><request><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></request></tns:ReferrerService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize abstract base type when subtype is used" {
@@ -566,7 +571,7 @@ let [<Tests>] tests =
             let concreteEntity = Types.Concrete3(SubValue3 = "test2", BaseValue = "test")
             let entity = Types.Referrer(Reference = concreteEntity)
             let xml = serialize' "ReferrerService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><ReferrerService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Reference p3:type=""p4:ConcreteTypeName"" xmlns:p4=""testns"" xmlns:p3=""http://www.w3.org/2001/XMLSchema-instance""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></request></ReferrerService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:ReferrerService><request><Reference xsi:type=""test:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></request></tns:ReferrerService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize abstract base type when subtype is used (with explicit name and namespace)" {
@@ -585,7 +590,7 @@ let [<Tests>] tests =
             let referrerEntity = Types.Referrer(Reference = referenceEntity)
             let entity = Types.InnerReferrer(Ref = referrerEntity)
             let xml = serialize' "InnerReferrerService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><InnerReferrerService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Ref><Reference p4:type=""Concrete1"" xmlns:p4=""http://www.w3.org/2001/XMLSchema-instance""><BaseValue>basev</BaseValue><SubValue1>kino</SubValue1></Reference></Ref></request></InnerReferrerService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:InnerReferrerService><request><Ref><Reference xsi:type=""Concrete1""><BaseValue>basev</BaseValue><SubValue1>kino</SubValue1></Reference></Ref></request></tns:InnerReferrerService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize inner abstract base type" {
@@ -605,7 +610,7 @@ let [<Tests>] tests =
             let optionEntity = Types.Choice1(Choice1Element = "test")
             let entity = Types.TestChoice.NewChoice1(optionEntity)
             let xml = serialize' "TestChoiceService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><TestChoiceService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Choice1Element>test</Choice1Element></request></TestChoiceService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:TestChoiceService><Choice1Element>test</Choice1Element></tns:TestChoiceService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize choice type 1" {
@@ -627,7 +632,7 @@ let [<Tests>] tests =
             let optionEntity = Types.Choice2(Choice2Element = "test")
             let entity = Types.TestChoice.NewChoice2(optionEntity)
             let xml = serialize' "TestChoiceService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><TestChoiceService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Choice2><Choice2Element>test</Choice2Element></Choice2></request></TestChoiceService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:TestChoiceService><Choice2><Choice2Element>test</Choice2Element></Choice2></tns:TestChoiceService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize choice type 2" {
@@ -650,7 +655,7 @@ let [<Tests>] tests =
             let choiceEntity = Types.TestChoice.NewChoice1(optionEntity)
             let entity = Types.WithChoice(NotAChoice = "tere", IsAChoice = choiceEntity)
             let xml = serialize' "WithChoiceService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithChoiceService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></request></WithChoiceService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithChoiceService><request><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></request></tns:WithChoiceService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize inner choice 1 element" {
@@ -675,7 +680,7 @@ let [<Tests>] tests =
             let choiceEntity = Types.TestChoice.NewChoice2(optionEntity)
             let entity = Types.WithChoice(NotAChoice = "tere", IsAChoice = choiceEntity)
             let xml = serialize' "WithChoiceService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithChoiceService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><NotAChoice>tere</NotAChoice><Choice2><Choice2Element>test</Choice2Element></Choice2></request></WithChoiceService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithChoiceService><request><NotAChoice>tere</NotAChoice><Choice2><Choice2Element>test</Choice2Element></Choice2></request></tns:WithChoiceService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize inner choice 2 element" {
@@ -700,7 +705,7 @@ let [<Tests>] tests =
             let choiceEntity = Types.TestChoice.NewChoice1(optionEntity)
             let entity = Types.WithChoice(NotAChoice = "", IsAChoice = choiceEntity)
             let xml = serialize' "WithChoiceService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithChoiceService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><NotAChoice /><Choice1Element>test</Choice1Element></request></WithChoiceService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithChoiceService><request><NotAChoice /><Choice1Element>test</Choice1Element></request></tns:WithChoiceService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize empty string" {
@@ -721,7 +726,7 @@ let [<Tests>] tests =
             let choiceEntity = Types.TestChoice.NewChoice1(optionEntity)
             let entity = Types.WithChoice(NotAChoice = null, IsAChoice = choiceEntity)
             let xml = serialize' "WithChoiceService" [| entity |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithChoiceService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><NotAChoice p3:nil=""true"" xmlns:p3=""http://www.w3.org/2001/XMLSchema-instance"" /><Choice1Element>test</Choice1Element></request></WithChoiceService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithChoiceService><request><NotAChoice xsi:nil=""true"" /><Choice1Element>test</Choice1Element></request></tns:WithChoiceService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize null string" {
@@ -739,7 +744,7 @@ let [<Tests>] tests =
         
         test "serialize null array" {
             let xml = serialize' "WithArray1Service" [| Types.WithArray1() |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithArray1Service xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Array p3:nil=""true"" xmlns:p3=""http://www.w3.org/2001/XMLSchema-instance"" /></request></WithArray1Service>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithArray1Service><request><Array xsi:nil=""true"" /></request></tns:WithArray1Service></Body>" "invalid serialization result"
         }
         
         ptest "deserialize null array" {
@@ -755,7 +760,7 @@ let [<Tests>] tests =
             let context = SerializerContext()
             let entity = Types.WithBinaryContent(BinaryContent=BinaryContent.Create([| 1uy; 2uy; 3uy; 4uy |]))
             let xml = serialize "WithBinaryContentService" [| entity |] context
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithBinaryContentService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><BinaryContent>AQIDBA==</BinaryContent></request></WithBinaryContentService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithBinaryContentService><request><BinaryContent>AQIDBA==</BinaryContent></request></tns:WithBinaryContentService></Body>" "invalid serialization result"
             Expect.isEmpty context.Attachments "no serialized attachments was expected"
         }
         
@@ -776,7 +781,7 @@ let [<Tests>] tests =
             let context = SerializerContext(IsMultipart=true)
             let entity = Types.WithBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
             let xml = serialize "WithBinaryContentService" [| entity |] context
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithBinaryContentService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><BinaryContent href=""cid:Content-ID"" /></request></WithBinaryContentService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithBinaryContentService><request><BinaryContent href=""cid:Content-ID"" /></request></tns:WithBinaryContentService></Body>" "invalid serialization result"
             Expect.equal 1 context.Attachments.Count "result should have exactly 1 attachment"
             Expect.isTrue (context.Attachments.ContainsKey("Content-ID")) "attachment has wrong key"
         }
@@ -800,7 +805,7 @@ let [<Tests>] tests =
             let context = SerializerContext()
             let entity = Types.WithXopBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
             let xml = serialize "WithXopBinaryContentService" [| entity |] context
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><WithXopBinaryContentService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><BinaryContent><xop:Include href=""cid:Content-ID"" xmlns:xop=""http://www.w3.org/2004/08/xop/include"" /></BinaryContent></request></WithXopBinaryContentService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithXopBinaryContentService><request><BinaryContent><xop:Include href=""cid:Content-ID"" xmlns:xop=""http://www.w3.org/2004/08/xop/include"" /></BinaryContent></request></tns:WithXopBinaryContentService></Body>" "invalid serialization result"
             Expect.equal 1 context.Attachments.Count "result should have exactly 1 attachment"
             Expect.isTrue (context.Attachments.ContainsKey("Content-ID")) "attachment has wrong key"
         }
@@ -822,7 +827,7 @@ let [<Tests>] tests =
         
         test "can serialize type with optional reference type members" {
             let xml = serialize' "HasOptionalElementsService" [| Types.HasOptionalElements(Value1 = Optional.Option.Some<string>("value")) |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><HasOptionalElementsService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Value1>value</Value1></request></HasOptionalElementsService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:HasOptionalElementsService><request><Value1>value</Value1></request></tns:HasOptionalElementsService></Body>" "invalid serialization result"
         }
         
         ptest "can deserialize type with optional reference type members" {
@@ -839,7 +844,7 @@ let [<Tests>] tests =
         
         test "can serialize type with optional value type members" {
             let xml = serialize' "HasOptionalElementsService" [| Types.HasOptionalElements(Value2 = Optional.Option.Some<int32>(15)) |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><HasOptionalElementsService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Value2>15</Value2></request></HasOptionalElementsService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:HasOptionalElementsService><request><Value2>15</Value2></request></tns:HasOptionalElementsService></Body>" "invalid serialization result"
         }
         
         ptest "can deserialize type with optional value type members" {
@@ -856,7 +861,7 @@ let [<Tests>] tests =
         
         test "can serialize type with optional array type members" {
             let xml = serialize' "HasOptionalElementsService" [| Types.HasOptionalElements(Array1 = Optional.Option.Some<int[]>([| 1; 2; 3 |])) |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><HasOptionalElementsService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Array1><item>1</item><item>2</item><item>3</item></Array1></request></HasOptionalElementsService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:HasOptionalElementsService><request><Array1><item>1</item><item>2</item><item>3</item></Array1></request></tns:HasOptionalElementsService></Body>" "invalid serialization result"
         }
         
         ptest "can deserialize type with optional array type members" {
@@ -873,7 +878,7 @@ let [<Tests>] tests =
         
         test "can serialize type with no optional members set" {
             let xml = serialize' "HasOptionalElementsService" [| Types.HasOptionalElements() |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><HasOptionalElementsService xmlns=""http://producer.x-road.eu/""><request xmlns="""" /></HasOptionalElementsService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:HasOptionalElementsService><request /></tns:HasOptionalElementsService></Body>" "invalid serialization result"
         }
         
         ptest "can deserialize type with no optional members set" {
@@ -888,7 +893,7 @@ let [<Tests>] tests =
         
         test "serialize array of system type values" {
             let xml = serialize' "ArrayService" [| [| "1"; "2"; "3" |] |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><ArrayService xmlns=""http://producer.x-road.eu/""><request xmlns=""""><item>1</item><item>2</item><item>3</item></request></ArrayService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:ArrayService><request><item>1</item><item>2</item><item>3</item></request></tns:ArrayService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize array of system type values" {
@@ -901,7 +906,7 @@ let [<Tests>] tests =
         test "serialize root optional some value" {
             let initial = Optional.Option.Some<int>(202)
             let xml = serialize' "OptionalIntService" [| initial |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><OptionalIntService xmlns=""http://producer.x-road.eu/""><request xmlns="""">202</request></OptionalIntService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:OptionalIntService><request>202</request></tns:OptionalIntService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize root optional some value" {
@@ -914,7 +919,7 @@ let [<Tests>] tests =
         test "serialize root optional none value" {
             let initial = Optional.Option.None<int>()
             let xml = serialize' "OptionalIntService" [| initial |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><OptionalIntService xmlns=""http://producer.x-road.eu/""><request xmlns="""" /></OptionalIntService>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:OptionalIntService><request /></tns:OptionalIntService></Body>" "invalid serialization result"
         }
         
         ptest "deserialize root optional none value" {
@@ -927,7 +932,7 @@ let [<Tests>] tests =
         test "serialize multiple levels of inheritance" {
             let initial = Types.Level3(Value1 = Nullable<int>(1), Value2 = Nullable<int>(2), Value3 = Nullable<int>(3))
             let xml = serialize' "Level3Service" [| initial |]
-            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Level3Service xmlns=""http://producer.x-road.eu/""><request xmlns=""""><Value1>1</Value1><Value2>2</Value2><Value3>3</Value3></request></Level3Service>" "invalid serialization result"
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:Level3Service><request><Value1>1</Value1><Value2>2</Value2><Value3>3</Value3></request></tns:Level3Service></Body>" "invalid serialization result"
         }
         
         ptest "deserialize multiple levels of inheritance" {

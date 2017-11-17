@@ -364,8 +364,8 @@ type MethodPartMap =
       IsMultipart: bool
       Accessor: XmlQualifiedName option }
 
-type OperationDeserializerDelegate = delegate of XmlReader * SerializerContext -> obj[]
-type OperationSerializerDelegate = delegate of XmlWriter * SerializerContext * obj[] -> unit
+type OperationDeserializerDelegate = delegate of XmlReader * SerializerContext -> obj
+type OperationSerializerDelegate = delegate of XmlWriter * obj[] * SerializerContext -> unit
 
 type MethodMap =
     { Deserializer: OperationDeserializerDelegate
