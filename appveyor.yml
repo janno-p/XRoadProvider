@@ -10,6 +10,8 @@ before_test:
   - ps: appveyor DownloadFile https://download.microsoft.com/download/D/7/2/D725E47F-A4F1-4285-8935-A91AE2FCC06A/dotnet-sdk-2.0.3-win-gs-x64.exe -FileName "C:\dotnet.exe"
   - cmd: call C:\dotnet.exe /install /quiet /norestart
   - cmd: dotnet --info
+  - cmd: .paket\paket.bootstrapper.exe
+  - cmd: .paket\paket.exe restore
   - cmd: dotnet restore
 test_script:
   - cmd: dotnet test tests\XRoadProvider.Tests\XRoadProvider.Tests.fsproj --configuration Debug
