@@ -7,7 +7,7 @@ nuget Common.Logging
 nuget Expecto
 nuget FAKE >= 5 beta
 nuget FSharp.Core
-nuget FSharp.Formatting
+nuget FSharp.Formatting >= 3 beta
 nuget Microsoft.NET.Test.Sdk
 nuget NodaTime
 nuget Optional

@@ -89,13 +89,18 @@ let (|Fsproj|Csproj|Vbproj|Shproj|) (projFileName:string) =
 
 // Generate assembly info files with the right version & up-to-date information
 Target.Create "AssemblyInfo" (fun _ ->
+    let dtm = System.DateTime.Now
+
+    let x = dtm.ToString("yyMMdd")
+    let y = dtm.ToString("HHmmss")
+
     let getAssemblyInfoAttributes projectName =
         [ AssemblyInfo.Title (projectName)
           AssemblyInfo.Product project
           AssemblyInfo.Description summary
           AssemblyInfo.Version release.AssemblyVersion
           AssemblyInfo.FileVersion release.AssemblyVersion
-          AssemblyInfo.InformationalVersion release.NugetVersion ]
+          AssemblyInfo.InformationalVersion (sprintf "%d.%d.%s.%s" release.SemVer.Major release.SemVer.Minor x y) ]
 
     let getProjectDetails projectPath =
         let projectName = System.IO.Path.GetFileNameWithoutExtension(projectPath)
@@ -122,7 +127,7 @@ Target.Create "AssemblyInfo" (fun _ ->
 Target.Create "CopyBinaries" (fun _ ->
     !! "src/**/*.??proj"
     -- "src/**/*.shproj"
-    |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release", "bin" </> (System.IO.Path.GetFileNameWithoutExtension f)))
+    |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release/net461", "bin" </> (System.IO.Path.GetFileNameWithoutExtension f)))
     |>  Seq.iter (fun (fromDir, toDir) -> Shell.CopyDir toDir fromDir (fun _ -> true))
 )
 
