@@ -1,18 +1,9 @@
 source https://nuget.org/api/v2
 framework: net461
 
-clitool Microsoft.DotNet.Watcher.Tools
-
-nuget Common.Logging
-nuget Expecto
 nuget FAKE >= 5 beta
-nuget FSharp.Core
 nuget FSharp.Formatting >= 3 beta
-nuget Microsoft.NET.Test.Sdk
-nuget NodaTime
-nuget Optional
 nuget SourceLink.Fake
-nuget YoloDev.Expecto.TestSdk
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs

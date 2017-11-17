@@ -7,6 +7,24 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn)</NoWarn>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' == 'Unix' ">
+    <FrameworkPathOverride>/usr/lib/mono/4.6.1-api</FrameworkPathOverride>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Authors>Janno Põldma</Authors>
+    <Copyright>Copyright © 2017</Copyright>
+    <Description>Type providers for generating types and service interfaces for XRoad producers.</Description>
+    <PackageIconUrl>https://raw.githubusercontent.com/janno-p/XRoadProvider/master/docs/files/img/logo.png</PackageIconUrl>
+    <PackageLicenseUrl>http://github.com/janno-p/XRoadProvider/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageProjectUrl>http://github.com/janno-p/XRoadProvider</PackageProjectUrl>
+    <PackageTags>F#;fsharp;x-road;xroad;typeproviders;x-tee;xtee</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Common.Logging" Version="3.4.1" />
+    <PackageReference Include="FSharp.Core" Version="4.2.3" />
+    <PackageReference Include="NodaTime" Version="2.2.3" />
+    <PackageReference Include="Optional" Version="3.2.0" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fs">
       <Paket>True</Paket>
@@ -27,8 +45,5 @@
     <Compile Include="SecurityServer.fs" />
     <Compile Include="XRoadProvidedTypes.fsi" />
     <Compile Include="XRoadProvidedTypes.fs" />
-    <None Include="paket.references" />
-    <None Include="paket.template" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

@@ -217,7 +217,7 @@ Target.Create "PublishNuget" (fun _ ->
 // Generate the documentation
 
 
-let fakePath = "packages" </> "build" </> "FAKE" </> "tools" </> "FAKE.exe"
+let fakePath = "packages" </> "FAKE" </> "tools" </> "FAKE.exe"
 let fakeStartInfo script workingDirectory args fsiargs environmentVars =
     (fun (info: ProcStartInfo) ->
         let environmentVars: Map<string, string> =
