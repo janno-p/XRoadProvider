@@ -977,11 +977,12 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:OptionalIntService><request>202</request></tns:OptionalIntService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize root optional some value" {
-            failtest "needs review"
-            (*
-            resultXml |> deserialize'<Optional.Option<int>> |> should equal initial
-            *)
+        test "deserialize root optional some value" {
+            let xml = @"<tns:OptionalIntServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response>202</response></tns:OptionalIntServiceResponse>"
+            let response = xml |> deserialize "OptionalIntService"
+            Expect.isTrue (response :? ResultTypes.OptionalIntServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.OptionalIntServiceResult>
+            Expect.equal result.response (Optional.Option.Some<int>(202)) "wrong result value"
         }
         
         test "serialize root optional none value" {
@@ -990,11 +991,12 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:OptionalIntService /></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize root optional none value" {
-            failtest "needs review"
-            (*
-            resultXml |> deserialize'<Optional.Option<int>> |> should equal initial
-            *)
+        test "deserialize root optional none value" {
+            let xml = @"<tns:OptionalIntServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns"" />"
+            let response = xml |> deserialize "OptionalIntService"
+            Expect.isTrue (response :? ResultTypes.OptionalIntServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.OptionalIntServiceResult>
+            Expect.isFalse result.response.HasValue "result should be None"
         }
         
         test "serialize multiple levels of inheritance" {
@@ -1003,10 +1005,11 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:Level3Service><request><Value1>1</Value1><Value2>2</Value2><Value3>3</Value3></request></tns:Level3Service></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize multiple levels of inheritance" {
-            failtest "needs review"
-            (*
-            resultXml |> deserialize'<Level3> |> should equal initial
-            *)
+        test "deserialize multiple levels of inheritance" {
+            let xml = @"<tns:Level3ServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Value1>1</Value1><Value2>2</Value2><Value3>3</Value3></response></tns:Level3ServiceResponse>"
+            let response = xml |> deserialize "Level3Service"
+            Expect.isTrue (response :? ResultTypes.Level3ServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.Level3ServiceResult>
+            Expect.equal result.response (Types.Level3(Value1 = Nullable<int>(1), Value2 = Nullable<int>(2), Value3 = Nullable<int>(3))) "not equal"
         }
     ]
