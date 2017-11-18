@@ -491,13 +491,12 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:IntService><request>32</request></tns:IntService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize int value" {
-            failtest "needs review"
-            (*
-            let resultXml = 32 |> serialize'
-            resultXml |> should equal @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha>32</keha></wrapper>"
-            resultXml |> deserialize'<int> |> should equal 32
-            *)
+        test "deserialize int value" {
+            let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><IntServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response>32</response></IntServiceResponse>"
+            let response = xml |> deserialize "IntService"
+            Expect.isTrue (response :? ResultTypes.IntServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.IntServiceResult>
+            Expect.equal result.response 32 "wrong value"
         }
         
         test "serialize nullable values" {
@@ -505,15 +504,13 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:NullableService><request><Value1>13</Value1><Value2 xsi:nil=""true"" /></request></tns:NullableService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize nullable values" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.WithNullableMembers>
-            result |> should not' (be Null)
-            result.Value1 |> should not' (be Null)
-            result.Value1 |> should equal 13
-            result.Value2 |> should be Null
-            *)
+        test "deserialize nullable values" {
+            let xml = @"<tns:NullableService xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Value1>13</Value1><Value2 xsi:nil=""true"" /></response></tns:NullableService>"
+            let response = xml |> deserialize "NullableService"
+            Expect.isTrue (response :? ResultTypes.NullableServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.NullableServiceResult>
+            Expect.equal result.response.Value1 (Nullable 13) "wrong Value1 value"
+            Expect.equal result.response.Value2 (Nullable()) "wrong Value2 value"
         }
         
         test "serialize not nullable as null" {
@@ -528,17 +525,15 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:AbstractChoiceService><request><value1 xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></value1></request></tns:AbstractChoiceService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize choice with abstract root element" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.TypeWithAbstractChoice>
-            result |> should not' (be Null)
-            result.X |> should not' (be Null)
-            let (success, value) = result.X.TryGet_value1()
-            success |> should equal true
-            value |> should not' (be Null)
-            value.BaseValue |> should equal "test"
-            *)
+        test "deserialize choice with abstract root element" {
+            let xml = @"<tns:AbstractChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><value1 xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></value1></response></tns:AbstractChoiceServiceResponse>"
+            let response = xml |> deserialize "AbstractChoiceService"
+            Expect.isTrue (response :? ResultTypes.AbstractChoiceServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.AbstractChoiceServiceResult>
+            let (success, value) = result.response.X.TryGet_value1()
+            Expect.isTrue success "response should contain value1"
+            Expect.isNotNull value "response value should not be null"
+            Expect.equal value.BaseValue "test" "invalid value"
         }
         
         test "serialize array with default property names" {
