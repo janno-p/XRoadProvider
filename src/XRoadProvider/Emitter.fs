@@ -11,9 +11,6 @@ open System.Xml.Linq
 open XRoad
 open XRoad.Serialization.Attributes
 
-type DeserializerDelegate = delegate of XmlReader * SerializerContext -> obj
-type SerializerDelegate = delegate of XmlWriter * obj * SerializerContext -> unit
-
 type Serialization =
     { Root: MethodInfo
       Content: MethodInfo }
@@ -963,7 +960,12 @@ module EmitDeserialization =
                     il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
                     il.Emit(OpCodes.Throw)
                 | _ -> emitPropertyDeser nextLabel xs
-        match properties with [] -> () | _ -> properties |> emitPropertyDeser startLabel
+        match properties with
+        | [] ->
+            il.MarkLabel(startLabel)
+            il.Emit(OpCodes.Nop)
+        | _ ->
+            properties |> emitPropertyDeser startLabel
 
 let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
     let (|Content|_|) (properties: Property list) =
@@ -1454,19 +1456,9 @@ module internal DynamicMethods =
         |> Option.ofObj
         |> Option.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
         
-    let emitDeserializer (mi: MethodInfo) (responseAttr: XRoadResponseAttribute) : OperationDeserializerDelegate =
-        let method =
-            DynamicMethod
-                ( sprintf "deserialize_%s" mi.Name,
-                  typeof<obj>,
-                  [| typeof<XmlReader>; typeof<SerializerContext> |],
-                  true )
-
-        let il = method.GetILGenerator()
-        il.Emit(OpCodes.Ldnull)
-        il.Emit(OpCodes.Ret)
-
-        method.CreateDelegate(typeof<OperationDeserializerDelegate>) |> unbox
+    let emitDeserializer (mi: MethodInfo) (responseAttr: XRoadResponseAttribute) : DeserializerDelegate =
+        let typeMap = getCompleteTypeMap responseAttr.Encoded mi.ReturnType
+        typeMap.DeserializeDelegate.Value
         
     let emitSerializer (mi: MethodInfo) (requestAttr: XRoadRequestAttribute) : OperationSerializerDelegate =
         let method = 

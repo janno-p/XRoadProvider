@@ -193,122 +193,185 @@ module Types =
         [<XRoadElement>]
         member val Value3 = Nullable<int>() with get, set
 
+module ResultTypes =
+    type [<XRoadType>] Service1Result () =
+        class end
+    
+    type [<XRoadType>] Service2Result () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<string[]> with get, set
+        
+    type [<XRoadType>] SimpleValueServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.SimpleType> with get, set
+        
+    type [<XRoadType>] StringServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<string> with get, set
+
+    type [<XRoadType>] IntServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<int32> with get, set
+        
+    type [<XRoadType>] NullableServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.WithNullableMembers> with get, set
+        
+    type [<XRoadType>] ComplexTypeServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.ComplexType> with get, set
+        
+    type [<XRoadType>] QualifiedRootServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.SimpleType> with get, set
+        
+    type [<XRoadType>] UnserializableServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.UnserializableType> with get, set
+        
+    type [<XRoadType>] AbstractChoiceServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.TypeWithAbstractChoice> with get, set
+        
+    type [<XRoadType>] WithArray1ServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.WithArray1> with get, set
+        
+    type [<XRoadType>] UseBaseClassServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.UseBaseClass> with get, set
+        
+    type [<XRoadType>] ReferrerServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.Referrer> with get, set
+        
+    type [<XRoadType>] InnerReferrerServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.InnerReferrer> with get, set
+        
+    type [<XRoadType>] TestChoiceServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.TestChoice> with get, set
+        
+    type [<XRoadType>] WithChoiceServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.WithChoice> with get, set
+        
+    type [<XRoadType>] WithBinaryContentServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.WithBinaryContent> with get, set
+        
+    type [<XRoadType>] WithXopBinaryContentServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.WithXopBinaryContent> with get, set
+        
+    type [<XRoadType>] HasOptionalElementsServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.HasOptionalElements> with get, set
+        
+    type [<XRoadType>] OptionalIntServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Optional.Option<int>> with get, set
+        
+    type [<XRoadType>] Level3ServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.Level3> with get, set
+
 type Services =
     [<XRoadOperation("Service1", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("Service1", producerNamespace)>]
     [<XRoadResponse("Service1Response", producerNamespace)>]
-    abstract Service1: unit -> unit
+    abstract Service1: unit -> ResultTypes.Service1Result
 
     [<XRoadOperation("Service2", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("Service2", producerNamespace)>]
     [<XRoadResponse("Service2Response", producerNamespace)>]
-    abstract Service2: int64 -> string[]
+    abstract Service2: int64 -> ResultTypes.Service2Result
     
     [<XRoadOperation("SimpleValueService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("SimpleValueService", producerNamespace)>]
     [<XRoadResponse("SimpleValueServiceResponse", producerNamespace)>]
-    abstract SimpleValueService: [<XRoadElement("request")>] request: Types.SimpleType -> Types.SimpleType
+    abstract SimpleValueService: [<XRoadElement("request")>] request: Types.SimpleType -> ResultTypes.SimpleValueServiceResult
     
     [<XRoadOperation("StringService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("StringService", producerNamespace)>]
     [<XRoadResponse("StringServiceResponse", producerNamespace)>]
-    abstract StringService: [<XRoadElement("request", IsNullable = true)>] request: string -> string
+    abstract StringService: [<XRoadElement("request", IsNullable = true)>] request: string -> ResultTypes.StringServiceResult
     
     [<XRoadOperation("IntService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("IntService", producerNamespace)>]
     [<XRoadResponse("IntServiceResponse", producerNamespace)>]
-    abstract IntService: [<XRoadElement("request")>] request: int32 -> int32
+    abstract IntService: [<XRoadElement("request")>] request: int32 -> ResultTypes.IntServiceResult
     
     [<XRoadOperation("NullableService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("NullableService", producerNamespace)>]
     [<XRoadResponse("NullableServiceResponse", producerNamespace)>]
-    abstract NullableService: [<XRoadElement("request")>] request: Types.WithNullableMembers -> Types.WithNullableMembers
+    abstract NullableService: [<XRoadElement("request")>] request: Types.WithNullableMembers -> ResultTypes.NullableServiceResult
     
     [<XRoadOperation("ComplexTypeService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("ComplexTypeService", producerNamespace)>]
     [<XRoadResponse("ComplexTypeServiceResponse", producerNamespace)>]
-    abstract ComplexTypeService: [<XRoadElement("request")>] request: Types.ComplexType -> Types.ComplexType
+    abstract ComplexTypeService: [<XRoadElement("request")>] request: Types.ComplexType -> ResultTypes.ComplexTypeServiceResult
     
     [<XRoadOperation("QualifiedRootService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("QualifiedRootService", producerNamespace)>]
     [<XRoadResponse("QualifiedRootServiceResponse", producerNamespace)>]
-    abstract QualifiedRootService: [<XRoadElement("root", Namespace = "urn:some-namespace")>] request: Types.SimpleType -> Types.SimpleType
+    abstract QualifiedRootService: [<XRoadElement("root", Namespace = "urn:some-namespace")>] request: Types.SimpleType -> ResultTypes.QualifiedRootServiceResult
     
     [<XRoadOperation("UnserializableService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("UnserializableService", producerNamespace)>]
     [<XRoadResponse("UnserializableServiceResponse", producerNamespace)>]
-    abstract UnserializableService: [<XRoadElement("request")>] request: Types.UnserializableType -> Types.UnserializableType
+    abstract UnserializableService: [<XRoadElement("request")>] request: Types.UnserializableType -> ResultTypes.UnserializableServiceResult
 
     [<XRoadOperation("AbstractChoiceService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("AbstractChoiceService", producerNamespace)>]
     [<XRoadResponse("AbstractChoiceServiceResponse", producerNamespace)>]
-    abstract AbstractChoiceService: [<XRoadElement("request")>] request: Types.TypeWithAbstractChoice -> Types.TypeWithAbstractChoice
+    abstract AbstractChoiceService: [<XRoadElement("request")>] request: Types.TypeWithAbstractChoice -> ResultTypes.AbstractChoiceServiceResult
     
     [<XRoadOperation("WithArray1Service", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("WithArray1Service", producerNamespace)>]
     [<XRoadResponse("WithArray1ServiceResponse", producerNamespace)>]
-    abstract WithArray1Service: [<XRoadElement("request")>] request: Types.WithArray1 -> Types.WithArray1
+    abstract WithArray1Service: [<XRoadElement("request")>] request: Types.WithArray1 -> ResultTypes.WithArray1ServiceResult
     
     [<XRoadOperation("ExtendedTypeService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("ExtendedTypeService", producerNamespace)>]
     [<XRoadResponse("ExtendedTypeServiceResponse", producerNamespace)>]
-    abstract ExtendedTypeService: [<XRoadElement("request")>] request: Types.ComplexType -> Types.ComplexType
+    abstract ExtendedTypeService: [<XRoadElement("request")>] request: Types.ComplexType -> ResultTypes.ComplexTypeServiceResult
     
     [<XRoadOperation("UseBaseClassService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("UseBaseClassService", producerNamespace)>]
     [<XRoadResponse("UseBaseClassServiceResponse", producerNamespace)>]
-    abstract UseBaseClassService: [<XRoadElement("request")>] request: Types.UseBaseClass -> Types.UseBaseClass
+    abstract UseBaseClassService: [<XRoadElement("request")>] request: Types.UseBaseClass -> ResultTypes.UseBaseClassServiceResult
     
     [<XRoadOperation("ReferrerService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("ReferrerService", producerNamespace)>]
     [<XRoadResponse("ReferrerServiceResponse", producerNamespace)>]
-    abstract ReferrerService: [<XRoadElement("request")>] request: Types.Referrer -> Types.Referrer
+    abstract ReferrerService: [<XRoadElement("request")>] request: Types.Referrer -> ResultTypes.ReferrerServiceResult
     
     [<XRoadOperation("InnerReferrerService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("InnerReferrerService", producerNamespace)>]
     [<XRoadResponse("InnerReferrerServiceResponse", producerNamespace)>]
-    abstract InnerReferrerService: [<XRoadElement("request")>] request: Types.InnerReferrer -> Types.InnerReferrer
+    abstract InnerReferrerService: [<XRoadElement("request")>] request: Types.InnerReferrer -> ResultTypes.InnerReferrerServiceResult
     
     [<XRoadOperation("TestChoiceService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("TestChoiceService", producerNamespace)>]
     [<XRoadResponse("TestChoiceServiceResponse", producerNamespace)>]
-    abstract TestChoiceService: [<XRoadElement("request")>] request: Types.TestChoice -> Types.TestChoice
+    abstract TestChoiceService: [<XRoadElement("request")>] request: Types.TestChoice -> ResultTypes.TestChoiceServiceResult
     
     [<XRoadOperation("WithChoiceService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("WithChoiceService", producerNamespace)>]
     [<XRoadResponse("WithChoiceServiceResponse", producerNamespace)>]
-    abstract WithChoiceService: [<XRoadElement("request")>] request: Types.WithChoice -> Types.WithChoice
+    abstract WithChoiceService: [<XRoadElement("request")>] request: Types.WithChoice -> ResultTypes.WithChoiceServiceResult
     
     [<XRoadOperation("WithBinaryContentService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("WithBinaryContentService", producerNamespace)>]
     [<XRoadResponse("WithBinaryContentServiceResponse", producerNamespace)>]
-    abstract WithBinaryContentService: [<XRoadElement("request")>] request: Types.WithBinaryContent -> Types.WithBinaryContent
+    abstract WithBinaryContentService: [<XRoadElement("request")>] request: Types.WithBinaryContent -> ResultTypes.WithBinaryContentServiceResult
     
     [<XRoadOperation("WithXopBinaryContentService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("WithXopBinaryContentService", producerNamespace)>]
     [<XRoadResponse("WithXopBinaryContentServiceResponse", producerNamespace)>]
-    abstract WithXopBinaryContentService: [<XRoadElement("request")>] request: Types.WithXopBinaryContent -> Types.WithXopBinaryContent
+    abstract WithXopBinaryContentService: [<XRoadElement("request")>] request: Types.WithXopBinaryContent -> ResultTypes.WithXopBinaryContentServiceResult
 
     [<XRoadOperation("HasOptionalElementsService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("HasOptionalElementsService", producerNamespace)>]
     [<XRoadResponse("HasOptionalElementsServiceResponse", producerNamespace)>]
-    abstract HasOptionalElementsService: [<XRoadElement("request")>] request: Types.HasOptionalElements -> Types.HasOptionalElements
+    abstract HasOptionalElementsService: [<XRoadElement("request")>] request: Types.HasOptionalElements -> ResultTypes.HasOptionalElementsServiceResult
     
     [<XRoadOperation("ArrayService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("ArrayService", producerNamespace)>]
     [<XRoadResponse("ArrayServiceResponse", producerNamespace)>]
-    abstract ArrayService: [<XRoadElement("request")>] request: string[] -> string[]
+    abstract ArrayService: [<XRoadElement("request")>] request: string[] -> ResultTypes.Service2Result
     
     [<XRoadOperation("OptionalIntService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("OptionalIntService", producerNamespace)>]
     [<XRoadResponse("OptionalIntServiceResponse", producerNamespace)>]
-    abstract OptionalIntService: [<XRoadElement("request")>] request: Optional.Option<int> -> Optional.Option<int>
+    abstract OptionalIntService: [<XRoadElement("request")>] request: Optional.Option<int> -> ResultTypes.OptionalIntServiceResult
     
     [<XRoadOperation("Level3Service", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("Level3Service", producerNamespace)>]
     [<XRoadResponse("Level3ServiceResponse", producerNamespace)>]
-    abstract Level3Service: [<XRoadElement("request")>] request: Types.Level3 -> Types.Level3
-
+    abstract Level3Service: [<XRoadElement("request")>] request: Types.Level3 -> ResultTypes.Level3ServiceResult
 
 let deserialize (nm: string) (xml: string) =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
@@ -344,11 +407,15 @@ let simpleTypeEntity =
 
 let [<Tests>] tests =
     testList "serialization tests" [
-        ptest "can handle array type response" {
-            let xml = @"<response><item /><item /></response>"
-            let response = xml |> deserialize "Service2" |> unbox<string[]>
-            Expect.isNotNull response "response should have value"
-            Expect.equal response.Length 2 "response should have exactly 2 items"
+        test "can handle array type response" {
+            let xml = @"<Service2Response><response><item /><item /></response></Service2Response>"
+            let response = xml |> deserialize "Service2"
+            Expect.isTrue (response :? ResultTypes.Service2Result) "wrong result type"
+            let result = response |> unbox<ResultTypes.Service2Result>
+            Expect.isNotNull result.response "response should have value"
+            Expect.equal result.response.Length 2 "response should have exactly 2 items"
+            Expect.equal result.response.[0] "" "should be empty string"
+            Expect.equal result.response.[1] "" "should be empty string"
         }
         
         test "can serialize unit request" {
@@ -359,7 +426,8 @@ let [<Tests>] tests =
         test "can deserialize unit response" {
             let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><Service1 xmlns=""http://producer.x-road.eu/"" />"
             let response = xml |> deserialize "Service1"
-            Expect.isNull response "invalid xml result"
+            Expect.isNotNull response "invalid xml result"
+            Expect.isTrue (response :? ResultTypes.Service1Result) "wrong result type"
         }
         
         test "can serialize simple value" {
@@ -367,15 +435,16 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:SimpleValueService><request><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></request></tns:SimpleValueService></Body>" "invalid xml result"
         }
         
-        ptest "can deserialize simple value" {
+        test "can deserialize simple value" {
             let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><SimpleValueServiceResponse xmlns=""http://producer.x-road.eu/""><response xmlns=""""><Value>13</Value><ComplexValue><String>test</String><BigInteger>100</BigInteger></ComplexValue><SubContent>true</SubContent></response></SimpleValueServiceResponse>"
             let response = xml |> deserialize "SimpleValueService"
             Expect.isNotNull response "invalid deserialization result"
-            let result: Types.SimpleType = response |> unbox
-            Expect.equal result.Value 13 "wrong result.Value value"
-            Expect.equal result.ComplexValue.BigInteger 100I "wrong result.ComplexValue.BigInteger value"
-            Expect.equal result.ComplexValue.String "test" "wrong result.ComplexValue.String value"
-            Expect.isTrue result.SubContent.ContentValue "wrong result.SubContent.ContentValue value"
+            Expect.isTrue (response :? ResultTypes.SimpleValueServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.SimpleValueServiceResult>
+            Expect.equal result.response.Value 13 "wrong result.Value value"
+            Expect.equal result.response.ComplexValue.BigInteger 100I "wrong result.ComplexValue.BigInteger value"
+            Expect.equal result.response.ComplexValue.String "test" "wrong result.ComplexValue.String value"
+            Expect.isTrue result.response.SubContent.ContentValue "wrong result.SubContent.ContentValue value"
         }
         
         test "serialize null value" {
@@ -386,7 +455,9 @@ let [<Tests>] tests =
         test "deserialize null value" {
             let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><StringServiceResponse xmlns=""http://producer.x-road.eu/""><response xsi:nil=""true"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns="""" /></StringServiceResponse>"
             let response = xml |> deserialize "StringService"
-            Expect.isNull response "response should be null"
+            Expect.isTrue (response :? ResultTypes.StringServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.StringServiceResult>
+            Expect.isNull result.response "response should be null"
         }
         
         test "write qualified root name" {
@@ -407,10 +478,12 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:StringService><request>string value</request></tns:StringService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize string value" {
+        test "deserialize string value" {
             let xml = @"<?xml version=""1.0"" encoding=""utf-8""?><StringServiceResponse xmlns=""http://producer.x-road.eu/""><response xmlns="""">string value</response></StringServiceResponse>"
-            let response = xml |> deserialize "StringService" |> unbox<string>
-            Expect.equal response "string value" "response not equal to 'string value'"
+            let response = xml |> deserialize "StringService"
+            Expect.isTrue (response :? ResultTypes.StringServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.StringServiceResult>
+            Expect.equal result.response "string value" "response not equal to 'string value'"
         }
         
         test "serialize int value" {
