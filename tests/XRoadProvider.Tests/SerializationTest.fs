@@ -65,6 +65,11 @@ module Types =
         [<XRoadElement>]
         member val BaseValue = Unchecked.defaultof<string> with get, set
         
+    [<AbstractClass; AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
+    type AbstractBaseWithNoSubTypes() =
+        [<XRoadElement>]
+        member val BaseValue = Unchecked.defaultof<string> with get, set
+        
     [<XRoadType(LayoutKind.Sequence)>]
     type Referrer() =
         [<XRoadElement>]
@@ -256,6 +261,12 @@ module ResultTypes =
         
     type [<XRoadType>] Level3ServiceResult () =
         [<XRoadElement>] member val response = Unchecked.defaultof<Types.Level3> with get, set
+        
+    type [<XRoadType>] AbstractBaseServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.AbstractBase> with get, set
+        
+    type [<XRoadType>] AbstractBaseWithNoSubTypesServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.AbstractBaseWithNoSubTypes> with get, set
 
 type Services =
     [<XRoadOperation("Service1", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
@@ -372,6 +383,16 @@ type Services =
     [<XRoadRequest("Level3Service", producerNamespace)>]
     [<XRoadResponse("Level3ServiceResponse", producerNamespace)>]
     abstract Level3Service: [<XRoadElement("request")>] request: Types.Level3 -> ResultTypes.Level3ServiceResult
+    
+    [<XRoadOperation("AbstractBaseService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("AbstractBaseService", producerNamespace)>]
+    [<XRoadResponse("AbstractBaseServiceResponse", producerNamespace)>]
+    abstract AbstractBaseService: [<XRoadElement("request")>] request: Types.AbstractBase -> ResultTypes.AbstractBaseServiceResult
+    
+    [<XRoadOperation("AbstractBaseWithNoSubTypesService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("AbstractBaseWithNoSubTypesService", producerNamespace)>]
+    [<XRoadResponse("AbstractBaseWithNoSubTypesServiceResponse", producerNamespace)>]
+    abstract AbstractBaseWithNoSubTypesService: [<XRoadElement("request")>] request: Types.AbstractBaseWithNoSubTypes -> ResultTypes.AbstractBaseWithNoSubTypesServiceResult
 
 let deserialize (nm: string) (xml: string) context =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
@@ -526,36 +547,22 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithArray1Service><request><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></request></tns:WithArray1Service></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize array with default property names" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.WithArray1>
-            result |> should not' (be Null)
-            result.Array |> should not' (be Null)
-            result.Array |> should equal entity.Array
-            *)
+        test "deserialize array with default property names" {
+            let result: ResultTypes.WithArray1ServiceResult = getResponse "WithArray1Service" @"<tns:WithArray1ServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Array><item>true</item><item>false</item><item>true</item><item>true</item></Array></response></tns:WithArray1ServiceResponse>"
+            Expect.isNotNull result.response.Array ""
+            Expect.equal result.response.Array [| true; false; true; true |] ""
         }
         
-        ptest "deserialize abstract type" {
-            failtest "needs review"
-            (*
-            (fun () ->
-                @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
-                |> deserialize'<TestType.AbstractBase>
-                |> ignore)
-            |> should (throwWithMessage "Cannot deserialize abstract type `AbstractBase`.") typeof<Exception>
-            *)
+        test "deserialize abstract type" {
+            Expect.throwsC
+                (fun _ -> getResponse<ResultTypes.AbstractBaseServiceResult> "AbstractBaseService" @"<AbstractBaseServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></response></AbstractBaseServiceResponse>" |> ignore)
+                (fun e -> Expect.equal e.Message "Cannot deserialize abstract type `AbstractBase`." "")
         }
         
-        ptest "deserialize abstract type with no sub types" {
-            failtest "needs review"
-            (*
-            (fun () ->
-                @"<?xml version=""1.0"" encoding=""utf-8""?><wrapper xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><keha><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></keha></wrapper>"
-                |> deserialize'<TestType.AbstractBaseWithNoSubTypes>
-                |> ignore)
-            |> should (throwWithMessage "Cannot deserialize abstract type `AbstractBaseWithNoSubTypes`.") typeof<Exception>
-            *)
+        test "deserialize abstract type with no sub types" {
+            Expect.throwsC
+                (fun _ -> getResponse<ResultTypes.AbstractBaseWithNoSubTypesServiceResult> "AbstractBaseWithNoSubTypesService" @"<AbstractBaseWithNoSubTypesServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></response></AbstractBaseWithNoSubTypesServiceResponse>" |> ignore)
+                (fun e -> Expect.equal e.Message "Cannot deserialize abstract type `AbstractBaseWithNoSubTypes`." "")
         }
         
         test "serialize extended type with base type contents" {
@@ -564,21 +571,13 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:ExtendedTypeService><request xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></request></tns:ExtendedTypeService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize extended type with base type contents" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.ExtendedType>
-            result |> should not' (be Null)
-            result.BigInteger |> should equal entity.BigInteger
-            result.OwnElement |> should equal entity.OwnElement
-            result.String |> should equal entity.String
-            let result = resultXml |> deserialize'<TestType.ComplexType>
-            result |> should not' (be Null)
-            result |> should be instanceOfType<TestType.ExtendedType>
-            (result :?> TestType.ExtendedType).OwnElement |> should equal entity.OwnElement
-            result.BigInteger |> should equal entity.BigInteger
-            result.String |> should equal entity.String
-            *)
+        test "deserialize extended type with base type contents" {
+            let result: ResultTypes.ComplexTypeServiceResult = getResponse "ExtendedTypeService" @"<tns:ExtendedTypeServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></response></tns:ExtendedTypeServiceResponse>"
+            Expect.equal result.response.BigInteger 100I ""
+            Expect.equal result.response.String "test" ""
+            Expect.isTrue (result.response :? Types.ExtendedType) ""
+            let extendedType = result.response |> unbox<Types.ExtendedType>
+            Expect.equal extendedType.OwnElement "test" ""
         }
         
         test "serialize base type when subtype is used" {
@@ -588,17 +587,13 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:UseBaseClassService><request><Member xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></request></tns:UseBaseClassService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize base type when subtype is used" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.UseBaseClass>
-            result |> should not' (be Null)
-            result.Member |> should not' (be Null)
-            result.Member |> should be instanceOfType<TestType.ExtendedType>
-            result.Member.BigInteger |> should equal entityMember.BigInteger
-            (result.Member :?> TestType.ExtendedType).OwnElement |> should equal entityMember.OwnElement
-            result.Member.String |> should equal entityMember.String
-            *)
+        test "deserialize base type when subtype is used" {
+            let result: ResultTypes.UseBaseClassServiceResult = getResponse "UseBaseClassService" @"<tns:UseBaseClassServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Member xsi:type=""ExtendedType""><String>test</String><BigInteger>100</BigInteger><OwnElement>test</OwnElement></Member></response></tns:UseBaseClassServiceResponse>"
+            Expect.isTrue (result.response.Member :? Types.ExtendedType) ""
+            Expect.equal result.response.Member.BigInteger 100I ""
+            let extendedType = result.response.Member |> unbox<Types.ExtendedType>
+            Expect.equal extendedType.OwnElement "test" ""
+            Expect.equal result.response.Member.String "test" ""
         }
         
         test "serialize abstract base type when subtype is used" {
@@ -608,15 +603,12 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:ReferrerService><request><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></request></tns:ReferrerService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize abstract base type when subtype is used" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.Referrer>
-            result |> should not' (be Null)
-            result.Reference |> should not' (be Null)
-            result.Reference |> should be instanceOfType<TestType.Concrete1>
-            (result.Reference :?> TestType.Concrete1).SubValue1 |> should equal concreteEntity.SubValue1
-            *)
+        test "deserialize abstract base type when subtype is used" {
+            let result: ResultTypes.ReferrerServiceResult = getResponse "ReferrerService" @"<tns:ReferrerServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Reference xsi:type=""Concrete1""><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></Reference></response></tns:ReferrerServiceResponse>"
+            Expect.isNotNull result.response.Reference ""
+            Expect.isTrue (result.response.Reference  :? Types.Concrete1) ""
+            let concrete1 = result.response.Reference |> unbox<Types.Concrete1>
+            Expect.equal concrete1.SubValue1 "test2" ""
         }
         
         test "serialize abstract base type when subtype is used (with explicit name and namespace)" {
@@ -626,15 +618,12 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:ReferrerService><request><Reference xsi:type=""test:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></request></tns:ReferrerService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize abstract base type when subtype is used (with explicit name and namespace)" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.Referrer>
-            result |> should not' (be Null)
-            result.Reference |> should not' (be Null)
-            result.Reference |> should be instanceOfType<TestType.Concrete3>
-            (result.Reference :?> TestType.Concrete3).SubValue3 |> should equal concreteEntity.SubValue3
-            *)
+        test "deserialize abstract base type when subtype is used (with explicit name and namespace)" {
+            let result: ResultTypes.ReferrerServiceResult = getResponse "ReferrerService" @"<tns:ReferrerServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Reference xsi:type=""test:ConcreteTypeName""><BaseValue>test</BaseValue><SubValue3>test2</SubValue3></Reference></response></tns:ReferrerServiceResponse>"
+            Expect.isNotNull result.response.Reference ""
+            Expect.isTrue (result.response.Reference :? Types.Concrete3) ""
+            let concrete3 = result.response.Reference |> unbox<Types.Concrete3>
+            Expect.equal concrete3.SubValue3 "test2" ""
         }
         
         test "serialize inner abstract base type" {
@@ -645,17 +634,13 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:InnerReferrerService><request><Ref><Reference xsi:type=""Concrete1""><BaseValue>basev</BaseValue><SubValue1>kino</SubValue1></Reference></Ref></request></tns:InnerReferrerService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize inner abstract base type" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.InnerReferrer>
-            result |> should not' (be Null)
-            result.Ref |> should not' (be Null)
-            result.Ref.Reference |> should not' (be Null)
-            result.Ref.Reference |> should be instanceOfType<TestType.Concrete1>
-            (result.Ref.Reference :?> TestType.Concrete1).SubValue1 |> should equal referenceEntity.SubValue1
-            result.Ref.Reference.BaseValue |> should equal referenceEntity.BaseValue
-            *)
+        test "deserialize inner abstract base type" {
+            let result: ResultTypes.InnerReferrerServiceResult = getResponse "InnerReferrerService" @"<tns:InnerReferrerServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Ref><Reference xsi:type=""Concrete1""><BaseValue>basev</BaseValue><SubValue1>kino</SubValue1></Reference></Ref></response></tns:InnerReferrerServiceResponse>"
+            Expect.isNotNull result.response.Ref.Reference ""
+            Expect.isTrue (result.response.Ref.Reference :? Types.Concrete1) ""
+            let concrete1 = result.response.Ref.Reference |> unbox<Types.Concrete1>
+            Expect.equal concrete1.SubValue1 "kino" ""
+            Expect.equal result.response.Ref.Reference.BaseValue "basev" ""
         }
         
         test "serialize choice type 1" {
@@ -665,19 +650,13 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:TestChoiceService><Choice1Element>test</Choice1Element></tns:TestChoiceService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize choice type 1" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.TestChoice>
-            result |> should not' (be Null)
-            let (success, value) = result.TryGetChoice1()
-            success |> should equal true
-            value |> should not' (be Null)
-            value.Choice1Element |> should equal optionEntity.Choice1Element
-            let (success, value) = result.TryGetChoice2()
-            success |> should equal false
-            value |> should be Null
-            *)
+        test "deserialize choice type 1" {
+            let result: ResultTypes.TestChoiceServiceResult = getResponse "TestChoiceService" @"<tns:TestChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><Choice1Element>test</Choice1Element></tns:TestChoiceServiceResponse>"
+            let (success, value) = result.response.TryGetChoice1()
+            Expect.isTrue success "result should be choice 1"
+            Expect.equal value.Choice1Element "test" "wrong choice 1 element value"
+            let (success, value) = result.response.TryGetChoice2()
+            Expect.isFalse success "result should not be choice 2"
         }
         
         test "serialize choice type 2" {
@@ -687,19 +666,13 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:TestChoiceService><Choice2><Choice2Element>test</Choice2Element></Choice2></tns:TestChoiceService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize choice type 2" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.TestChoice>
-            result |> should not' (be Null)
-            let (success, value) = result.TryGetChoice1()
-            success |> should equal false
-            value |> should be Null
-            let (success, value) = result.TryGetChoice2()
-            success |> should equal true
-            value |> should not' (be Null)
-            value.Choice2Element |> should equal optionEntity.Choice2Element
-            *)
+        test "deserialize choice type 2" {
+            let result: ResultTypes.TestChoiceServiceResult = getResponse "TestChoiceService" @"<tns:TestChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><Choice2><Choice2Element>test</Choice2Element></Choice2></tns:TestChoiceServiceResponse>"
+            let (success, value) = result.response.TryGetChoice1()
+            Expect.isFalse success "should not be choice 1"
+            let (success, value) = result.response.TryGetChoice2()
+            Expect.isTrue success "should be choice 2"
+            Expect.equal value.Choice2Element "test" "wrong choice 2 element content"
         }
         
         test "serialize inner choice 1 element" {
@@ -710,21 +683,14 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithChoiceService><request><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></request></tns:WithChoiceService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize inner choice 1 element" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.WithChoice>
-            result |> should not' (be Null)
-            result.NotAChoice |> should equal entity.NotAChoice
-            result.IsAChoice |> should not' (be Null)
-            let (success, value) = result.IsAChoice.TryGetChoice1()
-            success |> should equal true
-            value |> should not' (be Null)
-            value.Choice1Element |> should equal optionEntity.Choice1Element
-            let (success, value) = result.IsAChoice.TryGetChoice2()
-            success |> should equal false
-            value |> should be Null
-            *)
+        test "deserialize inner choice 1 element" {
+            let result: ResultTypes.WithChoiceServiceResult = getResponse "WithChoiceService" @"<tns:WithChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><NotAChoice>tere</NotAChoice><Choice1Element>test</Choice1Element></response></tns:WithChoiceServiceResponse>"
+            Expect.equal result.response.NotAChoice "tere" "wrong not a choice value"
+            let (success, value) = result.response.IsAChoice.TryGetChoice1()
+            Expect.isTrue success "should be choice 1"
+            Expect.equal value.Choice1Element "test" "invalid choice 1 element content"
+            let (success, value) = result.response.IsAChoice.TryGetChoice2()
+            Expect.isFalse success "should not be choice 2"
         }
         
         test "serialize inner choice 2 element" {
@@ -735,21 +701,14 @@ let [<Tests>] tests =
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithChoiceService><request><NotAChoice>tere</NotAChoice><Choice2><Choice2Element>test</Choice2Element></Choice2></request></tns:WithChoiceService></Body>" "invalid serialization result"
         }
         
-        ptest "deserialize inner choice 2 element" {
-            failtest "needs review"
-            (*
-            let result = resultXml |> deserialize'<TestType.WithChoice>
-            result |> should not' (be Null)
-            result.NotAChoice |> should equal entity.NotAChoice
-            result.IsAChoice |> should not' (be Null)
-            let (success, value) = result.IsAChoice.TryGetChoice1()
-            success |> should equal false
-            value |> should be Null
-            let (success, value) = result.IsAChoice.TryGetChoice2()
-            success |> should equal true
-            value |> should not' (be Null)
-            value.Choice2Element |> should equal optionEntity.Choice2Element
-            *)
+        test "deserialize inner choice 2 element" {
+            let result: ResultTypes.WithChoiceServiceResult = getResponse "WithChoiceService" @"<tns:WithChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><NotAChoice>tere</NotAChoice><Choice2><Choice2Element>test</Choice2Element></Choice2></response></tns:WithChoiceServiceResponse>"
+            Expect.equal result.response.NotAChoice "tere" "wrong not a choice value"
+            let (success, value) = result.response.IsAChoice.TryGetChoice1()
+            Expect.isFalse success "should not be choice1"
+            let (success, value) = result.response.IsAChoice.TryGetChoice2()
+            Expect.isTrue success "should be choice2"
+            Expect.equal value.Choice2Element "test" "wrong choice 2 element value"
         }
         
         test "serialize empty string" {
