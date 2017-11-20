@@ -311,7 +311,7 @@ module EmitSerialization =
             il.Emit(OpCodes.Ldarg_1)
             il.Emit(OpCodes.Ldc_I4, i)
             il.Emit(OpCodes.Ldelem_Ref)
-            let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> Option.defaultWith (fun _ -> property.Type)
+            let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> MyOption.defaultWith (fun _ -> property.Type)
             match property.Type.IsValueType with
             | true -> il.Emit(OpCodes.Unbox_Any, ty)
             | _ -> il.Emit(OpCodes.Castclass, ty)
@@ -1211,8 +1211,8 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
             if propertyType.IsArray then
                 let elementType = propertyType.GetElementType()
                 let itemTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else elementType) |> tmf
-                let itemName = cattr |> Option.bind (fun a -> match a.ItemName with null | "" -> None | name -> Some(name)) |> Option.defaultWith (fun _ -> "item")
-                let itemXName = cattr |> Option.bind (fun a -> match a.ItemNamespace with "" -> None | ns -> Some(XName.Get(itemName, ns))) |> Option.defaultWith (fun _ -> XName.Get(itemName))
+                let itemName = cattr |> Option.bind (fun a -> match a.ItemName with null | "" -> None | name -> Some(name)) |> MyOption.defaultWith (fun _ -> "item")
+                let itemXName = cattr |> Option.bind (fun a -> match a.ItemNamespace with "" -> None | ns -> Some(XName.Get(itemName, ns))) |> MyOption.defaultWith (fun _ -> XName.Get(itemName))
                 let itemElement = if itemTypeMap.Layout <> Some(LayoutKind.Choice)
                                   then if cattr.IsSome && cattr.Value.MergeContent then None else Some(itemXName, cattr.IsSome && cattr.Value.ItemIsNullable, true)
                                   else None
@@ -1459,7 +1459,7 @@ module internal DynamicMethods =
     let requiredOpAttr<'T when 'T :> Attribute and 'T : null and 'T : equality> (mi: MethodInfo) : 'T =
         mi.GetCustomAttribute<'T>()
         |> Option.ofObj
-        |> Option.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
+        |> MyOption.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
         
     let emitDeserializer (mi: MethodInfo) (responseAttr: XRoadResponseAttribute) : DeserializerDelegate =
         let typeMap = getCompleteTypeMap responseAttr.Encoded mi.ReturnType

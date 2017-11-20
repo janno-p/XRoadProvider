@@ -309,7 +309,7 @@ module Parser =
                     node |> notExpectedIn "complexType"
                 ) (Begin, None)
                 |> snd
-                |> Option.defaultValue ComplexTypeContent.Empty
+                |> MyOption.defaultValue ComplexTypeContent.Empty
         { IsAbstract = node |> readBoolean "abstract"; Content = parseChildElements(); Annotation = parseAnnotation(node) }
 
     /// Extracts complexType-s simpleContent element specification from schema definition.
@@ -498,7 +498,7 @@ module Parser =
                     node |> notImplementedIn "element"
                 | _ -> node |> notExpectedIn "element"
                 ) (Begin, None)
-            |> (fun (_, spec) -> spec |> Option.defaultValue (Definition(EmptyDefinition)))
+            |> (fun (_, spec) -> spec |> MyOption.defaultValue (Definition(EmptyDefinition)))
         let elementSpec = ElementSpec.FromNode(node)
         match node |> attr (xname "ref") with
         | Some refv ->
@@ -694,7 +694,7 @@ module Parser =
                 match uri, documentSchemas.TryFind(ns.NamespaceName) with
                 | None, Some(_) -> ()
                 | _ ->
-                    let path = (uri |> Option.defaultValue ns.NamespaceName) |> fixUri (Some schemaUri)
+                    let path = (uri |> MyOption.defaultValue ns.NamespaceName) |> fixUri (Some schemaUri)
                     let schemaNode =
                         XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
                         |> findSchemaNode path schemaLookup documentSchemas

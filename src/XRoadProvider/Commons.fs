@@ -7,6 +7,10 @@ open System.Xml
 open System.Reflection
 open XRoad.Serialization.Attributes
 
+module MyOption =
+    let defaultValue d o = o |> Option.fold (fun _ x -> x) d
+    let defaultWith f o = match o with Some(o) -> o | None -> f()
+
 [<RequireQualifiedAccessAttribute>]
 module internal XmlNamespace =
     let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
@@ -521,7 +525,7 @@ module internal Wsdl =
     /// Extracts optional attribute value from current element.
     /// Return default value if attribute is missing.
     let attrOrDefault name value element =
-        element |> attr name |> Option.defaultValue value
+        element |> attr name |> MyOption.defaultValue value
 
     /// Extracts value of required attribute from current element.
     /// When attribute is not found, exception is thrown.

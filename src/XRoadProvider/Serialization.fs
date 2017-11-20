@@ -56,7 +56,7 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
         | node ->
             let faultCode = node.SelectSingleNode("./faultCode")
             let faultString = node.SelectSingleNode("./faultString")
-            let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> Option.defaultValue ""
+            let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> MyOption.defaultValue ""
             raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
 
     member __.RetrieveMessage() =
@@ -183,7 +183,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
             writer.WriteEndElement()
 
     let writeBase64Header (value: byte[]) name ns req (writer: XmlWriter) =
-        let value = value |> Option.ofObj |> Option.defaultWith (fun _ -> [||])
+        let value = value |> Option.ofObj |> MyOption.defaultWith (fun _ -> [||])
         if req |> Array.exists ((=) name) || value |> Array.isEmpty |> not then
             writer.WriteStartElement(name, ns)
             if methodMap.Request.IsEncoded then

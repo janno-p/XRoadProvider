@@ -106,7 +106,7 @@ module Attributes =
     let xrdOperation name (version: string option) (protocol: XRoadProtocol) messageProtocol =
         Attr.create<XRoadOperationAttribute>
         |> Attr.addArg (!^ name)
-        |> Attr.addArg (!^ (version |> Option.defaultValue null))
+        |> Attr.addArg (!^ (version |> MyOption.defaultValue null))
         |> Attr.addArg (Expr.typeRefOf<XRoadProtocol> @=> protocol.ToString())
         |> iif (messageProtocol = XRoadMessageProtocolVersion.Version40) (fun attr -> attr |> Attr.addNamedArg "ProtocolVersion" (!^ "4.0"))
     
