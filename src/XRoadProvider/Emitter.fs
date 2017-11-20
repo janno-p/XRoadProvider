@@ -1236,12 +1236,23 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
                              HasValueMethod = hasValueMethod })
 
 and private typeMaps = ConcurrentDictionary<Type, TypeMap>()
+and private uncompleteTypeMaps = ConcurrentDictionary<Type, TypeMap>()
 
 and private createTypeMap (isEncoded: bool) (typ: Type) =
     let addTypeMap (init: TypeMap -> unit) (typ: Type) =
         let serialization, deserialization = typ |> Serialization.Create, typ |> Deserialization.Create
         let typeMap = TypeMap.Create(typ, deserialization, serialization, typ |> findBaseType isEncoded)
-        if typeMaps.TryAdd(typ, typeMap) then typeMap |> init; typeMap else typeMaps.[typ]
+        if typeMaps.TryAdd(typ, typeMap) then
+            uncompleteTypeMaps.TryAdd(typ, typeMap) |> ignore
+            try
+                typeMap |> init
+            // with
+            //     TODO: generate exceptions for invalid typemap methods.
+            finally
+                uncompleteTypeMaps.TryRemove(typ) |> ignore
+                typeMap.IsComplete <- true
+            typeMap
+        else typeMaps.[typ]
     match typ with
     | NotSerializable ->
         failwithf "Type `%s` is not serializable." typ.FullName
@@ -1249,8 +1260,7 @@ and private createTypeMap (isEncoded: bool) (typ: Type) =
         typ |> addTypeMap (fun typeMap ->
             match typeAttribute.Layout with
             | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers isEncoded
-            | _ -> typeMap |> createTypeSerializers isEncoded
-            typeMap.IsComplete <- true)
+            | _ -> typeMap |> createTypeSerializers isEncoded)
 
 and internal getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
     match typeMaps.TryGetValue(typ) with
@@ -1282,7 +1292,7 @@ and findBaseTypes isEncoded (typ: Type) =
 
 let getCompleteTypeMap isEncoded typ =
     let typeMap = getTypeMap isEncoded typ
-    while not typeMap.IsComplete do
+    while uncompleteTypeMaps.Count > 0 do
         System.Threading.Thread.Sleep(100)
     typeMap
 
