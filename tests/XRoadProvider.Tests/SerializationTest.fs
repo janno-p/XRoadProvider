@@ -94,8 +94,8 @@ module Types =
         member val SubValue3 = Unchecked.defaultof<string> with get, set
         
     [<XRoadType(LayoutKind.Choice)>]
-    [<XRoadChoiceOption(1, "value1", MergeContent=false)>]
-    [<XRoadChoiceOption(2, "value2", MergeContent=false)>]
+    [<XRoadElement(1, "value1", MergeContent=false)>]
+    [<XRoadElement(2, "value2", MergeContent=false)>]
     type AbstractRootChoice =
         val private __id: int
         val private __value: obj
@@ -138,8 +138,8 @@ module Types =
         member val Choice2Element = Unchecked.defaultof<string> with get, set
 
     [<XRoadType(LayoutKind.Choice)>]
-    [<XRoadChoiceOption(1, "Choice1", MergeContent=true)>]
-    [<XRoadChoiceOption(2, "Choice2", MergeContent=false)>]
+    [<XRoadElement(1, "Choice1", MergeContent=true)>]
+    [<XRoadElement(2, "Choice2", MergeContent=false)>]
     type TestChoice =
         val private __id: int
         val private __value: obj
@@ -154,6 +154,18 @@ module Types =
             this.__id = 2
         static member NewChoice1(value: Choice1) = TestChoice(1, value)
         static member NewChoice2(value: Choice2) = TestChoice(2, value)
+        
+    [<XRoadType(LayoutKind.Choice)>]
+    [<XRoadElement(1, "Choice1")>]
+    type ArrayChoice =
+        val private __id: int
+        val private __value: obj
+        private new(id, value: obj) = { __id = id; __value = value }
+        member this.TryGetChoice1([<Out>] value: string[] byref) =
+            if this.__id = 1 then value <- unbox this.__value
+            else value <- null
+            this.__id = 1
+        static member NewChoice1(value: string[]) = ArrayChoice(1, value)
         
     [<XRoadType(LayoutKind.Sequence)>]
     type WithChoice() =
@@ -267,6 +279,9 @@ module ResultTypes =
         
     type [<XRoadType>] AbstractBaseWithNoSubTypesServiceResult () =
         [<XRoadElement>] member val response = Unchecked.defaultof<Types.AbstractBaseWithNoSubTypes> with get, set
+        
+    type [<XRoadType>] ArrayChoiceServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.ArrayChoice> with get, set
 
 type Services =
     [<XRoadOperation("Service1", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
@@ -393,6 +408,11 @@ type Services =
     [<XRoadRequest("AbstractBaseWithNoSubTypesService", producerNamespace)>]
     [<XRoadResponse("AbstractBaseWithNoSubTypesServiceResponse", producerNamespace)>]
     abstract AbstractBaseWithNoSubTypesService: [<XRoadElement("request")>] request: Types.AbstractBaseWithNoSubTypes -> ResultTypes.AbstractBaseWithNoSubTypesServiceResult
+    
+    [<XRoadOperation("ArrayChoiceService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("ArrayChoiceService", producerNamespace)>]
+    [<XRoadResponse("ArrayChoiceServiceResponse", producerNamespace)>]
+    abstract ArrayChoiceService: [<XRoadElement("request")>] request: Types.ArrayChoice -> ResultTypes.ArrayChoiceServiceResult
 
 let deserialize (nm: string) (xml: string) context =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
@@ -908,5 +928,18 @@ let [<Tests>] tests =
             Expect.equal result.response.Value1 (Nullable 1) ""
             Expect.equal result.response.Value2 (Nullable 2) ""
             Expect.equal result.response.Value3 (Nullable 3) ""
+        }
+        
+        test "serialize choice with array argument" {
+            let value = Types.ArrayChoice.NewChoice1([| "string1"; "string2" |])
+            let xml = serialize' "ArrayChoiceService" [| value |]
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:ArrayChoiceService><Choice1><item>string1</item><item>string2</item></Choice1></tns:ArrayChoiceService></Body>" ""
+        }
+        
+        test "deserialize choice with array argument" {
+            let result: ResultTypes.ArrayChoiceServiceResult = getResponse "ArrayChoiceService" @"<tns:ArrayChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><item>string1</item><item>string2</item></response></tns:ArrayChoiceServiceResponse>"
+            let success, array = result.response.TryGetChoice1()
+            Expect.isTrue success ""
+            Expect.equal array [| "string1"; "string2" |] ""
         }
     ]

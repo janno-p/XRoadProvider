@@ -26,7 +26,7 @@ let internal createTypeMap (typ: Type) =
         let serialization, deserialization = typ |> Serialization.Create, typ |> Deserialization.Create
         let typeMap = TypeMap.Create(typ, deserialization, serialization, typ |> findBaseType false)
         match typeAttribute.Layout with
-        | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers false
+        | LayoutKind.Choice -> failwith "not implemented" // typeMap |> createChoiceTypeSerializers false
         | _ -> typeMap |> createTypeSerializers false
         typeMap
 

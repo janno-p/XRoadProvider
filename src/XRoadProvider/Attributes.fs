@@ -51,12 +51,17 @@ type XRoadTypeAttribute(name: string, layout: LayoutKind) =
 /// Attribute which identifies serializable property.
 /// Provides overrides for property serialization.
 [<AllowNullLiteral>]
-[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Parameter)>]
-type XRoadElementAttribute(name: string) =
+[<AttributeUsage(AttributeTargets.Class ||| AttributeTargets.Property ||| AttributeTargets.Parameter, AllowMultiple = true)>]
+type XRoadElementAttribute(id: int, name: string) =
     inherit Attribute()
 
     /// Initializes new attribute. Property name is used as element name in serialization.
-    new() = XRoadElementAttribute("")
+    new() = XRoadElementAttribute(-1, "")
+    
+    new(name) = XRoadElementAttribute(-1, name)
+
+    /// Unique id for this attribute.
+    member val Id = id with get
 
     /// Specifies if element is allowed to contain `null` values.
     member val IsNullable = false with get, set
@@ -76,37 +81,20 @@ type XRoadElementAttribute(name: string) =
     member val UseXop = false with get, set
 
 
-/// Identifies each individual option for choice type element.
-/// Each option should have its unique id and display name.
-/// Initializes new attribute with unique id for current choice option
-/// and name which is used for type members.
-[<AllowNullLiteral>]
-[<AttributeUsage(AttributeTargets.Class, AllowMultiple = true)>]
-type XRoadChoiceOptionAttribute(id: int, name: string) =
-    inherit Attribute()
-
-    /// Unique id for this attribute.
-    member val Id = id with get
-
-    /// Name which is used for members which are tied to this choice option.
-    member val Name = name with get
-    
-    member val Namespace = "" with get
-
-    /// When true, no extra element is serialized for this option. Instead, type
-    /// contents become direct child elements of owner element.
-    member val MergeContent = false with get, set
-
-
 /// Provides serialization option for various collection types.
 /// Initializes new attribute with item element name.
 [<AllowNullLiteral>]
-[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Parameter)>]
-type XRoadCollectionAttribute(itemName: string) =
+[<AttributeUsage(AttributeTargets.Class ||| AttributeTargets.Property ||| AttributeTargets.Parameter, AllowMultiple = true)>]
+type XRoadCollectionAttribute(id: int, itemName: string) =
     inherit Attribute()
 
     /// Initializes new attribute with no item element name.
-    new() = XRoadCollectionAttribute("")
+    new() = XRoadCollectionAttribute(-1, "")
+
+    new(itemName) = XRoadCollectionAttribute(-1, itemName)
+
+    /// Unique id for this attribute.
+    member val Id = id with get
 
     /// Item element name for particular collection element.
     member val ItemName = itemName with get

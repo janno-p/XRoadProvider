@@ -65,11 +65,12 @@ type TypeMap =
           IsComplete = false }
 
 type ContentWrapper =
+    | Choice of TypeMap * FieldInfo * FieldInfo * int
     | Method of MethodInfo * int32
     | Type of TypeMap
     member this.Name
         with get () =
-            match this with Method (mi, _) -> sprintf "%s.%s" mi.DeclaringType.FullName mi.Name | Type tm -> tm.FullName
+            match this with Choice (tm,_,_,_) -> tm.Type.FullName | Method (mi, _) -> sprintf "%s.%s" mi.DeclaringType.FullName mi.Name | Type tm -> tm.FullName
 
 type PropertyMap =
     { TypeMap: TypeMap
@@ -170,6 +171,34 @@ let getContentOfMethod (mi: MethodInfo) : PropertyInput list =
                 p.ParameterType.GenericTypeArguments.[0], true, Some(p.ParameterType.GetProperty("HasValue").GetGetMethod())
             else p.ParameterType, false, None
         Method(mi, i), p.Name, parameterType, isOptionalType, hasValueMethod, None, None, attr, p.GetCustomAttribute<XRoadCollectionAttribute>() |> Option.ofObj)
+    |> Seq.toList
+
+let getContentOfChoice (choiceMap: TypeMap) : PropertyInput list =
+    let choiceType = choiceMap.Type
+    let idField =
+        match choiceType.GetField("__id", BindingFlags.Instance ||| BindingFlags.NonPublic) with
+        | null -> choiceType.GetField("__id@", BindingFlags.Instance ||| BindingFlags.NonPublic)
+        | x -> x
+    let valueField =
+        match choiceType.GetField("__value", BindingFlags.Instance ||| BindingFlags.NonPublic) with
+        | null -> choiceType.GetField("__value@", BindingFlags.Instance ||| BindingFlags.NonPublic)
+        | x -> x
+    choiceType.GetCustomAttributes<XRoadElementAttribute>()
+    |> Seq.map
+        (fun attr ->
+            let (typ, mi) =
+                let methodName = sprintf "New%s%s" (if Char.IsLower(attr.Name.[0]) then "_" else "") attr.Name
+                match choiceType.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Static) with
+                | null -> failwithf "Type `%s` should define public static method `%s`." choiceType.FullName methodName
+                | mi -> match mi.GetParameters() with
+                        | [| pi |] -> (pi.ParameterType, mi)
+                        | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." choiceType.FullName attr.Name
+            let parameterType, isOptionalType, hasValueMethod =
+                if typ.IsGenericType && typ.GetGenericTypeDefinition() = typedefof<Optional.Option<_>> then
+                    typ.GenericTypeArguments.[0], true, Some(typ.GetProperty("HasValue").GetGetMethod())
+                else typ, false, None
+            let collectionAttr = choiceType.GetCustomAttributes<XRoadCollectionAttribute>() |> Seq.tryFind (fun a -> a.Id = attr.Id)
+            Choice (choiceMap, idField, valueField, attr.Id), attr.Name, parameterType, isOptionalType, hasValueMethod, None, None, attr, collectionAttr)
     |> Seq.toList
 
 module EmitSerialization =
@@ -307,6 +336,14 @@ module EmitSerialization =
 
     let emitPropertyWrapperSerialization (property: Property) (il: ILGenerator) =
         match property.Wrapper with
+        | Choice (_,_,fld,_) ->
+            il.Emit(OpCodes.Ldarg_1)
+            il.Emit(OpCodes.Castclass, fld.DeclaringType)
+            il.Emit(OpCodes.Ldfld, fld)
+            let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> MyOption.defaultWith (fun _ -> property.Type)
+            match property.Type.IsValueType with
+            | true -> il.Emit(OpCodes.Unbox_Any, ty)
+            | _ -> il.Emit(OpCodes.Castclass, ty)
         | Method (mi, i) ->
             il.Emit(OpCodes.Ldarg_1)
             il.Emit(OpCodes.Ldc_I4, i)
@@ -342,7 +379,7 @@ module EmitSerialization =
             emitContent()
 
     /// Emit single property content serialization.
-    let rec private emitPropertyContentSerialization (il: ILGenerator) (emitValue: Type -> unit) isEncoded (property: Property) =
+    let rec emitPropertyContentSerialization (il: ILGenerator) (emitValue: Type -> unit) isEncoded (property: Property) =
         let markReturn = il.DefineLabel()
 
         // Write start element of the propery if its not merged with content.
@@ -408,7 +445,7 @@ module EmitSerialization =
         | None -> ()
 
     /// Unbox property value into correct type.
-    let private emitPropertyValue (il: ILGenerator) (property: Property) (typ: Type) =
+    let emitPropertyValue (il: ILGenerator) (property: Property) (typ: Type) =
         il |> emitPropertyWrapperSerialization property
         match property.Element with
         | Some(_,_,true) ->
@@ -643,6 +680,7 @@ module EmitDeserialization =
 
     let emitPropertyWrapperDeserialization (wrapper: ContentWrapper) (il: ILGenerator) =  
         match wrapper with
+        | Choice _ -> failwith "not implemented"
         | Method _ -> failwith "Method signature is not deserialzable"
         | Type tm ->
             il.Emit(OpCodes.Ldarg_1)
@@ -841,7 +879,6 @@ module EmitDeserialization =
             il.Emit(OpCodes.Add)
             il.Emit(OpCodes.Ldc_I4_2)
             il.Emit(OpCodes.Div)
-        il.Emit(OpCodes.Ret)
 
     let emitPropertyDeserialization (prop: Property) (il: ILGenerator) =
         match prop with
@@ -952,6 +989,7 @@ module EmitDeserialization =
                     il.Emit(OpCodes.Br, returnLabel)
                     il.MarkLabel(nextLabel)
                     match prop.Wrapper with
+                    | Choice _ -> il.Emit(OpCodes.Ldstr, "Unexpected element `{0}` found in choice `{1}`.")
                     | Method _ -> il.Emit(OpCodes.Ldstr, "Unexpected parameter `{0}` found in method `{1}`.")
                     | Type _ -> il.Emit(OpCodes.Ldstr, "Unexpected element `{0}` found in type `{1}`.")
                     il.Emit(OpCodes.Ldarg_0)
@@ -1069,66 +1107,66 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
     | _ ->
         let ilMatch = (!~> typeMap.Deserialization.MatchType).GetILGenerator()
         ilMatch |> EmitDeserialization.emitMatchType (properties |> List.tryHead)
+        ilMatch.Emit(OpCodes.Ret)
 
-and createChoiceTypeSerializers isEncoded (typeMap: TypeMap) =
-    let ilSer = (!~> typeMap.Serialization.Root).GetILGenerator()
-    let ilDeser = (!~> typeMap.Deserialization.Root).GetILGenerator()
-    let ilDeserContent = (!~> typeMap.Deserialization.Content).GetILGenerator()
-    let ilMatch = (!~> typeMap.Deserialization.MatchType).GetILGenerator()
-    let idField =  match typeMap.Type.GetField("__id", BindingFlags.Instance ||| BindingFlags.NonPublic) with
-                   | null -> typeMap.Type.GetField("__id@", BindingFlags.Instance ||| BindingFlags.NonPublic)
-                   | x -> x
-    let valueField = match typeMap.Type.GetField("__value", BindingFlags.Instance ||| BindingFlags.NonPublic) with
-                     | null -> typeMap.Type.GetField("__value@", BindingFlags.Instance ||| BindingFlags.NonPublic)
-                     | x -> x
-    let conditionEnd = ilSer.DefineLabel()
-    let rec genSerialization (label: Label option) (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
-        match options with
-        | [] -> ()
-        | (attr,typ,_)::xs ->
-            label |> Option.iter (fun label -> ilSer.MarkLabel(label); ilSer.Emit(OpCodes.Nop))
-            let label = match xs with [] -> conditionEnd | _ -> ilSer.DefineLabel()
-            ilSer.Emit(OpCodes.Ldarg_1)
-            ilSer.Emit(OpCodes.Castclass, typeMap.Type)
-            ilSer.Emit(OpCodes.Ldfld, idField)
-            ilSer.Emit(OpCodes.Ldc_I4_S, attr.Id)
-            ilSer.Emit(OpCodes.Ceq)
-            ilSer.Emit(OpCodes.Brfalse, label)
-            ilSer.Emit(OpCodes.Nop)
-            let emitSerialization () =
-                ilSer.Emit(OpCodes.Ldarg_0)
-                ilSer.Emit(OpCodes.Ldarg_1)
-                ilSer.Emit(OpCodes.Castclass, typeMap.Type)
-                ilSer.Emit(OpCodes.Ldfld, valueField)
-                ilSer.Emit(OpCodes.Ldarg_2)
-                ilSer.Emit(OpCodes.Call, (typ |> getTypeMap isEncoded).Serialization.Root)
-                ilSer.Emit(OpCodes.Nop)
-            if attr.MergeContent then
-                emitSerialization()
-            else
-                ilSer.Emit(OpCodes.Ldarg_0)
-                ilSer.Emit(OpCodes.Ldstr, attr.Name)
-                ilSer.Emit(OpCodes.Ldstr, attr.Namespace)
-                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
-                emitSerialization()
-            ilSer.Emit(OpCodes.Br_S, conditionEnd)
-            if not <| attr.MergeContent then
-                ilSer.Emit(OpCodes.Ldarg_0)
-                ilSer.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
-            genSerialization (Some label) xs
-    let genDeserialization options =
+and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap: TypeMap) =
+    let genSerialization () =
+        let il = (!~> choiceMap.Serialization.Root).GetILGenerator()
+        let conditionEnd = il.DefineLabel()
+        let rec generate (label: Label option) (properties: Property list) =
+            match properties with
+            | [] -> ()
+            | property::other ->
+                let _, idField, _, id = match property.Wrapper with Choice(x, y, z, w) -> x, y, z, w | _ -> failwith "never"
+
+                label |> Option.iter (fun label -> il.MarkLabel(label); il.Emit(OpCodes.Nop))
+                let label = match other with [] -> conditionEnd | _ -> il.DefineLabel()
+
+                il.Emit(OpCodes.Ldarg_1)
+                il.Emit(OpCodes.Castclass, choiceMap.Type)
+                il.Emit(OpCodes.Ldfld, idField)
+                il.Emit(OpCodes.Ldc_I4_S, id)
+                il.Emit(OpCodes.Ceq)
+                il.Emit(OpCodes.Brfalse, label)
+                il.Emit(OpCodes.Nop)
+
+                EmitSerialization.emitOptionalFieldSerialization
+                    property
+                    (fun () ->
+                        EmitSerialization.emitPropertyContentSerialization
+                            il
+                            (EmitSerialization.emitPropertyValue il property)
+                            isEncoded
+                            property)
+                    il
+
+                il.Emit(OpCodes.Nop)
+                il.Emit(OpCodes.Br_S, conditionEnd)
+
+                generate (Some label) other
+
+        generate None properties
+
+        il.MarkLabel(conditionEnd)
+        il.Emit(OpCodes.Ret)
+
+    let genDeserialization () =
+        let ilDeser = (!~> choiceMap.Deserialization.Root).GetILGenerator()
+        let ilDeserContent = (!~> choiceMap.Deserialization.Content).GetILGenerator()
+
+        (*
         let il = ilDeser
         let markReturn = il.DefineLabel()
-        let rec generate (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
-            match options with
+
+        let rec generate (properties: Property list) =
+            match properties with
             | [] ->
                 il.Emit(OpCodes.Ldnull)
                 il.Emit(OpCodes.Br_S, markReturn)
-            | (attr,typ,mi)::options ->
+            | property::other ->
                 let label = il.DefineLabel()
-                let typeMap = typ |> getTypeMap isEncoded
                 if attr.MergeContent then
-                    let instance = il.DeclareLocal(typeMap.Type)
+                    let instance = il.DeclareLocal(property.Type)
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
                     il.Emit(OpCodes.Brfalse_S, label)
@@ -1151,11 +1189,21 @@ and createChoiceTypeSerializers isEncoded (typeMap: TypeMap) =
                 il.Emit(OpCodes.Br_S, markReturn)
                 il.MarkLabel(label)
                 il.Emit(OpCodes.Nop)
-                generate options
-        generate options
+                generate other
+
+        generate properties
+
         il.MarkLabel(markReturn)
         il.Emit(OpCodes.Ret)
-    let genMatch options =
+        ilDeserContent.Emit(OpCodes.Ret)
+        *)
+        ilDeser.Emit(OpCodes.Ldnull)
+        ilDeser.Emit(OpCodes.Ret)
+        ilDeserContent.Emit(OpCodes.Ret)
+
+    let genMatch () =
+        let ilMatch = (!~> choiceMap.Deserialization.MatchType).GetILGenerator()
+        (*
         let il = ilMatch
         let markReturn = il.DefineLabel()
         let rec generate (options: (XRoadChoiceOptionAttribute * Type * MethodInfo) list) =
@@ -1183,23 +1231,13 @@ and createChoiceTypeSerializers isEncoded (typeMap: TypeMap) =
         generate options
         il.MarkLabel(markReturn)
         il.Emit(OpCodes.Ret)
-    typeMap.Type.GetCustomAttributes<XRoadChoiceOptionAttribute>()
-    |> Seq.map (fun attr ->
-        let (typ, mi) =
-            let methodName = sprintf "New%s%s" (if Char.IsLower(attr.Name.[0]) then "_" else "") attr.Name
-            match typeMap.Type.GetMethod(methodName, BindingFlags.Public ||| BindingFlags.Static) with
-            | null -> failwithf "Type `%s` should define public static method `%s`." typeMap.Type.FullName methodName
-            | mi -> match mi.GetParameters() with
-                    | [| pi |] -> (pi.ParameterType, mi)
-                    | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." typeMap.Type.FullName attr.Name
-        (attr, typ, mi))
-    |> Seq.toList
-    |> (fun x -> genSerialization None x
-                 genDeserialization x
-                 genMatch x)
-    ilSer.MarkLabel(conditionEnd)
-    ilSer.Emit(OpCodes.Ret)
-    ilDeserContent.Emit(OpCodes.Ret)
+        *)
+        ilMatch.Emit(OpCodes.Ldc_I4_0)
+        ilMatch.Emit(OpCodes.Ret)
+
+    genSerialization ()
+    genDeserialization ()
+    genMatch ()
 
 and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : Property list =
     input
@@ -1260,7 +1298,7 @@ and private createTypeMap (isEncoded: bool) (typ: Type) =
     | Serializable(typeAttribute) ->
         typ |> addTypeMap (fun typeMap ->
             match typeAttribute.Layout with
-            | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers isEncoded
+            | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers isEncoded (getContentOfChoice typeMap |> getProperties (getTypeMap isEncoded))
             | _ -> typeMap |> createTypeSerializers isEncoded)
 
 and internal getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =

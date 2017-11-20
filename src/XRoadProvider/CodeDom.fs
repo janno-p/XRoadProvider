@@ -93,7 +93,7 @@ module Attributes =
         |> Attr.addNamedArg "MergeContent" (!^ true)
 
     let xrdChoiceOption (id: int) (name: string) (mergeContent: bool) =
-        Attr.create<XRoadChoiceOptionAttribute>
+        Attr.create<XRoadElementAttribute>
         |> Attr.addArg (!^ id)
         |> Attr.addArg (!^ name)
         |> Attr.addNamedArg "MergeContent" (!^ mergeContent)
