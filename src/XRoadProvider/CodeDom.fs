@@ -160,10 +160,15 @@ module Stmt =
 
     let declVarWith<'T> name e = CodeVariableDeclarationStatement(typeof<'T>, name, e) :> CodeStatement
 
+module Param =
+    let create (typ: CodeTypeReference) name = CodeParameterDeclarationExpression(typ, name)
+    let describe a (p: CodeParameterDeclarationExpression) = p.CustomAttributes.Add(a) |> ignore; p
+
 /// Functions to create and manipulate type methods.
 module Meth =
     let create name = CodeMemberMethod(Name=name)
     let setAttr a (m: CodeMemberMethod) = m.Attributes <- a; m
+    let addParamExpr p (m: CodeMemberMethod) = m.Parameters.Add(p) |> ignore; m
     let addParam<'T> name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typeof<'T>, name)) |> ignore; m
     let addParamRef (typ: CodeTypeReference) name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typ, name)) |> ignore; m
     let addOutParamRef (typ: CodeTypeReference) name (m: CodeMemberMethod) = m.Parameters.Add(CodeParameterDeclarationExpression(typ, name, Direction=FieldDirection.Out)) |> ignore; m

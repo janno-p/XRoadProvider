@@ -100,7 +100,10 @@ module ServiceBuilder =
                                 TypeBuilder.build context runtimeType definition
                                 runtimeType
                             | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
-                        m |> Meth.addParamRef (runtimeType.AsCodeTypeReference(optional=(dspec.MinOccurs = 0u))) name |> ignore
+                        let p =
+                            Param.create (runtimeType.AsCodeTypeReference(optional=(dspec.MinOccurs = 0u))) name
+                            |> Param.describe (Attributes.xrdElement(None, None, false, false))
+                        m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add((!+ name))
                     | _ -> failwithf "%A" value)
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> MyOption.defaultValue "<unknown>")
