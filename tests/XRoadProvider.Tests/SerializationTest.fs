@@ -937,7 +937,7 @@ let [<Tests>] tests =
         }
         
         test "deserialize choice with array argument" {
-            let result: ResultTypes.ArrayChoiceServiceResult = getResponse "ArrayChoiceService" @"<tns:ArrayChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><item>string1</item><item>string2</item></response></tns:ArrayChoiceServiceResponse>"
+            let result: ResultTypes.ArrayChoiceServiceResult = getResponse "ArrayChoiceService" @"<tns:ArrayChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><Choice1><item>string1</item><item>string2</item></Choice1></tns:ArrayChoiceServiceResponse>"
             let success, array = result.response.TryGetChoice1()
             Expect.isTrue success ""
             Expect.equal array [| "string1"; "string2" |] ""
