@@ -858,6 +858,7 @@ module EmitDeserialization =
                 let skipReadLabel = il.DefineLabel()
 
                 il.MarkLabel(startLabel)
+
                 il.Emit(OpCodes.Ldloc, skipRead)
                 il.Emit(OpCodes.Brtrue_S, skipReadLabel)
                 il |> emitXmlReaderReadOrExcept prop.PropertyName
@@ -967,7 +968,7 @@ module EmitDeserialization =
         | _ ->
             properties |> emitPropertyDeser startLabel
 
-let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: TypeMap list) (properties: Property list) =
+let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (properties: Property list) =
     let (|Content|_|) (properties: Property list) =
         match properties with
         | [Individual({ Element = None; TypeMap = typeMap }) as prop]
@@ -1005,17 +1006,17 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMaps: 
         il.Emit(OpCodes.Add)
         il.Emit(OpCodes.Stloc, varDepth)
 
-        typeMaps.Tail
-        |> List.rev
-        |> List.iter (fun typeMap ->
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Ldarg_2)
-            il.Emit(OpCodes.Ldarg_3)
-            il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
-            il.Emit(OpCodes.Nop))
+        typeMap.BaseType
+        |> Option.iter
+            (fun typeMap ->
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Ldarg_1)
+                il.Emit(OpCodes.Ldarg_2)
+                il.Emit(OpCodes.Ldarg_3)
+                il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
+                il.Emit(OpCodes.Nop))
 
-        match typeMaps.Head.Layout.Value with
+        match typeMap.Layout.Value with
         | LayoutKind.Choice ->
             ()
         | LayoutKind.Sequence ->
@@ -1060,7 +1061,7 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
     ilDeser |> EmitDeserialization.emitRootDeserializerMethod directSubTypes typeMap
 
     let ilDeserContent = (!~> typeMap.Deserialization.Content).GetILGenerator()
-    createDeserializeContentMethodBody ilDeserContent (typeMap.Type |> findBaseTypes isEncoded) properties
+    createDeserializeContentMethodBody ilDeserContent typeMap properties
 
     match properties with
     | [Individual { Element = None }] | [Array { Element = None; ItemElement = None }] ->
@@ -1283,12 +1284,6 @@ and findDirectSubTypes (isEncoded: bool) (typ: Type) : TypeMap list =
     |> List.ofArray
     |> List.filter (fun x -> x.BaseType = typ)
     |> List.choose (findTypeMap isEncoded)
-
-and findBaseTypes isEncoded (typ: Type) =
-    typ
-    |> Seq.unfold (fun typ -> if typ = typeof<obj> then None else Some(typ |> findTypeMap isEncoded, typ.BaseType))
-    |> Seq.choose (id)
-    |> Seq.toList
 
 let getCompleteTypeMap isEncoded typ =
     let typeMap = getTypeMap isEncoded typ

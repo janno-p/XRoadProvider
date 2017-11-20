@@ -905,6 +905,8 @@ let [<Tests>] tests =
         
         test "deserialize multiple levels of inheritance" {
             let result: ResultTypes.Level3ServiceResult = getResponse "Level3Service" @"<tns:Level3ServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Value1>1</Value1><Value2>2</Value2><Value3>3</Value3></response></tns:Level3ServiceResponse>"
-            Expect.equal result.response (Types.Level3(Value1 = Nullable<int>(1), Value2 = Nullable<int>(2), Value3 = Nullable<int>(3))) "not equal"
+            Expect.equal result.response.Value1 (Nullable 1) ""
+            Expect.equal result.response.Value2 (Nullable 2) ""
+            Expect.equal result.response.Value3 (Nullable 3) ""
         }
     ]
