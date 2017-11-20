@@ -396,7 +396,9 @@ type Services =
 
 let deserialize (nm: string) (xml: string) context =
     let map = typeof<Services>.GetMethod(nm) |> getMethodMap
-    use reader = XDocument.Parse(xml).CreateReader()
+    use textReader = new StringReader(xml)
+    use reader = XmlReader.Create(textReader)
+    while reader.Read() && reader.NodeType <> XmlNodeType.Element do ()
     map.Deserializer.Invoke(reader, context)
 
 let serialize nm value context =

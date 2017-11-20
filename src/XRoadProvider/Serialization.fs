@@ -78,6 +78,7 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
         context.AddAttachments(attachments)
         if not (reader.MoveToElement(2, null, null)) then
             failwith "Soap message has empty payload in response."
+        // TODO : validate response wrapper element
         match reader.LocalName, reader.NamespaceURI with
         | "Fault", XmlNamespace.SoapEnv -> failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
         | _ -> methodMap.Deserializer.Invoke(reader, context)
