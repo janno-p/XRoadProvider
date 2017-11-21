@@ -157,3 +157,4 @@ type XRoadResponseAttribute(name: string, ns: string) =
     member val Namespace = ns with get
     member val Encoded = false with get, set
     member val Multipart = false with get, set
+    member val ReturnType = Unchecked.defaultof<Type> with get, set

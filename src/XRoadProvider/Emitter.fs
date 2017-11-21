@@ -1514,7 +1514,8 @@ module internal DynamicMethods =
         |> MyOption.defaultWith (fun _ -> failwithf "Operation should define `%s`." typeof<'T>.Name)
         
     let emitDeserializer (mi: MethodInfo) (responseAttr: XRoadResponseAttribute) : DeserializerDelegate =
-        let typeMap = getCompleteTypeMap responseAttr.Encoded mi.ReturnType
+        let returnType = responseAttr.ReturnType |> Option.ofObj |> MyOption.defaultValue mi.ReturnType
+        let typeMap = getCompleteTypeMap responseAttr.Encoded returnType
         typeMap.DeserializeDelegate.Value
         
     let emitSerializer (mi: MethodInfo) (requestAttr: XRoadRequestAttribute) : OperationSerializerDelegate =

@@ -140,6 +140,7 @@ module ServiceBuilder =
                     let resultClass =
                         Cls.create (sprintf "%sResult" operation.Name)
                         |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
+                        |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
                     let prop =
                         resultClass
                         |> addProperty("response", elementType, false)
@@ -149,12 +150,12 @@ module ServiceBuilder =
                 | _ -> None
             m
             |> Meth.returnsOf (elementType.AsCodeTypeReference())
-            |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent)
             |> ignore
             match resultClass with
             | Some(cls) ->
                 let ctr = CodeTypeReference(cls.Name)
                 m
+                |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent (Some ctr))
                 |> Meth.addStmt
                     (Stmt.declVarOf ctr "__result"
                         (Expr.cast
@@ -171,6 +172,7 @@ module ServiceBuilder =
                 [m; cls]
             | None ->
                 m
+                |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent None)
                 |> Meth.addStmt
                     (Stmt.ret
                         (Expr.cast

@@ -118,12 +118,13 @@ module Attributes =
             |> iif isEncoded (fun attr -> attr |> Attr.addNamedArg "Encoded" (!^ true))
             |> iif isMultipart (fun attr -> attr |> Attr.addNamedArg "Multipart" (!^ true))
         
-    let xrdResponse name ns isEncoded isMultipart =
+    let xrdResponse name ns isEncoded isMultipart (returnType: CodeTypeReference option) =
         Attr.create<XRoadResponseAttribute>
         |> Attr.addArg (!^ name)
         |> Attr.addArg (!^ ns)
         |> iif isEncoded (fun attr -> attr |> Attr.addNamedArg "Encoded" (!^ true))
         |> iif isMultipart (fun attr -> attr |> Attr.addNamedArg "Multipart" (!^ true))
+        |> iif returnType.IsSome  (fun attr -> attr |> Attr.addNamedArg "ReturnType" (CodeTypeOfExpression(returnType.Value)))
         
     let xrdRequiredHeaders ns hdrs =
         hdrs
