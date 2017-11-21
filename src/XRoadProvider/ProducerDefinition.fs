@@ -101,9 +101,10 @@ module ServiceBuilder =
                                 runtimeType
                             | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
                         let p =
-                            Param.create (runtimeType.AsCodeTypeReference(optional=(dspec.MinOccurs = 0u))) name
+                            let isOptional = dspec.MinOccurs = 0u
+                            Param.create (runtimeType.AsCodeTypeReference(optional=isOptional)) name
                             |> Param.describe (Attributes.xrdElement(None, None, false, false))
-                            |> Param.describe Attributes.Optional
+                            |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add((!+ name))
                     | _ -> failwithf "%A" value)
