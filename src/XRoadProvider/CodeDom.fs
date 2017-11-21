@@ -67,6 +67,7 @@ module Attributes =
     let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
     let XmlIgnore = Attr.create<XmlIgnoreAttribute>
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
+    let Optional = Attr.create<Runtime.InteropServices.OptionalAttribute>
 
     let xrdDefType (layout: LayoutKind) =
         Attr.create<XRoadTypeAttribute>

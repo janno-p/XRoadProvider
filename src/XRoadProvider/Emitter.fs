@@ -348,7 +348,7 @@ module EmitSerialization =
             il.Emit(OpCodes.Ldc_I4, i)
             il.Emit(OpCodes.Ldelem_Ref)
             let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> MyOption.defaultWith (fun _ -> property.Type)
-            match property.Type.IsValueType with
+            match ty.IsValueType with
             | true -> il.Emit(OpCodes.Unbox_Any, ty)
             | _ -> il.Emit(OpCodes.Castclass, ty)
         | Type tm ->
@@ -365,7 +365,6 @@ module EmitSerialization =
             il |> emitPropertyWrapperSerialization property
             il.Emit(OpCodes.Stloc, optionalType)
             il.Emit(OpCodes.Ldloca, optionalType)
-
             il.Emit(OpCodes.Call, property.HasValueMethod.Value)
             il.Emit(OpCodes.Brfalse, endContentLabel)
             il.Emit(OpCodes.Nop)
@@ -467,7 +466,6 @@ module EmitSerialization =
         properties
         |> List.iter (fun property -> 
             il |> emitOptionalFieldSerialization property (fun () -> property |> emitPropertyContentSerialization il (emitPropertyValue il property) isEncoded))
-        il.Emit(OpCodes.Ret)
 
 module EmitDeserialization =
     /// Check if current element has `xsi:nil` attribute present.
@@ -1093,6 +1091,7 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
 
     let ilSerContent = (!~> typeMap.Serialization.Content).GetILGenerator()
     EmitSerialization.emitContentSerializerMethod ilSerContent isEncoded properties
+    ilSerContent.Emit(OpCodes.Ret)
 
     // Emit deserializers
     let ilDeser = (!~> typeMap.Deserialization.Root).GetILGenerator()

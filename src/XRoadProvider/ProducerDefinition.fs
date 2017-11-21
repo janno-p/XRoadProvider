@@ -103,6 +103,7 @@ module ServiceBuilder =
                         let p =
                             Param.create (runtimeType.AsCodeTypeReference(optional=(dspec.MinOccurs = 0u))) name
                             |> Param.describe (Attributes.xrdElement(None, None, false, false))
+                            |> Param.describe Attributes.Optional
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add((!+ name))
                     | _ -> failwithf "%A" value)

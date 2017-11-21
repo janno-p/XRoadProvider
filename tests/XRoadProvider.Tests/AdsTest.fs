@@ -171,7 +171,7 @@ type AdsAadrMuudatusedService () =
                                   [<XRoadElement>] muudetudAlates: Optional.Option<LocalDate>,
                                   [<XRoadElement>] muudetudPaevad: Optional.Option<DefinedTypes.ADSaadrmuudatused_muudetudPaevadType>,
                                   [<XRoadElement>] logId: Optional.Option<bigint>,
-                                  //[<XRoadElement>] maxarv: Optional.Option<DefinedTypes.ADSaadrmuudatused_maxarvType>,
+                                  [<XRoadElement>] maxarv: Optional.Option<DefinedTypes.ADSaadrmuudatused_maxarvType>,
                                   [<XRoadElement>] pSyndmused: Optional.Option<bool>,
                                   [<XRoadElement>] sSyndmused: Optional.Option<bool>,
                                   [<XRoadElement>] objekt: Optional.Option<bool>,
@@ -184,7 +184,7 @@ type AdsAadrMuudatusedService () =
             "http://mixerlivebal.webdb.maaamet.ee/xtee-proxy",
             "ads",
             header,
-            [| |]) //muudetudAlates; muudetudPaevad; logId; maxarv; pSyndmused; sSyndmused; objekt; seosed; aadressKomp; aadressJarglased |])
+            [| muudetudAlates; muudetudPaevad; logId; maxarv; pSyndmused; sSyndmused; objekt; seosed; aadressKomp; aadressJarglased |])
         |> unbox<DefinedTypes.ADSaadrmuudatusedResponse>
 
 let getResponse<'T> = SerializationUtil.getResponse<'T> typeof<AdsAadrMuudatusedService> (SerializerContext())
@@ -196,17 +196,7 @@ let none<'T> () = Optional.Option.None<'T>()
 let [<Tests>] tests =
     testList "Ads service tests" [
         test "can serialize empty Ads service request" {
-            let xml = serialize' "ADSaadrmuudatused" [| none<LocalDate>()
-                                                        none<DefinedTypes.ADSaadrmuudatused_muudetudPaevadType>()
-                                                        none<bigint>()
-                                                        //none<DefinedTypes.ADSaadrmuudatused_maxarvType>()
-                                                        none<bool>()
-                                                        none<bool>()
-                                                        none<bool>()
-                                                        none<bool>()
-                                                        none<bool>()
-                                                        none<bool>()
-                                                        |]
-            Expect.equal xml @"" ""
+            let xml = serialize' "ADSaadrmuudatused" [| none<LocalDate>(); none<DefinedTypes.ADSaadrmuudatused_muudetudPaevadType>(); none<bigint>(); none<DefinedTypes.ADSaadrmuudatused_maxarvType>(); none<bool>(); none<bool>(); none<bool>(); none<bool>(); none<bool>(); none<bool>() |]
+            Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://www.maaamet.ee"" xmlns:test=""testns""><tns:ADSaadrmuudatused /></Body>" ""
         }
     ]
