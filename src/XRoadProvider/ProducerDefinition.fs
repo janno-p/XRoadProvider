@@ -62,7 +62,7 @@ module ServiceBuilder =
 //        | _ -> m
 
     /// Build content for each individual service call method.
-    let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): CodeMemberMethod =
+    let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): CodeTypeMember list =
         let protocol = context.MessageProtocol.EnumValue
         let m =
             Meth.create operation.Name
@@ -133,12 +133,32 @@ module ServiceBuilder =
         // buildOperationOutput context operation protocol result |> ignore
         match operation.OutputParameters with
         | DocLiteralWrapped(name, content) ->
-            let runtimeType = TypeBuilder.buildResponseElementType context name
-            m |> Meth.returnsOf (runtimeType.AsCodeTypeReference())
-              |> Meth.addStmt
-                (Stmt.ret
-                    (Expr.cast
-                        (runtimeType.AsCodeTypeReference())
+            let elementType = TypeBuilder.buildResponseElementType context name
+            let resultClass =
+                match elementType with
+                | CollectionType(_, itemName, _) ->
+                    let resultClass =
+                        Cls.create (sprintf "%sResult" operation.Name)
+                        |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
+                    let prop =
+                        resultClass
+                        |> addProperty("response", elementType, false)
+                        |> Prop.describe(Attributes.xrdContent)
+                        |> Prop.describe(Attributes.xrdCollection(Some(itemName), false))
+                    Some(resultClass)
+                | _ -> None
+            m
+            |> Meth.returnsOf (elementType.AsCodeTypeReference())
+            |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent)
+            |> ignore
+            match resultClass with
+            | Some(cls) ->
+                let ctr = CodeTypeReference(cls.Name)
+                m
+                |> Meth.addStmt
+                    (Stmt.declVarOf ctr "__result"
+                        (Expr.cast
+                            ctr
                             ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
@@ -146,7 +166,24 @@ module ServiceBuilder =
                                     Expr.this @=> "ProducerName"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
-              |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent)
+                |> Meth.addStmt (Stmt.ret ((!+ "__result") @=> "response"))
+                |> ignore
+                [m; cls]
+            | None ->
+                m
+                |> Meth.addStmt
+                    (Stmt.ret
+                        (Expr.cast
+                            (elementType.AsCodeTypeReference())
+                            ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
+                                @% [(Expr.this @-> "GetType") @% []
+                                    !^ operation.Name
+                                    Expr.this @=> "ProducerUri"
+                                    Expr.this @=> "ProducerName"
+                                    !+ "header"
+                                    Arr.create (argumentExpressions |> Seq.toList)])))
+                |> ignore
+                [m]
 //        | DocEncoded(encodingNamespace, wrapper) ->
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
 //            m
@@ -170,7 +207,7 @@ module ServiceBuilder =
 //            m |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
 //            m
-        | _ -> m
+        | _ -> [m]
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
@@ -255,7 +292,7 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
             serviceTy |> Cls.addMember portTy |> ignore
 
             port.Methods
-            |> List.iter (fun op -> portTy |> Cls.addMember (ServiceBuilder.build context service.Namespace op) |> ignore))
+            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore))
         targetClass |> Cls.addMember serviceTy |> ignore
         )
 

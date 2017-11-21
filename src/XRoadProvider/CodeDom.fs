@@ -160,6 +160,7 @@ module Stmt =
         CodeConditionStatement(cond, argsIf |> Array.ofList, argsElse |> Array.ofList) :> CodeStatement
 
     let declVarWith<'T> name e = CodeVariableDeclarationStatement(typeof<'T>, name, e) :> CodeStatement
+    let declVarOf (t: CodeTypeReference) name e = CodeVariableDeclarationStatement(t, name, e) :> CodeStatement
 
 module Param =
     let create (typ: CodeTypeReference) name = CodeParameterDeclarationExpression(typ, name)
