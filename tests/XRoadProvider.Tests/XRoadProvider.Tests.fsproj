@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Util.fs" />
+    <Compile Include="AdsTest.fs" />
     <Compile Include="CodeEmitterTests.fs" />
     <Compile Include="SerializationTest.fs" />
     <Compile Include="XRoadRpcEncodedV4Test.fs" />
@@ -36,8 +37,3 @@
     <Content Include="App.config" />
   </ItemGroup>
 </Project>
-
-
-
-
-

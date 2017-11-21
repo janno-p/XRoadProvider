@@ -414,47 +414,17 @@ type Services =
     [<XRoadResponse("ArrayChoiceServiceResponse", producerNamespace)>]
     abstract ArrayChoiceService: [<XRoadElement("request")>] request: Types.ArrayChoice -> ResultTypes.ArrayChoiceServiceResult
 
-let deserialize (nm: string) (xml: string) context =
-    let map = typeof<Services>.GetMethod(nm) |> getMethodMap
-    use textReader = new StringReader(xml)
-    use reader = XmlReader.Create(textReader)
-    while reader.Read() && reader.NodeType <> XmlNodeType.Element do ()
-    map.Deserializer.Invoke(reader, context)
-
-let serialize nm value context =
-    let map = typeof<Services>.GetMethod(nm) |> getMethodMap
-    use stream = new MemoryStream()
-    use sw = new StreamWriter(stream, Encoding.UTF8)
-    use writer = XmlWriter.Create(sw)
-    writer.WriteStartDocument()
-    writer.WriteStartElement("Body")
-    writer.WriteAttributeString("xmlns", "xsi", XmlNamespace.Xmlns, XmlNamespace.Xsi)
-    writer.WriteAttributeString("xmlns", "tns", XmlNamespace.Xmlns, producerNamespace)
-    writer.WriteAttributeString("xmlns", "test", XmlNamespace.Xmlns, "testns")
-    map.Serializer.Invoke(writer, value, context)
-    writer.WriteEndElement()
-    writer.WriteEndDocument()
-    writer.Flush()
-    stream.Position <- 0L
-    use reader = new StreamReader(stream, Encoding.UTF8)
-    reader.ReadToEnd()
-
-let deserialize' nm value =
-    deserialize nm value (SerializerContext())
-
-let serialize' nm value =
-    serialize nm value (SerializerContext())
+let serialize = SerializationUtil.serialize typeof<Services> producerNamespace
+let deserialize = SerializationUtil.deserialize typeof<Services>
+let deserialize' = deserialize (SerializerContext())
+let serialize' = serialize (SerializerContext())
+let getResponse<'T> = SerializationUtil.getResponse<'T> typeof<Services> (SerializerContext())
 
 let simpleTypeEntity =
     let entity = Types.SimpleType(Value = 13)
     entity.ComplexValue <- Types.ComplexType(String = "test", BigInteger = 100I)
     entity.SubContent <- Types.WithContent(ContentValue = true)
     entity
-    
-let getResponse<'T> name xml =
-    let response = xml |> deserialize' name
-    Expect.isTrue (response :? 'T) "wrong result type"
-    response |> unbox<'T>
 
 let [<Tests>] tests =
     testList "serialization tests" [
@@ -778,7 +748,7 @@ let [<Tests>] tests =
         test "serialize inline file" {
             let context = SerializerContext()
             let entity = Types.WithBinaryContent(BinaryContent=BinaryContent.Create([| 1uy; 2uy; 3uy; 4uy |]))
-            let xml = serialize "WithBinaryContentService" [| entity |] context
+            let xml = serialize context "WithBinaryContentService" [| entity |]
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithBinaryContentService><request><BinaryContent>AQIDBA==</BinaryContent></request></tns:WithBinaryContentService></Body>" "invalid serialization result"
             Expect.isEmpty context.Attachments "no serialized attachments was expected"
         }
@@ -793,7 +763,7 @@ let [<Tests>] tests =
         test "serialize multipart file" {
             let context = SerializerContext(IsMultipart=true)
             let entity = Types.WithBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
-            let xml = serialize "WithBinaryContentService" [| entity |] context
+            let xml = serialize context "WithBinaryContentService" [| entity |]
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithBinaryContentService><request><BinaryContent href=""cid:Content-ID"" /></request></tns:WithBinaryContentService></Body>" "invalid serialization result"
             Expect.equal 1 context.Attachments.Count "result should have exactly 1 attachment"
             Expect.isTrue (context.Attachments.ContainsKey("Content-ID")) "attachment has wrong key"
@@ -803,7 +773,7 @@ let [<Tests>] tests =
             let context = SerializerContext()
             context.Attachments.Add("Content-ID", BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
             let xml = @"<tns:WithBinaryContentServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><BinaryContent href=""cid:Content-ID"" /></response></tns:WithBinaryContentServiceResponse>"
-            let response = deserialize "WithBinaryContentService" xml context
+            let response = deserialize context "WithBinaryContentService" xml
             Expect.isTrue (response :? ResultTypes.WithBinaryContentServiceResult) "wrong result type"
             let result = response |> unbox<ResultTypes.WithBinaryContentServiceResult>
             Expect.isNotNull result.response.BinaryContent "binary content was not deserialized"
@@ -815,7 +785,7 @@ let [<Tests>] tests =
         test "serialize xop file" {
             let context = SerializerContext()
             let entity = Types.WithXopBinaryContent(BinaryContent=BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
-            let xml = serialize "WithXopBinaryContentService" [| entity |] context
+            let xml = serialize context "WithXopBinaryContentService" [| entity |]
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><tns:WithXopBinaryContentService><request><BinaryContent><xop:Include href=""cid:Content-ID"" xmlns:xop=""http://www.w3.org/2004/08/xop/include"" /></BinaryContent></request></tns:WithXopBinaryContentService></Body>" "invalid serialization result"
             Expect.equal 1 context.Attachments.Count "result should have exactly 1 attachment"
             Expect.isTrue (context.Attachments.ContainsKey("Content-ID")) "attachment has wrong key"
@@ -825,7 +795,7 @@ let [<Tests>] tests =
             let context = SerializerContext()
             context.Attachments.Add("Content-ID", BinaryContent.Create("Content-ID", [| 1uy; 2uy; 3uy; 4uy |]))
             let xml = @"<tns:WithXopBinaryContentServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><BinaryContent><xop:Include href=""cid:Content-ID"" xmlns:xop=""http://www.w3.org/2004/08/xop/include"" /></BinaryContent></response></tns:WithXopBinaryContentServiceResponse>"
-            let response = deserialize "WithXopBinaryContentService" xml context
+            let response = deserialize context "WithXopBinaryContentService" xml
             Expect.isTrue (response :? ResultTypes.WithXopBinaryContentServiceResult) "wrong result type"
             let result = response |> unbox<ResultTypes.WithXopBinaryContentServiceResult>
             Expect.isNotNull result.response.BinaryContent "binary content was not deserialized"
