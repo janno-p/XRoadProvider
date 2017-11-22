@@ -54,6 +54,7 @@ type XRoadProducerProvider() as this =
             let parameters = parameters |> List.ofArray
             match syntheticMethodBase with
             | :? ConstructorInfo as ctor -> Expr.NewObject(ctor, parameters)
+            | :? MethodInfo as mi when mi.IsStatic -> Expr.Call(mi, parameters)
             | :? MethodInfo as mi -> Expr.Call(parameters.Head, mi, parameters.Tail)
             | _ -> failwith "not implemented"
 

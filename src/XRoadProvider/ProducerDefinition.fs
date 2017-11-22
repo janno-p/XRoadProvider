@@ -111,7 +111,7 @@ module ServiceBuilder =
                             |> Param.describe (Attributes.xrdElement(None, None, false, false))
                             |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
-                        argumentExpressions.Add((!+ name))
+                        argumentExpressions.Add(!+ name)
                     | Choice(particleSpec) ->
                         let def = TypeBuilder.collectChoiceProperties choiceNameGen context particleSpec |> List.head
                         let p =
@@ -120,6 +120,7 @@ module ServiceBuilder =
                             //|> Code.comment (def.Documentation)
                             |> Param.describe (Attributes.xrdElement(None, None, def.IsNillable, false))
                         m |> Meth.addParamExpr p |> ignore
+                        argumentExpressions.Add(!+ p.Name)
                         additionalMembers.AddRange(def.AddedTypes |> Seq.cast<_>)
                     | _ -> failwithf "%A" value)
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> MyOption.defaultValue "<unknown>")
