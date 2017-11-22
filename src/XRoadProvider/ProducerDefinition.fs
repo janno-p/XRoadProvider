@@ -63,6 +63,8 @@ module ServiceBuilder =
 
     /// Build content for each individual service call method.
     let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): CodeTypeMember list =
+        let additionalMembers = ResizeArray<CodeTypeMember>()
+
         let protocol = context.MessageProtocol.EnumValue
         let m =
             Meth.create operation.Name
@@ -70,6 +72,7 @@ module ServiceBuilder =
             |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Code.comment operation.Documentation
             |> Meth.describe (Attributes.xrdRequiredHeaders context.MessageProtocol.HeaderNamespace operation.InputParameters.RequiredHeaders)
+        additionalMembers.Add(m)
 
         m |>
             match context.MessageProtocol with
@@ -81,6 +84,8 @@ module ServiceBuilder =
         let argumentExpressions = ResizeArray<_>()
 
         let addDocLiteralWrappedParameters (spec: ElementSpec) =
+            let choiceNameGen = TypeBuilder.nameGenerator (sprintf "%sChoiceArg" operation.Name)
+            let argNameGen = TypeBuilder.nameGenerator "choiceArg"
             match context.DereferenceElementSpec(spec) |> snd |> context.GetSchemaTypeDefinition with
             | EmptyDefinition -> ()
             | ComplexDefinition({ IsAbstract = false; Content = Particle({ Content = Some(ComplexTypeParticle.Sequence({ Content = content; MinOccurs = 1u; MaxOccurs = 1u })) }) }) ->
@@ -107,6 +112,15 @@ module ServiceBuilder =
                             |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add((!+ name))
+                    | Choice(particleSpec) ->
+                        let def = TypeBuilder.collectChoiceProperties choiceNameGen context particleSpec |> List.head
+                        let p =
+                            let argName = argNameGen()
+                            Param.create (def.Type.AsCodeTypeReference(optional=def.IsOptional)) argName
+                            //|> Code.comment (def.Documentation)
+                            |> Param.describe (Attributes.xrdElement(None, None, def.IsNillable, false))
+                        m |> Meth.addParamExpr p |> ignore
+                        additionalMembers.AddRange(def.AddedTypes |> Seq.cast<_>)
                     | _ -> failwithf "%A" value)
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> MyOption.defaultValue "<unknown>")
 
@@ -169,7 +183,7 @@ module ServiceBuilder =
                                     Arr.create (argumentExpressions |> Seq.toList)])))
                 |> Meth.addStmt (Stmt.ret ((!+ "__result") @=> "response"))
                 |> ignore
-                [m; cls]
+                additionalMembers.Add(cls)
             | None ->
                 m
                 |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent None)
@@ -185,7 +199,6 @@ module ServiceBuilder =
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
                 |> ignore
-                [m]
 //        | DocEncoded(encodingNamespace, wrapper) ->
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
 //            m
@@ -209,7 +222,8 @@ module ServiceBuilder =
 //            m |> Meth.addStmt (Stmt.assign (!+ "@__respOpt" @=> "Accessor") (instQN accessor.LocalName accessor.NamespaceName)) |> ignore
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
 //            m
-        | _ -> [m]
+        | _ -> ()
+        additionalMembers |> Seq.toList
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.

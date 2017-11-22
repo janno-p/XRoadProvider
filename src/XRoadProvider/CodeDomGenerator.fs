@@ -13,7 +13,7 @@ open XRoad.Wsdl
 /// Functions and types to handle type building process.
 module TypeBuilder =
     /// Describes single property for type declaration.
-    type private PropertyDefinition =
+    type PropertyDefinition =
         { /// Name of the property.
           Name: string
           /// Runtime type to use on property.
@@ -90,7 +90,7 @@ module TypeBuilder =
             |> List.tryFind (fst >> ((=) context.LanguageCode))
             |> Option.map snd)
 
-    let private nameGenerator name =
+    let nameGenerator name =
         let num = ref 0
         (fun () ->
             num := !num + 1
@@ -217,7 +217,7 @@ module TypeBuilder =
         []
 
     /// Create property definitions for choice element specification.
-    and private collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition list =
+    and collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition list =
         let idField = Fld.create<int> "__id"
         let valueField = Fld.create<obj> "__value"
 
