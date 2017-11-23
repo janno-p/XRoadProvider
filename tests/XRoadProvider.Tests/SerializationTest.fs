@@ -571,25 +571,19 @@ let [<Tests>] tests =
                 (fun _ -> getResponse<ResultTypes.AbstractBaseServiceResult> "AbstractBaseService" @"<AbstractBaseServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></response></AbstractBaseServiceResponse>" |> ignore)
                 (fun e -> Expect.equal e.Message "Cannot deserialize abstract type `AbstractBase`." "")
         }
-        
+
         test "deserialize abstract base type with tailing elements in base" {
-            let result: ResultTypes.AbstractBaseWithOptionalServiceResult = getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><Tail></Tail><SubValue>test2</SubValue></response></AbstractBaseWithOptionalServiceResponse>"
-            Expect.isTrue (result.response :? Types.Betoon) ""
-            let betoon = result.response |> unbox<Types.Betoon>
-            Expect.equal betoon.BaseValue "test" ""
-            Expect.isFalse betoon.OptionalValue.HasValue ""
-            Expect.equal betoon.SubValue "test2" ""
+            Expect.throwsC
+                (fun _ -> getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><Tail></Tail><SubValue>test2</SubValue></response></AbstractBaseWithOptionalServiceResponse>" |> ignore)
+                (fun e -> Expect.equal e.Message "Element `SubValue` was expected in subsequence of type `Betoon`, but element `Tail` was found instead." "")
         }
-        
+
         test "deserialize abstract base type with tailing self closing elements in base" {
-            let result: ResultTypes.AbstractBaseWithOptionalServiceResult = getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><Tail /><SubValue>test2</SubValue></response></AbstractBaseWithOptionalServiceResponse>"
-            Expect.isTrue (result.response :? Types.Betoon) ""
-            let betoon = result.response |> unbox<Types.Betoon>
-            Expect.equal betoon.BaseValue "test" ""
-            Expect.isFalse betoon.OptionalValue.HasValue ""
-            Expect.equal betoon.SubValue "test2" ""
+            Expect.throwsC
+                (fun _ -> getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><Tail /><SubValue>test2</SubValue></response></AbstractBaseWithOptionalServiceResponse>" |> ignore)
+                (fun e -> Expect.equal e.Message "Element `SubValue` was expected in subsequence of type `Betoon`, but element `Tail` was found instead." "")
         }
-        
+
         test "deserialize abstract base type with tailing elements in derived" {
             Expect.throwsC
                 (fun _ -> getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><SubValue>test2</SubValue><Tail></Tail></response></AbstractBaseWithOptionalServiceResponse>" |> ignore)

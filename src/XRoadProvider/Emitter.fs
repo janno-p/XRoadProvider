@@ -903,6 +903,19 @@ module EmitDeserialization =
                 il |> emitArrayPropertyDeserialization true arrayMap
                 arrayMap.SetMethod
         il.Emit(OpCodes.Callvirt, setMethod.Value)
+        
+    let emitWrongElementException expectedValue wrapper (il: ILGenerator) =
+        let wrapperName =
+            match wrapper with
+            | Choice _ -> sprintf "choice `%s`" wrapper.Name
+            | Method _ -> sprintf "operation `%s` wrapper element" wrapper.Name
+            | Type _ -> sprintf "type `%s`" wrapper.Name 
+        il.Emit(OpCodes.Ldstr, sprintf "Element `%s` was expected in subsequence of %s, but element `{0}` was found instead." expectedValue wrapperName)
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+        il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
+        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+        il.Emit(OpCodes.Throw)
 
     let emitSequenceDeserialization (startLabel: Label, returnLabel: Label) (skipRead: LocalBuilder, depthVar: LocalBuilder) (properties: Property list) (il: ILGenerator) =
         let rec emitPropertyDeser startLabel (propList: Property list) =
@@ -934,17 +947,11 @@ module EmitDeserialization =
 
                 match propList |> firstRequired with
                 | Some(p) ->
-                    match p with
-                    | Individual { Element = Some(name,_,_) }
-                    | Array { Element = Some(name,_,_) }
-                    | Array { ItemElement = Some(name,_,_) } ->
-                        il.Emit(OpCodes.Ldstr, sprintf "Invalid message: expected `%s`, but was `</{0}>`." (name.ToString()))
-                    | _ -> il.Emit(OpCodes.Ldstr, "Invalid message: unexpected element `</{0}>`.")
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
-                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                    il.Emit(OpCodes.Throw)
+                    let expectedName =
+                        match p with
+                        | Individual { Element = Some(name,_,_) } | Array { Element = Some(name,_,_) } | Array { ItemElement = Some(name,_,_) } -> name.ToString()
+                        | _ -> "<end of sequence>"
+                    il |> emitWrongElementException expectedName prop.Wrapper
                 | None -> il.Emit(OpCodes.Br, returnLabel)
 
                 il.MarkLabel(markSuccess2)
@@ -987,14 +994,7 @@ module EmitDeserialization =
                         il.Emit(OpCodes.Ldc_I4_1)
                         il.Emit(OpCodes.Stloc, skipRead)
                         il.Emit(OpCodes.Br, nextLabel)
-                    else
-                        il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
-                        il.Emit(OpCodes.Ldarg_0)
-                        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                        il.Emit(OpCodes.Ldstr, name.ToString())
-                        il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                        il.Emit(OpCodes.Throw)
+                    else il |> emitWrongElementException (name.ToString()) prop.Wrapper
                     il.MarkLabel(markDeserialize)
                 | _ -> ()
 
@@ -1008,6 +1008,9 @@ module EmitDeserialization =
             il.Emit(OpCodes.Nop)
         | _ ->
             properties |> emitPropertyDeser startLabel
+
+let emitMoveToNextElement (il: ILGenerator) =
+    ()
 
 let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMap: TypeMap) (properties: Property list) =
     let (|Content|_|) (properties: Property list) =
@@ -1067,13 +1070,7 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMap: T
             | Some(p) ->
                 let (name,_,_) = p.Element |> Option.get
                 il.Emit(OpCodes.Brfalse, label)
-                il.Emit(OpCodes.Ldstr, "Element `{0}` requires child element `{1}` to be present.")
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                il.Emit(OpCodes.Ldstr, name.ToString())
-                il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                il.Emit(OpCodes.Throw)
+                il |> EmitDeserialization.emitWrongElementException (name.ToString()) (Type typeMap)
             | None ->
                 il.Emit(OpCodes.Brtrue, returnLabel)
             il.MarkLabel(label)
