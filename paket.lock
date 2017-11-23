@@ -14,6 +14,5 @@ GITHUB
   remote: fsharp/FAKE
     modules/Octokit/Octokit.fsx (0341a2e614eb2a7f34607cec914eb0ed83ce9add)
       Octokit (>= 0.20)
-  remote: fsprojects/FSharp.TypeProviders.StarterPack
+  remote: fsprojects/FSharp.TypeProviders.SDK
     src/ProvidedTypes.fs (b03aeb9b87c24559b99da3b3afdfcfdae0cc3ce0)
-    src/ProvidedTypes.fsi (b03aeb9b87c24559b99da3b3afdfcfdae0cc3ce0)
