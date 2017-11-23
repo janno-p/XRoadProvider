@@ -69,17 +69,16 @@ module Attributes =
     let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
     let Optional = Attr.create<Runtime.InteropServices.OptionalAttribute>
 
-    let xrdDefType (layout: LayoutKind) =
-        Attr.create<XRoadTypeAttribute>
-        |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
-
     let xrdType (typeName: XName) (layout: LayoutKind) =
         Attr.create<XRoadTypeAttribute>
         |> Attr.addArg (!^ typeName.LocalName)
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "Namespace" (!^ typeName.NamespaceName)
 
-    let xrdRoot = Attr.create<XRoadTypeAttribute> |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (LayoutKind.Sequence.ToString()))
+    let xrdAnonymousType (layout: LayoutKind) =
+        Attr.create<XRoadTypeAttribute>
+        |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
+        |> Attr.addNamedArg "IsAnonymous" (!^ true)
 
     let xrdElement(elementName, elementNamespace, isNullable, mergeContent) =
         let attr = Attr.create<XRoadElementAttribute>

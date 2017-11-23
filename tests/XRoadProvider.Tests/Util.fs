@@ -24,7 +24,7 @@ module SerializationUtil =
         let map = serviceType.GetMethod(nm) |> getMethodMap
         use textReader = new StringReader(xml)
         use reader = XmlReader.Create(textReader)
-        while reader.Read() && reader.NodeType <> XmlNodeType.Element do ()
+        while reader.Read() && not (reader.NodeType = XmlNodeType.Element && reader.Depth = 1) do ()
         map.Deserializer.Invoke(reader, context)
 
     let serialize (serviceType: Type) producerNamespace context nm value =

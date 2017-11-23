@@ -98,7 +98,7 @@ module ServiceBuilder =
                         let runtimeType =
                             match schemaType with
                             | Definition(definition) ->
-                                let subTy = Cls.create (sprintf "%s_%sType" operation.Name name) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+                                let subTy = Cls.create (sprintf "%s_%sType" operation.Name name) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                                 let ns = context.GetOrCreateNamespace(tns)
                                 ns.Members.Add(subTy) |> ignore
                                 let runtimeType = ProvidedType(subTy, providedTypeFullName ns.Name subTy.Name)
@@ -155,7 +155,7 @@ module ServiceBuilder =
                     let resultClass =
                         Cls.create (sprintf "%sResult" operation.Name)
                         |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
-                        |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+                        |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                     let prop =
                         resultClass
                         |> addProperty("response", elementType, false)

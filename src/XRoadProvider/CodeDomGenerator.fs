@@ -172,7 +172,7 @@ module TypeBuilder =
             | dspec, Definition(def) ->
                 let itemName = dspec.Name |> Option.get
                 let suffix = itemName.ToClassName()
-                let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+                let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
                 { propertyDef with
@@ -182,7 +182,7 @@ module TypeBuilder =
                     AddedTypes = [typ]
                     IsWrappedArray = Some(true) }
         | Definition(def) ->
-            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then
@@ -233,7 +233,7 @@ module TypeBuilder =
         let choiceType =
             Cls.create (choiceName + "Type")
             |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Sealed)
-            |> Cls.describe (Attributes.xrdDefType LayoutKind.Choice)
+            |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Choice)
             |> Cls.addMembers [idField; valueField; ctor]
 
         let choiceRuntimeType = ProvidedType(choiceType, choiceType.Name)
@@ -241,7 +241,7 @@ module TypeBuilder =
         let createOptionType name (propList: PropertyDefinition list) =
             let optionType =
                 Cls.create (name + "Type")
-                |> Cls.describe (Attributes.xrdDefType LayoutKind.Sequence)
+                |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
             optionType |> addTypeProperties propList
             optionType
 

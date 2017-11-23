@@ -47,6 +47,8 @@ type XRoadTypeAttribute(name: string, layout: LayoutKind) =
     /// Namespace of the type in serialization context. Empty (unqualified) by default.
     member val Namespace = "" with get, set
 
+    member val IsAnonymous = false with get, set
+
 
 /// Attribute which identifies serializable property.
 /// Provides overrides for property serialization.
