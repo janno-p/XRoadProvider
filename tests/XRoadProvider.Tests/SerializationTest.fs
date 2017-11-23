@@ -66,6 +66,13 @@ module Types =
         member val BaseValue = Unchecked.defaultof<string> with get, set
         
     [<AbstractClass; AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
+    type AbstractBaseWithOptional() =
+        [<XRoadElement>]
+        member val BaseValue = Unchecked.defaultof<string> with get, set
+        [<XRoadElement>]
+        member val OptionalValue = Optional.Option.None<string>() with get, set
+        
+    [<AbstractClass; AllowNullLiteral; XRoadType(LayoutKind.Sequence)>]
     type AbstractBaseWithNoSubTypes() =
         [<XRoadElement>]
         member val BaseValue = Unchecked.defaultof<string> with get, set
@@ -92,6 +99,12 @@ module Types =
         inherit AbstractBase()
         [<XRoadElement>]
         member val SubValue3 = Unchecked.defaultof<string> with get, set
+        
+    [<XRoadType(LayoutKind.Sequence)>]
+    type Betoon() =
+        inherit AbstractBaseWithOptional()
+        [<XRoadElement>]
+        member val SubValue = Unchecked.defaultof<string> with get, set
         
     [<XRoadType(LayoutKind.Choice)>]
     [<XRoadElement(1, "value1", MergeContent=false)>]
@@ -277,6 +290,9 @@ module ResultTypes =
     type [<XRoadType>] AbstractBaseServiceResult () =
         [<XRoadElement>] member val response = Unchecked.defaultof<Types.AbstractBase> with get, set
         
+    type [<XRoadType>] AbstractBaseWithOptionalServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.AbstractBaseWithOptional> with get, set
+        
     type [<XRoadType>] AbstractBaseWithNoSubTypesServiceResult () =
         [<XRoadElement>] member val response = Unchecked.defaultof<Types.AbstractBaseWithNoSubTypes> with get, set
         
@@ -403,6 +419,11 @@ type Services =
     [<XRoadRequest("AbstractBaseService", producerNamespace)>]
     [<XRoadResponse("AbstractBaseServiceResponse", producerNamespace)>]
     abstract AbstractBaseService: [<XRoadElement("request")>] request: Types.AbstractBase -> ResultTypes.AbstractBaseServiceResult
+    
+    [<XRoadOperation("AbstractBaseWithOptionalService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("AbstractBaseWithOptionalService", producerNamespace)>]
+    [<XRoadResponse("AbstractBaseWithOptionalServiceResponse", producerNamespace)>]
+    abstract AbstractBaseWithOptionalService: [<XRoadElement("request")>] request: Types.AbstractBaseWithOptional -> ResultTypes.AbstractBaseWithOptionalServiceResult
     
     [<XRoadOperation("AbstractBaseWithNoSubTypesService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("AbstractBaseWithNoSubTypesService", producerNamespace)>]
@@ -549,6 +570,45 @@ let [<Tests>] tests =
             Expect.throwsC
                 (fun _ -> getResponse<ResultTypes.AbstractBaseServiceResult> "AbstractBaseService" @"<AbstractBaseServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response><BaseValue>test</BaseValue><SubValue1>test2</SubValue1></response></AbstractBaseServiceResponse>" |> ignore)
                 (fun e -> Expect.equal e.Message "Cannot deserialize abstract type `AbstractBase`." "")
+        }
+        
+        test "deserialize abstract base type with tailing elements in base" {
+            let result: ResultTypes.AbstractBaseWithOptionalServiceResult = getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><Tail></Tail><SubValue>test2</SubValue></response></AbstractBaseWithOptionalServiceResponse>"
+            Expect.isTrue (result.response :? Types.Betoon) ""
+            let betoon = result.response |> unbox<Types.Betoon>
+            Expect.equal betoon.BaseValue "test" ""
+            Expect.isFalse betoon.OptionalValue.HasValue ""
+            Expect.equal betoon.SubValue "test2" ""
+        }
+        
+        test "deserialize abstract base type with tailing self closing elements in base" {
+            let result: ResultTypes.AbstractBaseWithOptionalServiceResult = getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><Tail /><SubValue>test2</SubValue></response></AbstractBaseWithOptionalServiceResponse>"
+            Expect.isTrue (result.response :? Types.Betoon) ""
+            let betoon = result.response |> unbox<Types.Betoon>
+            Expect.equal betoon.BaseValue "test" ""
+            Expect.isFalse betoon.OptionalValue.HasValue ""
+            Expect.equal betoon.SubValue "test2" ""
+        }
+        
+        test "deserialize abstract base type with tailing elements in derived" {
+            Expect.throwsC
+                (fun _ -> getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><SubValue>test2</SubValue><Tail></Tail></response></AbstractBaseWithOptionalServiceResponse>" |> ignore)
+                (fun e -> Expect.equal e.Message "" "")
+        }
+        
+        test "deserialize abstract base type with tailing self closing elements in derived" {
+            Expect.throwsC
+                (fun _ -> getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><SubValue>test2</SubValue><Tail /></response></AbstractBaseWithOptionalServiceResponse>" |> ignore)
+                (fun e -> Expect.equal e.Message "" "")
+        }
+        
+        test "deserialize abstract base type with optionals" {
+            let result: ResultTypes.AbstractBaseWithOptionalServiceResult = getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><SubValue>test2</SubValue></response></AbstractBaseWithOptionalServiceResponse>"
+            Expect.isTrue (result.response :? Types.Betoon) ""
+            let betoon = result.response |> unbox<Types.Betoon>
+            Expect.equal betoon.BaseValue "test" ""
+            Expect.isFalse betoon.OptionalValue.HasValue ""
+            Expect.equal betoon.SubValue "test2" ""
         }
         
         test "deserialize abstract type with no sub types" {

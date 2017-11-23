@@ -26,7 +26,7 @@ type Deserialization =
     with
         static member Create (typ: Type): Deserialization =
             { Root = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
-              Content = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, null, [| typeof<XmlReader>; typeof<obj>; typeof<bool>; typeof<SerializerContext> |], true)
+              Content = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, typeof<bool>, [| typeof<XmlReader>; typeof<obj>; typeof<bool>; typeof<SerializerContext> |], true)
               MatchType = DynamicMethod(sprintf "%s_MatchType" typ.FullName, typeof<bool>, [| typeof<XmlReader> |], true) }
 
 type TypeMap =
@@ -514,7 +514,7 @@ module EmitDeserialization =
         il.Emit(OpCodes.Ldc_I4_0)
         il.Emit(OpCodes.Ldarg_1)
         il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
-        il.Emit(OpCodes.Nop)
+        il.Emit(OpCodes.Pop)
 
     /// Emit abstract type test and exception.
     let private emitAbstractTypeException (typeMap: TypeMap) (il: ILGenerator) =
@@ -652,6 +652,23 @@ module EmitDeserialization =
 
         (typeName,typeNamespace)
 
+    let emitCheckTailingElements (il: ILGenerator) =
+        (*
+        il.Emit(OpCodes.Br, returnLabel)
+        il.MarkLabel(nextLabel)
+        match prop.Wrapper with
+        | Choice _ -> il.Emit(OpCodes.Ldstr, "Unexpected element `{0}` found in choice `{1}`.")
+        | Method _ -> il.Emit(OpCodes.Ldstr, "Unexpected parameter `{0}` found in method `{1}`.")
+        | Type _ -> il.Emit(OpCodes.Ldstr, "Unexpected element `{0}` found in type `{1}`.")
+        il.Emit(OpCodes.Ldarg_0)
+        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+        il.Emit(OpCodes.Ldstr, prop.Wrapper.Name)
+        il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
+        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+        il.Emit(OpCodes.Throw)
+        *)
+        ()
+
     let emitRootDeserializerMethod (subTypes: TypeMap list) (typeMap: TypeMap) (il: ILGenerator) =
         let markReturn = il.DefineLabel()
 
@@ -663,6 +680,8 @@ module EmitDeserialization =
 
         // Serialize value according to its type.
         il |> emitTypeHierarchyDeserialization markReturn subTypes typeName typeMap
+
+        il |> emitCheckTailingElements
 
         il.MarkLabel(markReturn)
         il.Emit(OpCodes.Ret)
@@ -888,7 +907,7 @@ module EmitDeserialization =
     let emitSequenceDeserialization (startLabel: Label, returnLabel: Label) (skipRead: LocalBuilder, depthVar: LocalBuilder) (properties: Property list) (il: ILGenerator) =
         let rec emitPropertyDeser startLabel (propList: Property list) =
             match propList with
-            | [] -> failwithf "never"
+            | [] -> ()
             | prop::xs ->
                 let skipReadLabel = il.DefineLabel()
 
@@ -945,7 +964,7 @@ module EmitDeserialization =
                 il.Emit(OpCodes.Ceq)
                 il.Emit(OpCodes.Brfalse, startLabel)
 
-                let nextLabel = il.DefineLabel()
+                let nextLabel = match xs with [] -> returnLabel | _ -> il.DefineLabel()
 
                 match prop with
                 | Individual { Element = Some(name,_,isOptional) }
@@ -982,21 +1001,7 @@ module EmitDeserialization =
                 // Deserialize property
                 il |> emitPropertyDeserialization prop
 
-                match xs with
-                | [] ->
-                    il.Emit(OpCodes.Br, returnLabel)
-                    il.MarkLabel(nextLabel)
-                    match prop.Wrapper with
-                    | Choice _ -> il.Emit(OpCodes.Ldstr, "Unexpected element `{0}` found in choice `{1}`.")
-                    | Method _ -> il.Emit(OpCodes.Ldstr, "Unexpected parameter `{0}` found in method `{1}`.")
-                    | Type _ -> il.Emit(OpCodes.Ldstr, "Unexpected element `{0}` found in type `{1}`.")
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, prop.Wrapper.Name)
-                    il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                    il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                    il.Emit(OpCodes.Throw)
-                | _ -> emitPropertyDeser nextLabel xs
+                emitPropertyDeser nextLabel xs
         match properties with
         | [] ->
             il.MarkLabel(startLabel)
@@ -1016,27 +1021,25 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMap: T
 
     let returnLabel = il.DefineLabel()
 
+    let skipRead = il.DeclareLocal(typeof<bool>)
+    il.Emit(OpCodes.Ldarg_2)
+    il.Emit(OpCodes.Stloc, skipRead)
+
     match properties with
-    | Content(prop) -> il |> EmitDeserialization.emitPropertyDeserialization prop
+    | Content(prop) ->
+        il.Emit(OpCodes.Ldc_I4_0)
+        il.Emit(OpCodes.Stloc, skipRead)
+        il |> EmitDeserialization.emitPropertyDeserialization prop
     | _ ->
         let varDepth = il.DeclareLocal(typeof<int>)
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
         il.Emit(OpCodes.Stloc, varDepth)
 
-        let skipRead = il.DeclareLocal(typeof<bool>)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.Emit(OpCodes.Stloc, skipRead)
-
-        let label = il.DefineLabel()
         let startLabel = il.DefineLabel()
 
-        il.Emit(OpCodes.Ldarg_2)
-        il.Emit(OpCodes.Brfalse, label)
-        il.Emit(OpCodes.Ldc_I4_1)
-        il.Emit(OpCodes.Stloc, skipRead)
-        il.Emit(OpCodes.Br, startLabel)
-        il.MarkLabel(label)
+        il.Emit(OpCodes.Ldloc, skipRead)
+        il.Emit(OpCodes.Brtrue, startLabel)
         il.Emit(OpCodes.Ldloc, varDepth)
         il.Emit(OpCodes.Ldc_I4_1)
         il.Emit(OpCodes.Add)
@@ -1047,10 +1050,10 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMap: T
             (fun typeMap ->
                 il.Emit(OpCodes.Ldarg_0)
                 il.Emit(OpCodes.Ldarg_1)
-                il.Emit(OpCodes.Ldarg_2)
+                il.Emit(OpCodes.Ldloc, skipRead)
                 il.Emit(OpCodes.Ldarg_3)
                 il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
-                il.Emit(OpCodes.Nop))
+                il.Emit(OpCodes.Stloc, skipRead))
 
         match typeMap.Layout.Value with
         | LayoutKind.Choice ->
@@ -1079,6 +1082,7 @@ let rec private createDeserializeContentMethodBody (il: ILGenerator) (typeMap: T
         | _ -> failwith "Not implemented"
 
     il.MarkLabel(returnLabel)
+    il.Emit(OpCodes.Ldloc, skipRead)
     il.Emit(OpCodes.Ret)
 
 and createTypeSerializers isEncoded (typeMap: TypeMap) =
@@ -1151,12 +1155,17 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
 
     let genContentDeserialization () =
         let il = (!~> choiceMap.Deserialization.Content).GetILGenerator()
+        il.Emit(OpCodes.Ldarg_2)
         il.Emit(OpCodes.Ret)
 
     let genDeserialization () =
         let il = (!~> choiceMap.Deserialization.Root).GetILGenerator()
 
         let markReturn = il.DefineLabel()
+        
+        let skipRead = il.DeclareLocal(typeof<bool>)
+        il.Emit(OpCodes.Ldc_I4_1)
+        il.Emit(OpCodes.Stloc, skipRead)
 
         let rec generate (properties: Property list) =
             match properties with
@@ -1179,9 +1188,10 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                     il.Emit(OpCodes.Stloc, instance)
                     il.Emit(OpCodes.Ldarg_0)
                     il.Emit(OpCodes.Ldloc, instance)
-                    il.Emit(OpCodes.Ldc_I4_1)
+                    il.Emit(OpCodes.Ldloc, skipRead)
                     il.Emit(OpCodes.Ldarg_1)
                     il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
+                    il.Emit(OpCodes.Stloc, skipRead)
                     il.Emit(OpCodes.Ldloc, instance)
                 | Individual { Element = Some(name,_,_) }
                 | Array { Element = Some(name,_,_) }
@@ -1198,6 +1208,8 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                     il.Emit(OpCodes.Ldc_I4_2)
                     il.Emit(OpCodes.Div)
                     il.Emit(OpCodes.Brfalse, label)
+                    il.Emit(OpCodes.Ldc_I4_0)
+                    il.Emit(OpCodes.Stloc, skipRead)
                     match property with
                     | Individual propertyMap -> il |> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
                     | Array arrayMap -> il |> EmitDeserialization.emitArrayPropertyDeserialization false arrayMap
