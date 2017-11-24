@@ -5,6 +5,13 @@ open System
 open System.Reflection
 open System.Reflection.Emit
 
+#if PRINT_IL
+let nextLabelId =
+    let mutable id = 0
+    (fun () -> id <- id + 1; id)
+let labels = System.Collections.Concurrent.ConcurrentDictionary<Label,int>()
+#endif
+
 let (!@) expr =
     match expr with
     | Call(_, mi, _) -> mi
@@ -43,7 +50,8 @@ let inline declareLocal typ (il: ILGenerator) =
 
 let inline setLabel label (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : %A" "@label" label
+    let id = labels.GetOrAdd(label, (fun _ -> nextLabelId()))
+    printfn "%-10s : %A" "@label" id
     #endif
     il.MarkLabel(label)
     il
@@ -71,7 +79,7 @@ let inline private emitint opCode i (il: ILGenerator) =
 
 let inline private emitmi opCode (mi: MethodInfo) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : %s" opCode (methodName mi)
+    printfn "%-10s : %s" (opCode.ToString()) (methodName mi)
     #endif
     il.Emit(opCode, mi)
     il
@@ -85,7 +93,8 @@ let inline private emitfld opCode (fi: FieldInfo) (il: ILGenerator) =
 
 let inline private emitlbl opCode (label: Label) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : %A" opCode label
+    let id = labels.GetOrAdd(label, (fun _ -> nextLabelId()))
+    printfn "%-10A : %A" opCode id
     #endif
     il.Emit(opCode, label)
     il
@@ -163,7 +172,7 @@ let inline lessThan il = il |> emit OpCodes.Clt
 
 let inline iif cond f (il: ILGenerator) = if cond then f il else il
 let inline ifElse cond ftrue ffalse (il: ILGenerator) = if cond then ftrue il else ffalse il
-let inline ifSome opt f (il: ILGenerator) = match opt with o -> f o il | _ -> il
+let inline ifSome opt f (il: ILGenerator) = match opt with Some(o) -> f o il | None -> il
 let inline ifSomeNone opt fsome fnone (il: ILGenerator) = match opt with Some(o) -> fsome o il | None -> fnone il
 
 let beforeLabel f il =
@@ -171,3 +180,8 @@ let beforeLabel f il =
     il |> f label |> setLabel label
     
 let useVar v f il = il |> f (il |> v)
+
+let defineMethod (mi: MethodInfo) f =
+    match mi with
+    | :? DynamicMethod as dyn -> dyn.GetILGenerator() |> f |> ignore
+    | _ -> failwith "Cannot cast to dynamic method."

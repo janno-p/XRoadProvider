@@ -9,6 +9,7 @@ open System.Reflection.Emit
 open System.Xml
 open System.Xml.Linq
 open XRoad
+open XRoad.EmitterDsl
 open XRoad.Serialization.Attributes
 
 type Serialization =
@@ -82,6 +83,7 @@ type PropertyMap =
       GetMethod: MethodInfo option
       SetMethod: MethodInfo option
       HasValueMethod: MethodInfo option }
+    member this.HasOptionalElement with get() = match this.Element with Some(_, _, true) -> true | _ -> false
 
 type ArrayMap =
     { Type: Type
@@ -101,6 +103,7 @@ type ArrayMap =
           GetMethod = None
           SetMethod = None
           HasValueMethod = None }
+    member this.HasOptionalElement with get() = match this.Element with Some(_, _, true) -> true | _ -> false
 
 type Property =
     | Individual of PropertyMap
@@ -122,12 +125,11 @@ type Property =
             | Individual(x) -> x.SimpleTypeName
             | Array(_) -> Some(XmlQualifiedName("Array", XmlNamespace.SoapEnc))
     member this.HasValueMethod with get() = match this with | Individual(x) -> x.HasValueMethod | Array(x) -> x.HasValueMethod
+    member this.HasOptionalElement with get() = match this with Individual(x) -> x.HasOptionalElement | Array(x) -> x.HasOptionalElement
 
 let firstRequired (properties: Property list) =
     properties
     |> List.tryPick (fun p -> match p.Element with Some(_,_,false) -> Some(p) | _ -> None)
-
-let (!~>) (mi: MethodInfo) = match mi with :? DynamicMethod as dyn -> dyn | _ -> failwith "Cannot cast to dynamic method."
 
 type private XopBinaryContent() =
     inherit BinaryContent("", Data [| |])
@@ -136,17 +138,6 @@ let (|Serializable|NotSerializable|) (typ: Type) =
     match typ.GetCustomAttribute<XRoadTypeAttribute>() with
     | null -> NotSerializable
     | attr -> Serializable(attr)
-
-let (!@) expr =
-    match expr with
-    | Call(_, mi, _) -> mi
-    | PropertyGet(_, pi, _) -> pi.GetGetMethod()
-    | _ -> failwithf "Must be method call expression, but was `%A`." expr
-
-let (!!@) expr =
-    match expr with
-    | NewObject(ci, _) -> ci
-    | _ -> failwith "Must be constructor expression"
 
 let safe (name: XName) = if name.NamespaceName = "" then name.LocalName else sprintf "%s:%s" name.NamespaceName name.LocalName
 
@@ -206,133 +197,120 @@ let getContentOfChoice (choiceMap: TypeMap) : PropertyInput list =
 
 module EmitSerialization =
     /// Check if values type matches expected type.
-    let private emitValueTypeTest (il: ILGenerator) (expectedType: Type) =
-        il.Emit(OpCodes.Ldarg_1)
-        il.Emit(OpCodes.Call, !@ <@ (null: obj).GetType() @>)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: Type).FullName @>)
-        il.Emit(OpCodes.Ldstr, expectedType.FullName)
-        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+    let private emitValueTypeTest (expectedType: Type) =
+        loadArg1
+        >> callX <@ (null: obj).GetType() @>
+        >> callVirtX <@ (null: Type).FullName @>
+        >> loadString expectedType.FullName
+        >> stringEquals
 
     /// Write type attribute according to TypeMap.
-    let emitTypeAttribute (il: ILGenerator) (typeName: string) (typeNamespace: string option) =
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, "type")
-        il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartAttribute("", "") @>)
-        il.Emit(OpCodes.Nop)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, typeName)
-        match typeNamespace with
-        | Some(ns) -> il.Emit(OpCodes.Ldstr, ns)
-                      il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteQualifiedName("", "") @>)
-        | None ->     il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteString("") @>)
-        il.Emit(OpCodes.Nop)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndAttribute() @>)
-        il.Emit(OpCodes.Nop)
+    let emitTypeAttribute (typeName: string) (typeNamespace: string option) =
+        loadArg0
+        >> loadString "type"
+        >> loadString XmlNamespace.Xsi
+        >> callVirtX <@ (null: XmlWriter).WriteStartAttribute("", "") @>
+        >> noop
+        >> loadArg0
+        >> loadString typeName
+        >> ifSomeNone
+                typeNamespace
+                (fun ns ->
+                    loadString ns
+                    >> callVirtX <@ (null: XmlWriter).WriteQualifiedName("", "") @>)
+                (callVirtX <@ (null: XmlWriter).WriteString("") @>)
+        >> noop
+        >> loadArg0
+        >> callVirtX <@ (null: XmlWriter).WriteEndAttribute() @>
+        >> noop
 
     /// Emit type (and its base types) content serialization.
-    let rec private emitContentSerialization (il: ILGenerator) (typeMap: TypeMap) =
-        typeMap.BaseType |> Option.iter (emitContentSerialization il)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldarg_1)
-        il.Emit(OpCodes.Ldarg_2)
-        il.Emit(OpCodes.Call, typeMap.Serialization.Content)
-        il.Emit(OpCodes.Nop)
+    let rec private emitContentSerialization (typeMap: TypeMap) =
+        ifSome typeMap.BaseType emitContentSerialization
+        >> loadArg0
+        >> loadArg1
+        >> loadArg2
+        >> call typeMap.Serialization.Content
+        >> noop
 
     /// Emit abstract type test and exception.
-    let private emitAbstractTypeException (il: ILGenerator) (typeMap: TypeMap) =
-        il.Emit(OpCodes.Ldstr, sprintf "Cannot serialize abstract type `%s`." typeMap.FullName)
-        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-        il.Emit(OpCodes.Throw)
+    let private emitAbstractTypeException (typeMap: TypeMap) =
+        loadString (sprintf "Cannot serialize abstract type `%s`." typeMap.FullName)
+        >> createX <@ Exception("") @>
+        >> throw
 
     /// Emit whole contents of TypeMap serialization.
-    let private emitBodySerialization (il: ILGenerator) addType (typeMap: TypeMap) =
-        if typeMap.Type.IsAbstract then
-            typeMap |> emitAbstractTypeException il
-        else
-            if addType then emitTypeAttribute il typeMap.Name typeMap.Namespace
-            // TODO : Attributes
-            typeMap |> emitContentSerialization il
+    let private emitBodySerialization addType (typeMap: TypeMap) =
+        ifElse typeMap.Type.IsAbstract
+            (emitAbstractTypeException typeMap)
+            (iif addType (emitTypeAttribute typeMap.Name typeMap.Namespace)
+             // TODO : Attributes
+             >> emitContentSerialization typeMap)
 
     /// Emit serialization taking into consideration if actual type matches subtype or not.
-    let rec private emitTypeHierarchySerialization il (markReturn: Label) isEncoded (subTypes: TypeMap list) typeMap =
+    let rec private emitTypeHierarchySerialization (markReturn: Label) isEncoded (subTypes: TypeMap list) typeMap =
         match subTypes with
         | [] ->
-            typeMap |> emitBodySerialization il isEncoded
+            emitBodySerialization isEncoded typeMap
         | subType::other ->
-            let markNext = il.DefineLabel()
+            beforeLabel (fun markNext ->
+                // Check if type matches current TypeMap.
+                emitValueTypeTest subType.Type
+                >> gotoF markNext
+                >> emitBodySerialization true subType
+                >> goto markReturn)
+            >> noop
+            >> emitTypeHierarchySerialization markReturn isEncoded other typeMap
 
-            // Check if type matches current TypeMap.
-            subType.Type |> emitValueTypeTest il
-            il.Emit(OpCodes.Brfalse, markNext)
-
-            subType |> emitBodySerialization il true
-
-            il.Emit(OpCodes.Br, markReturn)
-            il.MarkLabel(markNext)
-            il.Emit(OpCodes.Nop)
-            typeMap |> emitTypeHierarchySerialization il markReturn isEncoded other
-
-    let emitNilAttribute (markReturn: Label) (il: ILGenerator) =
-        let markNotNull = il.DefineLabel()
-        il.Emit(OpCodes.Ldnull)
-        il.Emit(OpCodes.Ceq)
-        il.Emit(OpCodes.Brfalse, markNotNull)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, "nil")
-        il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-        il.Emit(OpCodes.Ldstr, "true")
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteAttributeString("", "", "") @>)
-        il.Emit(OpCodes.Nop)
-        il.Emit(OpCodes.Br, markReturn)
-        il.MarkLabel(markNotNull)
-        il.Emit(OpCodes.Nop)
+    let emitNilAttribute (markReturn: Label) =
+        beforeLabel (fun markNotNull ->
+            loadNull
+            >> equals
+            >> gotoF markNotNull
+            >> loadArg0
+            >> loadString "nil"
+            >> loadString XmlNamespace.Xsi
+            >> loadString "true"
+            >> callVirtX <@ (null: XmlWriter).WriteAttributeString("", "", "") @>
+            >> noop
+            >> goto markReturn)
+        >> noop
 
     /// Emit root type serialization logic for given TypeMap.
-    let emitRootSerializerMethod (il: ILGenerator) isEncoded (subTypes: TypeMap list) (typeMap: TypeMap) =
-        let markReturn = il.DefineLabel()
-
-        // When value is `null`, write `xsi:nil` attribute and return.
-        il.Emit(OpCodes.Ldarg_1)
-        il |> emitNilAttribute markReturn
-
-        // Serialize value according to its type.
-        typeMap |> emitTypeHierarchySerialization il markReturn isEncoded subTypes
-
+    let emitRootSerializerMethod isEncoded (subTypes: TypeMap list) (typeMap: TypeMap) =
+        beforeLabel (fun markReturn ->
+            // When value is `null`, write `xsi:nil` attribute and return.
+            loadArg1
+            >> emitNilAttribute markReturn
+            // Serialize value according to its type.
+            >> emitTypeHierarchySerialization markReturn isEncoded subTypes typeMap)
         // Return
-        il.MarkLabel(markReturn)
-        il.Emit(OpCodes.Ret)
+        >> ret
 
     /// Provides value for array item at current index.
-    let private emitArrayItemValue (il: ILGenerator) (array: LocalBuilder) (index: LocalBuilder) (typ: Type) =
-        il.Emit(OpCodes.Ldloc, array)
-        il.Emit(OpCodes.Ldloc, index)
-        il.Emit(OpCodes.Ldelem, typ)
-        if (typ.IsValueType) then
-            il.Emit(OpCodes.Box, typ)
+    let private emitArrayItemValue (array: LocalBuilder) (index: LocalBuilder) (typ: Type) =
+        getVar array
+        >> getVar index
+        >> getElem typ
+        >> iif typ.IsValueType (toBox typ)
 
     /// Emit validation for not nullable types to have value specified.
-    let private emitNotNullableCheck (il: ILGenerator) (name: string) emitValue property =
+    let private emitNotNullableCheck (name: string) emitValue property =
         match property with
         | Array _
         | Individual { TypeMap = { CanHaveNullAsValue = true } } ->
-            let markSuccess = il.DefineLabel()
-
-            // Check if value is null.
-            emitValue property.Type
-            il.Emit(OpCodes.Ldnull)
-            il.Emit(OpCodes.Ceq)
-            il.Emit(OpCodes.Brfalse, markSuccess)
-
-            // Not nullable shouldn't have null as value, so throw exception.
-            il.Emit(OpCodes.Ldstr, sprintf "Not nullable property `%s` of type `%s` has null value." name property.Wrapper.Name)
-            il.Emit(OpCodes.Newobj, !!@ <@ Exception("") @>)
-            il.Emit(OpCodes.Throw)
-
-            il.MarkLabel(markSuccess)
-            il.Emit(OpCodes.Nop)
-        | _ -> ()
+            beforeLabel (fun markSuccess ->
+                // Check if value is null.
+                emitValue property.Type
+                >> loadNull
+                >> equals
+                >> gotoF markSuccess
+                // Not nullable shouldn't have null as value, so throw exception.
+                >> loadString (sprintf "Not nullable property `%s` of type `%s` has null value." name property.Wrapper.Name)
+                >> createX <@ Exception("") @>
+                >> throw)
+            >> noop
+        | _ -> id
 
     let emitPropertyWrapperSerialization (property: Property) (il: ILGenerator) =
         match property.Wrapper with
@@ -378,7 +356,7 @@ module EmitSerialization =
             emitContent()
 
     /// Emit single property content serialization.
-    let rec emitPropertyContentSerialization (il: ILGenerator) (emitValue: Type -> unit) isEncoded (property: Property) =
+    let rec emitPropertyContentSerialization (il: ILGenerator) emitValue isEncoded (property: Property) =
         let markReturn = il.DefineLabel()
 
         // Write start element of the propery if its not merged with content.
@@ -389,25 +367,25 @@ module EmitSerialization =
             il.Emit(OpCodes.Ldstr, name.NamespaceName)
             il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
             il.Emit(OpCodes.Nop)
-            if not isNullable then property |> emitNotNullableCheck il name.LocalName emitValue
+            if not isNullable then il |> emitNotNullableCheck name.LocalName emitValue property |> ignore
             if isEncoded then
                 property.SimpleTypeName
-                |> Option.iter (fun typeName -> emitTypeAttribute il typeName.Name (Some(typeName.Namespace)))
+                |> Option.iter (fun typeName -> il |> emitTypeAttribute typeName.Name (Some(typeName.Namespace)) |> ignore)
         | None -> ()
 
         // Serialize property content value according to its TypeMap.
         match property with
         | Individual propertyMap ->
             il.Emit(OpCodes.Ldarg_0)
-            emitValue propertyMap.TypeMap.Type
+            il |> emitValue propertyMap.TypeMap.Type |> ignore
             il.Emit(OpCodes.Ldarg_2)
             il.Emit(OpCodes.Call, propertyMap.TypeMap.Serialization.Root)
             il.Emit(OpCodes.Nop)
         | Array arrayMap ->
-            emitValue arrayMap.Type
-            il |> emitNilAttribute markReturn
+            il |> emitValue arrayMap.Type |> ignore
+            il |> emitNilAttribute markReturn |> ignore
             let arr = il.DeclareLocal(arrayMap.Type)
-            emitValue arrayMap.Type
+            il |> emitValue arrayMap.Type |> ignore
             il.Emit(OpCodes.Stloc, arr)
             let i = il.DeclareLocal(typeof<int>)
             il.Emit(OpCodes.Ldc_I4_0)
@@ -418,8 +396,8 @@ module EmitSerialization =
             il.MarkLabel(markLoopStart)
             il.Emit(OpCodes.Nop)
             let itemPropertyMap = Individual (arrayMap.GetItemPropertyMap())
-            let itemEmitValue = emitArrayItemValue il arr i
-            emitPropertyContentSerialization il itemEmitValue isEncoded itemPropertyMap
+            let itemEmitValue = emitArrayItemValue arr i
+            emitPropertyContentSerialization il (fun t -> itemEmitValue t) isEncoded itemPropertyMap
             il.Emit(OpCodes.Ldloc, i)
             il.Emit(OpCodes.Ldc_I4_1)
             il.Emit(OpCodes.Add)
@@ -444,7 +422,7 @@ module EmitSerialization =
         | None -> ()
 
     /// Unbox property value into correct type.
-    let emitPropertyValue (il: ILGenerator) (property: Property) (typ: Type) =
+    let emitPropertyValue (property: Property) (typ: Type) (il: ILGenerator) =
         il |> emitPropertyWrapperSerialization property
         match property.Element with
         | Some(_,_,true) ->
@@ -461,12 +439,14 @@ module EmitSerialization =
         | _ -> ()
         if typ.IsValueType then
             il.Emit(OpCodes.Box, typ)
+        il
 
     /// Emit IL which serializes each property value into corresponding xml fragment.
-    let emitContentSerializerMethod (il: ILGenerator) isEncoded (properties: Property list) =
+    let emitContentSerializerMethod isEncoded (properties: Property list) (il: ILGenerator) =
         properties
         |> List.iter (fun property -> 
-            il |> emitOptionalFieldSerialization property (fun () -> property |> emitPropertyContentSerialization il (emitPropertyValue il property) isEncoded))
+            il |> emitOptionalFieldSerialization property (fun () -> property |> emitPropertyContentSerialization il (emitPropertyValue property) isEncoded))
+        il
 
 module EmitDeserialization =
     /// Check if current element has `xsi:nil` attribute present.
@@ -961,6 +941,7 @@ module EmitDeserialization =
             il.Emit(OpCodes.Add)
             il.Emit(OpCodes.Ldc_I4_2)
             il.Emit(OpCodes.Div)
+        il
 
     let emitPropertyDeserialization skipVar (prop: Property) (il: ILGenerator) =
         let setMethod =
@@ -1121,173 +1102,171 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
     let directSubTypes = typeMap.Type |> findDirectSubTypes isEncoded
 
     // Emit serializers
-    let ilSer = (!~> typeMap.Serialization.Root).GetILGenerator()
-    EmitSerialization.emitRootSerializerMethod ilSer isEncoded directSubTypes typeMap
+    defineMethod typeMap.Serialization.Root
+        (EmitSerialization.emitRootSerializerMethod isEncoded directSubTypes typeMap)
 
-    let ilSerContent = (!~> typeMap.Serialization.Content).GetILGenerator()
-    EmitSerialization.emitContentSerializerMethod ilSerContent isEncoded properties
-    ilSerContent.Emit(OpCodes.Ret)
+    defineMethod typeMap.Serialization.Content
+        (EmitSerialization.emitContentSerializerMethod isEncoded properties >> ret)
 
     let hasInlineContent = match properties with InlineContent _ -> true | _ -> false
 
     // Emit deserializers
-    let ilDeser = (!~> typeMap.Deserialization.Root).GetILGenerator()
-    ilDeser |> EmitDeserialization.emitRootDeserializerMethod hasInlineContent directSubTypes typeMap
+    defineMethod typeMap.Deserialization.Root
+        (EmitDeserialization.emitRootDeserializerMethod hasInlineContent directSubTypes typeMap)
 
-    let ilDeserContent = (!~> typeMap.Deserialization.Content).GetILGenerator()
-    createDeserializeContentMethodBody ilDeserContent typeMap properties
+    defineMethod typeMap.Deserialization.Content
+        (fun il -> createDeserializeContentMethodBody il typeMap properties)
 
     match properties with
     | [Individual { Element = None }] | [Array { Element = None; ItemElement = None }] ->
         ()
     | _ ->
-        let ilMatch = (!~> typeMap.Deserialization.MatchType).GetILGenerator()
-        ilMatch |> EmitDeserialization.emitMatchType (properties |> List.tryHead)
-        ilMatch.Emit(OpCodes.Ret)
+        defineMethod typeMap.Deserialization.MatchType
+            (EmitDeserialization.emitMatchType (properties |> List.tryHead) >> ret)
 
 and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap: TypeMap) =
     let genSerialization () =
-        let il = (!~> choiceMap.Serialization.Root).GetILGenerator()
-        let conditionEnd = il.DefineLabel()
-        let rec generate (label: Label option) (properties: Property list) =
-            match properties with
-            | [] -> ()
-            | property::other ->
-                let idField, id = match property.Wrapper with Choice(_, idField, _, id, _) -> idField, id | _ -> failwith "never"
-
-                label |> Option.iter (fun label -> il.MarkLabel(label); il.Emit(OpCodes.Nop))
-                let label = match other with [] -> conditionEnd | _ -> il.DefineLabel()
-
-                il.Emit(OpCodes.Ldarg_1)
-                il.Emit(OpCodes.Castclass, choiceMap.Type)
-                il.Emit(OpCodes.Ldfld, idField)
-                il.Emit(OpCodes.Ldc_I4_S, id)
-                il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse, label)
-                il.Emit(OpCodes.Nop)
-
-                EmitSerialization.emitOptionalFieldSerialization
-                    property
-                    (fun () ->
-                        EmitSerialization.emitPropertyContentSerialization
+        defineMethod choiceMap.Serialization.Root
+            (fun il ->
+                let conditionEnd = il.DefineLabel()
+                let rec generate (label: Label option) (properties: Property list) =
+                    match properties with
+                    | [] -> ()
+                    | property::other ->
+                        let idField, id = match property.Wrapper with Choice(_, idField, _, id, _) -> idField, id | _ -> failwith "never"
+        
+                        label |> Option.iter (fun label -> il.MarkLabel(label); il.Emit(OpCodes.Nop))
+                        let label = match other with [] -> conditionEnd | _ -> il.DefineLabel()
+        
+                        il.Emit(OpCodes.Ldarg_1)
+                        il.Emit(OpCodes.Castclass, choiceMap.Type)
+                        il.Emit(OpCodes.Ldfld, idField)
+                        il.Emit(OpCodes.Ldc_I4_S, id)
+                        il.Emit(OpCodes.Ceq)
+                        il.Emit(OpCodes.Brfalse, label)
+                        il.Emit(OpCodes.Nop)
+        
+                        EmitSerialization.emitOptionalFieldSerialization
+                            property
+                            (fun () ->
+                                EmitSerialization.emitPropertyContentSerialization
+                                    il
+                                    (EmitSerialization.emitPropertyValue property)
+                                    isEncoded
+                                    property)
                             il
-                            (EmitSerialization.emitPropertyValue il property)
-                            isEncoded
-                            property)
-                    il
+        
+                        il.Emit(OpCodes.Nop)
+                        il.Emit(OpCodes.Br, conditionEnd)
+        
+                        generate (Some label) other
+        
+                generate None properties
 
-                il.Emit(OpCodes.Nop)
-                il.Emit(OpCodes.Br, conditionEnd)
-
-                generate (Some label) other
-
-        generate None properties
-
-        il.MarkLabel(conditionEnd)
-        il.Emit(OpCodes.Ret)
+                il.MarkLabel(conditionEnd)
+                il.Emit(OpCodes.Ret))
 
     let genContentDeserialization () =
-        let il = (!~> choiceMap.Deserialization.Content).GetILGenerator()
-        il.Emit(OpCodes.Ldarg_2)
-        il.Emit(OpCodes.Ret)
+        defineMethod choiceMap.Deserialization.Content (loadArg2 >> ret)
 
     let genDeserialization () =
-        let il = (!~> choiceMap.Deserialization.Root).GetILGenerator()
-
-        let markReturn = il.DefineLabel()
+        defineMethod choiceMap.Deserialization.Root
+            (fun il ->
+                let markReturn = il.DefineLabel()
+                
+                let skipRead = il.DeclareLocal(typeof<bool>)
+                il.Emit(OpCodes.Ldc_I4_1)
+                il.Emit(OpCodes.Stloc, skipRead)
         
-        let skipRead = il.DeclareLocal(typeof<bool>)
-        il.Emit(OpCodes.Ldc_I4_1)
-        il.Emit(OpCodes.Stloc, skipRead)
-
-        let rec generate (properties: Property list) =
-            match properties with
-            | [] -> ()
-            | property::other ->
-                let mi = match property.Wrapper with Choice(_, _, _, _, mi) -> mi | _ -> failwith "never"
-
-                let label = il.DefineLabel()
-
-                match property with
-                | Individual { TypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
-                | Individual { Element = None; TypeMap = typeMap }
-                | Array { Element = None; ItemTypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
-                | Array { Element = None; ItemElement = None; ItemTypeMap = typeMap } ->
-                    let instance = il.DeclareLocal(property.Type)
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
-                    il.Emit(OpCodes.Brfalse, label)
-                    il.Emit(OpCodes.Newobj, typeMap.Type.GetConstructor([| |]))
-                    il.Emit(OpCodes.Stloc, instance)
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Ldloc, instance)
-                    il.Emit(OpCodes.Ldloc, skipRead)
-                    il.Emit(OpCodes.Ldarg_1)
-                    il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
-                    il.Emit(OpCodes.Stloc, skipRead)
-                    il.Emit(OpCodes.Ldloc, instance)
-                | Individual { Element = Some(name,_,_) }
-                | Array { Element = Some(name,_,_) }
-                | Array { Element = None; ItemElement = Some(name,_,_) } ->
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, name.LocalName)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
-                    il.Emit(OpCodes.Ldstr, name.NamespaceName)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Add)
-                    il.Emit(OpCodes.Ldc_I4_2)
-                    il.Emit(OpCodes.Div)
-                    il.Emit(OpCodes.Brfalse, label)
-                    il.Emit(OpCodes.Ldc_I4_0)
-                    il.Emit(OpCodes.Stloc, skipRead)
-                    match property with
-                    | Individual propertyMap -> il |> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
-                    | Array arrayMap -> il |> EmitDeserialization.emitArrayPropertyDeserialization false skipRead arrayMap
-
-                il.Emit(OpCodes.Call, mi)
-                il.Emit(OpCodes.Br, markReturn)
-                il.MarkLabel(label)
-                il.Emit(OpCodes.Nop)
-                generate other
-        generate properties
-
-        let names = properties |> List.map (fun p -> p.PropertyName)
-        let errorMessage = sprintf "Invalid message: expected one of %A, but `{0}` was found instead." names
-        il.Emit(OpCodes.Ldstr, errorMessage)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-        il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
-        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-        il.Emit(OpCodes.Throw)
-
-        il.MarkLabel(markReturn)
-        il.Emit(OpCodes.Ret)
+                let rec generate (properties: Property list) =
+                    match properties with
+                    | [] -> ()
+                    | property::other ->
+                        let mi = match property.Wrapper with Choice(_, _, _, _, mi) -> mi | _ -> failwith "never"
+        
+                        let label = il.DefineLabel()
+        
+                        match property with
+                        | Individual { TypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
+                        | Individual { Element = None; TypeMap = typeMap }
+                        | Array { Element = None; ItemTypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
+                        | Array { Element = None; ItemElement = None; ItemTypeMap = typeMap } ->
+                            let instance = il.DeclareLocal(property.Type)
+                            il.Emit(OpCodes.Ldarg_0)
+                            il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
+                            il.Emit(OpCodes.Brfalse, label)
+                            il.Emit(OpCodes.Newobj, typeMap.Type.GetConstructor([| |]))
+                            il.Emit(OpCodes.Stloc, instance)
+                            il.Emit(OpCodes.Ldarg_0)
+                            il.Emit(OpCodes.Ldloc, instance)
+                            il.Emit(OpCodes.Ldloc, skipRead)
+                            il.Emit(OpCodes.Ldarg_1)
+                            il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
+                            il.Emit(OpCodes.Stloc, skipRead)
+                            il.Emit(OpCodes.Ldloc, instance)
+                        | Individual { Element = Some(name,_,_) }
+                        | Array { Element = Some(name,_,_) }
+                        | Array { Element = None; ItemElement = Some(name,_,_) } ->
+                            il.Emit(OpCodes.Ldarg_0)
+                            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                            il.Emit(OpCodes.Ldstr, name.LocalName)
+                            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                            il.Emit(OpCodes.Ldarg_0)
+                            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
+                            il.Emit(OpCodes.Ldstr, name.NamespaceName)
+                            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
+                            il.Emit(OpCodes.Add)
+                            il.Emit(OpCodes.Ldc_I4_2)
+                            il.Emit(OpCodes.Div)
+                            il.Emit(OpCodes.Brfalse, label)
+                            il.Emit(OpCodes.Ldc_I4_0)
+                            il.Emit(OpCodes.Stloc, skipRead)
+                            match property with
+                            | Individual propertyMap -> il |> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
+                            | Array arrayMap -> il |> EmitDeserialization.emitArrayPropertyDeserialization false skipRead arrayMap
+        
+                        il.Emit(OpCodes.Call, mi)
+                        il.Emit(OpCodes.Br, markReturn)
+                        il.MarkLabel(label)
+                        il.Emit(OpCodes.Nop)
+                        generate other
+                generate properties
+        
+                let names = properties |> List.map (fun p -> p.PropertyName)
+                let errorMessage = sprintf "Invalid message: expected one of %A, but `{0}` was found instead." names
+                il.Emit(OpCodes.Ldstr, errorMessage)
+                il.Emit(OpCodes.Ldarg_0)
+                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
+                il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
+                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
+                il.Emit(OpCodes.Throw)
+        
+                il.MarkLabel(markReturn)
+                il.Emit(OpCodes.Ret))
 
     let genMatch () =
-        let il = (!~> choiceMap.Deserialization.MatchType).GetILGenerator()
-        let markReturn = il.DefineLabel()
-
-        let rec generate (properties: Property list) =
-            match properties with
-            | [] ->
-                il.Emit(OpCodes.Ldc_I4_0)
-                il.Emit(OpCodes.Br, markReturn)
-            | property::other ->
-                il |> EmitDeserialization.emitMatchType (Some property)
-                let label = il.DefineLabel()
-                il.Emit(OpCodes.Brfalse, label)
-                il.Emit(OpCodes.Ldc_I4_1)
-                il.Emit(OpCodes.Br, markReturn)
-                il.MarkLabel(label)
-                il.Emit(OpCodes.Nop)
-                generate other
-        generate properties
-
-        il.MarkLabel(markReturn)
-        il.Emit(OpCodes.Ret)
+        defineMethod choiceMap.Deserialization.MatchType
+            (fun il ->
+                let markReturn = il.DefineLabel()
+        
+                let rec generate (properties: Property list) =
+                    match properties with
+                    | [] ->
+                        il.Emit(OpCodes.Ldc_I4_0)
+                        il.Emit(OpCodes.Br, markReturn)
+                    | property::other ->
+                        il |> EmitDeserialization.emitMatchType (Some property) |> ignore
+                        let label = il.DefineLabel()
+                        il.Emit(OpCodes.Brfalse, label)
+                        il.Emit(OpCodes.Ldc_I4_1)
+                        il.Emit(OpCodes.Br, markReturn)
+                        il.MarkLabel(label)
+                        il.Emit(OpCodes.Nop)
+                        generate other
+                generate properties
+        
+                il.MarkLabel(markReturn)
+                il.Emit(OpCodes.Ret))
 
     genSerialization ()
     genContentDeserialization ()
@@ -1578,7 +1557,7 @@ module internal DynamicMethods =
         il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
     
         let parameters = getContentOfMethod mi |> getProperties (getCompleteTypeMap requestAttr.Encoded)
-        EmitSerialization.emitContentSerializerMethod il requestAttr.Encoded parameters
+        il |> EmitSerialization.emitContentSerializerMethod requestAttr.Encoded parameters |> ignore
     
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
