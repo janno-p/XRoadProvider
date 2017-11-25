@@ -429,96 +429,85 @@ module EmitSerialization =
 
 module EmitDeserialization =
     /// Check if current element has `xsi:nil` attribute present.
-    let emitNullCheck (markReturn: Label) (il: ILGenerator) =
-        let nilValue = il.DeclareLocal(typeof<string>)
-
-        // Get attribute value into local variable, in case of null empty string is used.
-        let markSkipNull = il.DefineLabel()
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, "nil")
-        il.Emit(OpCodes.Ldstr, XmlNamespace.Xsi)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).GetAttribute("", "") @>)
-        il.Emit(OpCodes.Dup)
-        il.Emit(OpCodes.Brtrue, markSkipNull)
-        il.Emit(OpCodes.Pop)
-        il.Emit(OpCodes.Ldstr, "")
-        il.MarkLabel(markSkipNull)
-        il.Emit(OpCodes.Callvirt, !@ <@ "".ToLower() @>)
-        il.Emit(OpCodes.Stloc, nilValue)
-
-        // When attribute value is "true" or "1" return null.
-        let markNull = il.DefineLabel()
-        let markNotNull = il.DefineLabel()
-        il.Emit(OpCodes.Ldloc, nilValue)
-        il.Emit(OpCodes.Ldstr, "1")
-        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-        il.Emit(OpCodes.Brtrue, markNull)
-        il.Emit(OpCodes.Ldloc, nilValue)
-        il.Emit(OpCodes.Ldstr, "true")
-        il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-        il.Emit(OpCodes.Brtrue, markNull)
-        il.Emit(OpCodes.Br, markNotNull)
-
-        // return null;
-        il.MarkLabel(markNull)
-        il.Emit(OpCodes.Ldnull)
-        il.Emit(OpCodes.Br, markReturn)
-        il.MarkLabel(markNotNull)
-        il.Emit(OpCodes.Nop)
+    let emitNullCheck (markReturn: Label) =
+        useVar (lazy declareLocalOf<string>) (fun nilValue ->
+            // Get attribute value into local variable, in case of null empty string is used.
+            loadArg0
+            >> loadString "nil"
+            >> loadString XmlNamespace.Xsi
+            >> callVirtX <@ (null: XmlReader).GetAttribute("", "") @>
+            >> dup
+            >> beforeLabel (fun markSkipNull ->
+                gotoT markSkipNull
+                >> pop
+                >> loadString "")
+            >> callVirtX <@ "".ToLower() @>
+            >> setVar nilValue
+            // When attribute value is "true" or "1" return null.
+            >> getVar nilValue
+            >> loadString "1"
+            >> stringEquals
+            >> withLabel (fun markNull ->
+                gotoT markNull
+                >> getVar nilValue
+                >> loadString "true"
+                >> stringEquals
+                >> gotoT markNull
+                >> beforeLabel (fun markNotNull ->
+                    goto markNotNull
+                    // return null;
+                    >> setLabel markNull
+                    >> loadNull
+                    >> goto markReturn))
+            >> noop)
 
     /// Emit type (and its base types) content deserialization.
-    let rec private emitContentDeserialization (instance: LocalBuilder) (typeMap: TypeMap) (il: ILGenerator) =
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldloc, instance)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.Emit(OpCodes.Ldarg_1)
-        il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
+    let rec private emitContentDeserialization (instance: LocalBuilder) (typeMap: TypeMap) =
+        loadArg0
+        >> getVar instance
+        >> loadInt0
+        >> loadArg1
+        >> call typeMap.Deserialization.Content
 
     /// Emit abstract type test and exception.
-    let private emitAbstractTypeException (typeMap: TypeMap) (il: ILGenerator) =
-        il.Emit(OpCodes.Ldstr, sprintf "Cannot deserialize abstract type `%s`." typeMap.FullName)
-        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-        il.Emit(OpCodes.Throw)
+    let private emitAbstractTypeException (typeMap: TypeMap) =
+        loadString (sprintf "Cannot deserialize abstract type `%s`." typeMap.FullName)
+        >> createX <@ Exception("") @>
+        >> throw
 
-    let private emitXmlReaderRead (il: ILGenerator) =
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Read() @>)
-        il.Emit(OpCodes.Nop)
+    let private emitXmlReaderRead =
+        loadArg0
+        >> callVirtX <@ (null: XmlReader).Read() @>
+        >> noop
 
-    let private emitXmlReaderReadOrExcept (propertyName: XName option) (il: ILGenerator) =
-        let markSuccess = il.DefineLabel()
-        il |> emitXmlReaderRead
-        il.Emit(OpCodes.Brtrue, markSuccess)
+    let private emitXmlReaderReadOrExcept (propertyName: XName option) =
         let errorMessage =
             match propertyName with
             | Some(name) -> sprintf "Invalid message: expected `%s`, but was end of file." (safe name)
             | None -> "Invalid message: unexpected end of file."
-        il.Emit(OpCodes.Ldstr, errorMessage)
-        il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-        il.Emit(OpCodes.Throw)
-        il.MarkLabel(markSuccess)
-        il.Emit(OpCodes.Nop)
+        emitXmlReaderRead
+        >> beforeLabel (fun markSuccess ->
+            gotoT markSuccess
+            >> loadString errorMessage
+            >> createX <@ Exception("") @>
+            >> throw)
+        >> noop
 
-    let private emitMoveToEndOrNextElement (skipVar: LocalBuilder, depthVar: LocalBuilder) name (il: ILGenerator) =
-        let doneLabel = il.DefineLabel()
-        let skipReadLabel = il.DefineLabel()
-        il.Emit(OpCodes.Ldloc, skipVar)
-        il.Emit(OpCodes.Brtrue, skipReadLabel)
-        il |> emitXmlReaderReadOrExcept name
-        il.MarkLabel(skipReadLabel)
-        il.Emit(OpCodes.Ldc_I4_0)
-        il.Emit(OpCodes.Stloc, skipVar)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
-        il.Emit(OpCodes.Ldc_I4, int32 XmlNodeType.EndElement)
-        il.Emit(OpCodes.Ceq)
-        il.Emit(OpCodes.Brfalse, doneLabel)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-        il.Emit(OpCodes.Ldloc, depthVar)
-        il.Emit(OpCodes.Clt)
-        il.Emit(OpCodes.Brfalse, doneLabel)
-        doneLabel
+    let private emitMoveToEndOrNextElement (doneLabel: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) name =
+        getVar skipVar
+        >> beforeLabel (fun skipReadLabel -> gotoT skipReadLabel >> emitXmlReaderReadOrExcept name)
+        >> loadInt0
+        >> setVar skipVar
+        >> loadArg0
+        >> callVirtX <@ (null: XmlReader).NodeType @>
+        >> loadInt XmlNodeType.EndElement
+        >> equals
+        >> gotoF doneLabel
+        >> loadArg0
+        >> callVirtX <@ (null: XmlReader).Depth @>
+        >> getVar depthVar
+        >> lessThan
+        >> gotoF doneLabel
 
     let emitWrongElementException expectedValue wrapper (il: ILGenerator) =
         let wrapperName =
@@ -536,7 +525,7 @@ module EmitDeserialization =
     /// Emit whole contents of TypeMap deserialization.
     let private emitBodyDeserialization (returnLabel: Label) (skipVar: LocalBuilder) (typeMap: TypeMap) (il: ILGenerator) =
         if typeMap.Type.IsAbstract then
-            il |> emitAbstractTypeException typeMap
+            il |> emitAbstractTypeException typeMap |> ignore
         else
             // Declare local variable to hold result.
             let instance = il.DeclareLocal(typeMap.Type)
@@ -544,7 +533,7 @@ module EmitDeserialization =
             il.Emit(OpCodes.Newobj, ctor)
             il.Emit(OpCodes.Stloc, instance)
             // TODO : Attributes
-            il |> emitContentDeserialization instance typeMap
+            il |> emitContentDeserialization instance typeMap |> ignore
             il.Emit(OpCodes.Stloc, skipVar)
             il.Emit(OpCodes.Ldloc, instance)
 
@@ -692,7 +681,7 @@ module EmitDeserialization =
         il.Emit(OpCodes.Stloc, depthVar)
 
         // When value nil attribute is present returns null.
-        il |> emitNullCheck markReturn
+        il |> emitNullCheck markReturn |> ignore
 
         // Read type attribute value of current element.
         let typeName = il |> emitTypeAttributeRead typeMap
@@ -706,7 +695,8 @@ module EmitDeserialization =
             let startLabel = il.DefineLabel()
     
             il.MarkLabel(startLabel)
-            let doneLabel = il |> emitMoveToEndOrNextElement (skipVar, depthVar) None
+            let doneLabel = il.DefineLabel()
+            il |> emitMoveToEndOrNextElement doneLabel (skipVar, depthVar) None |> ignore
     
             let successLabel = il.DefineLabel()
             il.Emit(OpCodes.Br, successLabel)
@@ -836,7 +826,7 @@ module EmitDeserialization =
         let markArrayNull = il.DefineLabel()
 
         if arrayMap.Element.IsSome then
-            il |> emitNullCheck markArrayNull
+            il |> emitNullCheck markArrayNull |> ignore
             il.Emit(OpCodes.Ldloc, depthVar)
             il.Emit(OpCodes.Ldc_I4_1)
             il.Emit(OpCodes.Add)
@@ -860,7 +850,7 @@ module EmitDeserialization =
         let markLoopStart = il.DefineLabel()
 
         il.MarkLabel(markLoopStart)
-        il |> emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map (fun (x,_,_) -> x))
+        il |> emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map (fun (x,_,_) -> x)) |> ignore
         il.MarkLabel(markSkipRead)
 
         il |> emitArrayContentEndCheck markArrayEnd (skipVar, depthVar)
@@ -940,7 +930,8 @@ module EmitDeserialization =
             | prop::xs ->
                 il.MarkLabel(startLabel)
 
-                let markSuccess2 = il |> emitMoveToEndOrNextElement (skipRead, depthVar) prop.PropertyName
+                let markSuccess2 = il.DefineLabel()
+                il |> emitMoveToEndOrNextElement markSuccess2 (skipRead, depthVar) prop.PropertyName |> ignore
 
                 match propList |> firstRequired with
                 | Some(p) ->
