@@ -312,118 +312,102 @@ module EmitSerialization =
             >> noop
         | _ -> id
 
-    let emitPropertyWrapperSerialization (property: Property) (il: ILGenerator) =
+    let emitPropertyWrapperSerialization (property: Property) =
         match property.Wrapper with
         | Choice (_,_,fld,_,_) ->
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Castclass, fld.DeclaringType)
-            il.Emit(OpCodes.Ldfld, fld)
             let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> MyOption.defaultWith (fun _ -> property.Type)
-            match property.Type.IsValueType with
-            | true -> il.Emit(OpCodes.Unbox_Any, ty)
-            | _ -> il.Emit(OpCodes.Castclass, ty)
+            loadArg1
+            >> castClass fld.DeclaringType
+            >> getField fld
+            >> ifElse property.Type.IsValueType (fromBox ty) (castClass ty)
         | Method (mi, i) ->
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Ldc_I4, i)
-            il.Emit(OpCodes.Ldelem_Ref)
             let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> MyOption.defaultWith (fun _ -> property.Type)
-            match ty.IsValueType with
-            | true -> il.Emit(OpCodes.Unbox_Any, ty)
-            | _ -> il.Emit(OpCodes.Castclass, ty)
+            loadArg1
+            >> loadInt i
+            >> getElemRef
+            >> ifElse ty.IsValueType (fromBox ty) (castClass ty)
         | Type tm ->
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Castclass, tm.Type)
-            il.Emit(OpCodes.Callvirt, property.GetMethod.Value)
+            loadArg1
+            >> castClass tm.Type
+            >> callVirt property.GetMethod.Value
 
-    let emitOptionalFieldSerialization (property: Property) (emitContent: unit -> unit) (il: ILGenerator) =
-        match property.Element with
-        | Some(_,_,true) ->
-            let endContentLabel = il.DefineLabel()
-            let optionalType = il.DeclareLocal(property.HasValueMethod.Value.DeclaringType)
-
-            il |> emitPropertyWrapperSerialization property
-            il.Emit(OpCodes.Stloc, optionalType)
-            il.Emit(OpCodes.Ldloca, optionalType)
-            il.Emit(OpCodes.Call, property.HasValueMethod.Value)
-            il.Emit(OpCodes.Brfalse, endContentLabel)
-            il.Emit(OpCodes.Nop)
-
-            emitContent()
-
-            il.MarkLabel(endContentLabel)
-            il.Emit(OpCodes.Nop)
-        | _ ->
-            emitContent()
+    let emitOptionalFieldSerialization (property: Property) emitContent =
+        if not property.HasOptionalElement then emitContent else
+        emitPropertyWrapperSerialization property
+        >> useVar (declareLocal property.HasValueMethod.Value.DeclaringType) (fun optionalType ->
+            setVar optionalType
+            >> getVarAddr optionalType
+            >> call property.HasValueMethod.Value
+            >> beforeLabel (fun endContentLabel ->
+                gotoF endContentLabel
+                >> noop
+                >> emitContent)
+            >> noop)
 
     /// Emit single property content serialization.
-    let rec emitPropertyContentSerialization (il: ILGenerator) emitValue isEncoded (property: Property) =
-        let markReturn = il.DefineLabel()
-
+    let rec emitPropertyContentSerialization emitValue isEncoded (property: Property) : ILGenerator -> ILGenerator =
         // Write start element of the propery if its not merged with content.
-        match property.Element with
-        | Some(name, isNullable, _) ->
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Ldstr, name.LocalName)
-            il.Emit(OpCodes.Ldstr, name.NamespaceName)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
-            il.Emit(OpCodes.Nop)
-            if not isNullable then il |> emitNotNullableCheck name.LocalName emitValue property |> ignore
-            if isEncoded then
-                property.SimpleTypeName
-                |> Option.iter (fun typeName -> il |> emitTypeAttribute typeName.Name (Some(typeName.Namespace)) |> ignore)
-        | None -> ()
+        let writeStartElement =
+            ifSome property.Element (fun (name, isNullable, _) ->
+                loadArg0
+                >> loadString name.LocalName
+                >> loadString name.NamespaceName
+                >> callVirtX <@ (null: XmlWriter).WriteStartElement("", "") @>
+                >> noop
+                >> iif (not isNullable) (emitNotNullableCheck name.LocalName emitValue property)
+                >> iif (isEncoded) (
+                    ifSome property.SimpleTypeName (fun typeName -> emitTypeAttribute typeName.Name (Some(typeName.Namespace)))))
 
         // Serialize property content value according to its TypeMap.
-        match property with
-        | Individual propertyMap ->
-            il.Emit(OpCodes.Ldarg_0)
-            il |> emitValue propertyMap.TypeMap.Type |> ignore
-            il.Emit(OpCodes.Ldarg_2)
-            il.Emit(OpCodes.Call, propertyMap.TypeMap.Serialization.Root)
-            il.Emit(OpCodes.Nop)
-        | Array arrayMap ->
-            il |> emitValue arrayMap.Type |> ignore
-            il |> emitNilAttribute markReturn |> ignore
-            let arr = il.DeclareLocal(arrayMap.Type)
-            il |> emitValue arrayMap.Type |> ignore
-            il.Emit(OpCodes.Stloc, arr)
-            let i = il.DeclareLocal(typeof<int>)
-            il.Emit(OpCodes.Ldc_I4_0)
-            il.Emit(OpCodes.Stloc, i)
-            let markLoopCondition = il.DefineLabel()
-            il.Emit(OpCodes.Br, markLoopCondition)
-            let markLoopStart = il.DefineLabel()
-            il.MarkLabel(markLoopStart)
-            il.Emit(OpCodes.Nop)
-            let itemPropertyMap = Individual (arrayMap.GetItemPropertyMap())
-            let itemEmitValue = emitArrayItemValue arr i
-            emitPropertyContentSerialization il (fun t -> itemEmitValue t) isEncoded itemPropertyMap
-            il.Emit(OpCodes.Ldloc, i)
-            il.Emit(OpCodes.Ldc_I4_1)
-            il.Emit(OpCodes.Add)
-            il.Emit(OpCodes.Stloc, i)
-            il.MarkLabel(markLoopCondition)
-            il.Emit(OpCodes.Ldloc, i)
-            il.Emit(OpCodes.Ldloc, arr)
-            il.Emit(OpCodes.Ldlen)
-            il.Emit(OpCodes.Conv_I4)
-            il.Emit(OpCodes.Clt)
-            il.Emit(OpCodes.Brtrue, markLoopStart)
-
-        il.MarkLabel(markReturn)
-        il.Emit(OpCodes.Nop)
+        let writePropertyContent =
+            beforeLabel (fun markReturn ->
+                match property with
+                | Individual propertyMap ->
+                    loadArg0
+                    >> emitValue propertyMap.TypeMap.Type
+                    >> loadArg2
+                    >> call propertyMap.TypeMap.Serialization.Root
+                    >> noop
+                | Array arrayMap ->
+                    emitValue arrayMap.Type
+                    >> emitNilAttribute markReturn
+                    >> emitValue arrayMap.Type
+                    >> useVar (declareLocal arrayMap.Type) (fun arr ->
+                        setVar arr
+                        >> useVar (declareLocalOf<int>) (fun i ->
+                            loadInt0
+                            >> setVar i
+                            >> withLabel (fun markLoopCondition ->
+                                goto markLoopCondition
+                                >> afterLabel (fun markLoopStart ->
+                                    let itemPropertyMap = Individual (arrayMap.GetItemPropertyMap())
+                                    noop
+                                    >> (emitPropertyContentSerialization (emitArrayItemValue arr i) isEncoded itemPropertyMap)
+                                    >> getVar i
+                                    >> loadInt1
+                                    >> add
+                                    >> setVar i
+                                    >> setLabel markLoopCondition
+                                    >> getVar i
+                                    >> getVar arr
+                                    >> getLen
+                                    >> castInt
+                                    >> lessThan
+                                    >> gotoT markLoopStart)))))
+            >> noop
 
         // Write end element if required.
-        match property.Element with
-        | Some(_) ->
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
-            il.Emit(OpCodes.Nop)
-        | None -> ()
+        let writeEndElement =
+            ifSome property.Element (fun _ ->
+                loadArg0
+                >> callVirtX <@ (null: XmlWriter).WriteEndElement() @>
+                >> noop)
+
+        writeStartElement >> writePropertyContent >> writeEndElement
 
     /// Unbox property value into correct type.
     let emitPropertyValue (property: Property) (typ: Type) (il: ILGenerator) =
-        il |> emitPropertyWrapperSerialization property
+        il |> emitPropertyWrapperSerialization property |> ignore
         match property.Element with
         | Some(_,_,true) ->
             let opt = il.DeclareLocal(property.HasValueMethod.Value.DeclaringType)
@@ -445,7 +429,7 @@ module EmitSerialization =
     let emitContentSerializerMethod isEncoded (properties: Property list) (il: ILGenerator) =
         properties
         |> List.iter (fun property -> 
-            il |> emitOptionalFieldSerialization property (fun () -> property |> emitPropertyContentSerialization il (emitPropertyValue property) isEncoded))
+            il |> emitOptionalFieldSerialization property (emitPropertyContentSerialization (emitPropertyValue property) isEncoded property) |> ignore)
         il
 
 module EmitDeserialization =
@@ -1146,15 +1130,14 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                         il.Emit(OpCodes.Brfalse, label)
                         il.Emit(OpCodes.Nop)
         
-                        EmitSerialization.emitOptionalFieldSerialization
+                        il
+                        |>EmitSerialization.emitOptionalFieldSerialization
                             property
-                            (fun () ->
-                                EmitSerialization.emitPropertyContentSerialization
-                                    il
-                                    (EmitSerialization.emitPropertyValue property)
-                                    isEncoded
-                                    property)
-                            il
+                            (EmitSerialization.emitPropertyContentSerialization
+                                (EmitSerialization.emitPropertyValue property)
+                                isEncoded
+                                property)
+                        |> ignore
         
                         il.Emit(OpCodes.Nop)
                         il.Emit(OpCodes.Br, conditionEnd)

@@ -34,7 +34,7 @@ let private methodName (mi: MethodInfo) =
     sprintf "%s(%s)" name (String.Join(",", mi.GetParameters() |> Array.map (fun p -> typeName p.ParameterType)))
     
 let private fieldName (fi: FieldInfo) =
-    sprintf "%s (%s)" fi.Name (typeName fi.DeclaringType)
+    sprintf "%s [%s]" fi.Name (typeName fi.DeclaringType)
     
 let private ctorName (ci: ConstructorInfo) =
     sprintf "%s(%s)" (typeName ci.DeclaringType) (String.Join(",", ci.GetParameters() |> Array.map (fun p -> typeName p.ParameterType)))
@@ -65,14 +65,14 @@ let inline private emit opCode (il: ILGenerator) =
     
 let inline private emittyp opCode (typ: Type) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : %s" opCode (typeName typ)
+    printfn "%-10s : %s" (opCode.ToString()) (typeName typ)
     #endif
     il.Emit(opCode, typ)
     il
     
 let inline private emitint opCode i (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : %s" opCode (i.ToString())
+    printfn "%-10s : %s" (opCode.ToString()) (i.ToString())
     #endif
     il.Emit(opCode, int i)
     il
@@ -86,7 +86,7 @@ let inline private emitmi opCode (mi: MethodInfo) (il: ILGenerator) =
     
 let inline private emitfld opCode (fi: FieldInfo) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : %s" opCode (fieldName fi)
+    printfn "%-10s : %s" (opCode.ToString()) (fieldName fi)
     #endif
     il.Emit(opCode, fi)
     il
@@ -94,35 +94,35 @@ let inline private emitfld opCode (fi: FieldInfo) (il: ILGenerator) =
 let inline private emitlbl opCode (label: Label) (il: ILGenerator) =
     #if PRINT_IL
     let id = labels.GetOrAdd(label, (fun _ -> nextLabelId()))
-    printfn "%-10A : %A" opCode id
+    printfn "%-10s : %A" (opCode.ToString()) id
     #endif
     il.Emit(opCode, label)
     il
 
 let inline private emitstr opCode (value: string) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : %s" opCode value
+    printfn "%-10s : %s" (opCode.ToString()) value
     #endif
     il.Emit(opCode, value)
     il
     
 let inline private emitvar opCode (var: LocalBuilder) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : [%d] (%s)" opCode var.LocalIndex (typeName var.LocalType)
+    printfn "%-10s : [%d] (%s)" (opCode.ToString()) var.LocalIndex (typeName var.LocalType)
     #endif
     il.Emit(opCode, var)
     il
     
 let inline callCtor (typ: Type) args (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : %s(%s)" OpCodes.Newobj (typeName typ) (String.Join(",", args |> List.map typeName))
+    printfn "%-10s : %s(%s)" (OpCodes.Newobj.ToString()) (typeName typ) (String.Join(",", args |> List.map typeName))
     #endif
     il.Emit(OpCodes.Newobj, typ.GetConstructor(args |> List.toArray))
     il
 
 let inline create (ci: ConstructorInfo) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10A : %s" OpCodes.Newobj (ctorName ci)
+    printfn "%-10s : %s" (OpCodes.Newobj.ToString()) (ctorName ci)
     #endif
     il.Emit(OpCodes.Newobj, ci)
     il
@@ -175,9 +175,17 @@ let inline ifElse cond ftrue ffalse (il: ILGenerator) = if cond then ftrue il el
 let inline ifSome opt f (il: ILGenerator) = match opt with Some(o) -> f o il | None -> il
 let inline ifSomeNone opt fsome fnone (il: ILGenerator) = match opt with Some(o) -> fsome o il | None -> fnone il
 
+let afterLabel f il =
+    let label = il |> defineLabel
+    il |> setLabel label |> f label 
+
 let beforeLabel f il =
     let label = il |> defineLabel
     il |> f label |> setLabel label
+
+let withLabel f il =
+    let label = il |> defineLabel
+    il |> f label
     
 let useVar v f il = il |> f (il |> v)
 

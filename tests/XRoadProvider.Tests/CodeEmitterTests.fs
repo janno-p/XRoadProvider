@@ -35,6 +35,7 @@ let serializeOptionalProperty (v: HasOptionalElements) =
         il.Emit(OpCodes.Ldarg_0)
         il.Emit(OpCodes.Ldstr, "content")
         il.Emit(OpCodes.Callvirt, typeof<XmlWriter>.GetMethod("WriteString"))
+        il
     let propertyType = typeof<int>
     let propertyTypeMap = getTypeMap false propertyType
     let ownerType = typeof<HasOptionalElements>
@@ -49,7 +50,7 @@ let serializeOptionalProperty (v: HasOptionalElements) =
                                 HasValueMethod = Some(p.PropertyType.GetProperty("HasValue").GetGetMethod()) }
     let dynMethod = DynamicMethod("Serialize", null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |], true)
     let il = dynMethod.GetILGenerator()
-    il |> emitOptionalFieldSerialization property (fun () -> serializeContent il)
+    il |> emitOptionalFieldSerialization property serializeContent |> ignore
     il.Emit(OpCodes.Ret)
     let m = dynMethod.CreateDelegate(typeof<SerializerDelegate>) |> unbox<SerializerDelegate>
     use stream = new MemoryStream()
