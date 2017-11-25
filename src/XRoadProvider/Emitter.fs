@@ -643,57 +643,43 @@ module EmitDeserialization =
             >> setVar typeNamespace)
         >> noop
 
-    let emitRootDeserializerMethod hasInlineContent (subTypes: TypeMap list) (typeMap: TypeMap) (il: ILGenerator) =
-        let markReturn = il.DefineLabel()
-        
-        let depthVar = il.DeclareLocal(typeof<int>)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-        il.Emit(OpCodes.Ldc_I4_1)
-        il.Emit(OpCodes.Add)
-        il.Emit(OpCodes.Stloc, depthVar)
-
-        // When value nil attribute is present returns null.
-        il |> emitNullCheck markReturn |> ignore
-
-        // Read type attribute value of current element.
-        let typeName = (il |> declareLocalOf<string>, il |> declareLocalOf<string>)
-        il |> emitTypeAttributeRead typeName typeMap |> ignore
-
-        // Serialize value according to its type.
-        let skipVar = il.DeclareLocal(typeof<bool>)
-        il |> emitTypeHierarchyDeserialization markReturn skipVar subTypes typeName typeMap |> ignore
-        il.MarkLabel(markReturn)
-        
-        if not hasInlineContent then
-            let startLabel = il.DefineLabel()
-    
-            il.MarkLabel(startLabel)
-            let doneLabel = il.DefineLabel()
-            il |> emitMoveToEndOrNextElement doneLabel (skipVar, depthVar) None |> ignore
-    
-            let successLabel = il.DefineLabel()
-            il.Emit(OpCodes.Br, successLabel)
-            il.MarkLabel(doneLabel)
-    
-            // reader.Depth != depth
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-            il.Emit(OpCodes.Ldloc, depthVar)
-            il.Emit(OpCodes.Ceq)
-            il.Emit(OpCodes.Brfalse, startLabel)
-    
-            // reader.NodeType != XmlNodeType.Element
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
-            il.Emit(OpCodes.Ldc_I4, int32 XmlNodeType.Element)
-            il.Emit(OpCodes.Ceq)
-            il.Emit(OpCodes.Brfalse, startLabel)
-            
-            il |> emitWrongElementException "<end of element>" (Type typeMap) |> ignore
-    
-            il.MarkLabel(successLabel)
-        il.Emit(OpCodes.Ret)
+    let emitRootDeserializerMethod hasInlineContent (subTypes: TypeMap list) (typeMap: TypeMap) =
+        useVar (lazy declareLocalOf<int>) (fun depthVar ->
+            loadArg0
+            >> callVirtX <@ (null: XmlReader).Depth @>
+            >> loadInt1
+            >> add
+            >> setVar depthVar
+            >> useVar (lazy declareLocalOf<bool>) (fun skipVar ->
+                // When value nil attribute is present returns null.
+                beforeLabel (fun markReturn ->
+                        emitNullCheck markReturn
+                        // Read type attribute value of current element.
+                        >> useVar (lazy declareLocalOf<string>) (fun nm ->
+                                useVar (lazy declareLocalOf<string>) (fun ns ->
+                                    emitTypeAttributeRead (nm, ns) typeMap
+                                    // Serialize value according to its type.
+                                    >> emitTypeHierarchyDeserialization markReturn skipVar subTypes (nm, ns) typeMap)))
+                >> iif (not hasInlineContent)
+                        (afterLabel (fun startLabel ->
+                            beforeLabel (fun successLabel ->
+                                beforeLabel (fun doneLabel ->
+                                    emitMoveToEndOrNextElement doneLabel (skipVar, depthVar) None
+                                    >> goto successLabel)
+                                // reader.Depth != depth
+                                >> loadArg0
+                                >> callVirtX <@ (null: XmlReader).Depth @>
+                                >> getVar depthVar
+                                >> equals
+                                >> gotoF startLabel
+                                // reader.NodeType != XmlNodeType.Element
+                                >> loadArg0
+                                >> callVirtX <@ (null: XmlReader).NodeType @>
+                                >> loadInt XmlNodeType.Element
+                                >> equals
+                                >> gotoF startLabel
+                                >> emitWrongElementException "<end of element>" (Type typeMap))))))
+        >> ret
 
     let emitPropertyValueDeserialization (isContent: bool) (typeMap: TypeMap) (il: ILGenerator) =
         il.Emit(OpCodes.Ldarg_0)
