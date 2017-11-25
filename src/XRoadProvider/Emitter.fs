@@ -681,60 +681,80 @@ module EmitDeserialization =
                                 >> emitWrongElementException "<end of element>" (Type typeMap))))))
         >> ret
 
-    let emitPropertyValueDeserialization (isContent: bool) (typeMap: TypeMap) =
-        loadArg0
-        >> ifElse isContent loadArg3 loadArg1
-        >> call typeMap.Deserialization.Root
-        >> ifElse typeMap.Type.IsValueType (fromBox typeMap.Type) (castClass typeMap.Type)
+    let emitPropertyValueDeserialization (isContent: bool) (typeMap: TypeMap) = emit' {
+        ldarg_0
+        if_else isContent (emit' {
+            ldarg_3
+        }) (emit' {
+            ldarg_1
+        })
+        call typeMap.Deserialization.Root
+        if_else typeMap.Type.IsValueType (emit' {
+            unbox typeMap.Type
+        }) (emit' {
+            castclass typeMap.Type
+        })
+    }
 
-    let emitPropertyWrapperDeserialization (wrapper: ContentWrapper) =  
+    let emitPropertyWrapperDeserialization (wrapper: ContentWrapper) =
         match wrapper with
         | Choice _ -> id
         | Method _ -> failwith "Method signature is not deserialzable"
-        | Type tm -> loadArg1 >> castClass tm.Type
+        | Type tm -> emit' {
+            ldarg_1
+            castclass tm.Type
+        }
 
     let optionalSomeMethod =
         typeof<Optional.Option>.GetMethods()
         |> Array.filter (fun m -> m.Name = "Some" && m.GetGenericArguments().Length = 1)
         |> Array.exactlyOne
 
-    let emitIndividualPropertyDeserialization isContent (propertyMap: PropertyMap) =
-        emitPropertyValueDeserialization isContent propertyMap.TypeMap
-        >> useVar (lazy (declareLocal propertyMap.TypeMap.Type)) (fun x ->
-                setVar x
-                >> emitPropertyWrapperDeserialization propertyMap.Wrapper
-                >> getVar x
-                >> iif propertyMap.HasOptionalElement
-                        (call (optionalSomeMethod.MakeGenericMethod([| propertyMap.TypeMap.Type |]))))
+    let emitIndividualPropertyDeserialization isContent (propertyMap: PropertyMap) = emit' {
+        merge (emitPropertyValueDeserialization isContent propertyMap.TypeMap)
+        declare_variable (lazy (declareLocal propertyMap.TypeMap.Type)) (fun x -> emit' {
+            stloc x
+            merge (emitPropertyWrapperDeserialization propertyMap.Wrapper)
+            ldloc x
+            iif propertyMap.HasOptionalElement (emit' {
+                call (optionalSomeMethod.MakeGenericMethod([| propertyMap.TypeMap.Type |]))
+            })
+        })
+    }
 
-    let emitArrayContentEndCheck (markArrayEnd: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) =
-        loadArg0
-        >> callVirtX <@ (null: XmlReader).NodeType @>
-        >> loadInt XmlNodeType.EndElement
-        >> equals
-        >> beforeLabel (fun markSuccess ->
-            gotoF markSuccess
-            >> loadArg0
-            >> callVirtX <@ (null: XmlReader).Depth @>
-            >> getVar depthVar
-            >> lessThan
-            >> gotoF markSuccess
-            >> loadInt1
-            >> setVar skipVar
-            >> goto markArrayEnd)
-        >> noop
+    let emitArrayContentEndCheck (markArrayEnd: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) = emit' {
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).NodeType @>
+        ldc_node_type XmlNodeType.EndElement
+        ceq
+        define_label (fun markSuccess -> emit' {
+            brfalse markSuccess
+            ldarg_0
+            callvirt_expr <@ (null: XmlReader).Depth @>
+            ldloc depthVar
+            clt
+            brfalse markSuccess
+            ldc_i4_1
+            stloc skipVar
+            br markArrayEnd
+            set_marker markSuccess
+        })
+        nop
+    }
 
-    let emitXmlReaderDepthCheck (varDepth: LocalBuilder) =
-        loadArg0
-        >> callVirtX <@ (null: XmlReader).Depth @>
-        >> getVar varDepth
-        >> equals
+    let emitXmlReaderDepthCheck (varDepth: LocalBuilder) = emit' {
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).Depth @>
+        ldloc varDepth
+        ceq
+    }
 
-    let emitXmlReaderNodeTypeCheck =
-        loadArg0
-        >> callVirtX <@ (null: XmlReader).NodeType @>
-        >> loadInt1
-        >> equals
+    let emitXmlReaderNodeTypeCheck = emit' {
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).NodeType @>
+        ldc_i4_1
+        ceq
+    }
 
     let emitArrayItemDeserialization isContent (arrayMap: ArrayMap, listInstance: LocalBuilder, markEnd: Label, stopIfWrongElement) =
         ifSome arrayMap.ItemElement (fun (name, _, _) ->
@@ -834,31 +854,36 @@ module EmitDeserialization =
             il.Emit(OpCodes.Call, m.MakeGenericMethod([| arrayMap.Type |]))
         | _ -> ()
 
-    let emitMatchType property (il: ILGenerator) =
+    let emitMatchType property =
         match property with
         | Some(Individual { TypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap })
         | Some(Array { Element = None; ItemTypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }) ->
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
+            emit' {
+                ldarg_0
+                call typeMap.Deserialization.MatchType
+            }
         | None
         | Some(Individual { Element = None })
         | Some(Array { Element = None; ItemElement = None }) ->
-            il.Emit(OpCodes.Ldc_I4_0)
+            emit' {
+                ldc_i4_0
+            }
         | Some(Individual { Element = Some(name,_,_) })
         | Some(Array { Element = Some(name,_,_) })
         | Some(Array { Element = None; ItemElement = Some(name,_,_) }) ->
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-            il.Emit(OpCodes.Ldstr, name.LocalName)
-            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
-            il.Emit(OpCodes.Ldstr, name.NamespaceName)
-            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-            il.Emit(OpCodes.Add)
-            il.Emit(OpCodes.Ldc_I4_2)
-            il.Emit(OpCodes.Div)
-        il
+            emit' {
+                ldarg_0
+                callvirt_expr <@ (null: XmlReader).LocalName @>
+                ldstr name.LocalName
+                string_equals
+                ldarg_0
+                callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+                ldstr name.NamespaceName
+                string_equals
+                add
+                ldc_i4_2
+                div
+            }
 
     let emitPropertyDeserialization skipVar (prop: Property) (il: ILGenerator) =
         let setMethod =
@@ -1467,19 +1492,18 @@ module internal DynamicMethods =
                   [| typeof<XmlWriter>; typeof<obj[]>; typeof<SerializerContext> |],
                   true )
 
-        let il = method.GetILGenerator()
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Ldstr, requestAttr.Name)
-        il.Emit(OpCodes.Ldstr, requestAttr.Namespace)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteStartElement("", "") @>)
-    
         let parameters = getContentOfMethod mi |> getProperties (getCompleteTypeMap requestAttr.Encoded)
-        il |> EmitSerialization.emitContentSerializerMethod requestAttr.Encoded parameters |> ignore
-    
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlWriter).WriteEndElement() @>)
-        il.Emit(OpCodes.Ret)
-        
+        method.GetILGenerator() |> (emit' {
+            ldarg_0
+            ldstr requestAttr.Name
+            ldstr requestAttr.Namespace
+            callvirt_expr <@ (null: XmlWriter).WriteStartElement("", "") @>
+            merge (EmitSerialization.emitContentSerializerMethod requestAttr.Encoded parameters)
+            ldarg_0
+            callvirt_expr <@ (null: XmlWriter).WriteEndElement() @>
+            ret
+        }) |> ignore
+
         method.CreateDelegate(typeof<OperationSerializerDelegate>) |> unbox
         
     let createMethodMap (mi: MethodInfo) : MethodMap =
