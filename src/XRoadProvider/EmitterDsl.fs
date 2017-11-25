@@ -51,7 +51,7 @@ let inline declareLocal typ (il: ILGenerator) =
 let inline setLabel label (il: ILGenerator) =
     #if PRINT_IL
     let id = labels.GetOrAdd(label, (fun _ -> nextLabelId()))
-    printfn "%-10s : %A" "@label" id
+    printfn "%-10s : @{%A}" "@label" id
     #endif
     il.MarkLabel(label)
     il
@@ -94,7 +94,7 @@ let inline private emitfld opCode (fi: FieldInfo) (il: ILGenerator) =
 let inline private emitlbl opCode (label: Label) (il: ILGenerator) =
     #if PRINT_IL
     let id = labels.GetOrAdd(label, (fun _ -> nextLabelId()))
-    printfn "%-10s : %A" (opCode.ToString()) id
+    printfn "%-10s : @{%A}" (opCode.ToString()) id
     #endif
     il.Emit(opCode, label)
     il
@@ -137,8 +137,8 @@ let inline loadArg3 (il: ILGenerator) = il |> emit OpCodes.Ldarg_3
 let inline call mi il = il |> emitmi OpCodes.Call mi
 let inline callX expr il = il |> emitmi OpCodes.Call (!@ expr)
 let inline stringEquals il = il |> callX <@ "" = "" @>
-let inline callFormat2 il = il |> callX <@ String.Format("", "") @>
-let inline callFormat3 il = il |> callX <@ String.Format("", "", "") @>
+let inline stringFormat2 il = il |> callX <@ String.Format("", "") @>
+let inline stringFormat3 il = il |> callX <@ String.Format("", "", "") @>
 let inline callVirt mi il = il |> emitmi OpCodes.Callvirt mi
 let inline callVirtX expr il = il |> callVirt (!@ expr)
 let inline loadString value il = il |> emitstr OpCodes.Ldstr value
@@ -168,9 +168,11 @@ let inline loadInt1 il = il |> emit OpCodes.Ldc_I4_1
 let inline loadInt2 il = il |> emit OpCodes.Ldc_I4_2
 let inline add il = il |> emit OpCodes.Add
 let inline div il = il |> emit OpCodes.Div
+let inline setElem il = il |> emit OpCodes.Stelem_I4
 let inline getLen il = il |> emit OpCodes.Ldlen
 let inline castInt il = il |> emit OpCodes.Conv_I4
 let inline lessThan il = il |> emit OpCodes.Clt
+let inline createArrayOf<'T> il = il |> emittyp OpCodes.Newarr typeof<char>
 
 let inline iif cond f (il: ILGenerator) = if cond then f il else il
 let inline ifElse cond ftrue ffalse (il: ILGenerator) = if cond then ftrue il else ffalse il
