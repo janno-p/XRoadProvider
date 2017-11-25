@@ -681,99 +681,87 @@ module EmitDeserialization =
                                 >> emitWrongElementException "<end of element>" (Type typeMap))))))
         >> ret
 
-    let emitPropertyValueDeserialization (isContent: bool) (typeMap: TypeMap) (il: ILGenerator) =
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(if isContent then OpCodes.Ldarg_3 else OpCodes.Ldarg_1)
-        il.Emit(OpCodes.Call, typeMap.Deserialization.Root)
-        match typeMap.Type.IsValueType with
-        | true -> il.Emit(OpCodes.Unbox_Any, typeMap.Type)
-        | _ -> il.Emit(OpCodes.Castclass, typeMap.Type)
+    let emitPropertyValueDeserialization (isContent: bool) (typeMap: TypeMap) =
+        loadArg0
+        >> ifElse isContent loadArg3 loadArg1
+        >> call typeMap.Deserialization.Root
+        >> ifElse typeMap.Type.IsValueType (fromBox typeMap.Type) (castClass typeMap.Type)
 
-    let emitPropertyWrapperDeserialization (wrapper: ContentWrapper) (il: ILGenerator) =  
+    let emitPropertyWrapperDeserialization (wrapper: ContentWrapper) =  
         match wrapper with
-        | Choice _ -> ()
+        | Choice _ -> id
         | Method _ -> failwith "Method signature is not deserialzable"
-        | Type tm ->
-            il.Emit(OpCodes.Ldarg_1)
-            il.Emit(OpCodes.Castclass, tm.Type)
+        | Type tm -> loadArg1 >> castClass tm.Type
 
-    let emitIndividualPropertyDeserialization isContent (propertyMap: PropertyMap) (il: ILGenerator) =
-        let x = il.DeclareLocal(propertyMap.TypeMap.Type)
-        il |> emitPropertyValueDeserialization isContent propertyMap.TypeMap
-        il.Emit(OpCodes.Stloc, x)
-        il |> emitPropertyWrapperDeserialization propertyMap.Wrapper
-        il.Emit(OpCodes.Ldloc, x)
-        match propertyMap.Element with
-        | Some(_,_,true) ->
-            let m =
-                typeof<Optional.Option>.GetMethods()
-                |> Array.filter (fun m -> m.Name = "Some" && m.GetGenericArguments().Length = 1)
-                |> Array.exactlyOne
-            let m = m.MakeGenericMethod([| propertyMap.TypeMap.Type |])
-            il.Emit(OpCodes.Call, m)
-        | _ -> ()
+    let optionalSomeMethod =
+        typeof<Optional.Option>.GetMethods()
+        |> Array.filter (fun m -> m.Name = "Some" && m.GetGenericArguments().Length = 1)
+        |> Array.exactlyOne
 
-    let emitArrayContentEndCheck (markArrayEnd: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) (il: ILGenerator) =
-        let markSuccess = il.DefineLabel()
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
-        il.Emit(OpCodes.Ldc_I4, int32 XmlNodeType.EndElement)
-        il.Emit(OpCodes.Ceq)
-        il.Emit(OpCodes.Brfalse, markSuccess)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-        il.Emit(OpCodes.Ldloc, depthVar)
-        il.Emit(OpCodes.Clt)
-        il.Emit(OpCodes.Brfalse, markSuccess)
-        il.Emit(OpCodes.Ldc_I4_1)
-        il.Emit(OpCodes.Stloc, skipVar)
-        il.Emit(OpCodes.Br, markArrayEnd)
-        il.MarkLabel(markSuccess)
-        il.Emit(OpCodes.Nop)
+    let emitIndividualPropertyDeserialization isContent (propertyMap: PropertyMap) =
+        emitPropertyValueDeserialization isContent propertyMap.TypeMap
+        >> useVar (lazy (declareLocal propertyMap.TypeMap.Type)) (fun x ->
+                setVar x
+                >> emitPropertyWrapperDeserialization propertyMap.Wrapper
+                >> getVar x
+                >> iif propertyMap.HasOptionalElement
+                        (call (optionalSomeMethod.MakeGenericMethod([| propertyMap.TypeMap.Type |]))))
 
-    let emitXmlReaderDepthCheck (varDepth: LocalBuilder) (il: ILGenerator) =
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-        il.Emit(OpCodes.Ldloc, varDepth)
-        il.Emit(OpCodes.Ceq)
+    let emitArrayContentEndCheck (markArrayEnd: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) =
+        loadArg0
+        >> callVirtX <@ (null: XmlReader).NodeType @>
+        >> loadInt XmlNodeType.EndElement
+        >> equals
+        >> beforeLabel (fun markSuccess ->
+            gotoF markSuccess
+            >> loadArg0
+            >> callVirtX <@ (null: XmlReader).Depth @>
+            >> getVar depthVar
+            >> lessThan
+            >> gotoF markSuccess
+            >> loadInt1
+            >> setVar skipVar
+            >> goto markArrayEnd)
+        >> noop
 
-    let emitXmlReaderNodeTypeCheck (il: ILGenerator) =
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
-        il.Emit(OpCodes.Ldc_I4_1)
-        il.Emit(OpCodes.Ceq)
+    let emitXmlReaderDepthCheck (varDepth: LocalBuilder) =
+        loadArg0
+        >> callVirtX <@ (null: XmlReader).Depth @>
+        >> getVar varDepth
+        >> equals
 
-    let emitArrayItemDeserialization isContent (arrayMap: ArrayMap, listInstance: LocalBuilder, markEnd: Label, stopIfWrongElement) (il: ILGenerator) =
-        match arrayMap.ItemElement with
-        | Some(name,_,_) ->
-            let markDeserialize = il.DefineLabel()
-            let markError = il.DefineLabel()
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-            il.Emit(OpCodes.Ldstr, name.LocalName)
-            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-            il.Emit(OpCodes.Brfalse, markError)
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
-            il.Emit(OpCodes.Ldstr, name.NamespaceName)
-            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-            il.Emit(OpCodes.Brtrue, markDeserialize)
-            il.MarkLabel(markError)
-            if stopIfWrongElement then
-                il.Emit(OpCodes.Br, markEnd)
-            else
-                il.Emit(OpCodes.Ldstr, "Unexpected element: found `{0}`, but was expecting to find `{1}`.")
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                il.Emit(OpCodes.Ldstr, safe name)
-                il.Emit(OpCodes.Call, !@ <@ String.Format("", "", "") @>)
-                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                il.Emit(OpCodes.Throw)
-            il.MarkLabel(markDeserialize)
-        | None -> ()
-        il.Emit(OpCodes.Ldloc, listInstance)
-        il |> emitPropertyValueDeserialization isContent arrayMap.ItemTypeMap
-        il.Emit(OpCodes.Callvirt, listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
+    let emitXmlReaderNodeTypeCheck =
+        loadArg0
+        >> callVirtX <@ (null: XmlReader).NodeType @>
+        >> loadInt1
+        >> equals
+
+    let emitArrayItemDeserialization isContent (arrayMap: ArrayMap, listInstance: LocalBuilder, markEnd: Label, stopIfWrongElement) =
+        ifSome arrayMap.ItemElement (fun (name, _, _) ->
+            loadArg0
+            >> callVirtX <@ (null: XmlReader).LocalName @>
+            >> loadString name.LocalName
+            >> stringEquals
+            >> beforeLabel (fun markDeserialize ->
+                    beforeLabel (fun markError ->
+                        gotoF markError
+                        >> loadArg0
+                        >> callVirtX <@ (null: XmlReader).NamespaceURI @>
+                        >> loadString name.NamespaceName
+                        >> stringEquals
+                        >> gotoT markDeserialize)
+                    >> ifElse stopIfWrongElement
+                            (goto markEnd)
+                            (loadString "Unexpected element: found `{0}`, but was expecting to find `{1}`."
+                             >> loadArg0
+                             >> callVirtX <@ (null: XmlReader).LocalName @>
+                             >> loadString (safe name)
+                             >> stringFormat3
+                             >> createX <@ Exception("") @>
+                             >> throw)))
+        >> getVar listInstance
+        >> emitPropertyValueDeserialization isContent arrayMap.ItemTypeMap
+        >> callVirt (listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
 
     /// Emits array type deserialization logic.
     let emitArrayPropertyDeserialization isContent skipVar (arrayMap: ArrayMap) (il: ILGenerator) =
@@ -813,15 +801,15 @@ module EmitDeserialization =
         il |> emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map (fun (x,_,_) -> x)) |> ignore
         il.MarkLabel(markSkipRead)
 
-        il |> emitArrayContentEndCheck markArrayEnd (skipVar, depthVar)
+        il |> emitArrayContentEndCheck markArrayEnd (skipVar, depthVar) |> ignore
 
-        il |> emitXmlReaderDepthCheck depthVar
+        il |> emitXmlReaderDepthCheck depthVar |> ignore
         il.Emit(OpCodes.Brfalse, markLoopStart)
 
-        il |> emitXmlReaderNodeTypeCheck
+        il |> emitXmlReaderNodeTypeCheck |> ignore
         il.Emit(OpCodes.Brfalse, markLoopStart)
 
-        il |> emitArrayItemDeserialization isContent (arrayMap, listInstance, markArrayEnd, arrayMap.Element.IsNone)
+        il |> emitArrayItemDeserialization isContent (arrayMap, listInstance, markArrayEnd, arrayMap.Element.IsNone) |> ignore
         il.Emit(OpCodes.Br, markLoopStart)
 
         il.MarkLabel(markArrayEnd)
@@ -834,7 +822,7 @@ module EmitDeserialization =
         il.MarkLabel(markArrayNull)
         il.Emit(OpCodes.Stloc, instance)
 
-        il |> emitPropertyWrapperDeserialization arrayMap.Wrapper
+        il |> emitPropertyWrapperDeserialization arrayMap.Wrapper |> ignore
         il.Emit(OpCodes.Ldloc, instance)
 
         match arrayMap.Element with
@@ -876,7 +864,7 @@ module EmitDeserialization =
         let setMethod =
             match prop with
             | Individual propertyMap ->
-                il |> emitIndividualPropertyDeserialization true propertyMap
+                il |> emitIndividualPropertyDeserialization true propertyMap |> ignore
                 propertyMap.SetMethod
             | Array arrayMap ->
                 il |> emitArrayPropertyDeserialization true skipVar arrayMap
@@ -1151,7 +1139,7 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                             il.Emit(OpCodes.Ldc_I4_0)
                             il.Emit(OpCodes.Stloc, skipRead)
                             match property with
-                            | Individual propertyMap -> il |> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
+                            | Individual propertyMap -> il |> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap |> ignore
                             | Array arrayMap -> il |> EmitDeserialization.emitArrayPropertyDeserialization false skipRead arrayMap
         
                         il.Emit(OpCodes.Call, mi)
