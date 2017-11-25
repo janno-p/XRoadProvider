@@ -422,11 +422,10 @@ module EmitSerialization =
         >> iif typ.IsValueType (toBox typ)
 
     /// Emit IL which serializes each property value into corresponding xml fragment.
-    let emitContentSerializerMethod isEncoded (properties: Property list) (il: ILGenerator) =
+    let emitContentSerializerMethod isEncoded (properties: Property list) =
         properties
-        |> List.iter (fun property -> 
-            il |> emitOptionalFieldSerialization property (emitPropertyContentSerialization (emitPropertyValue property) isEncoded property) |> ignore)
-        il
+        |> List.map (fun property -> emitOptionalFieldSerialization property (emitPropertyContentSerialization (emitPropertyValue property) isEncoded property))
+        |> (fun items -> if items.IsEmpty then id else items |> List.reduce (fun a b -> a >> b))
 
 module EmitDeserialization =
     /// Check if current element has `xsi:nil` attribute present.
