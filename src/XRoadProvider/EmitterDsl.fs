@@ -187,7 +187,7 @@ let withLabel f il =
     let label = il |> defineLabel
     il |> f label
     
-let useVar v f il = il |> f (il |> v)
+let useVar (v: Lazy<_>) f il = il |> f (il |> v.Value)
 
 let defineMethod (mi: MethodInfo) f =
     match mi with

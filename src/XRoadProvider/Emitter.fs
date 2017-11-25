@@ -334,7 +334,7 @@ module EmitSerialization =
     let emitOptionalFieldSerialization (property: Property) emitContent =
         if not property.HasOptionalElement then emitContent else
         emitPropertyWrapperSerialization property
-        >> useVar (declareLocal property.HasValueMethod.Value.DeclaringType) (fun optionalType ->
+        >> useVar (lazy (declareLocal property.HasValueMethod.Value.DeclaringType)) (fun optionalType ->
             setVar optionalType
             >> getVarAddr optionalType
             >> call property.HasValueMethod.Value
@@ -372,9 +372,9 @@ module EmitSerialization =
                     emitValue arrayMap.Type
                     >> emitNilAttribute markReturn
                     >> emitValue arrayMap.Type
-                    >> useVar (declareLocal arrayMap.Type) (fun arr ->
+                    >> useVar (lazy (declareLocal arrayMap.Type)) (fun arr ->
                         setVar arr
-                        >> useVar (declareLocalOf<int>) (fun i ->
+                        >> useVar (lazy (declareLocalOf<int>)) (fun i ->
                             loadInt0
                             >> setVar i
                             >> withLabel (fun markLoopCondition ->
@@ -406,24 +406,20 @@ module EmitSerialization =
         writeStartElement >> writePropertyContent >> writeEndElement
 
     /// Unbox property value into correct type.
-    let emitPropertyValue (property: Property) (typ: Type) (il: ILGenerator) =
-        il |> emitPropertyWrapperSerialization property |> ignore
-        match property.Element with
-        | Some(_,_,true) ->
-            let opt = il.DeclareLocal(property.HasValueMethod.Value.DeclaringType)
-            il.Emit(OpCodes.Stloc, opt)
-            il.Emit(OpCodes.Ldloca, opt)
-            if typ.IsValueType then
-                let temp = il.DeclareLocal(typ)
-                il.Emit(OpCodes.Ldloca, temp)
-                il.Emit(OpCodes.Initobj, typ)
-                il.Emit(OpCodes.Ldloc, temp)
-            else il.Emit(OpCodes.Ldnull)
-            il.Emit(OpCodes.Call, property.HasValueMethod.Value.DeclaringType.GetMethod("ValueOr", [| typ |]))
-        | _ -> ()
-        if typ.IsValueType then
-            il.Emit(OpCodes.Box, typ)
-        il
+    let emitPropertyValue (property: Property) (typ: Type) =
+        emitPropertyWrapperSerialization property
+        >> iif property.HasOptionalElement (
+            useVar (lazy (declareLocal property.HasValueMethod.Value.DeclaringType)) (fun opt ->
+                setVar opt
+                >> getVarAddr opt
+                >> ifElse typ.IsValueType
+                        (useVar (lazy (declareLocal typ)) (fun temp ->
+                            getVarAddr temp
+                            >> initObj typ
+                            >> getVar temp))
+                        loadNull
+                >> call (property.HasValueMethod.Value.DeclaringType.GetMethod("ValueOr", [| typ |]))))
+        >> iif typ.IsValueType (toBox typ)
 
     /// Emit IL which serializes each property value into corresponding xml fragment.
     let emitContentSerializerMethod isEncoded (properties: Property list) (il: ILGenerator) =
