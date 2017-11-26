@@ -191,6 +191,13 @@ let beforeLabel f il =
 let withLabel f il =
     let label = il |> defineLabel
     il |> f label
+
+let withLabels n f il =
+    let labels = [
+        for i in 1..n do
+            yield il |> defineLabel
+    ]
+    il |> f labels
     
 let useVar (v: Lazy<_>) f il = il |> f (il |> v.Value)
 
@@ -227,6 +234,8 @@ type EmitBuilder with
     member this.Ceq(p: Emitter) = p >> equals
     [<CustomOperation("ldc_node_type", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ldc_i4_xnt(p: Emitter, i: Xml.XmlNodeType) = p >> loadInt i
+    [<CustomOperation("ldc_i4", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Ldc_i4(p: Emitter, i) = p >> loadInt i
     [<CustomOperation("ldc_i4_0", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ldc_i4_0(p: Emitter) = p >> loadInt0
     [<CustomOperation("ldc_i4_1", MaintainsVariableSpaceUsingBind = true)>]
@@ -235,6 +244,8 @@ type EmitBuilder with
     member this.Ldc_i4_2(p: Emitter) = p >> loadInt2
     [<CustomOperation("brfalse", MaintainsVariableSpaceUsingBind = true)>]
     member this.Brfalse(p: Emitter, l) = p >> gotoF l
+    [<CustomOperation("brtrue", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Brtrue(p: Emitter, l) = p >> gotoT l
     [<CustomOperation("br", MaintainsVariableSpaceUsingBind = true)>]
     member this.Br(p: Emitter, l) = p >> goto l
     [<CustomOperation("clt", MaintainsVariableSpaceUsingBind = true)>]
@@ -247,6 +258,8 @@ type EmitBuilder with
     member this.MarkLabel(p: Emitter, l) = p >> setLabel l
     [<CustomOperation("define_label", MaintainsVariableSpaceUsingBind = true)>]
     member this.DefineLabel(p: Emitter, e) = p >> withLabel e
+    [<CustomOperation("define_labels", MaintainsVariableSpaceUsingBind = true)>]
+    member this.DefineLabels(p: Emitter, n, e) = p >> withLabels n e
     [<CustomOperation("declare_variable", MaintainsVariableSpaceUsingBind = true)>]
     member this.DeclareVariable(p: Emitter, v, f) = p >> useVar v f
     [<CustomOperation("merge", MaintainsVariableSpaceUsingBind = true)>]
@@ -267,5 +280,19 @@ type EmitBuilder with
     member this.Div(p: Emitter) = p >> div
     [<CustomOperation("ret", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ret(p: Emitter) = p >> ret
+    [<CustomOperation("throw", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Throw(p: Emitter) = p >> throw
+    [<CustomOperation("newobj", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Newobj(p: Emitter, ci) = p >> create ci
+    [<CustomOperation("newobj_expr", MaintainsVariableSpaceUsingBind = true)>]
+    member this.NewobjExpr(p: Emitter, e) = p >> createX e
+    [<CustomOperation("if_some", MaintainsVariableSpaceUsingBind = true)>]
+    member this.IfSome(p: Emitter, c, f) = p >> ifSome c f
+    [<CustomOperation("ldfld", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Ldfld(p: Emitter, f) = p >> getField f
 
 let emit' = EmitBuilder()
+
+let (|List1|) = function [a] -> (a) | _ -> failwith "invalid list"
+let (|List3|) = function [a; b; c] -> (a, b, c) | _ -> failwith "invalid list"
+let (|List4|) = function [a; b; c; d] -> (a, b, c, d) | _ -> failwith "invalid list"

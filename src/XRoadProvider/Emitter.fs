@@ -784,75 +784,60 @@ module EmitDeserialization =
         >> callVirt (listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
 
     /// Emits array type deserialization logic.
-    let emitArrayPropertyDeserialization isContent skipVar (arrayMap: ArrayMap) (il: ILGenerator) =
-        let depthVar = il.DeclareLocal(typeof<int>)
-        il.Emit(OpCodes.Ldarg_0)
-        il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-        il.Emit(OpCodes.Stloc, depthVar)
-
-        let markArrayEnd = il.DefineLabel()
-        let markArrayNull = il.DefineLabel()
-
-        if arrayMap.Element.IsSome then
-            il |> emitNullCheck markArrayNull |> ignore
-            il.Emit(OpCodes.Ldloc, depthVar)
-            il.Emit(OpCodes.Ldc_I4_1)
-            il.Emit(OpCodes.Add)
-            il.Emit(OpCodes.Stloc, depthVar)
-
+    let emitArrayPropertyDeserialization isContent skipVar (arrayMap: ArrayMap) =
         let listType = typedefof<System.Collections.Generic.List<_>>.MakeGenericType(arrayMap.ItemTypeMap.Type)
-        let listInstance = il.DeclareLocal(listType)
-
-        il.Emit(OpCodes.Newobj, listType.GetConstructor([| |]))
-        il.Emit(OpCodes.Stloc, listInstance)
-
-        let markSkipRead = il.DefineLabel()
-
-        // Empty element has nothing to parse.
-        if arrayMap.Element.IsSome then
-            il.Emit(OpCodes.Ldarg_0)
-            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).IsEmptyElement @>)
-            il.Emit(OpCodes.Brtrue, markArrayEnd)
-        else il.Emit(OpCodes.Br, markSkipRead)
-
-        let markLoopStart = il.DefineLabel()
-
-        il.MarkLabel(markLoopStart)
-        il |> emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map (fun (x,_,_) -> x)) |> ignore
-        il.MarkLabel(markSkipRead)
-
-        il |> emitArrayContentEndCheck markArrayEnd (skipVar, depthVar) |> ignore
-
-        il |> emitXmlReaderDepthCheck depthVar |> ignore
-        il.Emit(OpCodes.Brfalse, markLoopStart)
-
-        il |> emitXmlReaderNodeTypeCheck |> ignore
-        il.Emit(OpCodes.Brfalse, markLoopStart)
-
-        il |> emitArrayItemDeserialization isContent (arrayMap, listInstance, markArrayEnd, arrayMap.Element.IsNone) |> ignore
-        il.Emit(OpCodes.Br, markLoopStart)
-
-        il.MarkLabel(markArrayEnd)
-
-        let instance = il.DeclareLocal(arrayMap.Type)
-
-        il.Emit(OpCodes.Ldloc,listInstance)
-        il.Emit(OpCodes.Callvirt, listType.GetMethod("ToArray", [| |]))
-
-        il.MarkLabel(markArrayNull)
-        il.Emit(OpCodes.Stloc, instance)
-
-        il |> emitPropertyWrapperDeserialization arrayMap.Wrapper |> ignore
-        il.Emit(OpCodes.Ldloc, instance)
-
-        match arrayMap.Element with
-        | Some(_,_,true) ->
-            let m =
-                typeof<Optional.Option>.GetMethods()
-                |> Array.filter (fun m -> m.Name = "Some" && m.GetGenericArguments().Length = 1)
-                |> Array.exactlyOne
-            il.Emit(OpCodes.Call, m.MakeGenericMethod([| arrayMap.Type |]))
-        | _ -> ()
+        emit' {
+            declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
+                ldarg_0
+                callvirt_expr <@ (null: XmlReader).Depth @>
+                stloc depthVar
+                define_labels 4 (fun (List4 (markArrayNull, markSkipRead, markArrayEnd, markLoopStart)) -> emit' {
+                    iif arrayMap.Element.IsSome (emit' {
+                        merge (emitNullCheck markArrayNull)
+                        ldloc depthVar
+                        ldc_i4_1
+                        add
+                        stloc depthVar
+                    })
+                    declare_variable (lazy (declareLocal listType)) (fun listInstance -> emit'{
+                        newobj (listType.GetConstructor([||]))
+                        stloc listInstance
+                        if_else arrayMap.Element.IsSome
+                            (emit' {
+                                ldarg_0
+                                callvirt_expr <@ (null: XmlReader).IsEmptyElement @>
+                                brtrue markArrayEnd
+                            })
+                            (emit' {
+                                br markSkipRead
+                            })
+                        set_marker markLoopStart
+                        merge (emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map (fun (x,_,_) -> x)))
+                        set_marker markSkipRead
+                        merge (emitArrayContentEndCheck markArrayEnd (skipVar, depthVar))
+                        merge (emitXmlReaderDepthCheck depthVar)
+                        brfalse markLoopStart
+                        merge emitXmlReaderNodeTypeCheck
+                        brfalse markLoopStart
+                        merge (emitArrayItemDeserialization isContent (arrayMap, listInstance, markArrayEnd, arrayMap.Element.IsNone))
+                        br markLoopStart
+                        set_marker markArrayEnd
+                        declare_variable (lazy (declareLocal arrayMap.Type)) (fun instance -> emit' {
+                            ldloc listInstance
+                            callvirt (listType.GetMethod("ToArray", [| |]))
+                            set_marker markArrayNull
+                            stloc instance
+                            merge (emitPropertyWrapperDeserialization arrayMap.Wrapper)
+                            ldloc instance
+                            iif arrayMap.HasOptionalElement
+                                (emit' {
+                                    call (optionalSomeMethod.MakeGenericMethod([| arrayMap.Type |]))
+                                })
+                        })
+                    })
+                })
+            })
+        }
 
     let emitMatchType property =
         match property with
@@ -892,7 +877,7 @@ module EmitDeserialization =
                 il |> emitIndividualPropertyDeserialization true propertyMap |> ignore
                 propertyMap.SetMethod
             | Array arrayMap ->
-                il |> emitArrayPropertyDeserialization true skipVar arrayMap
+                il |> emitArrayPropertyDeserialization true skipVar arrayMap |> ignore
                 arrayMap.SetMethod
         il.Emit(OpCodes.Callvirt, setMethod.Value)
 
@@ -1069,146 +1054,160 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
 
 and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap: TypeMap) =
     let genSerialization () =
-        defineMethod choiceMap.Serialization.Root
-            (fun il ->
-                let conditionEnd = il.DefineLabel()
-                let rec generate (label: Label option) (properties: Property list) =
-                    match properties with
-                    | [] -> ()
-                    | property::other ->
-                        let idField, id = match property.Wrapper with Choice(_, idField, _, id, _) -> idField, id | _ -> failwith "never"
-        
-                        label |> Option.iter (fun label -> il.MarkLabel(label); il.Emit(OpCodes.Nop))
-                        let label = match other with [] -> conditionEnd | _ -> il.DefineLabel()
-        
-                        il.Emit(OpCodes.Ldarg_1)
-                        il.Emit(OpCodes.Castclass, choiceMap.Type)
-                        il.Emit(OpCodes.Ldfld, idField)
-                        il.Emit(OpCodes.Ldc_I4_S, id)
-                        il.Emit(OpCodes.Ceq)
-                        il.Emit(OpCodes.Brfalse, label)
-                        il.Emit(OpCodes.Nop)
-        
-                        il
-                        |>EmitSerialization.emitOptionalFieldSerialization
-                            property
-                            (EmitSerialization.emitPropertyContentSerialization
-                                (EmitSerialization.emitPropertyValue property)
-                                isEncoded
-                                property)
-                        |> ignore
-        
-                        il.Emit(OpCodes.Nop)
-                        il.Emit(OpCodes.Br, conditionEnd)
-        
-                        generate (Some label) other
-        
-                generate None properties
+        let rec generate (conditionEnd: Label) (label: Label option) (properties: Property list) =
+            match properties with
+            | [] -> id
+            | property::other ->
+                let idField, id = match property.Wrapper with Choice(_, idField, _, id, _) -> idField, id | _ -> failwith "never"
+                let nextBlock nextLabel = emit' {
+                    brfalse nextLabel
+                    nop
+                    merge (EmitSerialization.emitOptionalFieldSerialization property (EmitSerialization.emitPropertyContentSerialization (EmitSerialization.emitPropertyValue property) isEncoded property))
+                    nop
+                    br conditionEnd
+                    merge (generate conditionEnd (Some nextLabel) other)
+                }
+                emit' {
+                    if_some label (fun label -> emit' {
+                        set_marker label
+                        nop
+                    })
+                    ldarg_1
+                    castclass choiceMap.Type
+                    ldfld idField
+                    ldc_i4 id
+                    ceq
+                    if_else other.IsEmpty
+                        (nextBlock conditionEnd)
+                        (emit' { define_label nextBlock }) 
+                }
 
-                il.MarkLabel(conditionEnd)
-                il.Emit(OpCodes.Ret))
+        defineMethod choiceMap.Serialization.Root (emit' {
+            define_label (fun conditionEnd -> emit' {
+                merge (generate conditionEnd None properties)
+                set_marker conditionEnd
+                ret
+            })
+        })
 
     let genContentDeserialization () =
         defineMethod choiceMap.Deserialization.Content (loadArg2 >> ret)
 
     let genDeserialization () =
-        defineMethod choiceMap.Deserialization.Root
-            (fun il ->
-                let markReturn = il.DefineLabel()
-                
-                let skipRead = il.DeclareLocal(typeof<bool>)
-                il.Emit(OpCodes.Ldc_I4_1)
-                il.Emit(OpCodes.Stloc, skipRead)
-        
-                let rec generate (properties: Property list) =
-                    match properties with
-                    | [] -> ()
-                    | property::other ->
-                        let mi = match property.Wrapper with Choice(_, _, _, _, mi) -> mi | _ -> failwith "never"
-        
-                        let label = il.DefineLabel()
-        
-                        match property with
-                        | Individual { TypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
-                        | Individual { Element = None; TypeMap = typeMap }
-                        | Array { Element = None; ItemTypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
-                        | Array { Element = None; ItemElement = None; ItemTypeMap = typeMap } ->
-                            let instance = il.DeclareLocal(property.Type)
-                            il.Emit(OpCodes.Ldarg_0)
-                            il.Emit(OpCodes.Call, typeMap.Deserialization.MatchType)
-                            il.Emit(OpCodes.Brfalse, label)
-                            il.Emit(OpCodes.Newobj, typeMap.Type.GetConstructor([| |]))
-                            il.Emit(OpCodes.Stloc, instance)
-                            il.Emit(OpCodes.Ldarg_0)
-                            il.Emit(OpCodes.Ldloc, instance)
-                            il.Emit(OpCodes.Ldloc, skipRead)
-                            il.Emit(OpCodes.Ldarg_1)
-                            il.Emit(OpCodes.Call, typeMap.Deserialization.Content)
-                            il.Emit(OpCodes.Stloc, skipRead)
-                            il.Emit(OpCodes.Ldloc, instance)
-                        | Individual { Element = Some(name,_,_) }
-                        | Array { Element = Some(name,_,_) }
-                        | Array { Element = None; ItemElement = Some(name,_,_) } ->
-                            il.Emit(OpCodes.Ldarg_0)
-                            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                            il.Emit(OpCodes.Ldstr, name.LocalName)
-                            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                            il.Emit(OpCodes.Ldarg_0)
-                            il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
-                            il.Emit(OpCodes.Ldstr, name.NamespaceName)
-                            il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                            il.Emit(OpCodes.Add)
-                            il.Emit(OpCodes.Ldc_I4_2)
-                            il.Emit(OpCodes.Div)
-                            il.Emit(OpCodes.Brfalse, label)
-                            il.Emit(OpCodes.Ldc_I4_0)
-                            il.Emit(OpCodes.Stloc, skipRead)
-                            match property with
-                            | Individual propertyMap -> il |> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap |> ignore
-                            | Array arrayMap -> il |> EmitDeserialization.emitArrayPropertyDeserialization false skipRead arrayMap
-        
-                        il.Emit(OpCodes.Call, mi)
-                        il.Emit(OpCodes.Br, markReturn)
-                        il.MarkLabel(label)
-                        il.Emit(OpCodes.Nop)
-                        generate other
-                generate properties
-        
-                let names = properties |> List.map (fun p -> p.PropertyName)
-                let errorMessage = sprintf "Invalid message: expected one of %A, but `{0}` was found instead." names
-                il.Emit(OpCodes.Ldstr, errorMessage)
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                il.Emit(OpCodes.Call, !@ <@ String.Format("", "") @>)
-                il.Emit(OpCodes.Newobj, typeof<Exception>.GetConstructor([| typeof<string> |]))
-                il.Emit(OpCodes.Throw)
-        
-                il.MarkLabel(markReturn)
-                il.Emit(OpCodes.Ret))
+        let rec generate (skipRead: LocalBuilder) (markReturn: Label) (properties: Property list) =
+            match properties with
+            | [] -> id
+            | property::other ->
+                let mi = match property.Wrapper with Choice(_, _, _, _, mi) -> mi | _ -> failwith "never"
+
+                let emitter (label: Label) =
+                    match property with
+                    | Individual { TypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
+                    | Individual { Element = None; TypeMap = typeMap }
+                    | Array { Element = None; ItemTypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
+                    | Array { Element = None; ItemElement = None; ItemTypeMap = typeMap } ->
+                        emit' {
+                            declare_variable (lazy (declareLocal property.Type)) (fun instance -> emit' {
+                                ldarg_0
+                                call typeMap.Deserialization.MatchType
+                                brfalse label
+                                newobj (typeMap.Type.GetConstructor([| |]))
+                                stloc instance
+                                ldarg_0
+                                ldloc instance
+                                ldloc skipRead
+                                ldarg_1
+                                call typeMap.Deserialization.Content
+                                stloc skipRead
+                                ldloc instance
+                            })
+                        }
+                    | Individual { Element = Some(name,_,_) }
+                    | Array { Element = Some(name,_,_) }
+                    | Array { Element = None; ItemElement = Some(name,_,_) } ->
+                        emit' {
+                            ldarg_0
+                            callvirt_expr <@ (null: XmlReader).LocalName @>
+                            ldstr name.LocalName
+                            string_equals
+                            ldarg_0
+                            callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+                            ldstr name.NamespaceName
+                            string_equals
+                            add
+                            ldc_i4_2
+                            div
+                            brfalse label
+                            ldc_i4_0
+                            stloc skipRead
+                            merge (
+                                match property with
+                                | Individual propertyMap -> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
+                                | Array arrayMap -> EmitDeserialization.emitArrayPropertyDeserialization false skipRead arrayMap
+                            )
+                        }
+
+                emit' {
+                    define_label (fun label -> emit' {
+                        merge (emitter label)
+                        call mi
+                        br markReturn
+                        set_marker label
+                        nop
+                        merge (generate skipRead markReturn other)
+                    })
+                }
+
+        defineMethod choiceMap.Deserialization.Root (emit' {
+            define_label (fun markReturn -> emit' {
+                declare_variable (lazy declareLocalOf<bool>) (fun skipRead ->
+                    let names = properties |> List.map (fun p -> p.PropertyName)
+                    let errorMessage = sprintf "Invalid message: expected one of %A, but `{0}` was found instead." names 
+                    emit' {
+                        ldc_i4_1
+                        stloc skipRead
+                        merge (generate skipRead markReturn properties)
+                        ldstr errorMessage
+                        ldarg_0
+                        callvirt_expr <@ (null: XmlReader).LocalName @>
+                        string_equals
+                        newobj_expr <@ Exception("") @>
+                        throw
+                    }
+                )
+                set_marker markReturn
+            })
+            ret
+        })
 
     let genMatch () =
-        defineMethod choiceMap.Deserialization.MatchType
-            (fun il ->
-                let markReturn = il.DefineLabel()
-        
+        defineMethod choiceMap.Deserialization.MatchType (emit' {
+            define_label (fun markReturn ->
                 let rec generate (properties: Property list) =
                     match properties with
                     | [] ->
-                        il.Emit(OpCodes.Ldc_I4_0)
-                        il.Emit(OpCodes.Br, markReturn)
+                        emit' {
+                            ldc_i4_0
+                            br markReturn
+                        }
                     | property::other ->
-                        il |> EmitDeserialization.emitMatchType (Some property) |> ignore
-                        let label = il.DefineLabel()
-                        il.Emit(OpCodes.Brfalse, label)
-                        il.Emit(OpCodes.Ldc_I4_1)
-                        il.Emit(OpCodes.Br, markReturn)
-                        il.MarkLabel(label)
-                        il.Emit(OpCodes.Nop)
-                        generate other
-                generate properties
-        
-                il.MarkLabel(markReturn)
-                il.Emit(OpCodes.Ret))
+                        emit' {
+                            merge (EmitDeserialization.emitMatchType (Some property))
+                            define_label (fun label -> emit' {
+                                brfalse label
+                                ldc_i4_1
+                                br markReturn
+                                set_marker label
+                            })
+                            nop
+                            merge (generate other)
+                        }
+                emit' {
+                    merge (generate properties)
+                    set_marker markReturn
+                })
+            ret
+        })
 
     genSerialization ()
     genContentDeserialization ()
