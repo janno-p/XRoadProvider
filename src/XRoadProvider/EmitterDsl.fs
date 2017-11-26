@@ -298,5 +298,6 @@ type EmitBuilder with
 let emit' = EmitBuilder()
 
 let (|List1|) = function [a] -> (a) | _ -> failwith "invalid list"
+let (|List2|) = function [a; b] -> (a, b) | _ -> failwith "invalid list"
 let (|List3|) = function [a; b; c] -> (a, b, c) | _ -> failwith "invalid list"
 let (|List4|) = function [a; b; c; d] -> (a, b, c, d) | _ -> failwith "invalid list"

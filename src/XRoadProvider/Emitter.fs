@@ -882,80 +882,86 @@ module EmitDeserialization =
         il.Emit(OpCodes.Callvirt, setMethod.Value)
         il
 
-    let emitSequenceDeserialization (startLabel: Label, returnLabel: Label) (skipRead: LocalBuilder, depthVar: LocalBuilder) (properties: Property list) (il: ILGenerator) =
+    let emitSequenceDeserialization (startLabel: Label, returnLabel: Label) (skipRead: LocalBuilder, depthVar: LocalBuilder) (properties: Property list) =
         let rec emitPropertyDeser startLabel (propList: Property list) =
             match propList with
-            | [] -> ()
+            | [] -> id
             | prop::xs ->
-                il.MarkLabel(startLabel)
-
-                let markSuccess2 = il.DefineLabel()
-                il |> emitMoveToEndOrNextElement markSuccess2 (skipRead, depthVar) prop.PropertyName |> ignore
-
-                match propList |> firstRequired with
-                | Some(p) ->
-                    let expectedName =
-                        match p with
-                        | Individual { Element = Some(name,_,_) } | Array { Element = Some(name,_,_) } | Array { ItemElement = Some(name,_,_) } -> safe name
-                        | _ -> "<end of sequence>"
-                    il |> emitWrongElementException expectedName prop.Wrapper |> ignore
-                | None -> il.Emit(OpCodes.Br, returnLabel)
-
-                il.MarkLabel(markSuccess2)
-                il.Emit(OpCodes.Nop)
-
-                // reader.Depth != depth
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).Depth @>)
-                il.Emit(OpCodes.Ldloc, depthVar)
-                il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse, startLabel)
-
-                // reader.NodeType != XmlNodeType.Element
-                il.Emit(OpCodes.Ldarg_0)
-                il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NodeType @>)
-                il.Emit(OpCodes.Ldc_I4, int32 XmlNodeType.Element)
-                il.Emit(OpCodes.Ceq)
-                il.Emit(OpCodes.Brfalse, startLabel)
-
-                let nextLabel = match xs with [] -> returnLabel | _ -> il.DefineLabel()
-
-                match prop with
-                | Individual { Element = Some(name,_,isOptional) }
-                | Array { Element = Some(name,_,isOptional) } ->
-                    // reader.LocalName != property.Name
-                    let markDeserialize = il.DefineLabel()
-                    let markError = il.DefineLabel()
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).LocalName @>)
-                    il.Emit(OpCodes.Ldstr, name.LocalName)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Brfalse, markError)
-                    il.Emit(OpCodes.Ldarg_0)
-                    il.Emit(OpCodes.Callvirt, !@ <@ (null: XmlReader).NamespaceURI @>)
-                    il.Emit(OpCodes.Ldstr, name.NamespaceName)
-                    il.Emit(OpCodes.Call, !@ <@ "" = "" @>)
-                    il.Emit(OpCodes.Brtrue, markDeserialize)
-                    il.MarkLabel(markError)
-                    if isOptional then
-                        il.Emit(OpCodes.Ldc_I4_1)
-                        il.Emit(OpCodes.Stloc, skipRead)
-                        il.Emit(OpCodes.Br, nextLabel)
-                    else il |> emitWrongElementException (safe name) prop.Wrapper |> ignore
-                    il.MarkLabel(markDeserialize)
-                | _ -> ()
-
-                // Deserialize property
-                il |> emitPropertyDeserialization skipRead prop |> ignore
-
-                emitPropertyDeser nextLabel xs
+                let requiredProp = propList |> firstRequired
+                let emitContent nextLabel =
+                    let content =
+                        match prop with
+                        | Individual { Element = Some(name,_,isOptional) }
+                        | Array { Element = Some(name,_,isOptional) } ->
+                            emit' {
+                                define_labels 2 (fun (List2(markDeserialize, markError)) -> emit' {
+                                    // reader.LocalName != property.Name
+                                    ldarg_0
+                                    callvirt_expr <@ (null: XmlReader).LocalName @>
+                                    ldstr name.LocalName
+                                    string_equals
+                                    brfalse markError
+                                    ldarg_0
+                                    callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+                                    ldstr name.NamespaceName
+                                    string_equals
+                                    brtrue markDeserialize
+                                    set_marker markError
+                                    if_else isOptional
+                                        (emit' {
+                                            ldc_i4_1
+                                            stloc skipRead
+                                            br nextLabel
+                                        })
+                                        (emitWrongElementException (safe name) prop.Wrapper)
+                                    set_marker markDeserialize
+                                })
+                            }
+                        | _ -> id
+                    emit' {
+                        merge content
+                        // Deserialize property
+                        merge (emitPropertyDeserialization skipRead prop)
+                        merge (emitPropertyDeser nextLabel xs)
+                    }
+                emit' {
+                    set_marker startLabel
+                    define_label (fun markSuccess2 -> emit' {
+                        merge (emitMoveToEndOrNextElement markSuccess2 (skipRead, depthVar) prop.PropertyName)
+                        if_some_none requiredProp
+                            (fun p ->
+                                let expectedName =
+                                    match p with
+                                    | Individual { Element = Some(name,_,_) } | Array { Element = Some(name,_,_) } | Array { ItemElement = Some(name,_,_) } -> safe name
+                                    | _ -> "<end of sequence>"
+                                emitWrongElementException expectedName prop.Wrapper)
+                            (emit' { br returnLabel })
+                        set_marker markSuccess2
+                        nop
+                        // reader.Depth != depth
+                        ldarg_0
+                        callvirt_expr <@ (null: XmlReader).Depth @>
+                        ldloc depthVar
+                        ceq
+                        brfalse startLabel
+                        // reader.NodeType != XmlNodeType.Element
+                        ldarg_0
+                        callvirt_expr <@ (null: XmlReader).NodeType @>
+                        ldc_node_type XmlNodeType.Element
+                        ceq
+                        brfalse startLabel
+                        if_else xs.IsEmpty
+                            (emitContent returnLabel)
+                            (emit' { define_label emitContent }) 
+                    })
+                }
         match properties with
         | [] ->
-            il.MarkLabel(startLabel)
-            il.Emit(OpCodes.Nop)
-        | _ ->
-            properties |> emitPropertyDeser startLabel
-        il
+            emit' {
+                set_marker startLabel
+                nop
+            }
+        | _ -> emitPropertyDeser startLabel properties
 
 let (|InlineContent|_|) (properties: Property list) =
     match properties with
