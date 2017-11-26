@@ -112,6 +112,7 @@ type Property =
     member this.Wrapper with get() = this |> function Individual x -> x.Wrapper | Array x -> x.Wrapper
     member this.Type with get() = this |> function Individual x -> x.TypeMap.Type | Array x -> x.Type
     member this.GetMethod with get() = this |> function Individual x -> x.GetMethod | Array x -> x.GetMethod
+    member this.SetMethod with get() = this |> function Individual x -> x.SetMethod | Array x -> x.SetMethod
     member this.PropertyName
         with get() =
             match this with
@@ -870,17 +871,15 @@ module EmitDeserialization =
                 div
             }
 
-    let emitPropertyDeserialization skipVar (prop: Property) (il: ILGenerator) =
-        let setMethod =
+    let emitPropertyDeserialization skipVar (prop: Property) =
+        let content =
             match prop with
-            | Individual propertyMap ->
-                il |> emitIndividualPropertyDeserialization true propertyMap |> ignore
-                propertyMap.SetMethod
-            | Array arrayMap ->
-                il |> emitArrayPropertyDeserialization true skipVar arrayMap |> ignore
-                arrayMap.SetMethod
-        il.Emit(OpCodes.Callvirt, setMethod.Value)
-        il
+            | Individual propertyMap -> emitIndividualPropertyDeserialization true propertyMap
+            | Array arrayMap -> emitArrayPropertyDeserialization true skipVar arrayMap
+        emit' {
+            merge content
+            callvirt prop.SetMethod.Value
+        }
 
     let emitSequenceDeserialization (startLabel: Label, returnLabel: Label) (skipRead: LocalBuilder, depthVar: LocalBuilder) (properties: Property list) =
         let rec emitPropertyDeser startLabel (propList: Property list) =
