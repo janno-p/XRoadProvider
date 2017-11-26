@@ -220,6 +220,8 @@ type EmitBuilder with
     member this.Ldarg_0(p: Emitter) = p >> loadArg0
     [<CustomOperation("ldarg_1", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ldarg_1(p: Emitter) = p >> loadArg1
+    [<CustomOperation("ldarg_2", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Ldarg_2(p: Emitter) = p >> loadArg2
     [<CustomOperation("ldarg_3", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ldarg_3(p: Emitter) = p >> loadArg3
     [<CustomOperation("callvirt", MaintainsVariableSpaceUsingBind = true)>]
@@ -288,6 +290,8 @@ type EmitBuilder with
     member this.NewobjExpr(p: Emitter, e) = p >> createX e
     [<CustomOperation("if_some", MaintainsVariableSpaceUsingBind = true)>]
     member this.IfSome(p: Emitter, c, f) = p >> ifSome c f
+    [<CustomOperation("if_some_none", MaintainsVariableSpaceUsingBind = true)>]
+    member this.IfSomeNone(p: Emitter, c, fs, fn) = p >> ifSomeNone c fs fn
     [<CustomOperation("ldfld", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ldfld(p: Emitter, f) = p >> getField f
 
