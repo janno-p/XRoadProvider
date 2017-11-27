@@ -30,3 +30,81 @@ type XmlReader with
         while this.Read() && this.Depth >= depth do
             if this.NodeType = XmlNodeType.Element && this.Depth = depth && not allowsAny then
                 failwithf "Expected end element of type `%s%s`, but element `%s` was found instead." (match ns with "" -> "" | n -> sprintf "%s:" n) name this.LocalName
+
+    member this.ReadToContent(depth, wrapper, reqName) =
+        if this.Depth = depth - 1 then
+            if this.IsEmptyElement then
+                if reqName.Equals("") then false else
+                failwithf "Element `%s` was expected in content of %s, but no content was found." reqName wrapper
+            else this.Read()
+        elif this.Depth >= depth then true
+        else failwith "never"
+
+    member this.FindNextStartElement(depth) =
+        let rec findNextStartElement () =
+            if this.Depth < depth then false
+            elif this.Depth = depth && this.NodeType = XmlNodeType.Element then true
+            else this.Read() |> ignore; findNextStartElement()
+        findNextStartElement()
+
+    member this.IsMatchingElement(name: string, ns: string) =
+        name.Equals(this.LocalName) && ns.Equals(this.NamespaceURI)
+
+(*
+emit' {
+    set_marker startLabel
+    define_label (fun markSuccess2 -> emit' {
+        merge (emitMoveToEndOrNextElement markSuccess2 (skipRead, depthVar) prop.PropertyName)
+        if_some_none requiredProp
+            (fun p ->
+                let expectedName =
+                    match p with
+                    | Individual { Element = Some(name,_,_) } | Array { Element = Some(name,_,_) } | Array { ItemElement = Some(name,_,_) } -> safe name
+                    | _ -> "<end of sequence>"
+                emitWrongElementException expectedName prop.Wrapper)
+            (emit' { br returnLabel })
+        set_marker markSuccess2
+        nop
+        // reader.Depth != depth
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).Depth @>
+        ldloc depthVar
+        ceq
+        brfalse startLabel
+        // reader.NodeType != XmlNodeType.Element
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).NodeType @>
+        ldc_node_type XmlNodeType.Element
+        ceq
+        brfalse startLabel
+        if_else xs.IsEmpty
+            (emitContent returnLabel)
+            (emit' { define_label emitContent }) 
+    })
+}*)
+
+(*
+emit' {
+    define_labels 2 (fun (List2(markDeserialize, markError)) -> emit' {
+        // reader.LocalName != property.Name
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).LocalName @>
+        ldstr name.LocalName
+        string_equals
+        brfalse markError
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+        ldstr name.NamespaceName
+        string_equals
+        brtrue markDeserialize
+        set_marker markError
+        if_else isOptional
+            (emit' {
+                ldc_i4_1
+                stloc skipRead
+                br nextLabel
+            })
+            (emitWrongElementException (safe name) prop.Wrapper)
+        set_marker markDeserialize
+    })
+}*)

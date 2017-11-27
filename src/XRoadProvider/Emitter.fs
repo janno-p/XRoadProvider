@@ -75,6 +75,11 @@ type ContentWrapper =
     member this.Name
         with get () =
             match this with Choice (tm,_,_,_,_) -> tm.Type.FullName | Method (mi, _) -> sprintf "%s.%s" mi.DeclaringType.FullName mi.Name | Type tm -> tm.FullName
+    member this.Description =
+        match this with
+        | Choice _ -> sprintf "choice `%s`" this.Name
+        | Method _ -> sprintf "operation `%s` wrapper element" this.Name
+        | Type _ -> sprintf "type `%s`" this.Name
 
 type PropertyMap =
     { TypeMap: TypeMap
@@ -460,19 +465,21 @@ module EmitDeserialization =
     }
 
     /// Emit type (and its base types) content deserialization.
-    let rec private emitContentDeserialization (instance: LocalBuilder, depthVar: LocalBuilder) (typeMap: TypeMap) =
-        loadArg0
-        >> getVar instance
-        >> loadInt0
-        >> getVar depthVar
-        >> loadArg1
-        >> call typeMap.Deserialization.Content
+    let rec private emitContentDeserialization (instance: LocalBuilder, depthVar: LocalBuilder) (typeMap: TypeMap) = emit' {
+        ldarg_0
+        ldloc instance
+        ldc_i4_0
+        ldloc depthVar
+        ldarg_1
+        call typeMap.Deserialization.Content
+    }
 
     /// Emit abstract type test and exception.
-    let private emitAbstractTypeException (typeMap: TypeMap) =
-        loadString (sprintf "Cannot deserialize abstract type `%s`." typeMap.FullName)
-        >> createX <@ Exception("") @>
-        >> throw
+    let private emitAbstractTypeException (typeMap: TypeMap) = emit' {
+        ldstr (sprintf "Cannot deserialize abstract type `%s`." typeMap.FullName)
+        newobj_expr <@ Exception("") @>
+        throw
+    }
 
     let private emitMoveToEndOrNextElement (doneLabel: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) name =
         getVar skipVar
@@ -615,7 +622,7 @@ module EmitDeserialization =
         })
     }
 
-    let emitArrayContentEndCheck (markArrayEnd: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) = emit' {
+    let emitArrayContentEndCheck (markArrayEnd: Label) (depthVar: LocalBuilder) = emit' {
         ldarg_0
         callvirt_expr <@ (null: XmlReader).NodeType @>
         ldc_node_type XmlNodeType.EndElement
@@ -627,8 +634,6 @@ module EmitDeserialization =
             ldloc depthVar
             clt
             brfalse markSuccess
-            ldc_i4_1
-            stloc skipVar
             br markArrayEnd
             set_marker markSuccess
         })
@@ -677,7 +682,7 @@ module EmitDeserialization =
         >> callVirt (listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
 
     /// Emits array type deserialization logic.
-    let emitArrayPropertyDeserialization isContent skipVar (arrayMap: ArrayMap) =
+    let emitArrayPropertyDeserialization isContent (arrayMap: ArrayMap) =
         let listType = typedefof<System.Collections.Generic.List<_>>.MakeGenericType(arrayMap.ItemTypeMap.Type)
         emit' {
             declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
@@ -713,7 +718,7 @@ module EmitDeserialization =
                         set_marker markLoopStart
                         merge emitXmlReaderRead
                         set_marker markSkipRead
-                        merge (emitArrayContentEndCheck markArrayEnd (skipVar, depthVar))
+                        merge (emitArrayContentEndCheck markArrayEnd depthVar)
                         merge (emitXmlReaderDepthCheck depthVar)
                         brfalse markLoopStart
                         merge emitXmlReaderNodeTypeCheck
@@ -769,96 +774,56 @@ module EmitDeserialization =
                 div
             }
 
-    let emitPropertyDeserialization skipVar (prop: Property) =
-        let content =
+    let emitPropertyDeserialization (prop: Property) = emit' {
+        merge (
             match prop with
             | Individual propertyMap -> emitIndividualPropertyDeserialization true propertyMap
-            | Array arrayMap -> emitArrayPropertyDeserialization true skipVar arrayMap
-        emit' {
-            merge content
-            callvirt prop.SetMethod.Value
-        }
+            | Array arrayMap -> emitArrayPropertyDeserialization true arrayMap
+        )
+        callvirt prop.SetMethod.Value
+    }
 
-    let emitSequenceDeserialization (startLabel: Label, returnLabel: Label) (skipRead: LocalBuilder, depthVar: LocalBuilder) (properties: Property list) =
-        let rec emitPropertyDeser startLabel (propList: Property list) =
-            match propList with
-            | [] -> id
-            | prop::xs ->
-                let requiredProp = propList |> firstRequired
-                let emitContent nextLabel =
-                    let content =
-                        match prop with
-                        | Individual { Element = Some(name,_,isOptional) }
-                        | Array { Element = Some(name,_,isOptional) } ->
-                            emit' {
-                                define_labels 2 (fun (List2(markDeserialize, markError)) -> emit' {
-                                    // reader.LocalName != property.Name
-                                    ldarg_0
-                                    callvirt_expr <@ (null: XmlReader).LocalName @>
-                                    ldstr name.LocalName
-                                    string_equals
-                                    brfalse markError
-                                    ldarg_0
-                                    callvirt_expr <@ (null: XmlReader).NamespaceURI @>
-                                    ldstr name.NamespaceName
-                                    string_equals
-                                    brtrue markDeserialize
-                                    set_marker markError
-                                    if_else isOptional
-                                        (emit' {
-                                            ldc_i4_1
-                                            stloc skipRead
-                                            br nextLabel
-                                        })
-                                        (emitWrongElementException (safe name) prop.Wrapper)
-                                    set_marker markDeserialize
-                                })
-                            }
-                        | _ -> id
-                    emit' {
-                        merge content
-                        // Deserialize property
-                        merge (emitPropertyDeserialization skipRead prop)
-                        merge (emitPropertyDeser nextLabel xs)
-                    }
-                emit' {
-                    set_marker startLabel
-                    define_label (fun markSuccess2 -> emit' {
-                        merge (emitMoveToEndOrNextElement markSuccess2 (skipRead, depthVar) prop.PropertyName)
-                        if_some_none requiredProp
-                            (fun p ->
-                                let expectedName =
-                                    match p with
-                                    | Individual { Element = Some(name,_,_) } | Array { Element = Some(name,_,_) } | Array { ItemElement = Some(name,_,_) } -> safe name
-                                    | _ -> "<end of sequence>"
-                                emitWrongElementException expectedName prop.Wrapper)
-                            (emit' { br returnLabel })
-                        set_marker markSuccess2
-                        nop
-                        // reader.Depth != depth
-                        ldarg_0
-                        callvirt_expr <@ (null: XmlReader).Depth @>
-                        ldloc depthVar
-                        ceq
-                        brfalse startLabel
-                        // reader.NodeType != XmlNodeType.Element
-                        ldarg_0
-                        callvirt_expr <@ (null: XmlReader).NodeType @>
-                        ldc_node_type XmlNodeType.Element
-                        ceq
-                        brfalse startLabel
-                        if_else xs.IsEmpty
-                            (emitContent returnLabel)
-                            (emit' { define_label emitContent }) 
-                    })
-                }
+    let rec emitSequenceDeserialization (startLabel: Label) (returnLabel: Label) (depthVar: LocalBuilder) (properties: Property list) =
         match properties with
         | [] ->
             emit' {
                 set_marker startLabel
                 nop
             }
-        | _ -> emitPropertyDeser startLabel properties
+        | property::properties ->
+            emit' {
+                set_marker startLabel
+
+                ldarg_0
+                ldloc depthVar
+                call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
+                pop
+                
+                define_labels 2 (fun (List2(markNext, markDeserialize)) -> emit' {
+                    merge (
+                        match property with
+                        | Individual { Element = Some(name,_,isOptional) }
+                        | Array { Element = Some(name,_,isOptional) } ->
+                            emit' {
+                                ldarg_0
+                                ldstr name.LocalName
+                                ldstr name.NamespaceName
+                                call_expr <@ (null: XmlReader).IsMatchingElement("", "") @>
+                                brtrue markDeserialize
+                                
+                                if_else isOptional
+                                    (emit' { br markNext })
+                                    (emitWrongElementException (safe name) property.Wrapper)
+
+                                set_marker markDeserialize
+                                merge (emitPropertyDeserialization property)
+                            }
+                        | _ -> id
+                    )
+
+                    merge (emitSequenceDeserialization markNext returnLabel depthVar properties)
+                })
+            }
 
 let (|InlineContent|_|) (properties: Property list) =
     match properties with
@@ -870,68 +835,55 @@ let (|InlineContent|_|) (properties: Property list) =
     | _ -> None
 
 let rec private createDeserializeContentMethodBody (typeMap: TypeMap) (properties: Property list) =
-    let emitContent skipRead returnLabel =
-        match properties with
-        | InlineContent(prop) ->
-            emit' {
-                ldc_i4_0
-                stloc skipRead
-                merge (EmitDeserialization.emitPropertyDeserialization skipRead prop)
-            }
-        | _ ->
-            let emitLayoutContent startLabel returnLabel varDepth =
-                match typeMap.Layout.Value with
-                | LayoutKind.Choice -> id
-                | LayoutKind.Sequence ->
-                    let requiredProperty = properties |> firstRequired
+    let (requiredName, wrapperDescription) =
+        properties
+        |> firstRequired
+        |> Option.map
+            (fun p ->
+                let name =
+                    match p with
+                    | Individual { Element = Some(name,_,_) } | Array { Element = Some(name,_,_) } | Array { ItemElement = Some(name,_,_) } -> safe name
+                    | _ -> "<end of sequence>"
+                (name, p.Wrapper.Description))
+        |> MyOption.defaultValue ("", "")
+
+    emit' {
+        define_label (fun returnLabel -> emit' {
+            ldarg_0
+            ldarg_3
+            ldstr wrapperDescription
+            ldstr requiredName
+            call_expr <@ (null: XmlReader).ReadToContent(0, "", "") @>
+            brfalse returnLabel
+            merge (
+                match properties with
+                | InlineContent(prop) ->
+                    EmitDeserialization.emitPropertyDeserialization prop
+                | _ ->
                     emit' {
-                        define_label (fun label -> emit' {
-                            ldarg_0
-                            callvirt_expr <@ (null: XmlReader).IsEmptyElement @>
-                            if_some_none requiredProperty
-                                (fun p ->
-                                    let (name,_,_) = p.Element |> Option.get
-                                    emit' {
-                                        brfalse label
-                                        merge (EmitDeserialization.emitWrongElementException (safe name) (Type typeMap))
-                                    })
-                                (emit' { brtrue returnLabel })
-                            set_marker label
-                            nop
-                            merge (EmitDeserialization.emitSequenceDeserialization (startLabel, returnLabel) (skipRead, varDepth) properties)
-                        })
-                    }
-                | _ -> failwith "Not implemented"
-            emit' {
-                declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
-                    ldarg_3
-                    stloc depthVar
-                    define_label (fun startLabel -> emit' {
-                        ldloc skipRead
-                        brtrue startLabel
                         if_some typeMap.BaseType (fun typeMap -> emit' {
                             ldarg_0
                             ldarg_1
-                            ldloc skipRead
-                            ldloc depthVar
+                            ldc_i4_0
+                            ldarg_3
                             ldarg_4
                             call typeMap.Deserialization.Content
-                            stloc skipRead
+                            pop
                         })
-                        merge (emitLayoutContent startLabel returnLabel depthVar)
-                    })
-                })
-            }
-    emit' {
-        define_label (fun returnLabel -> emit' {
-            declare_variable (lazy declareLocalOf<bool>) (fun skipRead -> emit' {
-                ldarg_2
-                stloc skipRead
-                merge (emitContent skipRead returnLabel)
-                set_marker returnLabel
-                ldloc skipRead
-                ret
-            })
+                        ldarg_3
+                        declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
+                            define_label (fun startLabel -> emit' {
+                                stloc depthVar
+                                merge (match typeMap.Layout.Value with
+                                       | LayoutKind.Sequence -> EmitDeserialization.emitSequenceDeserialization startLabel returnLabel depthVar properties
+                                       | _ -> failwith "Not implemented")
+                            })
+                        })
+                    }
+            )
+            set_marker returnLabel
+            ldc_i4_0
+            ret
         })
     }
 
@@ -1078,12 +1030,10 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                             ldc_i4_2
                             div
                             brfalse label
-                            ldc_i4_0
-                            stloc skipRead
                             merge (
                                 match property with
                                 | Individual propertyMap -> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
-                                | Array arrayMap -> EmitDeserialization.emitArrayPropertyDeserialization false skipRead arrayMap
+                                | Array arrayMap -> EmitDeserialization.emitArrayPropertyDeserialization false arrayMap
                             )
                         }
 
