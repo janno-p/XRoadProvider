@@ -276,10 +276,6 @@ type EmitBuilder with
     member this.Call(p: Emitter, mi) = p >> call mi
     [<CustomOperation("call_expr", MaintainsVariableSpaceUsingBind = true)>]
     member this.CallExpr(p: Emitter, e) = p >> callX e
-    [<CustomOperation("iif", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Iif(p: Emitter, c, f) = p >> iif c f
-    [<CustomOperation("if_else", MaintainsVariableSpaceUsingBind = true)>]
-    member this.IfElse(p: Emitter, c, t, f) = p >> ifElse c t f
     [<CustomOperation("ldstr", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ldstr(p: Emitter, s) = p >> loadString s
     [<CustomOperation("string_equals", MaintainsVariableSpaceUsingBind = true)>]
@@ -302,10 +298,6 @@ type EmitBuilder with
     member this.Dup(p: Emitter) = p >> dup
     [<CustomOperation("newobj_expr", MaintainsVariableSpaceUsingBind = true)>]
     member this.NewobjExpr(p: Emitter, e) = p >> createX e
-    [<CustomOperation("if_some", MaintainsVariableSpaceUsingBind = true)>]
-    member this.IfSome(p: Emitter, c, f) = p >> ifSome c f
-    [<CustomOperation("if_some_none", MaintainsVariableSpaceUsingBind = true)>]
-    member this.IfSomeNone(p: Emitter, c, fs, fn) = p >> ifSomeNone c fs fn
     [<CustomOperation("ldfld", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ldfld(p: Emitter, f) = p >> getField f
 
