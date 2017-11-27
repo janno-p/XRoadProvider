@@ -25,7 +25,8 @@ type XmlReader with
     member this.IsQualifiedTypeName(qualifiedName: XmlQualifiedName, nm: string, ns: string, isAnonymous, isDefault) =
         if qualifiedName |> isNull then isAnonymous || isDefault else qualifiedName.Name.Equals(nm) && qualifiedName.Namespace.Equals(ns)
 
-    member this.ReadToEndElement(name, ns, depth, allowsAny) =
+    member this.ReadToEndElement(name, ns, depth, allowsAny, inlineContent) =
+        let depth = if inlineContent then depth + 1 else depth
         if this.Depth = depth - 1 && this.IsEmptyElement then this.Read() |> ignore
         elif this.Depth = depth - 1 && this.NodeType = XmlNodeType.EndElement then ()
         else

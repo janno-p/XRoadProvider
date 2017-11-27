@@ -573,7 +573,8 @@ module EmitDeserialization =
             ldstr (typeMap.Namespace |> MyOption.defaultValue "")
             ldloc depthVar
             ldc_i4_0
-            call_expr <@ (null: XmlReader).ReadToEndElement("", "", 0, false) @>
+            ldc_i4 (if hasInlineContent then 1 else 0) 
+            call_expr <@ (null: XmlReader).ReadToEndElement("", "", 0, false, false) @>
         })
         ret
     }
@@ -795,11 +796,12 @@ module EmitDeserialization =
                                 brtrue markDeserialize
                                 merge (if isOptional then (emit' { br markNext }) else (emitWrongElementException (safe name) property.Wrapper))
                                 set_marker markDeserialize
-                                merge (emitPropertyDeserialization property)
                             }
                         | _ -> id
                     )
 
+                    merge (emitPropertyDeserialization property)
+                    merge (emitXmlReaderRead)
                     merge (emitSequenceDeserialization markNext returnLabel depthVar properties)
                 })
             }
@@ -1042,7 +1044,7 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                         ldstr errorMessage
                         ldarg_0
                         callvirt_expr <@ (null: XmlReader).LocalName @>
-                        string_equals
+                        call_expr <@ String.Format("", "") @>
                         newobj_expr <@ Exception("") @>
                         throw
                     }
