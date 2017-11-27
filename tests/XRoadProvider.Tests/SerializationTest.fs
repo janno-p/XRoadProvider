@@ -613,13 +613,13 @@ let [<Tests>] tests =
         test "deserialize abstract base type with tailing elements in derived" {
             Expect.throwsC
                 (fun _ -> getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<Body><AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><SubValue>test2</SubValue><Tail></Tail></response></AbstractBaseWithOptionalServiceResponse></Body>" |> ignore)
-                (fun e -> Expect.equal e.Message "Element `<end of element>` was expected in subsequence of type `AbstractBaseWithOptional`, but element `Tail` was found instead." "")
+                (fun e -> Expect.equal e.Message "Expected end element of type `AbstractBaseWithOptional`, but element `Tail` was found instead." "")
         }
         
         test "deserialize abstract base type with tailing self closing elements in derived" {
             Expect.throwsC
                 (fun _ -> getResponse<ResultTypes.AbstractBaseWithOptionalServiceResult> "AbstractBaseWithOptionalService" @"<Body><AbstractBaseWithOptionalServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""><response xsi:type=""Betoon""><BaseValue>test</BaseValue><SubValue>test2</SubValue><Tail /></response></AbstractBaseWithOptionalServiceResponse></Body>" |> ignore)
-                (fun e -> Expect.equal e.Message "Element `<end of element>` was expected in subsequence of type `AbstractBaseWithOptional`, but element `Tail` was found instead." "")
+                (fun e -> Expect.equal e.Message "Expected end element of type `AbstractBaseWithOptional`, but element `Tail` was found instead." "")
         }
         
         test "deserialize abstract base type with optionals" {

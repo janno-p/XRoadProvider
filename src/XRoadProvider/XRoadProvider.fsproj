@@ -6,7 +6,7 @@
     <TargetFramework>net461</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn)</NoWarn>
-    <DefineConstants>$(DefineConstants);PRINT_IL</DefineConstants>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' == 'Unix' ">
     <FrameworkPathOverride>/usr/lib/mono/4.6.1-api</FrameworkPathOverride>

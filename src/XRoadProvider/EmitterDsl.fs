@@ -228,6 +228,8 @@ type EmitBuilder with
     member this.Ldarg_2(p: Emitter) = p >> loadArg2
     [<CustomOperation("ldarg_3", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ldarg_3(p: Emitter) = p >> loadArg3
+    [<CustomOperation("ldarg_4", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Ldarg_4(p: Emitter) = p >> emitint OpCodes.Ldarg 4us
     [<CustomOperation("callvirt", MaintainsVariableSpaceUsingBind = true)>]
     member this.Callvirt(p: Emitter, mi) = p >> callVirt mi
     [<CustomOperation("callvirt_expr", MaintainsVariableSpaceUsingBind = true)>]
@@ -288,6 +290,8 @@ type EmitBuilder with
     member this.Div(p: Emitter) = p >> div
     [<CustomOperation("ret", MaintainsVariableSpaceUsingBind = true)>]
     member this.Ret(p: Emitter) = p >> ret
+    [<CustomOperation("pop", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Pop(p: Emitter) = p >> pop
     [<CustomOperation("throw", MaintainsVariableSpaceUsingBind = true)>]
     member this.Throw(p: Emitter) = p >> throw
     [<CustomOperation("ldnull", MaintainsVariableSpaceUsingBind = true)>]

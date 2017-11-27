@@ -195,12 +195,10 @@ let none<'T> () = Optional.Option.None<'T>()
 
 let [<Tests>] tests =
     testList "Ads service tests" [
-        (*
         test "can serialize empty Ads service request" {
             let xml = serialize' "ADSaadrmuudatused" [| none<LocalDate>(); none<DefinedTypes.ADSaadrmuudatused_muudetudPaevadType>(); none<bigint>(); none<DefinedTypes.ADSaadrmuudatused_maxarvType>(); none<bool>(); none<bool>(); none<bool>(); none<bool>(); none<bool>(); none<bool>() |]
             Expect.equal xml @"<?xml version=""1.0"" encoding=""utf-8""?><Body xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://www.maaamet.ee"" xmlns:test=""testns""><tns:ADSaadrmuudatused /></Body>" ""
         }
-        *)
         
         test "can deserialize response content" {
             let xml = @"<Body><tns:ADSaadrmuudatusedResponse xmlns:tns=""http://www.maaamet.ee""><muudatused><muudatus><logId>6231164</logId><logStamp>2017-11-15T02:09:51</logStamp><syndmus>D</syndmus><koodAadress>377187361000000007811000000000000</koodAadress><adrId>187082</adrId><taisAadress>Harju maakond, Saku vald, Saku alevik, Tiina</taisAadress><lahiAadress>Tiina</lahiAadress><esindusPunktX>6573428.3</esindusPunktX><esindusPunktY>538636.95</esindusPunktY><poleSeotud>true</poleSeotud></muudatus><muudatus><logId>6231166</logId><logStamp>2017-11-15T02:10:29</logStamp><syndmus>D</syndmus><koodAadress>37198681400000POE00009MAEEBF30000</koodAadress><adrId>1917550</adrId><taisAadress>Harju maakond, Harku vald, Rannamõisa küla, Andruse põik 1-19</taisAadress><lahiAadress>Andruse põik 1-19</lahiAadress><esindusPunktX>6589070.49</esindusPunktX><esindusPunktY>529179.23</esindusPunktY><poleSeotud>true</poleSeotud></muudatus></muudatused></tns:ADSaadrmuudatusedResponse></Body>"

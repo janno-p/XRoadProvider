@@ -28,7 +28,7 @@ type Deserialization =
     with
         static member Create (typ: Type): Deserialization =
             { Root = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
-              Content = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, typeof<bool>, [| typeof<XmlReader>; typeof<obj>; typeof<bool>; typeof<SerializerContext> |], true)
+              Content = DynamicMethod(sprintf "%s_DeserializeContent" typ.FullName, typeof<bool>, [| typeof<XmlReader>; typeof<obj>; typeof<bool>; typeof<int>; typeof<SerializerContext> |], true)
               MatchType = DynamicMethod(sprintf "%s_MatchType" typ.FullName, typeof<bool>, [| typeof<XmlReader> |], true) }
 
 type TypeMap =
@@ -452,12 +452,19 @@ module EmitDeserialization =
         if_else isDefault (emit' { ldc_i4_1 }) (emit' { ldc_i4_0 })
         call_expr <@ (null: XmlReader).IsQualifiedTypeName(null, "", "", false, false) @>
     }
+    
+    let private emitXmlReaderRead = emit' {
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).Read() @>
+        pop
+    }
 
     /// Emit type (and its base types) content deserialization.
-    let rec private emitContentDeserialization (instance: LocalBuilder) (typeMap: TypeMap) =
+    let rec private emitContentDeserialization (instance: LocalBuilder, depthVar: LocalBuilder) (typeMap: TypeMap) =
         loadArg0
         >> getVar instance
         >> loadInt0
+        >> getVar depthVar
         >> loadArg1
         >> call typeMap.Deserialization.Content
 
@@ -467,27 +474,9 @@ module EmitDeserialization =
         >> createX <@ Exception("") @>
         >> throw
 
-    let private emitXmlReaderRead =
-        loadArg0
-        >> callVirtX <@ (null: XmlReader).Read() @>
-        >> noop
-
-    let private emitXmlReaderReadOrExcept (propertyName: XName option) =
-        let errorMessage =
-            match propertyName with
-            | Some(name) -> sprintf "Invalid message: expected `%s`, but was end of file." (safe name)
-            | None -> "Invalid message: unexpected end of file."
-        emitXmlReaderRead
-        >> beforeLabel (fun markSuccess ->
-            gotoT markSuccess
-            >> loadString errorMessage
-            >> createX <@ Exception("") @>
-            >> throw)
-        >> noop
-
     let private emitMoveToEndOrNextElement (doneLabel: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) name =
         getVar skipVar
-        >> beforeLabel (fun skipReadLabel -> gotoT skipReadLabel >> emitXmlReaderReadOrExcept name)
+        >> beforeLabel (fun skipReadLabel -> gotoT skipReadLabel >> emitXmlReaderRead)
         >> loadInt0
         >> setVar skipVar
         >> loadArg0
@@ -515,25 +504,25 @@ module EmitDeserialization =
         >> throw
 
     /// Emit whole contents of TypeMap deserialization.
-    let private emitBodyDeserialization (returnLabel: Label) (skipVar: LocalBuilder) (typeMap: TypeMap) =
+    let private emitBodyDeserialization (returnLabel: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) (typeMap: TypeMap) =
         if typeMap.Type.IsAbstract then emitAbstractTypeException typeMap else
         create (typeMap.Type.GetConstructor(BindingFlags.Instance ||| BindingFlags.NonPublic ||| BindingFlags.Public, null, [| |], [| |]))
         >> useVar (lazy (declareLocal typeMap.Type)) (fun instance ->
             setVar instance
             // TODO : Attributes
-            >> emitContentDeserialization instance typeMap
+            >> emitContentDeserialization (instance, depthVar) typeMap
             >> setVar skipVar
             >> getVar instance)
 
     /// Emit deserialization taking into consideration if actual type matches subtype or not.
-    let rec private emitTypeHierarchyDeserialization (markReturn: Label) (skipVar: LocalBuilder) (subTypes: TypeMap list) qualifiedName typeMap =
+    let rec private emitTypeHierarchyDeserialization (markReturn: Label) (skipVar: LocalBuilder, depthVar: LocalBuilder) (subTypes: TypeMap list) qualifiedName typeMap =
         match subTypes with
         | [] ->
             let context = if typeMap.IsAnonymous then "anonymous type" else sprintf "type `%s`" (XName.Get(typeMap.Name, typeMap.Namespace |> MyOption.defaultValue "") |> safe)
             beforeLabel (fun errorLabel ->
                 emitValueTypeTest true qualifiedName typeMap
                 >> gotoF errorLabel
-                >> emitBodyDeserialization markReturn skipVar typeMap
+                >> emitBodyDeserialization markReturn (skipVar, depthVar) typeMap
                 >> goto markReturn)
             >> loadString (sprintf "Unexpected type value: using type `{0}` is not allowed in the context of %s." context)
             >> getVar qualifiedName
@@ -546,57 +535,49 @@ module EmitDeserialization =
                 emitValueTypeTest false qualifiedName subType
                 >> gotoF markNext
                 // Deserialize content
-                >> emitBodyDeserialization markReturn skipVar subType
+                >> emitBodyDeserialization markReturn (skipVar, depthVar) subType
                 >> goto markReturn)
             >> noop
-            >> emitTypeHierarchyDeserialization markReturn skipVar other qualifiedName typeMap
+            >> emitTypeHierarchyDeserialization markReturn (skipVar, depthVar) other qualifiedName typeMap
 
-    let emitRootDeserializerMethod hasInlineContent (subTypes: TypeMap list) (typeMap: TypeMap) =
-        useVar (lazy declareLocalOf<int>) (fun depthVar ->
-            loadArg0
-            >> callVirtX <@ (null: XmlReader).Depth @>
-            >> loadInt1
-            >> add
-            >> setVar depthVar
-            >> useVar (lazy declareLocalOf<bool>) (fun skipVar ->
-                // When value nil attribute is present returns null.
-                beforeLabel (fun markReturn ->
-                        emitNullCheck
-                        >> beforeLabel (fun label ->
-                            gotoF label
-                            >> loadNull
-                            >> goto markReturn)
-                        // Read type attribute value of current element.
-                        >> useVar (lazy declareLocalOf<XmlQualifiedName>) (fun qualifiedName ->
-                            emitTypeAttributeRead
-                            >> setVar qualifiedName
-                            // Serialize value according to its type.
-                            >> emitTypeHierarchyDeserialization markReturn skipVar subTypes qualifiedName typeMap))
-                >> iif (not hasInlineContent)
-                        (afterLabel (fun startLabel ->
-                            beforeLabel (fun successLabel ->
-                                beforeLabel (fun doneLabel ->
-                                    emitMoveToEndOrNextElement doneLabel (skipVar, depthVar) None
-                                    >> goto successLabel)
-                                // reader.Depth != depth
-                                >> loadArg0
-                                >> callVirtX <@ (null: XmlReader).Depth @>
-                                >> getVar depthVar
-                                >> equals
-                                >> gotoF startLabel
-                                // reader.NodeType != XmlNodeType.Element
-                                >> loadArg0
-                                >> callVirtX <@ (null: XmlReader).NodeType @>
-                                >> loadInt XmlNodeType.Element
-                                >> equals
-                                >> gotoF startLabel
-                                >> emitWrongElementException "<end of element>" (Type typeMap))))))
-        >> ret
+    let emitRootDeserializerMethod (subTypes: TypeMap list) (typeMap: TypeMap) = emit' {
+        declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
+            ldarg_0
+            callvirt_expr <@ (null: XmlReader).Depth @>
+            ldc_i4_1
+            add
+            stloc depthVar
+            declare_variable (lazy declareLocalOf<bool>) (fun skipVar -> emit' {
+                define_label (fun markReturn -> emit' {
+                    merge emitNullCheck
+                    define_label (fun label -> emit' {
+                        brfalse label
+                        ldnull
+                        br markReturn
+                        set_marker label
+                    })
+                    declare_variable (lazy declareLocalOf<XmlQualifiedName>) (fun qualifiedName -> emit' {
+                        merge emitTypeAttributeRead
+                        stloc qualifiedName
+                        merge (emitTypeHierarchyDeserialization markReturn (skipVar, depthVar) subTypes qualifiedName typeMap)
+                    })
+                    set_marker markReturn
+                })
+            })
+            ldarg_0
+            ldstr typeMap.Name
+            ldstr (typeMap.Namespace |> MyOption.defaultValue "")
+            ldloc depthVar
+            ldc_i4_0
+            call_expr <@ (null: XmlReader).ReadToEndElement("", "", 0, false) @>
+        })
+        ret
+    }
 
     let emitPropertyValueDeserialization (isContent: bool) (typeMap: TypeMap) = emit' {
         ldarg_0
         if_else isContent (emit' {
-            ldarg_3
+            ldarg_4
         }) (emit' {
             ldarg_1
         })
@@ -730,7 +711,7 @@ module EmitDeserialization =
                                 br markSkipRead
                             })
                         set_marker markLoopStart
-                        merge (emitXmlReaderReadOrExcept (arrayMap.ItemElement |> Option.map (fun (x,_,_) -> x)))
+                        merge emitXmlReaderRead
                         set_marker markSkipRead
                         merge (emitArrayContentEndCheck markArrayEnd (skipVar, depthVar))
                         merge (emitXmlReaderDepthCheck depthVar)
@@ -922,26 +903,22 @@ let rec private createDeserializeContentMethodBody (typeMap: TypeMap) (propertie
                     }
                 | _ -> failwith "Not implemented"
             emit' {
-                declare_variable (lazy declareLocalOf<int>) (fun varDepth -> emit' {
-                    ldarg_0
-                    callvirt_expr <@ (null: XmlReader).Depth @>
-                    stloc varDepth
+                declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
+                    ldarg_3
+                    stloc depthVar
                     define_label (fun startLabel -> emit' {
                         ldloc skipRead
                         brtrue startLabel
-                        ldloc varDepth
-                        ldc_i4_1
-                        add
-                        stloc varDepth
                         if_some typeMap.BaseType (fun typeMap -> emit' {
                             ldarg_0
                             ldarg_1
                             ldloc skipRead
-                            ldarg_3
+                            ldloc depthVar
+                            ldarg_4
                             call typeMap.Deserialization.Content
                             stloc skipRead
                         })
-                        merge (emitLayoutContent startLabel returnLabel varDepth)
+                        merge (emitLayoutContent startLabel returnLabel depthVar)
                     })
                 })
             }
@@ -982,14 +959,12 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
     fprintfn stream "--------------------- </%s content ser> ---------------------" typ.FullName
     #endif
 
-    let hasInlineContent = match properties with InlineContent _ -> true | _ -> false
-
     #if PRINT_IL
     fprintfn stream "--------------------- <%s root deser> ---------------------" typ.FullName
     #endif
     // Emit deserializers
     defineMethod typeMap.Deserialization.Root
-        (EmitDeserialization.emitRootDeserializerMethod hasInlineContent directSubTypes typeMap)
+        (EmitDeserialization.emitRootDeserializerMethod directSubTypes typeMap)
     #if PRINT_IL
     fprintfn stream "--------------------- </%s root deser> ---------------------" typ.FullName
     #endif
@@ -1058,7 +1033,7 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
         defineMethod choiceMap.Deserialization.Content (loadArg2 >> ret)
 
     let genDeserialization () =
-        let rec generate (skipRead: LocalBuilder) (markReturn: Label) (properties: Property list) =
+        let rec generate (skipRead: LocalBuilder, depthVar: LocalBuilder) (markReturn: Label) (properties: Property list) =
             match properties with
             | [] -> id
             | property::other ->
@@ -1080,6 +1055,7 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                                 ldarg_0
                                 ldloc instance
                                 ldloc skipRead
+                                ldloc depthVar
                                 ldarg_1
                                 call typeMap.Deserialization.Content
                                 stloc skipRead
@@ -1118,27 +1094,32 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                         br markReturn
                         set_marker label
                         nop
-                        merge (generate skipRead markReturn other)
+                        merge (generate (skipRead, depthVar) markReturn other)
                     })
                 }
 
         defineMethod choiceMap.Deserialization.Root (emit' {
             define_label (fun markReturn -> emit' {
-                declare_variable (lazy declareLocalOf<bool>) (fun skipRead ->
-                    let names = properties |> List.map (fun p -> p.PropertyName)
-                    let errorMessage = sprintf "Invalid message: expected one of %A, but `{0}` was found instead." names 
-                    emit' {
-                        ldc_i4_1
-                        stloc skipRead
-                        merge (generate skipRead markReturn properties)
-                        ldstr errorMessage
-                        ldarg_0
-                        callvirt_expr <@ (null: XmlReader).LocalName @>
-                        string_equals
-                        newobj_expr <@ Exception("") @>
-                        throw
-                    }
-                )
+                declare_variable (lazy declareLocalOf<bool>) (fun skipRead -> emit' {
+                    declare_variable (lazy declareLocalOf<int>) (fun depthVar ->
+                        let names = properties |> List.map (fun p -> p.PropertyName)
+                        let errorMessage = sprintf "Invalid message: expected one of %A, but `{0}` was found instead." names 
+                        emit' {
+                            ldc_i4_1
+                            stloc skipRead
+                            ldarg_0
+                            callvirt_expr <@ (null: XmlReader).Depth @>
+                            stloc depthVar
+                            merge (generate (skipRead, depthVar) markReturn properties)
+                            ldstr errorMessage
+                            ldarg_0
+                            callvirt_expr <@ (null: XmlReader).LocalName @>
+                            string_equals
+                            newobj_expr <@ Exception("") @>
+                            throw
+                        }
+                    )
+                })
                 set_marker markReturn
             })
             ret
