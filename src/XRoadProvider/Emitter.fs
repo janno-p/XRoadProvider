@@ -542,12 +542,16 @@ module EmitDeserialization =
             >> noop
             >> emitTypeHierarchyDeserialization markReturn depthVar other qualifiedName typeMap
 
-    let emitRootDeserializerMethod (subTypes: TypeMap list) (typeMap: TypeMap) = emit' {
+    let emitRootDeserializerMethod hasInlineContent (subTypes: TypeMap list) (typeMap: TypeMap) = emit' {
         declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
             ldarg_0
             callvirt_expr <@ (null: XmlReader).Depth @>
-            ldc_i4_1
-            add
+            merge (
+                if hasInlineContent then id else emit' {
+                    ldc_i4_1
+                    add
+                }
+            )
             stloc depthVar
             define_label (fun markReturn -> emit' {
                 merge emitNullCheck
@@ -749,16 +753,9 @@ module EmitDeserialization =
         | Some(Array { Element = None; ItemElement = Some(name,_,_) }) ->
             emit' {
                 ldarg_0
-                callvirt_expr <@ (null: XmlReader).LocalName @>
                 ldstr name.LocalName
-                string_equals
-                ldarg_0
-                callvirt_expr <@ (null: XmlReader).NamespaceURI @>
                 ldstr name.NamespaceName
-                string_equals
-                add
-                ldc_i4_2
-                div
+                call_expr <@ (null: XmlReader).IsMatchingElement("", "") @>
             }
 
     let emitPropertyDeserialization (prop: Property) = emit' {
@@ -784,7 +781,6 @@ module EmitDeserialization =
                 ldarg_0
                 ldloc depthVar
                 call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
-                pop
                 
                 define_labels 2 (fun (List2(markNext, markDeserialize)) -> emit' {
                     merge (
@@ -901,7 +897,7 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
     #endif
     // Emit deserializers
     defineMethod typeMap.Deserialization.Root
-        (EmitDeserialization.emitRootDeserializerMethod directSubTypes typeMap)
+        (EmitDeserialization.emitRootDeserializerMethod (match properties with InlineContent _ -> true | _ -> false) directSubTypes typeMap)
     #if PRINT_IL
     fprintfn stream "--------------------- </%s root deser> ---------------------" typ.FullName
     #endif
@@ -978,54 +974,53 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
             | [] -> id
             | property::other ->
                 let mi = match property.Wrapper with Choice(_, _, _, _, mi) -> mi | _ -> failwith "never"
-
-                let emitter (label: Label) =
-                    match property with
-                    | Individual { TypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
-                    | Individual { Element = None; TypeMap = typeMap }
-                    | Array { Element = None; ItemTypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
-                    | Array { Element = None; ItemElement = None; ItemTypeMap = typeMap } ->
-                        emit' {
-                            declare_variable (lazy (declareLocal property.Type)) (fun instance -> emit' {
-                                ldarg_0
-                                call typeMap.Deserialization.MatchType
-                                brfalse label
-                                newobj (typeMap.Type.GetConstructor([| |]))
-                                stloc instance
-                                ldarg_0
-                                ldloc instance
-                                ldloc depthVar
-                                ldarg_1
-                                call typeMap.Deserialization.Content
-                                ldloc instance
-                            })
-                        }
-                    | Individual { Element = Some(name,_,_) }
-                    | Array { Element = Some(name,_,_) }
-                    | Array { Element = None; ItemElement = Some(name,_,_) } ->
-                        emit' {
-                            ldarg_0
-                            callvirt_expr <@ (null: XmlReader).LocalName @>
-                            ldstr name.LocalName
-                            string_equals
-                            ldarg_0
-                            callvirt_expr <@ (null: XmlReader).NamespaceURI @>
-                            ldstr name.NamespaceName
-                            string_equals
-                            add
-                            ldc_i4_2
-                            div
-                            brfalse label
-                            merge (
-                                match property with
-                                | Individual propertyMap -> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
-                                | Array arrayMap -> EmitDeserialization.emitArrayPropertyDeserialization false arrayMap
-                            )
-                        }
-
                 emit' {
                     define_label (fun label -> emit' {
-                        merge (emitter label)
+                        merge (
+                            match property with
+                            | Individual { TypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
+                            | Individual { Element = None; TypeMap = typeMap }
+                            | Array { Element = None; ItemTypeMap = { Layout = Some(LayoutKind.Choice) } as typeMap }
+                            | Array { Element = None; ItemElement = None; ItemTypeMap = typeMap } ->
+                                emit' {
+                                    declare_variable (lazy (declareLocal property.Type)) (fun instance -> emit' {
+                                        ldarg_0
+                                        ldarg_0
+                                        callvirt_expr <@ (null: XmlReader).Depth @>
+                                        call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
+                                        ldarg_0
+                                        call typeMap.Deserialization.MatchType
+                                        brfalse label
+                                        newobj (typeMap.Type.GetConstructor([| |]))
+                                        stloc instance
+                                        ldarg_0
+                                        ldloc instance
+                                        ldloc depthVar
+                                        ldarg_1
+                                        call typeMap.Deserialization.Content
+                                        ldloc instance
+                                    })
+                                }
+                            | Individual { Element = Some(name,_,_) }
+                            | Array { Element = Some(name,_,_) }
+                            | Array { Element = None; ItemElement = Some(name,_,_) } ->
+                                emit' {
+                                    ldarg_0
+                                    ldarg_0
+                                    callvirt_expr <@ (null: XmlReader).Depth @>
+                                    call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
+                                    ldarg_0
+                                    ldstr name.LocalName
+                                    ldstr name.NamespaceName
+                                    call_expr <@ (null: XmlReader).IsMatchingElement("", "") @>
+                                    brfalse label
+                                    merge (
+                                        match property with
+                                        | Individual propertyMap -> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
+                                        | Array arrayMap -> EmitDeserialization.emitArrayPropertyDeserialization false arrayMap
+                                    )
+                                }
+                        )
                         call mi
                         br markReturn
                         set_marker label

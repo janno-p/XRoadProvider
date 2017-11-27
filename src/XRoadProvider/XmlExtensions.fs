@@ -26,7 +26,9 @@ type XmlReader with
         if qualifiedName |> isNull then isAnonymous || isDefault else qualifiedName.Name.Equals(nm) && qualifiedName.Namespace.Equals(ns)
 
     member this.ReadToEndElement(name, ns, depth, allowsAny) =
-        if this.Depth = depth - 1 && (this.IsEmptyElement || this.NodeType = XmlNodeType.EndElement) then () else
+        if this.Depth = depth - 1 && this.IsEmptyElement then this.Read() |> ignore
+        elif this.Depth = depth - 1 && this.NodeType = XmlNodeType.EndElement then ()
+        else
         while this.Read() && this.Depth >= depth do
             if this.NodeType = XmlNodeType.Element && this.Depth = depth && not allowsAny then
                 failwithf "Expected end element of type `%s%s`, but element `%s` was found instead." (match ns with "" -> "" | n -> sprintf "%s:" n) name this.LocalName
@@ -42,8 +44,8 @@ type XmlReader with
 
     member this.FindNextStartElement(depth) =
         let rec findNextStartElement () =
-            if this.Depth < depth then false
-            elif this.Depth = depth && this.NodeType = XmlNodeType.Element then true
+            if this.Depth < depth then ()
+            elif this.Depth = depth && this.NodeType = XmlNodeType.Element then ()
             else this.Read() |> ignore; findNextStartElement()
         findNextStartElement()
 
