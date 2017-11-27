@@ -6,7 +6,9 @@ open System.Reflection
 open System.Reflection.Emit
 
 #if PRINT_IL
-let file = System.IO.File.OpenWrite("/home/janno/Desktop/debug.txt")
+//let file = System.IO.File.OpenWrite("/home/janno/Desktop/debug.txt")
+let file = System.IO.File.OpenWrite(@"C:\Users\Janno\Desktop\debug.txt")
+file.SetLength(0L)
 let stream = new System.IO.StreamWriter(file, System.Text.Encoding.UTF8)
 let nextLabelId =
     let mutable id = 0
@@ -32,7 +34,7 @@ let rec private typeName (typ: Type) =
     sprintf "%s<%s>" name (String.Join(",", typ.GetGenericArguments() |> Array.map typeName))
     
 let private methodName (mi: MethodInfo) =
-    let name = sprintf "%s%s" (typeName mi.DeclaringType) mi.Name
+    let name = sprintf "%s.%s" (typeName mi.DeclaringType) mi.Name
     sprintf "%s(%s)" name (String.Join(",", mi.GetParameters() |> Array.map (fun p -> typeName p.ParameterType)))
     
 let private fieldName (fi: FieldInfo) =
@@ -270,6 +272,8 @@ type EmitBuilder with
     member this.Merge(p: Emitter, e) = p >> e
     [<CustomOperation("call", MaintainsVariableSpaceUsingBind = true)>]
     member this.Call(p: Emitter, mi) = p >> call mi
+    [<CustomOperation("call_expr", MaintainsVariableSpaceUsingBind = true)>]
+    member this.CallExpr(p: Emitter, e) = p >> callX e
     [<CustomOperation("iif", MaintainsVariableSpaceUsingBind = true)>]
     member this.Iif(p: Emitter, c, f) = p >> iif c f
     [<CustomOperation("if_else", MaintainsVariableSpaceUsingBind = true)>]
@@ -286,8 +290,12 @@ type EmitBuilder with
     member this.Ret(p: Emitter) = p >> ret
     [<CustomOperation("throw", MaintainsVariableSpaceUsingBind = true)>]
     member this.Throw(p: Emitter) = p >> throw
+    [<CustomOperation("ldnull", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Ldnull(p: Emitter) = p >> loadNull
     [<CustomOperation("newobj", MaintainsVariableSpaceUsingBind = true)>]
     member this.Newobj(p: Emitter, ci) = p >> create ci
+    [<CustomOperation("dup", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Dup(p: Emitter) = p >> dup
     [<CustomOperation("newobj_expr", MaintainsVariableSpaceUsingBind = true)>]
     member this.NewobjExpr(p: Emitter, e) = p >> createX e
     [<CustomOperation("if_some", MaintainsVariableSpaceUsingBind = true)>]

@@ -11,6 +11,7 @@ open System.Xml.Linq
 open XRoad
 open XRoad.EmitterDsl
 open XRoad.Serialization.Attributes
+open XRoad.XmlExtensions
 
 type Serialization =
     { Root: MethodInfo
@@ -430,37 +431,27 @@ module EmitSerialization =
 
 module EmitDeserialization =
     /// Check if current element has `xsi:nil` attribute present.
-    let emitNullCheck (markReturn: Label) =
-        useVar (lazy declareLocalOf<string>) (fun nilValue ->
-            // Get attribute value into local variable, in case of null empty string is used.
-            loadArg0
-            >> loadString "nil"
-            >> loadString XmlNamespace.Xsi
-            >> callVirtX <@ (null: XmlReader).GetAttribute("", "") @>
-            >> dup
-            >> beforeLabel (fun markSkipNull ->
-                gotoT markSkipNull
-                >> pop
-                >> loadString "")
-            >> callVirtX <@ "".ToLower() @>
-            >> setVar nilValue
-            // When attribute value is "true" or "1" return null.
-            >> getVar nilValue
-            >> loadString "1"
-            >> stringEquals
-            >> withLabel (fun markNull ->
-                gotoT markNull
-                >> getVar nilValue
-                >> loadString "true"
-                >> stringEquals
-                >> gotoT markNull
-                >> beforeLabel (fun markNotNull ->
-                    goto markNotNull
-                    // return null;
-                    >> setLabel markNull
-                    >> loadNull
-                    >> goto markReturn))
-            >> noop)
+    let private emitNullCheck = emit' {
+        ldarg_0
+        call_expr <@ (null: XmlReader).ReadXsiNullAttribute() @>
+    }
+
+    /// Reads type attribute value and stores name and namespace in variables.
+    let private emitTypeAttributeRead = emit' {
+        ldarg_0
+        call_expr <@ (null: XmlReader).ReadXsiTypeAttribute() @>
+    }
+
+    /// Check if value type matches expected type.
+    let private emitValueTypeTest isDefault (qualifiedNameVar: LocalBuilder) (typeMap: TypeMap) = emit' {
+        ldarg_0
+        ldloc qualifiedNameVar
+        ldstr typeMap.Name
+        ldstr (typeMap.Namespace |> MyOption.defaultValue "")
+        if_else typeMap.IsAnonymous (emit' { ldc_i4_1 }) (emit' { ldc_i4_0 })
+        if_else isDefault (emit' { ldc_i4_1 }) (emit' { ldc_i4_0 })
+        call_expr <@ (null: XmlReader).IsQualifiedTypeName(null, "", "", false, false) @>
+    }
 
     /// Emit type (and its base types) content deserialization.
     let rec private emitContentDeserialization (instance: LocalBuilder) (typeMap: TypeMap) =
@@ -534,115 +525,31 @@ module EmitDeserialization =
             >> setVar skipVar
             >> getVar instance)
 
-    /// Check if value type matches expected type.
-    let private emitValueTypeTest isDefault (typeName: LocalBuilder, typeNamespace: LocalBuilder) (markNext: Label) (typeMap: TypeMap) =
-        let emitWithSecondChance (secondChanceLabel: Label option) =
-            gotoF (secondChanceLabel |> MyOption.defaultValue markNext)
-            >> getVar typeNamespace
-            >> loadString (if typeMap.IsAnonymous then "" else typeMap.Namespace |> MyOption.defaultValue "")
-            >> stringEquals
-            >> gotoF (secondChanceLabel |> MyOption.defaultValue markNext)
-            >> ifSome secondChanceLabel (fun label ->
-                    beforeLabel (fun skip ->
-                        goto skip
-                        >> setLabel label
-                        >> getVar typeName
-                        >> loadString ""
-                        >> stringEquals
-                        >> gotoF markNext
-                        >> getVar typeNamespace
-                        >> loadString ""
-                        >> stringEquals
-                        >> gotoF markNext)
-                    >> noop)
-        getVar typeName
-        >> loadString (if typeMap.IsAnonymous then "" else typeMap.Name)
-        >> stringEquals
-        >> ifElse (isDefault && not typeMap.IsAnonymous)
-                (withLabel (fun label -> emitWithSecondChance (Some label)))
-                (emitWithSecondChance None)
-
     /// Emit deserialization taking into consideration if actual type matches subtype or not.
-    let rec private emitTypeHierarchyDeserialization (markReturn: Label) (skipVar: LocalBuilder) (subTypes: TypeMap list) typeName typeMap =
+    let rec private emitTypeHierarchyDeserialization (markReturn: Label) (skipVar: LocalBuilder) (subTypes: TypeMap list) qualifiedName typeMap =
         match subTypes with
         | [] ->
             let context = if typeMap.IsAnonymous then "anonymous type" else sprintf "type `%s`" (XName.Get(typeMap.Name, typeMap.Namespace |> MyOption.defaultValue "") |> safe)
             beforeLabel (fun errorLabel ->
-                emitValueTypeTest true typeName errorLabel typeMap
+                emitValueTypeTest true qualifiedName typeMap
+                >> gotoF errorLabel
                 >> emitBodyDeserialization markReturn skipVar typeMap
                 >> goto markReturn)
-            >> loadString (sprintf "Unexpected type value: using type `{0}:{1}` is not allowed in the context of %s." context)
-            >> getVar (snd typeName)
-            >> getVar (fst typeName)
-            >> stringFormat3
+            >> loadString (sprintf "Unexpected type value: using type `{0}` is not allowed in the context of %s." context)
+            >> getVar qualifiedName
+            >> stringFormat2
             >> createX <@ Exception("") @>
             >> throw
         | subType::other ->
             beforeLabel (fun markNext ->
                 // Check if type matches current TypeMap.
-                emitValueTypeTest false typeName markNext subType
+                emitValueTypeTest false qualifiedName subType
+                >> gotoF markNext
                 // Deserialize content
                 >> emitBodyDeserialization markReturn skipVar subType
                 >> goto markReturn)
             >> noop
-            >> emitTypeHierarchyDeserialization markReturn skipVar other typeName typeMap
-
-    /// Reads type attribute value and stores name and namespace in variables.
-    let private emitTypeAttributeRead (typeName: LocalBuilder, typeNamespace: LocalBuilder) (typeMap: TypeMap) =
-        // Load empty string as default values.
-        loadString ""
-        >> setVar typeName
-        >> loadString ""
-        >> setVar typeNamespace
-        // When `xsi:type` is not present use default values.
-        >> loadArg0
-        >> loadString "type"
-        >> loadString XmlNamespace.Xsi
-        >> callVirtX <@ (null: XmlReader).GetAttribute("", "") @>
-        >> dup
-        >> beforeLabel (fun markDone ->
-            beforeLabel (fun markParse -> gotoT markParse >> pop >> goto markDone)
-            // Parse `xsi:type` value into type name and namespace.
-            >> loadInt1
-            >> createArrayOf<char>
-            >> dup
-            >> loadInt0
-            >> loadInt ':'
-            >> setElem
-            >> loadInt2
-            >> callVirtX <@ "".Split([| ':' |], 2) @>
-            >> dup
-            // When default namespace is used (no prefix).
-            >> getLen
-            >> castInt
-            >> loadInt1
-            >> equals
-            >> beforeLabel (fun markDefaultNamespace ->
-                beforeLabel (fun markWithPrefix ->
-                    gotoF markWithPrefix
-                    >> loadInt0
-                    >> getElemRef
-                    >> setVar typeName
-                    >> goto markDefaultNamespace)
-                // When prefix is present.
-                >> dup
-                >> loadInt1
-                >> getElemRef
-                >> setVar typeName
-                >> loadInt0
-                >> getElemRef
-                >> setVar typeNamespace
-                >> loadArg0
-                >> getVar typeNamespace
-                >> callVirtX <@ (null: XmlReader).LookupNamespace("") @>
-                >> setVar typeNamespace
-                >> goto markDone)
-            // Use default namespace when no prefix was found.
-            >> loadArg0
-            >> loadString ""
-            >> callVirtX <@ (null: XmlReader).LookupNamespace("") @>
-            >> setVar typeNamespace)
-        >> noop
+            >> emitTypeHierarchyDeserialization markReturn skipVar other qualifiedName typeMap
 
     let emitRootDeserializerMethod hasInlineContent (subTypes: TypeMap list) (typeMap: TypeMap) =
         useVar (lazy declareLocalOf<int>) (fun depthVar ->
@@ -654,13 +561,17 @@ module EmitDeserialization =
             >> useVar (lazy declareLocalOf<bool>) (fun skipVar ->
                 // When value nil attribute is present returns null.
                 beforeLabel (fun markReturn ->
-                        emitNullCheck markReturn
+                        emitNullCheck
+                        >> beforeLabel (fun label ->
+                            gotoF label
+                            >> loadNull
+                            >> goto markReturn)
                         // Read type attribute value of current element.
-                        >> useVar (lazy declareLocalOf<string>) (fun nm ->
-                                useVar (lazy declareLocalOf<string>) (fun ns ->
-                                    emitTypeAttributeRead (nm, ns) typeMap
-                                    // Serialize value according to its type.
-                                    >> emitTypeHierarchyDeserialization markReturn skipVar subTypes (nm, ns) typeMap)))
+                        >> useVar (lazy declareLocalOf<XmlQualifiedName>) (fun qualifiedName ->
+                            emitTypeAttributeRead
+                            >> setVar qualifiedName
+                            // Serialize value according to its type.
+                            >> emitTypeHierarchyDeserialization markReturn skipVar subTypes qualifiedName typeMap))
                 >> iif (not hasInlineContent)
                         (afterLabel (fun startLabel ->
                             beforeLabel (fun successLabel ->
@@ -794,7 +705,13 @@ module EmitDeserialization =
                 stloc depthVar
                 define_labels 4 (fun (List4 (markArrayNull, markSkipRead, markArrayEnd, markLoopStart)) -> emit' {
                     iif arrayMap.Element.IsSome (emit' {
-                        merge (emitNullCheck markArrayNull)
+                        merge emitNullCheck
+                        define_label (fun label -> emit' {
+                            brfalse label
+                            ldnull
+                            br markArrayNull
+                            set_marker label
+                        })
                         ldloc depthVar
                         ldc_i4_1
                         add

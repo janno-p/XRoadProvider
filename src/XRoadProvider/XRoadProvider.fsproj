@@ -35,6 +35,7 @@
     <Compile Include="AssemblyInfo.Build.fs" />
     <Compile Include="Attributes.fs" />
     <Compile Include="Commons.fs" />
+    <Compile Include="XmlExtensions.fs" />
     <Compile Include="EmitterDsl.fs" />
     <Compile Include="Emitter.fs" />
     <Compile Include="Serialization.fs" />
