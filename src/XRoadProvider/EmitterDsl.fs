@@ -6,6 +6,8 @@ open System.Reflection
 open System.Reflection.Emit
 
 #if PRINT_IL
+let file = System.IO.File.OpenWrite("/home/janno/Desktop/debug.txt")
+let stream = new System.IO.StreamWriter(file, System.Text.Encoding.UTF8)
 let nextLabelId =
     let mutable id = 0
     (fun () -> id <- id + 1; id)
@@ -42,7 +44,7 @@ let private ctorName (ci: ConstructorInfo) =
 let inline declareLocal typ (il: ILGenerator) =
     #if PRINT_IL
     let variable = il.DeclareLocal(typ)
-    printfn "%-10s : [%d] (%s)" "@declare" variable.LocalIndex (typeName typ)
+    fprintfn stream "%-10s : [%d] (%s)" "@declare" variable.LocalIndex (typeName typ)
     variable
     #else
     il.DeclareLocal(typ)
@@ -51,42 +53,42 @@ let inline declareLocal typ (il: ILGenerator) =
 let inline setLabel label (il: ILGenerator) =
     #if PRINT_IL
     let id = labels.GetOrAdd(label, (fun _ -> nextLabelId()))
-    printfn "%-10s : @{%A}" "@label" id
+    fprintfn stream "%-10s : @{%A}" "@label" id
     #endif
     il.MarkLabel(label)
     il
 
 let inline private emit opCode (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%A" opCode
+    fprintfn stream "%A" opCode
     #endif
     il.Emit(opCode)
     il
     
 let inline private emittyp opCode (typ: Type) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : %s" (opCode.ToString()) (typeName typ)
+    fprintfn stream "%-10s : %s" (opCode.ToString()) (typeName typ)
     #endif
     il.Emit(opCode, typ)
     il
     
 let inline private emitint opCode i (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : %s" (opCode.ToString()) (i.ToString())
+    fprintfn stream "%-10s : %s" (opCode.ToString()) (i.ToString())
     #endif
     il.Emit(opCode, int i)
     il
 
 let inline private emitmi opCode (mi: MethodInfo) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : %s" (opCode.ToString()) (methodName mi)
+    fprintfn stream "%-10s : %s" (opCode.ToString()) (methodName mi)
     #endif
     il.Emit(opCode, mi)
     il
     
 let inline private emitfld opCode (fi: FieldInfo) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : %s" (opCode.ToString()) (fieldName fi)
+    fprintfn stream "%-10s : %s" (opCode.ToString()) (fieldName fi)
     #endif
     il.Emit(opCode, fi)
     il
@@ -94,35 +96,35 @@ let inline private emitfld opCode (fi: FieldInfo) (il: ILGenerator) =
 let inline private emitlbl opCode (label: Label) (il: ILGenerator) =
     #if PRINT_IL
     let id = labels.GetOrAdd(label, (fun _ -> nextLabelId()))
-    printfn "%-10s : @{%A}" (opCode.ToString()) id
+    fprintfn stream "%-10s : @{%A}" (opCode.ToString()) id
     #endif
     il.Emit(opCode, label)
     il
 
 let inline private emitstr opCode (value: string) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : %s" (opCode.ToString()) value
+    fprintfn stream "%-10s : %s" (opCode.ToString()) value
     #endif
     il.Emit(opCode, value)
     il
     
 let inline private emitvar opCode (var: LocalBuilder) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : [%d] (%s)" (opCode.ToString()) var.LocalIndex (typeName var.LocalType)
+    fprintfn stream "%-10s : [%d] (%s)" (opCode.ToString()) var.LocalIndex (typeName var.LocalType)
     #endif
     il.Emit(opCode, var)
     il
     
 let inline callCtor (typ: Type) args (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : %s(%s)" (OpCodes.Newobj.ToString()) (typeName typ) (String.Join(",", args |> List.map typeName))
+    fprintfn stream "%-10s : %s(%s)" (OpCodes.Newobj.ToString()) (typeName typ) (String.Join(",", args |> List.map typeName))
     #endif
     il.Emit(OpCodes.Newobj, typ.GetConstructor(args |> List.toArray))
     il
 
 let inline create (ci: ConstructorInfo) (il: ILGenerator) =
     #if PRINT_IL
-    printfn "%-10s : %s" (OpCodes.Newobj.ToString()) (ctorName ci)
+    fprintfn stream "%-10s : %s" (OpCodes.Newobj.ToString()) (ctorName ci)
     #endif
     il.Emit(OpCodes.Newobj, ci)
     il

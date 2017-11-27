@@ -1045,28 +1045,59 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
     let properties = getContentOfType typeMap |> getProperties (getTypeMap isEncoded)
     let directSubTypes = typeMap.Type |> findDirectSubTypes isEncoded
 
+    #if PRINT_IL
+    let typ = typeMap.Type
+    fprintfn stream "--------------------- <%s root ser> ---------------------" typ.FullName
+    #endif
     // Emit serializers
     defineMethod typeMap.Serialization.Root
         (EmitSerialization.emitRootSerializerMethod isEncoded directSubTypes typeMap)
+    #if PRINT_IL
+    fprintfn stream "--------------------- </%s root ser> ---------------------" typ.FullName
+    #endif
 
+    #if PRINT_IL
+    fprintfn stream "--------------------- <%s content ser> ---------------------" typ.FullName
+    #endif
     defineMethod typeMap.Serialization.Content
         (EmitSerialization.emitContentSerializerMethod isEncoded properties >> ret)
+    #if PRINT_IL
+    fprintfn stream "--------------------- </%s content ser> ---------------------" typ.FullName
+    #endif
 
     let hasInlineContent = match properties with InlineContent _ -> true | _ -> false
 
+    #if PRINT_IL
+    fprintfn stream "--------------------- <%s root deser> ---------------------" typ.FullName
+    #endif
     // Emit deserializers
     defineMethod typeMap.Deserialization.Root
         (EmitDeserialization.emitRootDeserializerMethod hasInlineContent directSubTypes typeMap)
+    #if PRINT_IL
+    fprintfn stream "--------------------- </%s root deser> ---------------------" typ.FullName
+    #endif
 
+    #if PRINT_IL
+    fprintfn stream "--------------------- <%s content deser> ---------------------" typ.FullName
+    #endif
     defineMethod typeMap.Deserialization.Content
         (createDeserializeContentMethodBody typeMap properties)
+    #if PRINT_IL
+    fprintfn stream "--------------------- </%s content deser> ---------------------" typ.FullName
+    #endif
 
     match properties with
     | [Individual { Element = None }] | [Array { Element = None; ItemElement = None }] ->
         ()
     | _ ->
+        #if PRINT_IL
+        fprintfn stream "--------------------- <%s match deser> ---------------------" typ.FullName
+        #endif
         defineMethod typeMap.Deserialization.MatchType
             (EmitDeserialization.emitMatchType (properties |> List.tryHead) >> ret)
+        #if PRINT_IL
+        fprintfn stream "--------------------- </%s match deser> ---------------------" typ.FullName
+        #endif
 
 and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap: TypeMap) =
     let genSerialization () =
@@ -1288,9 +1319,17 @@ and private createTypeMap (isEncoded: bool) (typ: Type) =
         failwithf "Type `%s` is not serializable." typ.FullName
     | Serializable(typeAttribute) ->
         typ |> addTypeMap (fun typeMap ->
+            #if PRINT_IL
+            fprintfn stream "===================== <%s> ==========================" typ.FullName
+            #endif
             match typeAttribute.Layout with
             | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers isEncoded (getContentOfChoice typeMap |> getProperties (getTypeMap isEncoded))
-            | _ -> typeMap |> createTypeSerializers isEncoded)
+            | _ -> typeMap |> createTypeSerializers isEncoded
+            #if PRINT_IL
+            fprintfn stream "===================== </%s> ==========================" typ.FullName
+            stream.Flush()
+            #endif
+            )
 
 and internal getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
     match typeMaps.TryGetValue(typ) with
