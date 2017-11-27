@@ -507,40 +507,56 @@ module EmitDeserialization =
         >> throw
 
     /// Emit whole contents of TypeMap deserialization.
-    let private emitBodyDeserialization (returnLabel: Label) (depthVar: LocalBuilder) (typeMap: TypeMap) =
+    let private emitBodyDeserialization hasInlineContent (depthVar: LocalBuilder) (typeMap: TypeMap) =
         if typeMap.Type.IsAbstract then emitAbstractTypeException typeMap else
-        create (typeMap.Type.GetConstructor(BindingFlags.Instance ||| BindingFlags.NonPublic ||| BindingFlags.Public, null, [| |], [| |]))
-        >> useVar (lazy (declareLocal typeMap.Type)) (fun instance ->
-            setVar instance
-            // TODO : Attributes
-            >> emitContentDeserialization (instance, depthVar) typeMap
-            >> getVar instance)
+        emit' {
+            newobj (typeMap.Type.GetConstructor(BindingFlags.Instance ||| BindingFlags.NonPublic ||| BindingFlags.Public, null, [| |], [| |]))
+            declare_variable (lazy (declareLocal typeMap.Type)) (fun instance -> emit' {
+                stloc instance
+                // TODO : Attributes
+                merge (emitContentDeserialization (instance, depthVar) typeMap)
+                ldarg_0
+                ldstr typeMap.Name
+                ldstr (typeMap.Namespace |> MyOption.defaultValue "")
+                ldloc depthVar
+                ldc_i4_0
+                ldc_i4 (if hasInlineContent then 1 else 0) 
+                call_expr <@ (null: XmlReader).ReadToEndElement("", "", 0, false, false) @>
+                ldloc instance
+            })
+        }
 
     /// Emit deserialization taking into consideration if actual type matches subtype or not.
-    let rec private emitTypeHierarchyDeserialization (markReturn: Label) (depthVar: LocalBuilder) (subTypes: TypeMap list) qualifiedName typeMap =
+    let rec private emitTypeHierarchyDeserialization hasInlineContent (markReturn: Label) (depthVar: LocalBuilder) (subTypes: TypeMap list) qualifiedName typeMap =
         match subTypes with
         | [] ->
             let context = if typeMap.IsAnonymous then "anonymous type" else sprintf "type `%s`" (XName.Get(typeMap.Name, typeMap.Namespace |> MyOption.defaultValue "") |> safe)
-            beforeLabel (fun errorLabel ->
-                emitValueTypeTest true qualifiedName typeMap
-                >> gotoF errorLabel
-                >> emitBodyDeserialization markReturn depthVar typeMap
-                >> goto markReturn)
-            >> loadString (sprintf "Unexpected type value: using type `{0}` is not allowed in the context of %s." context)
-            >> getVar qualifiedName
-            >> stringFormat2
-            >> createX <@ Exception("") @>
-            >> throw
+            emit' {
+                define_label (fun errorLabel -> emit' {
+                    merge (emitValueTypeTest true qualifiedName typeMap)
+                    brfalse errorLabel
+                    merge (emitBodyDeserialization hasInlineContent depthVar typeMap)
+                    br markReturn
+                    set_marker errorLabel
+                })
+                ldstr (sprintf "Unexpected type value: using type `{0}` is not allowed in the context of %s." context)
+                ldloc qualifiedName
+                call_expr <@ String.Format("", "") @>
+                newobj_expr <@ Exception("") @>
+                throw
+            }
         | subType::other ->
-            beforeLabel (fun markNext ->
-                // Check if type matches current TypeMap.
-                emitValueTypeTest false qualifiedName subType
-                >> gotoF markNext
-                // Deserialize content
-                >> emitBodyDeserialization markReturn depthVar subType
-                >> goto markReturn)
-            >> noop
-            >> emitTypeHierarchyDeserialization markReturn depthVar other qualifiedName typeMap
+            emit' {
+                define_label (fun markNext -> emit' {
+                    merge (emitValueTypeTest false qualifiedName subType)
+                    brfalse markNext
+                    merge (emitBodyDeserialization hasInlineContent depthVar subType)
+                    br markReturn
+                    set_marker markNext
+                })
+                nop
+                merge (emitTypeHierarchyDeserialization hasInlineContent markReturn depthVar other qualifiedName typeMap)
+            }
 
     let emitRootDeserializerMethod hasInlineContent (subTypes: TypeMap list) (typeMap: TypeMap) = emit' {
         declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
@@ -564,17 +580,10 @@ module EmitDeserialization =
                 declare_variable (lazy declareLocalOf<XmlQualifiedName>) (fun qualifiedName -> emit' {
                     merge emitTypeAttributeRead
                     stloc qualifiedName
-                    merge (emitTypeHierarchyDeserialization markReturn depthVar subTypes qualifiedName typeMap)
+                    merge (emitTypeHierarchyDeserialization hasInlineContent markReturn depthVar subTypes qualifiedName typeMap)
                 })
                 set_marker markReturn
             })
-            ldarg_0
-            ldstr typeMap.Name
-            ldstr (typeMap.Namespace |> MyOption.defaultValue "")
-            ldloc depthVar
-            ldc_i4_0
-            ldc_i4 (if hasInlineContent then 1 else 0) 
-            call_expr <@ (null: XmlReader).ReadToEndElement("", "", 0, false, false) @>
         })
         ret
     }
