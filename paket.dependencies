@@ -1,8 +1,8 @@
 source https://nuget.org/api/v2
 framework: net461
 
-nuget FAKE >= 5 beta
-nuget FSharp.Formatting >= 3 beta
+nuget FAKE
+nuget FSharp.Formatting
 nuget SourceLink.Fake
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx

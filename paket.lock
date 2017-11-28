@@ -1,9 +1,9 @@
 RESTRICTION: == net461
 NUGET
   remote: https://www.nuget.org/api/v2
-    FAKE (5.0.0-beta010)
+    FAKE (4.63.2)
     FSharp.Compiler.Service (2.0.0.6)
-    FSharp.Formatting (3.0.0-beta01)
+    FSharp.Formatting (2.14.4)
       FSharp.Compiler.Service (2.0.0.6)
       FSharpVSPowerTools.Core (>= 2.3 < 2.4)
     FSharpVSPowerTools.Core (2.3)
@@ -15,4 +15,4 @@ GITHUB
     modules/Octokit/Octokit.fsx (0341a2e614eb2a7f34607cec914eb0ed83ce9add)
       Octokit (>= 0.20)
   remote: fsprojects/FSharp.TypeProviders.SDK
-    src/ProvidedTypes.fs (b03aeb9b87c24559b99da3b3afdfcfdae0cc3ce0)
+    src/ProvidedTypes.fs (33fd1c0a95dd1ddfe77f12e4921b6983f72c8e62)

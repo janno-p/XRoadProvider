@@ -7,7 +7,7 @@ open System.Reflection
 [<assembly: AssemblyDescriptionAttribute("Type providers for generating types and service interfaces for XRoad producers.")>]
 [<assembly: AssemblyVersionAttribute("1.0.0")>]
 [<assembly: AssemblyFileVersionAttribute("1.0.0")>]
-[<assembly: AssemblyInformationalVersionAttribute("1.0.171117.133904")>]
+[<assembly: AssemblyInformationalVersionAttribute("1.0.171128.220030")>]
 do ()
 
 module internal AssemblyVersionInformation =
@@ -16,4 +16,4 @@ module internal AssemblyVersionInformation =
     let [<Literal>] AssemblyDescription = "Type providers for generating types and service interfaces for XRoad producers."
     let [<Literal>] AssemblyVersion = "1.0.0"
     let [<Literal>] AssemblyFileVersion = "1.0.0"
-    let [<Literal>] AssemblyInformationalVersion = "1.0.171117.133904"
+    let [<Literal>] AssemblyInformationalVersion = "1.0.171128.220030"
