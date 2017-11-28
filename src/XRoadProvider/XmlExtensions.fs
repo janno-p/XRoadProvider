@@ -1,6 +1,5 @@
 module XRoad.XmlExtensions
 
-open System
 open System.Xml
 open XRoad
 
@@ -22,7 +21,7 @@ type XmlReader with
             let ns = this.LookupNamespace(nsprefix)
             XmlQualifiedName(nm, ns)
 
-    member this.IsQualifiedTypeName(qualifiedName: XmlQualifiedName, nm: string, ns: string, isAnonymous, isDefault) =
+    member __.IsQualifiedTypeName(qualifiedName: XmlQualifiedName, nm: string, ns: string, isAnonymous, isDefault) =
         if qualifiedName |> isNull then isAnonymous || isDefault else qualifiedName.Name.Equals(nm) && qualifiedName.Namespace.Equals(ns)
 
     member this.ReadToNextElement(name, ns, depth, allowContent) =
@@ -34,7 +33,6 @@ type XmlReader with
             this.Read() |> ignore
 
     member this.FindNextStartElement(depth) =
-        //printfn "==> %s %d %d %A" this.LocalName this.Depth depth this.NodeType
         let rec findNextStartElement () =
             if this.Depth < depth then false
             elif this.Depth = depth && this.NodeType = XmlNodeType.Element then true

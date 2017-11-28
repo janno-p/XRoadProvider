@@ -1,43 +1,40 @@
 ﻿module internal XRoad.ProducerDefinition
 
+open CodeDom
+open CodeDomGenerator
 open System
 open System.CodeDom
 open System.Collections.Generic
-open System.IO
 open System.Reflection
 open System.Xml
 open XRoad.Serialization.Attributes
-open XRoad.CodeDom
-open XRoad.CodeDomGenerator
-open XRoad.Wsdl
-open XRoad.TypeSchema
+open TypeSchema
+open Wsdl
 
 /// Functions and types to handle building methods for services and operation bindings.
 module ServiceBuilder =
-    open XRoad.Serialization.Attributes
-
     /// Creates return type for the operation.
     /// To support returning multiple output parameters, they are wrapped into tuples accordingly:
     /// Single parameter responses return that single parameter.
     /// Multiple parameter responses are wrapped into tuples, since C# provides tuples upto 8 arguments,
     /// some composition is required when more output parameters are present.
-    let private makeReturnType isMultipart (types: (string * RuntimeType) list) =
-        let rec getReturnTypeTuple (tuple: (string * RuntimeType) list, types) =
-            match types with
-            | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_,typ) -> typ.AsCodeTypeReference()) |> Array.ofList)
-                    (typ, Expr.instOf typ (tuple |> List.map (fun (varName,_) -> !+ varName)))
-            | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
-            | x::xs -> let inner = getReturnTypeTuple([x], xs)
-                       let typ = CodeTypeReference("System.Tuple", ((tuple |> List.map (fun (_,typ) -> typ.AsCodeTypeReference())) @ [fst inner]) |> Array.ofList)
-                       (typ, Expr.instOf typ ((tuple |> List.map (fun (varName,_) -> !+ varName)) @ [snd inner]))
-        let types =
-            if isMultipart
-            then ("reader.Context.Attachments", PrimitiveType(typeof<IDictionary<string,Stream>>))::types
-            else types
-        match types with
-        | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
-        | [(varName, typ)] -> (typ.AsCodeTypeReference(), !+ varName)
-        | many -> getReturnTypeTuple([], many)
+//    let private makeReturnType isMultipart (types: (string * RuntimeType) list) =
+//        let rec getReturnTypeTuple (tuple: (string * RuntimeType) list, types) =
+//            match types with
+//            | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_,typ) -> typ.AsCodeTypeReference()) |> Array.ofList)
+//                    (typ, Expr.instOf typ (tuple |> List.map (fun (varName,_) -> !+ varName)))
+//            | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
+//            | x::xs -> let inner = getReturnTypeTuple([x], xs)
+//                       let typ = CodeTypeReference("System.Tuple", ((tuple |> List.map (fun (_,typ) -> typ.AsCodeTypeReference())) @ [fst inner]) |> Array.ofList)
+//                       (typ, Expr.instOf typ ((tuple |> List.map (fun (varName,_) -> !+ varName)) @ [snd inner]))
+//        let types =
+//            if isMultipart
+//            then ("reader.Context.Attachments", PrimitiveType(typeof<IDictionary<string,Stream>>))::types
+//            else types
+//        match types with
+//        | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
+//        | [(varName, typ)] -> (typ.AsCodeTypeReference(), !+ varName)
+//        | many -> getReturnTypeTuple([], many)
 
     let instQN (nm: string) (ns: string) = Expr.inst<XmlQualifiedName> [!^ nm; !^ ns]
 
@@ -156,11 +153,11 @@ module ServiceBuilder =
                         Cls.create (sprintf "%sResult" operation.Name)
                         |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
                         |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
-                    let prop =
-                        resultClass
-                        |> addProperty("response", elementType, false)
-                        |> Prop.describe(Attributes.xrdContent)
-                        |> Prop.describe(Attributes.xrdCollection(Some(itemName), false))
+                    resultClass
+                    |> addProperty("response", elementType, false)
+                    |> Prop.describe(Attributes.xrdContent)
+                    |> Prop.describe(Attributes.xrdCollection(Some(itemName), false))
+                    |> ignore
                     Some(resultClass)
                 | _ -> None
             m
@@ -179,7 +176,6 @@ module ServiceBuilder =
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
                                     Expr.this @=> "ProducerUri"
-                                    Expr.this @=> "ProducerName"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
                 |> Meth.addStmt (Stmt.ret ((!+ "__result") @=> "response"))
@@ -196,7 +192,6 @@ module ServiceBuilder =
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
                                     Expr.this @=> "ProducerUri"
-                                    Expr.this @=> "ProducerName"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
                 |> ignore

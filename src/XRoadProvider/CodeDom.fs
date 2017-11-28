@@ -9,7 +9,7 @@ open System.Diagnostics
 open System.Globalization
 open System.IO
 
-open XRoad.TypeSchema
+open TypeSchema
 
 /// Get type reference from generic argument.
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
@@ -108,7 +108,7 @@ module Attributes =
         |> Attr.addArg (!^ name)
         |> Attr.addArg (!^ (version |> MyOption.defaultValue null))
         |> Attr.addArg (Expr.typeRefOf<XRoadProtocol> @=> protocol.ToString())
-        |> iif (messageProtocol = XRoadMessageProtocolVersion.Version40) (fun attr -> attr |> Attr.addNamedArg "ProtocolVersion" (!^ "4.0"))
+        |> iif (messageProtocol = Version40) (fun attr -> attr |> Attr.addNamedArg "ProtocolVersion" (!^ "4.0"))
     
     let xrdRequest name ns isEncoded isMultipart =
             Attr.create<XRoadRequestAttribute>
@@ -242,7 +242,7 @@ module Compiler =
         let codeCompileUnit = CodeCompileUnit()
         codeCompileUnit.Namespaces.Add(codeNamespace) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<ITypeProvider>.Assembly.Location) |> ignore
-        codeCompileUnit.ReferencedAssemblies.Add(typeof<XRoad.BinaryContent>.Assembly.Location) |> ignore
+        codeCompileUnit.ReferencedAssemblies.Add(typeof<BinaryContent>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<NodaTime.LocalDate>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<Optional.Option>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.dll") |> ignore
@@ -312,7 +312,7 @@ type RuntimeType =
             | PrimitiveType(typ) -> CodeTypeReference(typ)
             | ProvidedType(_,name) -> CodeTypeReference(readonly + name)
             | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
-            | ContentType -> CodeTypeReference(typeof<XRoad.BinaryContent>)
+            | ContentType -> CodeTypeReference(typeof<BinaryContent>)
         match optional with
         | Some(true) ->
             let optionalType = CodeTypeReference(typedefof<Optional.Option<_>>)

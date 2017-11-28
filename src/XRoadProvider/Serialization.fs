@@ -1,15 +1,14 @@
 ﻿namespace XRoad
 
 open Common.Logging
+open Emitter
 open FSharp.Core
 open System
 open System.Collections.Generic
 open System.IO
 open System.Net
 open System.Xml
-open System.Reflection
 open XRoad.Serialization.Attributes
-open XRoad.Emitter
 
 type XRoadFault(faultCode: string, faultString) =
     inherit Exception(faultString)
@@ -346,7 +345,7 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
         new XRoadResponse(request.GetResponse(), methodMap)
 
 type public XRoadUtil =
-    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, producerName: string, header: AbstractXRoadHeader, args: obj[]) =
+    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, header: AbstractXRoadHeader, args: obj[]) =
         let serviceMethod = serviceType.GetMethod(methodName)
         let serviceMethodMap = getMethodMap serviceMethod 
         let request = XRoadRequest(producerUri, serviceMethodMap)

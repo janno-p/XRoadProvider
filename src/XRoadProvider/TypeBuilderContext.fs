@@ -1,5 +1,6 @@
 ﻿namespace XRoad
 
+open CodeDom
 open System
 open System.CodeDom
 open System.Collections.Generic
@@ -7,9 +8,8 @@ open System.Reflection
 open System.Text.RegularExpressions
 open System.Xml.Linq
 open XRoad.Serialization.Attributes
-open XRoad.CodeDom
-open XRoad.Wsdl
-open XRoad.TypeSchema
+open TypeSchema
+open Wsdl
 
 [<AutoOpen>]
 module internal Pattern =
@@ -25,7 +25,7 @@ module internal Pattern =
         // Extracts information about array item type.
         let getArrayItemElement contentParticle =
             match contentParticle with
-            | Some(ComplexTypeParticle.All(all)) ->
+            | Some(All(all)) ->
                 if all.MaxOccurs > 1u then failwith "Not implemented: array of anonymous all types."
                 elif all.MaxOccurs < 1u then None
                 else match all.Elements with
@@ -59,7 +59,7 @@ module internal Pattern =
         | ComplexDefinition(spec) ->
             match spec.Content with
             // SOAP-encoded array-s inherit soapenc:Array type.
-            | ComplexTypeContent.ComplexContent(Restriction(rstr)) when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEnc ->
+            | ComplexContent(Restriction(rstr)) when rstr.Base.LocalName = "Array" && rstr.Base.NamespaceName = XmlNamespace.SoapEnc ->
                 match rstr.Content.Attributes with
                 | ArrayType(attrSpec) ->
                     match attrSpec.ArrayType with
@@ -74,7 +74,7 @@ module internal Pattern =
                     | Some(_) as element -> element
                     | None -> failwith "Unsupported SOAP encoding array definition."
             // Multiplicity my constrain to using collection type.
-            | ComplexTypeContent.Particle(content) -> getArrayItemElement(content.Content)
+            | Particle(content) -> getArrayItemElement(content.Content)
             | _ -> None
         | EmptyDefinition
         | SimpleDefinition(_) -> None
@@ -90,7 +90,7 @@ type internal ProducerDescription =
         | null -> failwithf "Uri `%s` refers to invalid WSDL document (`definitions` element not found)." uri
         | definitions ->
             { Services = definitions |> ServiceDescription.parseServices languageCode
-              TypeSchemas = definitions |> TypeSchema.Parser.parseSchema uri }
+              TypeSchemas = definitions |> Parser.parseSchema uri }
 
 /// Context keeps track of already generated types for provided types and namespaces
 /// to simplify reuse and resolve mutual dependencies between types.

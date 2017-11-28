@@ -39,7 +39,7 @@ type XRoadProducerProvider() as this =
                 let key = (String.Join(".", typeNameWithArguments), producerUri, languageCode)
                 match typeCache.TryGetValue(key) with
                 | false, _ ->
-                    let typ = XRoad.ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, languageCode)
+                    let typ = ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, languageCode)
                     typeCache.Add(key, typ)
                     typ
                 | true, typ -> typ

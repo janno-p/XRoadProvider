@@ -4,8 +4,7 @@ open System
 open System.Collections.Generic
 open System.Globalization
 open System.Xml.Linq
-
-open XRoad.Wsdl
+open Wsdl
 
 /// Extract numberical bound limits from current element.
 let readBoundsValue name node =
@@ -54,9 +53,9 @@ type AttributeUse =
     with
         static member FromNode(node) =
             match node |> attrOrDefault (xname "use") "optional" with
-            | "optional" -> AttributeUse.Optional
-            | "prohibited" -> AttributeUse.Prohibited
-            | "required" -> AttributeUse.Required
+            | "optional" -> Optional
+            | "prohibited" -> Prohibited
+            | "required" -> Required
             | x -> failwithf "Invalid attribute use value %s" x
 
 type TypeDefinition<'T> =
@@ -278,9 +277,9 @@ module Parser =
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "simpleContent", (Begin | Annotation) ->
-                    Content, Some(ComplexTypeContent.SimpleContent(parseSimpleContent node))
+                    Content, Some(SimpleContent(parseSimpleContent node))
                 | Xsd "complexContent", (Begin | Annotation) ->
-                    Content, Some(ComplexTypeContent.ComplexContent(parseComplexContent node))
+                    Content, Some(ComplexContent(parseComplexContent node))
                 | Xsd "choice", (Begin | Annotation) ->
                     Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Choice(parseChoice(node))); Attributes = []; AttributeGroups = [] }))
                 | Xsd "group", (Begin | Annotation) ->
@@ -288,7 +287,7 @@ module Parser =
                 | Xsd "sequence", (Begin | Annotation) ->
                     Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Sequence(parseSequence node)); Attributes = []; AttributeGroups = [] }))
                 | Xsd "all", (Begin | Annotation) ->
-                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.All(parseAll node)); Attributes = []; AttributeGroups = [] }))
+                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(All(parseAll node)); Attributes = []; AttributeGroups = [] }))
                 | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
                     let attribute = parseAttribute node
                     let content = match spec with
@@ -309,7 +308,7 @@ module Parser =
                     node |> notExpectedIn "complexType"
                 ) (Begin, None)
                 |> snd
-                |> MyOption.defaultValue ComplexTypeContent.Empty
+                |> MyOption.defaultValue Empty
         { IsAbstract = node |> readBoolean "abstract"; Content = parseChildElements(); Annotation = parseAnnotation(node) }
 
     /// Extracts complexType-s simpleContent element specification from schema definition.
@@ -340,9 +339,9 @@ module Parser =
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "restriction", (Begin | Annotation) ->
-                    Content, Some(ComplexContentSpec.Restriction(parseComplexContentRestriction node))
+                    Content, Some(Restriction(parseComplexContentRestriction node))
                 | Xsd "extension", (Begin | Annotation) ->
-                    Content, Some(ComplexContentSpec.Extension(parseExtension node))
+                    Content, Some(Extension(parseExtension node))
                 | _ -> node |> notExpectedIn "complexContent")
                 (Begin, None)
             |> snd
@@ -358,15 +357,15 @@ module Parser =
             | Xsd "annotation", Begin ->
                 Annotation, { spec with Annotation = Some(node.Value) }
             | Xsd "any", _ ->
-                Content, { spec with Content = spec.Content @ [ParticleContent.Any] }
+                Content, { spec with Content = spec.Content @ [Any] }
             | Xsd "choice", _ ->
-                Content, { spec with Content = spec.Content @ [ParticleContent.Choice(parseChoice(node))] }
+                Content, { spec with Content = spec.Content @ [Choice(parseChoice(node))] }
             | Xsd "element", _ ->
-                Content, { spec with Content = spec.Content @ [ParticleContent.Element(parseElement(node))] }
+                Content, { spec with Content = spec.Content @ [Element(parseElement(node))] }
             | Xsd "group", _ ->
                 Content, node |> notImplementedIn particleName
             | Xsd "sequence", _ ->
-                Content, { spec with Content = spec.Content @ [ParticleContent.Sequence(parseSequence(node))] }
+                Content, { spec with Content = spec.Content @ [Sequence(parseSequence(node))] }
             | _ -> node |> notExpectedIn particleName
             ) (Begin, { Annotation = None
                         MaxOccurs = readMaxOccurs node
@@ -525,7 +524,7 @@ module Parser =
                 | Xsd "restriction", (Begin | Annotation) ->
                     Content, Some(SimpleTypeSpec.Restriction(parseSimpleTypeRestriction node, annotation))
                 | Xsd "union", (Begin | Annotation) ->
-                    Content, Some(SimpleTypeSpec.Union(parseUnion node))
+                    Content, Some(Union(parseUnion node))
                 | Xsd "list", (Begin | Annotation) ->
                     Content, node |> notImplementedIn "simpleType"
                 | _ -> node |> notExpectedIn "simpleType"

@@ -9,9 +9,9 @@ open System.Reflection.Emit
 open System.Xml
 open System.Xml.Linq
 open XRoad
-open XRoad.EmitterDsl
 open XRoad.Serialization.Attributes
-open XRoad.XmlExtensions
+open EmitterDsl
+open XmlExtensions
 
 type Serialization =
     { Root: MethodInfo
@@ -327,7 +327,7 @@ module EmitSerialization =
             >> castClass fld.DeclaringType
             >> getField fld
             >> ifElse property.Type.IsValueType (fromBox ty) (castClass ty)
-        | Method (mi, i) ->
+        | Method (_, i) ->
             let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> MyOption.defaultWith (fun _ -> property.Type)
             loadArg1
             >> loadInt i
@@ -432,7 +432,7 @@ module EmitSerialization =
     let emitContentSerializerMethod isEncoded (properties: Property list) =
         properties
         |> List.map (fun property -> emitOptionalFieldSerialization property (emitPropertyContentSerialization (emitPropertyValue property) isEncoded property))
-        |> (fun items -> if items.IsEmpty then id else items |> List.reduce (fun a b -> a >> b))
+        |> (fun items -> if items.IsEmpty then id else items |> List.reduce ((>>)))
 
 module EmitDeserialization =
     /// Check if current element has `xsi:nil` attribute present.
@@ -644,7 +644,7 @@ module EmitDeserialization =
                 ldstr name.LocalName
                 ldstr name.NamespaceName
                 call_expr <@ (null: XmlReader).IsMatchingElement("", "") @>
-                define_labels 2 (fun (List2(deserializeLabel, wrongElementLabel)) -> emit' {
+                define_label (fun deserializeLabel -> emit' {
                     brtrue deserializeLabel
                     merge (
                         if stopIfWrongElement then (emit' { br markEnd }) else (emit' {
@@ -667,7 +667,7 @@ module EmitDeserialization =
 
     /// Emits array type deserialization logic.
     let emitArrayPropertyDeserialization isContent arrDepthVar (arrayMap: ArrayMap) =
-        let listType = typedefof<System.Collections.Generic.List<_>>.MakeGenericType(arrayMap.ItemTypeMap.Type)
+        let listType = typedefof<ResizeArray<_>>.MakeGenericType(arrayMap.ItemTypeMap.Type)
         emit' {
             ldloc arrDepthVar
             declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
@@ -802,7 +802,7 @@ module EmitDeserialization =
                         emit' {
                             define_label (fun found -> emit' {
                                 brtrue found
-                                merge (emitWrongElementException (safe (property.PropertyName.Value)) property.Wrapper)
+                                merge (emitWrongElementException (safe (rp.PropertyName.Value)) rp.Wrapper)
                                 set_marker found
                             })
                         }
@@ -841,18 +841,6 @@ let (|InlineContent|_|) (properties: Property list) =
     | _ -> None
 
 let rec private createDeserializeContentMethodBody (typeMap: TypeMap) (properties: Property list) =
-    let (requiredName, wrapperDescription) =
-        properties
-        |> firstRequired
-        |> Option.map
-            (fun p ->
-                let name =
-                    match p with
-                    | Individual { Element = Some(name,_,_) } | Array { Element = Some(name,_,_) } | Array { ItemElement = Some(name,_,_) } -> safe name
-                    | _ -> "<end of sequence>"
-                (name, p.Wrapper.Description))
-        |> MyOption.defaultValue ("", "")
-
     emit' {
         define_label (fun returnLabel -> emit' {
             ldarg_2

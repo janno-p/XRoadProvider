@@ -1,6 +1,6 @@
 module internal XRoad.EmitterDsl
 
-open FSharp.Quotations.Patterns
+open Quotations.Patterns
 open System
 open System.Reflection
 open System.Reflection.Emit
@@ -32,7 +32,8 @@ let rec private typeName (typ: Type) =
     let name = sprintf "%s%s" (if typ.Namespace |> isNull then "" else typ.Namespace + ".") typ.Name
     if not typ.IsGenericType then name else
     sprintf "%s<%s>" name (String.Join(",", typ.GetGenericArguments() |> Array.map typeName))
-    
+
+#if PRINT_IL
 let private methodName (mi: MethodInfo) =
     let name = sprintf "%s.%s" (typeName mi.DeclaringType) mi.Name
     sprintf "%s(%s)" name (String.Join(",", mi.GetParameters() |> Array.map (fun p -> typeName p.ParameterType)))
@@ -42,6 +43,7 @@ let private fieldName (fi: FieldInfo) =
     
 let private ctorName (ci: ConstructorInfo) =
     sprintf "%s(%s)" (typeName ci.DeclaringType) (String.Join(",", ci.GetParameters() |> Array.map (fun p -> typeName p.ParameterType)))
+#endif
 
 let inline declareLocal typ (il: ILGenerator) =
     #if PRINT_IL
@@ -198,7 +200,7 @@ let withLabel f il =
 
 let withLabels n f il =
     let labels = [
-        for i in 1..n do
+        for _ in 1..n do
             yield il |> defineLabel
     ]
     il |> f labels
@@ -213,95 +215,95 @@ let defineMethod (mi: MethodInfo) f =
 type Emitter = ILGenerator -> ILGenerator
 
 type EmitBuilder() =
-    member this.Bind(v, f) = id
-    member this.Return(p) = id
-    member this.Zero() = id
+    member __.Bind(_, _) = id
+    member __.Return(_) = id
+    member __.Zero() = id
 
 type EmitBuilder with
     [<CustomOperation("castclass", MaintainsVariableSpaceUsingBind = true)>]
-    member this.CastClass(p: Emitter, t) = p >> castClass t
+    member __.CastClass(p: Emitter, t) = p >> castClass t
     [<CustomOperation("ldarg_0", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldarg_0(p: Emitter) = p >> loadArg0
+    member __.Ldarg0(p: Emitter) = p >> loadArg0
     [<CustomOperation("ldarg_1", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldarg_1(p: Emitter) = p >> loadArg1
+    member __.Ldarg1(p: Emitter) = p >> loadArg1
     [<CustomOperation("ldarg_2", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldarg_2(p: Emitter) = p >> loadArg2
+    member __.Ldarg2(p: Emitter) = p >> loadArg2
     [<CustomOperation("ldarg_3", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldarg_3(p: Emitter) = p >> loadArg3
+    member __.Ldarg3(p: Emitter) = p >> loadArg3
     [<CustomOperation("ldarg_4", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldarg_4(p: Emitter) = p >> emitint OpCodes.Ldarg 4us
+    member __.Ldarg4(p: Emitter) = p >> emitint OpCodes.Ldarg 4us
     [<CustomOperation("callvirt", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Callvirt(p: Emitter, mi) = p >> callVirt mi
+    member __.Callvirt(p: Emitter, mi) = p >> callVirt mi
     [<CustomOperation("callvirt_expr", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Callvirt_expr(p: Emitter, e) = p >> callVirtX e
+    member __.CallvirtExpr(p: Emitter, e) = p >> callVirtX e
     [<CustomOperation("ldloc", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldloc(p: Emitter, v) = p >> getVar v
+    member __.Ldloc(p: Emitter, v) = p >> getVar v
     [<CustomOperation("stloc", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Stloc(p: Emitter, v) = p >> setVar v
+    member __.Stloc(p: Emitter, v) = p >> setVar v
     [<CustomOperation("ceq", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ceq(p: Emitter) = p >> equals
+    member __.Ceq(p: Emitter) = p >> equals
     [<CustomOperation("ldc_node_type", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldc_i4_xnt(p: Emitter, i: Xml.XmlNodeType) = p >> loadInt i
+    member __.LdcXmlNodeType(p: Emitter, i: Xml.XmlNodeType) = p >> loadInt i
     [<CustomOperation("ldc_i4", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldc_i4(p: Emitter, i) = p >> loadInt i
+    member __.LdcInt(p: Emitter, i) = p >> loadInt i
     [<CustomOperation("ldc_i4_0", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldc_i4_0(p: Emitter) = p >> loadInt0
+    member __.LdcInt0(p: Emitter) = p >> loadInt0
     [<CustomOperation("ldc_i4_1", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldc_i4_1(p: Emitter) = p >> loadInt1
+    member __.LdcInt1(p: Emitter) = p >> loadInt1
     [<CustomOperation("ldc_i4_2", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldc_i4_2(p: Emitter) = p >> loadInt2
+    member __.LdcInt2(p: Emitter) = p >> loadInt2
     [<CustomOperation("brfalse", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Brfalse(p: Emitter, l) = p >> gotoF l
+    member __.Brfalse(p: Emitter, l) = p >> gotoF l
     [<CustomOperation("brtrue", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Brtrue(p: Emitter, l) = p >> gotoT l
+    member __.Brtrue(p: Emitter, l) = p >> gotoT l
     [<CustomOperation("br", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Br(p: Emitter, l) = p >> goto l
+    member __.Br(p: Emitter, l) = p >> goto l
     [<CustomOperation("clt", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Clt(p: Emitter) = p >> lessThan
+    member __.Clt(p: Emitter) = p >> lessThan
     [<CustomOperation("nop", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Nop(p: Emitter) = p >> noop
+    member __.Nop(p: Emitter) = p >> noop
     [<CustomOperation("unbox", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Unbox(p: Emitter, t) = p >> fromBox t
+    member __.Unbox(p: Emitter, t) = p >> fromBox t
     [<CustomOperation("box", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Box(p: Emitter, t) = p >> toBox t
+    member __.Box(p: Emitter, t) = p >> toBox t
     [<CustomOperation("set_marker", MaintainsVariableSpaceUsingBind = true)>]
-    member this.MarkLabel(p: Emitter, l) = p >> setLabel l
+    member __.MarkLabel(p: Emitter, l) = p >> setLabel l
     [<CustomOperation("define_label", MaintainsVariableSpaceUsingBind = true)>]
-    member this.DefineLabel(p: Emitter, e) = p >> withLabel e
+    member __.DefineLabel(p: Emitter, e) = p >> withLabel e
     [<CustomOperation("define_labels", MaintainsVariableSpaceUsingBind = true)>]
-    member this.DefineLabels(p: Emitter, n, e) = p >> withLabels n e
+    member __.DefineLabels(p: Emitter, n, e) = p >> withLabels n e
     [<CustomOperation("declare_variable", MaintainsVariableSpaceUsingBind = true)>]
-    member this.DeclareVariable(p: Emitter, v, f) = p >> useVar v f
+    member __.DeclareVariable(p: Emitter, v, f) = p >> useVar v f
     [<CustomOperation("merge", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Merge(p: Emitter, e) = p >> e
+    member __.Merge(p: Emitter, e) = p >> e
     [<CustomOperation("call", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Call(p: Emitter, mi) = p >> call mi
+    member __.Call(p: Emitter, mi) = p >> call mi
     [<CustomOperation("call_expr", MaintainsVariableSpaceUsingBind = true)>]
-    member this.CallExpr(p: Emitter, e) = p >> callX e
+    member __.CallExpr(p: Emitter, e) = p >> callX e
     [<CustomOperation("ldstr", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldstr(p: Emitter, s) = p >> loadString s
+    member __.Ldstr(p: Emitter, s) = p >> loadString s
     [<CustomOperation("string_equals", MaintainsVariableSpaceUsingBind = true)>]
-    member this.StringEquals(p: Emitter) = p >> stringEquals
+    member __.StringEquals(p: Emitter) = p >> stringEquals
     [<CustomOperation("add", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Add(p: Emitter) = p >> add
+    member __.Add(p: Emitter) = p >> add
     [<CustomOperation("div", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Div(p: Emitter) = p >> div
+    member __.Div(p: Emitter) = p >> div
     [<CustomOperation("ret", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ret(p: Emitter) = p >> ret
+    member __.Ret(p: Emitter) = p >> ret
     [<CustomOperation("pop", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Pop(p: Emitter) = p >> pop
+    member __.Pop(p: Emitter) = p >> pop
     [<CustomOperation("throw", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Throw(p: Emitter) = p >> throw
+    member __.Throw(p: Emitter) = p >> throw
     [<CustomOperation("ldnull", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldnull(p: Emitter) = p >> loadNull
+    member __.Ldnull(p: Emitter) = p >> loadNull
     [<CustomOperation("newobj", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Newobj(p: Emitter, ci) = p >> create ci
+    member __.Newobj(p: Emitter, ci) = p >> create ci
     [<CustomOperation("dup", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Dup(p: Emitter) = p >> dup
+    member __.Dup(p: Emitter) = p >> dup
     [<CustomOperation("newobj_expr", MaintainsVariableSpaceUsingBind = true)>]
-    member this.NewobjExpr(p: Emitter, e) = p >> createX e
+    member __.NewobjExpr(p: Emitter, e) = p >> createX e
     [<CustomOperation("ldfld", MaintainsVariableSpaceUsingBind = true)>]
-    member this.Ldfld(p: Emitter, f) = p >> getField f
+    member __.Ldfld(p: Emitter, f) = p >> getField f
 
 let emit' = EmitBuilder()
 

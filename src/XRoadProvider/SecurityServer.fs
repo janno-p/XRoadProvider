@@ -8,7 +8,7 @@ open System.Net.Security
 open System.Text
 open System.Xml
 open System.Xml.Linq
-open XRoad.Wsdl
+open Wsdl
 
 module internal SecurityServer =
     /// Represents single producer information acquired from security server.
@@ -25,7 +25,7 @@ module internal SecurityServer =
             let serverUri = sprintf "http://%s/cgi-bin/consumer_proxy" serverIP
             let request = System.Net.WebRequest.Create(serverUri)
             request.Method <- "POST"
-            request.ContentType <- sprintf "text/xml; charset=%s" System.Text.Encoding.UTF8.HeaderName
+            request.ContentType <- sprintf "text/xml; charset=%s" Encoding.UTF8.HeaderName
             request.Headers.Set("SOAPAction", "")
 
             // Serialize request message content.
@@ -46,7 +46,7 @@ module internal SecurityServer =
 
             // Retrieve and load response message.
             use resp = request.GetResponse()
-            use reader = new System.IO.StreamReader(resp.GetResponseStream())
+            use reader = new StreamReader(resp.GetResponseStream())
             XDocument.Load(reader)
 
         // Locate response message main part in XDocument object.
@@ -70,7 +70,7 @@ module internal SecurityServerV6 =
     let utf8WithoutBom = UTF8Encoding(false)
 
     // Needs better solution to handle server certificates.
-    ServicePointManager.ServerCertificateValidationCallback <- Security.RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
+    ServicePointManager.ServerCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
 
     /// Identifies X-Road service provider.
     type ServiceProvider =
@@ -92,7 +92,7 @@ module internal SecurityServerV6 =
           ServiceCode: string
           ServiceVersion: string option }
         with
-            member this.ObjectId with get() = "SERVICE"
+            member __.ObjectId with get() = "SERVICE"
             override this.ToString() = sprintf "%s:%s/%s%s" this.ObjectId this.Provider.Identifier this.ServiceCode (this.ServiceVersion |> Option.fold (fun _ x -> sprintf "/%s" x) "")
 
     /// Represents single member and its subsystems.
@@ -243,7 +243,7 @@ module internal SecurityServerV6 =
         let envelope = doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
         let body = envelope.Element(xnsname "Body" XmlNamespace.SoapEnv)
         let fault = body.Element(xnsname "Fault" XmlNamespace.SoapEnv)
-        if fault <> null then
+        if fault |> isNull then
             let code = fault.Element(xname "faultcode") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
             let text = fault.Element(xname "faultstring") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
             failwithf "Opration resulted with error: FaultCode: %s; FaultString: %s" code text

@@ -1,7 +1,7 @@
 ﻿module internal XRoad.ServiceDescription
 
 open System.Xml.Linq
-open XRoad.Wsdl
+open Wsdl
 
 /// Temporary type for SOAP:body binding elements.
 type private SoapBody =
@@ -165,7 +165,7 @@ let private validateLiteralParameters (parameters: Parameter list) messageName =
 
 /// Check if encoded part of message is correct.
 let private validateEncodedParameters (parameters: Parameter list) messageName =
-    if parameters |> List.filter (fun x -> x.Type.IsNone) |> List.length > 0
+    if parameters |> List.exists (fun x -> x.Type.IsNone)
     then failwithf "Encoded operation message `%s` should not have element references in part definitions." messageName
 
 /// Read operation message and its parts definitions from document.
@@ -305,11 +305,11 @@ let private parsePortBinding languageCode definitions element =
         let xraddress = [XmlNamespace.XRoad20; XmlNamespace.XRoad30; XmlNamespace.XRoad31Ee; XmlNamespace.XRoad31Eu]
                         |> List.choose (fun ns -> element %! xnsname "address" ns |> Option.ofObj)
         match xraddress with
-        | [] -> XRoadMessageProtocolVersion.Version40
-        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad20 -> XRoadMessageProtocolVersion.Version20 (x |> reqAttr (xname "producer"))
-        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad30 -> XRoadMessageProtocolVersion.Version30 (x |> reqAttr (xname "producer"))
-        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad31Ee -> XRoadMessageProtocolVersion.Version31Ee (x |> reqAttr (xname "producer"))
-        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad31Eu -> XRoadMessageProtocolVersion.Version31Eu (x |> reqAttr (xname "producer"))
+        | [] -> Version40
+        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad20 -> Version20 (x |> reqAttr (xname "producer"))
+        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad30 -> Version30 (x |> reqAttr (xname "producer"))
+        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad31Ee -> Version31Ee (x |> reqAttr (xname "producer"))
+        | [x] when x.Name.NamespaceName = XmlNamespace.XRoad31Eu -> Version31Eu (x |> reqAttr (xname "producer"))
         | _ -> failwithf "Mixing different X-Road protocol versions is not supported (%A)." xraddress
     let servicePort =
         { Name = name

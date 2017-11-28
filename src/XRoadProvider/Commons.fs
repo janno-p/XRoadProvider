@@ -4,7 +4,7 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Xml
-open System.Reflection
+open System.Xml.Linq
 open XRoad.Serialization.Attributes
 
 module MyOption =
@@ -65,8 +65,6 @@ type XRoadMessageProtocolVersion =
 
 [<AutoOpen>]
 module private XRoadProtocolExtensions =
-    open System.Xml.Linq
-
     let protocolPrefix = function
         | XRoadProtocol.Version20 -> "xtee"
         | XRoadProtocol.Version30
@@ -109,7 +107,7 @@ module private XRoadProtocolExtensions =
         | Version40(_) -> isHeaderOf XmlNamespace.XRoad40 docHeaders
 
 module XRoadHelper =
-    let getUUID () = System.Guid.NewGuid().ToString()
+    let getUUID () = Guid.NewGuid().ToString()
 
     let getSystemTypeName = function
         | "NodaTime.LocalDate" -> Some(XmlQualifiedName("date", XmlNamespace.Xsd))
@@ -135,7 +133,7 @@ type public ContentEncoding =
 [<AbstractClass; AllowNullLiteral>]
 type public AbstractXRoadHeader() =
     /// Unresolved header elements.
-    member val Unresolved = List<System.Xml.Linq.XElement>() with get, set
+    member val Unresolved = List<XElement>() with get, set
 
 /// Combines X-Road SOAP headers for RPC style messages.
 [<AllowNullLiteral>]
@@ -304,11 +302,11 @@ type public XRoadHeader() =
             this.Unresolved <- other.Unresolved
             this.UserId <- other.UserId
     /// Identifies a service client – an entity that initiates the service call.
-    member val Client = new XRoadMemberIdentifier() with get, set
+    member val Client = XRoadMemberIdentifier() with get, set
     /// Identifies the service that is invoked by the request.
-    member val Producer = new XRoadMemberIdentifier() with get, set
+    member val Producer = XRoadMemberIdentifier() with get, set
     /// Identifies the central service that is invoked by the request.
-    member val CentralService = new XRoadCentralServiceIdentifier() with get, set
+    member val CentralService = XRoadCentralServiceIdentifier() with get, set
     /// Unique identifier for this message. The recommended form of message ID is UUID.
     member val Id = "" with get, set
     /// User whose action initiated the request. The user ID should be prefixed with two-letter ISO country code (e.g., EE12345678901).
@@ -389,8 +387,6 @@ type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
     member val IsRequired = required with get
 
 module internal Wsdl =
-    open System.Xml.Linq
-
     /// Helper function for generating XNamespace-s.
     let xns name = XNamespace.Get(name)
 
@@ -554,7 +550,7 @@ module internal Wsdl =
         match Uri.IsWellFormedUriString(uri, UriKind.Absolute) with
         | true -> uri
         | _ ->
-            let fullPath = (new FileInfo(uri)).FullName
+            let fullPath = (FileInfo(uri)).FullName
             match File.Exists(fullPath) with
             | true -> fullPath
             | _ -> failwith (sprintf "Cannot resolve url location `%s`" uri)
@@ -695,14 +691,14 @@ module internal MultipartMessage =
 
     let private readChunkOrLine (buffer: byte []) (stream: PeekStream) =
         let rec addByte pos =
-            if pos >= CHUNK_SIZE then (ChunkState.Limit, pos)
+            if pos >= CHUNK_SIZE then (Limit, pos)
             else
                 match stream.Read() with
-                | -1 -> (ChunkState.EndOfStream, pos)
+                | -1 -> (EndOfStream, pos)
                 | byt ->
                     if byt = CR && stream.Peek() = LF then
                         stream.Read() |> ignore
-                        (ChunkState.NewLine, pos)
+                        (NewLine, pos)
                     else
                         buffer.[pos] <- Convert.ToByte(byt)
                         addByte (pos + 1)
@@ -718,9 +714,9 @@ module internal MultipartMessage =
             Array.Resize(&line, line.Length + chunkSize)
             Array.Copy(buffer, line, chunkSize)
             match state with
-            | ChunkState.Limit -> readChunk()
-            | ChunkState.EndOfStream
-            | ChunkState.NewLine -> ()
+            | Limit -> readChunk()
+            | EndOfStream
+            | NewLine -> ()
         readChunk()
         line
 
@@ -773,13 +769,13 @@ module internal MultipartMessage =
                 let (state,size) = stream |> readChunkOrLine buffer
                 if buffer |> startsWith endMarker then false
                 elif buffer |> startsWith contentMarker then true
-                elif state = ChunkState.EndOfStream then failwith "Unexpected end of multipart stream."
+                elif state = EndOfStream then failwith "Unexpected end of multipart stream."
                 else
                     if decoder.IsNone && addNewLine then contentStream.Write([| 13uy; 10uy |], 0, 2)
                     let (decodedBuffer,size) = decoder |> Option.fold (fun (buf,_) func -> let buf = buf |> func encoding
                                                                                            (buf,buf.Length)) (buffer,size)
                     contentStream.Write(decodedBuffer, 0, size)
-                    match state with EndOfStream -> false | _ -> copyChunk (state = ChunkState.NewLine) encoding decoder contentStream
+                    match state with EndOfStream -> false | _ -> copyChunk (state = NewLine) encoding decoder contentStream
             let parseContentPart () =
                 let headers = stream |> extractMultipartContentHeaders
                 let contentId = headers |> Map.tryFind("content-id") |> Option.map (fun x -> x.Trim().Trim('<', '>'))

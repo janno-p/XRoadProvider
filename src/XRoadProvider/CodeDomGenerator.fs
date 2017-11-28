@@ -1,14 +1,14 @@
 ﻿module internal XRoad.CodeDomGenerator
 
+open CodeDom
 open System
 open System.CodeDom
 open System.Reflection
 open System.Xml
 open System.Xml.Linq
-open XRoad.CodeDom
+open TypeSchema
+open Wsdl
 open XRoad.Serialization.Attributes
-open XRoad.TypeSchema
-open XRoad.Wsdl
 
 /// Functions and types to handle type building process.
 module TypeBuilder =
@@ -36,7 +36,7 @@ module TypeBuilder =
           Documentation: string option }
         /// Initializes default property with name and optional value.
         static member Create(name, isOptional, doc) =
-            { Type = RuntimeType.PrimitiveType(typeof<System.Void>)
+            { Type = PrimitiveType(typeof<Void>)
               IsNillable = false
               IsItemNillable = None
               AddedTypes = []
@@ -118,7 +118,7 @@ module TypeBuilder =
         // Element definitions
         let elementProperties =
             match spec.Content with
-            | Some(ComplexTypeParticle.All(spec)) ->
+            | Some(All(spec)) ->
                 if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
                 spec.Elements |> List.map (buildElementProperty context)
             | Some(ComplexTypeParticle.Sequence(spec)) ->
@@ -353,16 +353,16 @@ module TypeBuilder =
                         failwith "ComplexType-s simpleContent should not extend complex types."
                 | SimpleContent(SimpleContentSpec.Restriction(_)) ->
                     failwith "Not implemented: restriction in complexType-s simpleContent."
-                | ComplexContent(ComplexContentSpec.Extension(spec)) ->
+                | ComplexContent(Extension(spec)) ->
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | ProvidedType(_) as baseTy -> providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
                     | _ -> failwithf "Only complex types can be inherited! (%A)" spec.Base
                     Some(spec.Content)
-                | ComplexContent(ComplexContentSpec.Restriction(_)) ->
+                | ComplexContent(Restriction(_)) ->
                     failwith "Not implemented: restriction in complexType-s complexContent"
-                | ComplexTypeContent.Particle(spec) ->
+                | Particle(spec) ->
                     Some(spec)
-                | ComplexTypeContent.Empty ->
+                | Empty ->
                     None
             specContent
             |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGen seqNameGen context content)) ()
@@ -381,7 +381,7 @@ module TypeBuilder =
         | ComplexDefinition({ Content = Particle({ Content = Some(ComplexTypeParticle.Sequence(sequence)) } as particle) } as spec) ->
             let newParticle =
                 match sequence.Content with
-                | [ ParticleContent.Choice(choice) ] ->
+                | [ Choice(choice) ] ->
                     match choice.Content |> filterFault with
                     | [Sequence(content)] -> ComplexTypeParticle.Sequence(content)
                     | [] | [_] as content -> ComplexTypeParticle.Sequence({ choice with Content = content })
