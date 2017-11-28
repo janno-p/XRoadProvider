@@ -5,7 +5,7 @@
     <RootNamespace>XRoad</RootNamespace>
     <TargetFramework>net461</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn)</NoWarn>
+    <NoWarn>$(NoWarn);2003</NoWarn>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <DocumentationFile>bin\Debug\net461\XRoadProvider.xml</DocumentationFile>
   </PropertyGroup>

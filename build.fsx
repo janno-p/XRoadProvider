@@ -80,18 +80,13 @@ let (|Fsproj|Csproj|Vbproj|Shproj|) (projFileName:string) =
 
 // Generate assembly info files with the right version & up-to-date information
 Target "AssemblyInfo" (fun _ ->
-    let dtm = System.DateTime.Now
-
-    let x = dtm.ToString("yyMMdd")
-    let y = dtm.ToString("HHmmss")
-
     let getAssemblyInfoAttributes projectName =
         [ Attribute.Title (projectName)
           Attribute.Product project
           Attribute.Description summary
           Attribute.Version release.AssemblyVersion
           Attribute.FileVersion release.AssemblyVersion
-          Attribute.InformationalVersion (sprintf "%d.%d.%s.%s" release.SemVer.Major release.SemVer.Minor x y) ]
+          Attribute.InformationalVersion release.NugetVersion ]
 
     let getProjectDetails projectPath =
         let projectName = System.IO.Path.GetFileNameWithoutExtension(projectPath)
@@ -184,11 +179,15 @@ Target "SourceLink" (fun _ ->
 // Build a NuGet package
 
 Target "NuGet" (fun _ ->
-    Paket.Pack(fun p ->
-        { p with
-            OutputPath = "bin"
-            Version = release.NugetVersion
-            ReleaseNotes = toLines release.Notes})
+    !! "src/**/*.fsproj"
+    |> Seq.iter (fun proj ->
+        DotNetCli.Pack
+            (fun p ->
+                { p with
+                    Project = proj
+                    OutputPath = __SOURCE_DIRECTORY__ </> "bin"
+                    Configuration = "Release"
+                    AdditionalArgs = [(sprintf "/p:PackageVersion=%s" release.NugetVersion)] }))
 )
 
 Target "PublishNuget" (fun _ ->

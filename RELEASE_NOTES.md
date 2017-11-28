@@ -1,6 +1,7 @@
-#### 1.0.0-alpha005 - Unreleased
+#### 1.0.0-alpha005 - 28.11.2017
 
-* ...
+* Custom serialization for better type support.
+* X-Road message protocol version 4.0 support.
 
 #### 0.0.4-alpha - August 19 2015
 
