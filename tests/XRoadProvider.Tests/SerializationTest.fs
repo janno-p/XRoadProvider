@@ -248,6 +248,12 @@ module ResultTypes =
     type [<XRoadType>] Service2Result () =
         [<XRoadElement>] member val response = Unchecked.defaultof<string[]> with get, set
         
+    type [<XRoadType>] Service3Result () =
+        [<XRoadElement>] member val response = Optional.Option.None<string[]>() with get, set
+        
+    type [<XRoadType>] Service4Result () =
+        [<XRoadElement>] member val response = Optional.Option.None<Types.Betoon[]>() with get, set
+        
     type [<XRoadType>] SimpleValueServiceResult () =
         [<XRoadElement>] member val response = Unchecked.defaultof<Types.SimpleType> with get, set
         
@@ -330,6 +336,16 @@ type Services =
     [<XRoadRequest("Service2", producerNamespace)>]
     [<XRoadResponse("Service2Response", producerNamespace)>]
     abstract Service2: int64 -> ResultTypes.Service2Result
+    
+    [<XRoadOperation("Service3", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("Service3", producerNamespace)>]
+    [<XRoadResponse("Service3Response", producerNamespace)>]
+    abstract Service3: int64 -> ResultTypes.Service3Result
+    
+    [<XRoadOperation("Service4", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("Service4", producerNamespace)>]
+    [<XRoadResponse("Service4Response", producerNamespace)>]
+    abstract Service4: int64 -> ResultTypes.Service4Result
     
     [<XRoadOperation("SimpleValueService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("SimpleValueService", producerNamespace)>]
@@ -481,6 +497,37 @@ let [<Tests>] tests =
             Expect.equal result.response.Length 2 "response should have exactly 2 items"
             Expect.equal result.response.[0] "" "should be empty string"
             Expect.equal result.response.[1] "" "should be empty string"
+        }
+        
+        test "can handle optional array type response" {
+            let result: ResultTypes.Service3Result = getResponse "Service3" @"<Body><Service3Response><response><item /><item /></response></Service3Response></Body>"
+            Expect.isTrue result.response.HasValue ""
+            let arr = result.response.ValueOr([||])
+            Expect.equal arr.Length 2 "response should have exactly 2 items"
+            Expect.equal arr.[0] "" "should be empty string"
+            Expect.equal arr.[1] "" "should be empty string"
+        }
+        
+        test "can handle optional array type response with content" {
+            let result: ResultTypes.Service3Result = getResponse "Service3" @"<Body><Service3Response><response><item>tere</item><item>tere</item></response></Service3Response></Body>"
+            Expect.isTrue result.response.HasValue ""
+            let arr = result.response.ValueOr([||])
+            Expect.equal arr.Length 2 "response should have exactly 2 items"
+            Expect.equal arr.[0] "tere" "should be empty string"
+            Expect.equal arr.[1] "tere" "should be empty string"
+        }
+        
+        test "can handle optional array type response with complex content" {
+            let result: ResultTypes.Service4Result = getResponse "Service4" @"<Body><Service3Response><response><item><BaseValue>tere</BaseValue><OptionalValue>opttere</OptionalValue><SubValue>subtere</SubValue></item><item><BaseValue>tere2</BaseValue><SubValue>subtere2</SubValue></item></response></Service3Response></Body>"
+            Expect.isTrue result.response.HasValue ""
+            let arr = result.response.ValueOr([||])
+            Expect.equal arr.Length 2 "response should have exactly 2 items"
+            Expect.equal arr.[0].BaseValue "tere" ""
+            Expect.equal arr.[0].SubValue "subtere" ""
+            Expect.equal arr.[0].OptionalValue (Optional.Option.Some<_>("opttere")) ""
+            Expect.equal arr.[1].BaseValue "tere2" ""
+            Expect.equal arr.[1].SubValue "subtere2" ""
+            Expect.equal arr.[1].OptionalValue (Optional.Option.None<_>()) ""
         }
         
         test "can serialize unit request" {
