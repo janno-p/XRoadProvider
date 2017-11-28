@@ -46,8 +46,8 @@ type XmlReader with
 
     member this.FindNextStartElement(depth) =
         let rec findNextStartElement () =
-            if this.Depth < depth then ()
-            elif this.Depth = depth && this.NodeType = XmlNodeType.Element then ()
+            if this.Depth < depth then false
+            elif this.Depth = depth && this.NodeType = XmlNodeType.Element then true
             else this.Read() |> ignore; findNextStartElement()
         findNextStartElement()
 

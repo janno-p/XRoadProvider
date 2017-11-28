@@ -623,72 +623,42 @@ module EmitDeserialization =
         })
     }
 
-    let emitArrayContentEndCheck (markArrayEnd: Label) (depthVar: LocalBuilder) = emit' {
-        ldarg_0
-        callvirt_expr <@ (null: XmlReader).NodeType @>
-        ldc_node_type XmlNodeType.EndElement
-        ceq
-        define_label (fun markSuccess -> emit' {
-            brfalse markSuccess
-            ldarg_0
-            callvirt_expr <@ (null: XmlReader).Depth @>
-            ldloc depthVar
-            clt
-            brfalse markSuccess
-            br markArrayEnd
-            set_marker markSuccess
-        })
-        nop
-    }
-
-    let emitXmlReaderDepthCheck (varDepth: LocalBuilder) = emit' {
-        ldarg_0
-        callvirt_expr <@ (null: XmlReader).Depth @>
-        ldloc varDepth
-        ceq
-    }
-
-    let emitXmlReaderNodeTypeCheck = emit' {
-        ldarg_0
-        callvirt_expr <@ (null: XmlReader).NodeType @>
-        ldc_i4_1
-        ceq
-    }
-
     let emitArrayItemDeserialization isContent (arrayMap: ArrayMap, listInstance: LocalBuilder, markEnd: Label, stopIfWrongElement) =
-        ifSome arrayMap.ItemElement (fun (name, _, _) ->
-            loadArg0
-            >> callVirtX <@ (null: XmlReader).LocalName @>
-            >> loadString name.LocalName
-            >> stringEquals
-            >> beforeLabel (fun markDeserialize ->
-                    beforeLabel (fun markError ->
-                        gotoF markError
-                        >> loadArg0
-                        >> callVirtX <@ (null: XmlReader).NamespaceURI @>
-                        >> loadString name.NamespaceName
-                        >> stringEquals
-                        >> gotoT markDeserialize)
-                    >> ifElse stopIfWrongElement
-                            (goto markEnd)
-                            (loadString "Unexpected element: found `{0}`, but was expecting to find `{1}`."
-                             >> loadArg0
-                             >> callVirtX <@ (null: XmlReader).LocalName @>
-                             >> loadString (safe name)
-                             >> stringFormat3
-                             >> createX <@ Exception("") @>
-                             >> throw)))
-        >> getVar listInstance
-        >> emitPropertyValueDeserialization isContent arrayMap.ItemTypeMap
-        >> callVirt (listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
+        match arrayMap.ItemElement with
+        | Some(name, _, _) ->
+            emit' {
+                ldarg_0
+                ldstr name.LocalName
+                ldstr name.NamespaceName
+                call_expr <@ (null: XmlReader).IsMatchingElement("", "") @>
+                merge (
+                    if stopIfWrongElement then (emit' { br markEnd }) else (emit' {
+                        define_labels 2 (fun (List2(deserializeLabel, wrongElementLabel)) -> emit' {
+                            brtrue deserializeLabel
+                            ldstr "Unexpected element: found `{0}`, but was expecting to find `{1}`."
+                            ldarg_0
+                            callvirt_expr <@ (null: XmlReader).LocalName @>
+                            ldstr (safe name)
+                            call_expr <@ String.Format("", "", "") @>
+                            newobj_expr <@ Exception("") @>
+                            throw
+                            set_marker deserializeLabel
+                            ldloc listInstance
+                            merge (emitPropertyValueDeserialization isContent arrayMap.ItemTypeMap)
+                            callvirt (listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
+                            merge emitXmlReaderRead
+                        })
+                    })
+                )
+            }
+        | None -> id
 
     /// Emits array type deserialization logic.
-    let emitArrayPropertyDeserialization isContent (arrayMap: ArrayMap) =
+    let emitArrayPropertyDeserialization isContent depthVar (arrayMap: ArrayMap) =
         let listType = typedefof<System.Collections.Generic.List<_>>.MakeGenericType(arrayMap.ItemTypeMap.Type)
         emit' {
+            ldloc depthVar
             declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
-                ldarg_0
-                callvirt_expr <@ (null: XmlReader).Depth @>
                 stloc depthVar
                 define_labels 3 (fun (List3 (markArrayNull, markArrayEnd, markLoopStart)) -> emit' {
                     merge (
@@ -716,13 +686,12 @@ module EmitDeserialization =
                                 brtrue markArrayEnd
                             }) else id
                         )
-                        set_marker markLoopStart
                         merge emitXmlReaderRead
-                        merge (emitArrayContentEndCheck markArrayEnd depthVar)
-                        merge (emitXmlReaderDepthCheck depthVar)
-                        brfalse markLoopStart
-                        merge emitXmlReaderNodeTypeCheck
-                        brfalse markLoopStart
+                        set_marker markLoopStart
+                        ldarg_0
+                        ldloc depthVar
+                        call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
+                        brfalse markArrayEnd
                         merge (emitArrayItemDeserialization isContent (arrayMap, listInstance, markArrayEnd, arrayMap.Element.IsNone))
                         br markLoopStart
                         set_marker markArrayEnd
@@ -768,13 +737,13 @@ module EmitDeserialization =
                 call_expr <@ (null: XmlReader).IsMatchingElement("", "") @>
             }
 
-    let emitPropertyDeserialization (prop: Property) = emit' {
+    let emitPropertyDeserialization depthVar property = emit' {
         merge (
-            match prop with
+            match property with
             | Individual propertyMap -> emitIndividualPropertyDeserialization true propertyMap
-            | Array arrayMap -> emitArrayPropertyDeserialization true arrayMap
+            | Array arrayMap -> emitArrayPropertyDeserialization true depthVar arrayMap
         )
-        callvirt prop.SetMethod.Value
+        callvirt property.SetMethod.Value
     }
 
     let rec emitSequenceDeserialization (startLabel: Label) (returnLabel: Label) (depthVar: LocalBuilder) (properties: Property list) =
@@ -791,6 +760,7 @@ module EmitDeserialization =
                 ldarg_0
                 ldloc depthVar
                 call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
+                pop
                 
                 define_labels 2 (fun (List2(markNext, markDeserialize)) -> emit' {
                     merge (
@@ -809,7 +779,7 @@ module EmitDeserialization =
                         | _ -> id
                     )
 
-                    merge (emitPropertyDeserialization property)
+                    merge (emitPropertyDeserialization depthVar property)
                     merge (emitXmlReaderRead)
                     merge (emitSequenceDeserialization markNext returnLabel depthVar properties)
                 })
@@ -845,35 +815,35 @@ let rec private createDeserializeContentMethodBody (typeMap: TypeMap) (propertie
             ldstr requiredName
             call_expr <@ (null: XmlReader).ReadToContent(0, "", "") @>
             brfalse returnLabel
-            merge (
-                match properties with
-                | InlineContent(prop) ->
-                    EmitDeserialization.emitPropertyDeserialization prop
-                | _ ->
-                    emit' {
-                        merge (
-                            match typeMap.BaseType with
-                            | Some(typeMap) ->
-                                emit' {
-                                    ldarg_0
-                                    ldarg_1
-                                    ldarg_2
-                                    ldarg_3
-                                    call typeMap.Deserialization.Content
-                                }
-                            | None -> id
-                        )
-                        ldarg_2
-                        declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
+            ldarg_2
+            declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
+                stloc depthVar
+                merge (
+                    match properties with
+                    | InlineContent(prop) ->
+                        EmitDeserialization.emitPropertyDeserialization depthVar prop
+                    | _ ->
+                        emit' {
+                            merge (
+                                match typeMap.BaseType with
+                                | Some(typeMap) ->
+                                    emit' {
+                                        ldarg_0
+                                        ldarg_1
+                                        ldloc depthVar
+                                        ldarg_3
+                                        call typeMap.Deserialization.Content
+                                    }
+                                | None -> id
+                            )
                             define_label (fun startLabel -> emit' {
-                                stloc depthVar
                                 merge (match typeMap.Layout.Value with
                                        | LayoutKind.Sequence -> EmitDeserialization.emitSequenceDeserialization startLabel returnLabel depthVar properties
                                        | _ -> failwith "Not implemented")
                             })
-                        })
-                    }
-            )
+                        }
+                )
+            })
             set_marker returnLabel
             ret
         })
@@ -996,9 +966,9 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                                 emit' {
                                     declare_variable (lazy (declareLocal property.Type)) (fun instance -> emit' {
                                         ldarg_0
-                                        ldarg_0
-                                        callvirt_expr <@ (null: XmlReader).Depth @>
+                                        ldloc depthVar
                                         call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
+                                        pop
                                         ldarg_0
                                         call typeMap.Deserialization.MatchType
                                         brfalse label
@@ -1017,9 +987,9 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                             | Array { Element = None; ItemElement = Some(name,_,_) } ->
                                 emit' {
                                     ldarg_0
-                                    ldarg_0
-                                    callvirt_expr <@ (null: XmlReader).Depth @>
+                                    ldloc depthVar
                                     call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
+                                    pop
                                     ldarg_0
                                     ldstr name.LocalName
                                     ldstr name.NamespaceName
@@ -1028,7 +998,7 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
                                     merge (
                                         match property with
                                         | Individual propertyMap -> EmitDeserialization.emitIndividualPropertyDeserialization false propertyMap
-                                        | Array arrayMap -> EmitDeserialization.emitArrayPropertyDeserialization false arrayMap
+                                        | Array arrayMap -> EmitDeserialization.emitArrayPropertyDeserialization false depthVar arrayMap
                                     )
                                 }
                         )
@@ -1092,10 +1062,37 @@ and createChoiceTypeSerializers isEncoded (properties: Property list) (choiceMap
             ret
         })
 
+    #if PRINT_IL
+    fprintfn stream "--------------------- <%s root ser> ---------------------" choiceMap.FullName
+    #endif
     genSerialization ()
+    #if PRINT_IL
+    fprintfn stream "--------------------- </%s root ser> ---------------------" choiceMap.FullName
+    #endif
+
+    #if PRINT_IL
+    fprintfn stream "--------------------- <%s content deser> ---------------------" choiceMap.FullName
+    #endif
     genContentDeserialization ()
+    #if PRINT_IL
+    fprintfn stream "--------------------- </%s content deser> ---------------------" choiceMap.FullName
+    #endif
+
+    #if PRINT_IL
+    fprintfn stream "--------------------- <%s root deser> ---------------------" choiceMap.FullName
+    #endif
     genDeserialization ()
+    #if PRINT_IL
+    fprintfn stream "--------------------- </%s root deser> ---------------------" choiceMap.FullName
+    #endif
+
+    #if PRINT_IL
+    fprintfn stream "--------------------- <%s match deser> ---------------------" choiceMap.FullName
+    #endif
     genMatch ()
+    #if PRINT_IL
+    fprintfn stream "--------------------- </%s match deser> ---------------------" choiceMap.FullName
+    #endif
 
 and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : Property list =
     input
