@@ -325,6 +325,9 @@ module ResultTypes =
         
     type [<XRoadType>] WithClassificatorServiceResult () =
         [<XRoadElement>] member val response = Unchecked.defaultof<Types.WithClassificator> with get, set
+        
+    type [<XRoadType(LayoutKind.Sequence, IsAnonymous=true)>] MergeArrayServiceResult () =
+        [<XRoadElement(MergeContent=true); XRoadCollection("someString")>] member val response = Unchecked.defaultof<string[]> with get, set
 
 type Services =
     [<XRoadOperation("Service1", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
@@ -476,6 +479,11 @@ type Services =
     [<XRoadRequest("WithClassificatorService", producerNamespace)>]
     [<XRoadResponse("WithClassificatorServiceResponse", producerNamespace)>]
     abstract WithClassificatorService: [<XRoadElement("request")>] request: Types.WithClassificator -> ResultTypes.WithClassificatorServiceResult
+    
+    [<XRoadOperation("MergeArrayService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("MergeArrayService", producerNamespace)>]
+    [<XRoadResponse("MergeArrayServiceResponse", producerNamespace, ReturnType=typeof<ResultTypes.MergeArrayServiceResult>)>]
+    abstract MergeArrayService: [<XRoadElement("request")>] request: string[] -> string[]
 
 let serialize = SerializationUtil.serialize typeof<Services> producerNamespace
 let deserialize = SerializationUtil.deserialize typeof<Services>
@@ -1044,5 +1052,12 @@ let [<Tests>] tests =
             let result: ResultTypes.WithClassificatorServiceResult = getResponse "WithClassificatorService" @"<Body><tns:WithClassificatorServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><response><Classificator>A</Classificator><Regular>regular</Regular></response></tns:WithClassificatorServiceResponse></Body>"
             Expect.equal result.response.Classificator.BaseValue "A" ""
             Expect.equal result.response.Regular "regular" ""
+        }
+        
+        test "deserialize merge content array" {
+            let result: ResultTypes.MergeArrayServiceResult = getResponse "MergeArrayService" @"<Body><tns:MergeArrayServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><someString>A</someString><someString>regular</someString></tns:MergeArrayServiceResponse></Body>"
+            Expect.equal result.response.Length 2 ""
+            Expect.equal result.response.[0] "A" ""
+            Expect.equal result.response.[1] "regular" ""
         }
     ]

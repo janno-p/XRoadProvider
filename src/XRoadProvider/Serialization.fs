@@ -25,7 +25,8 @@ module Stream =
 module private Response =
     type XmlReader with
         member this.MoveToElement(depth, name, ns) =
-            let isElement () = this.Depth = depth && (name |> isNull || (this.LocalName = name && this.NamespaceURI = ns))
+            while this.Depth < depth do this.Read() |> ignore
+            let isElement () = this.Depth = depth && this.NodeType = XmlNodeType.Element && (name |> isNull || (this.LocalName = name && this.NamespaceURI = ns))
             let rec findElement () =
                 if isElement() then true
                 elif this.Read() then

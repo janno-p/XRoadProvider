@@ -552,6 +552,21 @@ module EmitDeserialization =
                 nop
                 merge (emitTypeHierarchyDeserialization hasInlineContent markReturn depthVar other qualifiedName typeMap)
             }
+            
+    let emitDebug = emit' {
+        ldstr "ROOT: {3}: <{1}:{0}> [{2}]"
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).LocalName @>
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).Depth @>
+        box typeof<int>
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).NodeType @>
+        box typeof<int>
+        call_expr <@ Console.WriteLine("", "", "", "", "") @>
+    }
 
     let emitRootDeserializerMethod hasInlineContent (subTypes: TypeMap list) (typeMap: TypeMap) = emit' {
         declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
@@ -1403,10 +1418,12 @@ module internal DynamicMethods =
         let returnType = responseAttr.ReturnType |> Option.ofObj |> MyOption.defaultValue mi.ReturnType
         let typeMap = getCompleteTypeMap responseAttr.Encoded returnType
         typeMap.DeserializeDelegate.Value
-        (*
-        let method = DynamicMethod(sprintf "deserialize_%s" mi.Name, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
+        (*let method = DynamicMethod(sprintf "deserialize_%s" mi.Name, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
         method.GetILGenerator() |> (emit' {
-            merge EmitDeserialization.emitXmlReaderRead
+            ldarg_0
+            ldc_i4 3
+            call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
+            pop
             ldarg_0
             ldarg_1
             call typeMap.Deserialization.Root
@@ -1414,7 +1431,7 @@ module internal DynamicMethods =
         }) |> ignore
         
         method.CreateDelegate(typeof<DeserializerDelegate>) |> unbox
-        *)
+        //*)
         
     let emitSerializer (mi: MethodInfo) (requestAttr: XRoadRequestAttribute) : OperationSerializerDelegate =
         let method = 

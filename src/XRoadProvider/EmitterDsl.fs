@@ -262,6 +262,8 @@ type EmitBuilder with
     member this.Nop(p: Emitter) = p >> noop
     [<CustomOperation("unbox", MaintainsVariableSpaceUsingBind = true)>]
     member this.Unbox(p: Emitter, t) = p >> fromBox t
+    [<CustomOperation("box", MaintainsVariableSpaceUsingBind = true)>]
+    member this.Box(p: Emitter, t) = p >> toBox t
     [<CustomOperation("set_marker", MaintainsVariableSpaceUsingBind = true)>]
     member this.MarkLabel(p: Emitter, l) = p >> setLabel l
     [<CustomOperation("define_label", MaintainsVariableSpaceUsingBind = true)>]
