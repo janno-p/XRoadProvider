@@ -458,17 +458,24 @@ module EmitDeserialization =
         call_expr <@ (null: XmlReader).IsQualifiedTypeName(null, "", "", false, false) @>
     }
     
-    let private emitXmlReaderRead = emit' {
+    let emitXmlReaderRead = emit' {
         ldarg_0
         callvirt_expr <@ (null: XmlReader).Read() @>
         pop
     }
 
     /// Emit type (and its base types) content deserialization.
-    let rec private emitContentDeserialization (instance: LocalBuilder, depthVar: LocalBuilder) (typeMap: TypeMap) = emit' {
+    let rec private emitContentDeserialization hasInlineContent (instance: LocalBuilder, depthVar: LocalBuilder) (typeMap: TypeMap) = emit' {
+        merge (if hasInlineContent then id else emitXmlReaderRead)
         ldarg_0
         ldloc instance
         ldloc depthVar
+        merge (
+            if hasInlineContent then id else emit' {
+                ldc_i4_1
+                add
+            }
+        )
         ldarg_1
         call typeMap.Deserialization.Content
     }
@@ -480,31 +487,20 @@ module EmitDeserialization =
         throw
     }
 
-    let private emitMoveToEndOrNextElement (doneLabel: Label) (depthVar: LocalBuilder) name =
-        emitXmlReaderRead
-        >> loadArg0
-        >> callVirtX <@ (null: XmlReader).NodeType @>
-        >> loadInt XmlNodeType.EndElement
-        >> equals
-        >> gotoF doneLabel
-        >> loadArg0
-        >> callVirtX <@ (null: XmlReader).Depth @>
-        >> getVar depthVar
-        >> lessThan
-        >> gotoF doneLabel
-
     let emitWrongElementException expectedValue wrapper =
         let wrapperName =
             match wrapper with
             | Choice _ -> sprintf "choice `%s`" wrapper.Name
             | Method _ -> sprintf "operation `%s` wrapper element" wrapper.Name
             | Type _ -> sprintf "type `%s`" wrapper.Name
-        loadString (sprintf "Element `%s` was expected in subsequence of %s, but element `{0}` was found instead." expectedValue wrapperName)
-        >> loadArg0
-        >> callVirtX <@ (null: XmlReader).LocalName @>
-        >> stringFormat2
-        >> createX <@ Exception("") @>
-        >> throw
+        emit' {
+            ldstr (sprintf "Element `%s` was expected in subsequence of %s, but element `{0}` was found instead." expectedValue wrapperName)
+            ldarg_0
+            callvirt_expr <@ (null: XmlReader).LocalName @>
+            call_expr <@ String.Format("", "") @>
+            newobj_expr <@ Exception("") @>
+            throw
+        }
 
     /// Emit whole contents of TypeMap deserialization.
     let private emitBodyDeserialization hasInlineContent (depthVar: LocalBuilder) (typeMap: TypeMap) =
@@ -514,14 +510,13 @@ module EmitDeserialization =
             declare_variable (lazy (declareLocal typeMap.Type)) (fun instance -> emit' {
                 stloc instance
                 // TODO : Attributes
-                merge (emitContentDeserialization (instance, depthVar) typeMap)
+                merge (emitContentDeserialization hasInlineContent (instance, depthVar) typeMap)
                 ldarg_0
                 ldstr typeMap.Name
                 ldstr (typeMap.Namespace |> MyOption.defaultValue "")
                 ldloc depthVar
                 ldc_i4_0
-                ldc_i4 (if hasInlineContent then 1 else 0) 
-                call_expr <@ (null: XmlReader).ReadToEndElement("", "", 0, false, false) @>
+                call_expr <@ (null: XmlReader).ReadToNextElement("", "", 0, false) @>
                 ldloc instance
             })
         }
@@ -562,17 +557,20 @@ module EmitDeserialization =
         declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
             ldarg_0
             callvirt_expr <@ (null: XmlReader).Depth @>
-            merge (
-                if hasInlineContent then id else emit' {
-                    ldc_i4_1
-                    add
-                }
-            )
             stloc depthVar
             define_label (fun markReturn -> emit' {
                 merge emitNullCheck
                 define_label (fun label -> emit' {
                     brfalse label
+                    ldarg_0
+                    ldarg_0
+                    callvirt_expr <@ (null: XmlReader).LocalName @>
+                    ldarg_0
+                    callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+                    ldarg_0
+                    callvirt_expr <@ (null: XmlReader).Depth @>
+                    ldc_i4_0
+                    call_expr <@ (null: XmlReader).ReadToNextElement("", "", 0, false) @>
                     ldnull
                     br markReturn
                     set_marker label
@@ -631,10 +629,10 @@ module EmitDeserialization =
                 ldstr name.LocalName
                 ldstr name.NamespaceName
                 call_expr <@ (null: XmlReader).IsMatchingElement("", "") @>
-                merge (
-                    if stopIfWrongElement then (emit' { br markEnd }) else (emit' {
-                        define_labels 2 (fun (List2(deserializeLabel, wrongElementLabel)) -> emit' {
-                            brtrue deserializeLabel
+                define_labels 2 (fun (List2(deserializeLabel, wrongElementLabel)) -> emit' {
+                    brtrue deserializeLabel
+                    merge (
+                        if stopIfWrongElement then (emit' { br markEnd }) else (emit' {
                             ldstr "Unexpected element: found `{0}`, but was expecting to find `{1}`."
                             ldarg_0
                             callvirt_expr <@ (null: XmlReader).LocalName @>
@@ -642,22 +640,21 @@ module EmitDeserialization =
                             call_expr <@ String.Format("", "", "") @>
                             newobj_expr <@ Exception("") @>
                             throw
-                            set_marker deserializeLabel
-                            ldloc listInstance
-                            merge (emitPropertyValueDeserialization isContent arrayMap.ItemTypeMap)
-                            callvirt (listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
-                            merge emitXmlReaderRead
                         })
-                    })
-                )
+                    )
+                    set_marker deserializeLabel
+                    ldloc listInstance
+                    merge (emitPropertyValueDeserialization isContent arrayMap.ItemTypeMap)
+                    callvirt (listInstance.LocalType.GetMethod("Add", [| arrayMap.ItemTypeMap.Type |]))
+                })
             }
         | None -> id
 
     /// Emits array type deserialization logic.
-    let emitArrayPropertyDeserialization isContent depthVar (arrayMap: ArrayMap) =
+    let emitArrayPropertyDeserialization isContent arrDepthVar (arrayMap: ArrayMap) =
         let listType = typedefof<System.Collections.Generic.List<_>>.MakeGenericType(arrayMap.ItemTypeMap.Type)
         emit' {
-            ldloc depthVar
+            ldloc arrDepthVar
             declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
                 stloc depthVar
                 define_labels 3 (fun (List3 (markArrayNull, markArrayEnd, markLoopStart)) -> emit' {
@@ -666,6 +663,15 @@ module EmitDeserialization =
                             merge emitNullCheck
                             define_label (fun label -> emit' {
                                 brfalse label
+                                ldarg_0
+                                ldarg_0
+                                callvirt_expr <@ (null: XmlReader).LocalName @>
+                                ldarg_0
+                                callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+                                ldarg_0
+                                callvirt_expr <@ (null: XmlReader).Depth @>
+                                ldc_i4_0
+                                call_expr <@ (null: XmlReader).ReadToNextElement("", "", 0, false) @>
                                 ldnull
                                 br markArrayNull
                                 set_marker label
@@ -684,9 +690,9 @@ module EmitDeserialization =
                                 ldarg_0
                                 callvirt_expr <@ (null: XmlReader).IsEmptyElement @>
                                 brtrue markArrayEnd
+                                merge emitXmlReaderRead
                             }) else id
                         )
-                        merge emitXmlReaderRead
                         set_marker markLoopStart
                         ldarg_0
                         ldloc depthVar
@@ -695,6 +701,19 @@ module EmitDeserialization =
                         merge (emitArrayItemDeserialization isContent (arrayMap, listInstance, markArrayEnd, arrayMap.Element.IsNone))
                         br markLoopStart
                         set_marker markArrayEnd
+                        merge (
+                            match arrayMap.Element with
+                            | Some(name, _, _) ->
+                                emit' {
+                                    ldarg_0
+                                    ldstr name.LocalName
+                                    ldstr name.NamespaceName
+                                    ldloc arrDepthVar
+                                    ldc_i4_0
+                                    call_expr <@ (null: XmlReader).ReadToNextElement("", "", 0, false) @>
+                                }
+                            | None -> id
+                        )
                         declare_variable (lazy (declareLocal arrayMap.Type)) (fun instance -> emit' {
                             ldloc listInstance
                             callvirt (listType.GetMethod("ToArray", [| |]))
@@ -747,6 +766,7 @@ module EmitDeserialization =
     }
 
     let rec emitSequenceDeserialization (startLabel: Label) (returnLabel: Label) (depthVar: LocalBuilder) (properties: Property list) =
+        let nextRequired = properties |> firstRequired
         match properties with
         | [] ->
             emit' {
@@ -760,8 +780,20 @@ module EmitDeserialization =
                 ldarg_0
                 ldloc depthVar
                 call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
-                pop
                 
+                merge (
+                    match nextRequired with
+                    | Some(rp) ->
+                        emit' {
+                            define_label (fun found -> emit' {
+                                brtrue found
+                                merge (emitWrongElementException (safe (property.PropertyName.Value)) property.Wrapper)
+                                set_marker found
+                            })
+                        }
+                    | None -> emit' { brfalse returnLabel }
+                )
+
                 define_labels 2 (fun (List2(markNext, markDeserialize)) -> emit' {
                     merge (
                         match property with
@@ -780,7 +812,6 @@ module EmitDeserialization =
                     )
 
                     merge (emitPropertyDeserialization depthVar property)
-                    merge (emitXmlReaderRead)
                     merge (emitSequenceDeserialization markNext returnLabel depthVar properties)
                 })
             }
@@ -809,12 +840,6 @@ let rec private createDeserializeContentMethodBody (typeMap: TypeMap) (propertie
 
     emit' {
         define_label (fun returnLabel -> emit' {
-            ldarg_0
-            ldarg_2
-            ldstr wrapperDescription
-            ldstr requiredName
-            call_expr <@ (null: XmlReader).ReadToContent(0, "", "") @>
-            brfalse returnLabel
             ldarg_2
             declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
                 stloc depthVar
@@ -1197,6 +1222,14 @@ module internal XsdTypes =
     open NodaTime.Text
     open System.IO
 
+    let readToNextWrapper (r: XmlReader) f =
+        let depth = r.Depth
+        let name = r.LocalName
+        let ns = r.NamespaceURI
+        let v = f()
+        r.ReadToNextElement(name, ns, depth, false)
+        v
+
     let serializeDefault (writer: XmlWriter, value: obj, _: SerializerContext) =
         writer.WriteValue(value)
 
@@ -1243,24 +1276,24 @@ module internal XsdTypes =
     let serializeNullableLocalDate (writer, value, context) = serializeNullable writer value context serializeLocalDate
     let serializeNullableLocalDateTime (writer, value, context) = serializeNullable writer value context serializeLocalDateTime
 
-    let deserializeBoolean (reader, context) = deserializeValue reader context reader.ReadContentAsBoolean
-    let deserializeDecimal (reader, context) = deserializeValue reader context reader.ReadContentAsDecimal
-    let deserializeDouble (reader, context) = deserializeValue reader context reader.ReadContentAsDouble
-    let deserializeInt32 (reader, context) = deserializeValue reader context reader.ReadContentAsInt
-    let deserializeInt64 (reader, context) = deserializeValue reader context reader.ReadContentAsLong
-    let deserializeBigInteger (reader, context) = deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger)
-    let deserializeLocalDate (reader, context) = deserializeValue reader context (fun () -> LocalDatePattern.Iso.Parse(reader.ReadContentAsString()).GetValueOrThrow())
-    let deserializeLocalDateTime (reader, context) = deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateTimeValue)
+    let deserializeBoolean (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsBoolean)
+    let deserializeDecimal (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsDecimal)
+    let deserializeDouble (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsDouble)
+    let deserializeInt32 (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsInt)
+    let deserializeInt64 (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsLong)
+    let deserializeBigInteger (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger))
+    let deserializeLocalDate (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> LocalDatePattern.Iso.Parse(reader.ReadContentAsString()).GetValueOrThrow()))
+    let deserializeLocalDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateTimeValue))
 
-    let deserializeNullableBoolean (reader, context) = deserializeNullable reader context deserializeBoolean
-    let deserializeNullableDecimal (reader, context) = deserializeNullable reader context deserializeDecimal
-    let deserializeNullableDouble (reader, context) = deserializeNullable reader context deserializeDouble
-    let deserializeNullableInt32 (reader, context) = deserializeNullable reader context deserializeInt32
-    let deserializeNullableInt64 (reader, context) = deserializeNullable reader context deserializeInt64
-    let deserializeNullableBigInteger (reader, context) = deserializeNullable reader context deserializeBigInteger
-    let deserializeNullableLocalDate (reader, context) = deserializeNullable reader context deserializeLocalDate
-    let deserializeNullableLocalDateTime (reader, context) = deserializeNullable reader context deserializeLocalDateTime
-    let deserializeString (reader, context) = deserializeNullable reader context deserializeStringValue
+    let deserializeNullableBoolean (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeBoolean)
+    let deserializeNullableDecimal (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeDecimal)
+    let deserializeNullableDouble (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeDouble)
+    let deserializeNullableInt32 (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeInt32)
+    let deserializeNullableInt64 (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeInt64)
+    let deserializeNullableBigInteger (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeBigInteger)
+    let deserializeNullableLocalDate (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeLocalDate)
+    let deserializeNullableLocalDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeLocalDateTime)
+    let deserializeString (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeStringValue)
 
     let serializeBinaryContent (writer: XmlWriter, value: obj, context: SerializerContext) =
         match value with
@@ -1284,48 +1317,48 @@ module internal XsdTypes =
             writer.WriteAttributeString("href", sprintf "cid:%s" content.ContentID)
             writer.WriteEndElement()
 
-    let deserializeBinaryContent (reader: XmlReader, context: SerializerContext) =
+    let deserializeBinaryContent (reader: XmlReader, context: SerializerContext) = readToNextWrapper reader (fun () ->
         let nilValue = match reader.GetAttribute("nil", XmlNamespace.Xsi) with null -> "" | x -> x
         match nilValue.ToLower() with
         | "true" | "1" -> null
         | _ ->
             match reader.GetAttribute("href") with
             | null ->
-                if reader.IsEmptyElement then BinaryContent.Create([| |])
-                else
-                    reader.Read() |> ignore
-                    let bufferSize = 4096
-                    let buffer = Array.zeroCreate<byte>(bufferSize)
-                    use stream = new MemoryStream()
-                    let rec readContents() =
-                        let readCount = reader.ReadContentAsBase64(buffer, 0, bufferSize)
-                        if readCount > 0 then stream.Write(buffer, 0, readCount)
-                        if readCount = bufferSize then readContents()
-                    readContents()
-                    stream.Flush()
-                    stream.Position <- 0L
-                    BinaryContent.Create(stream.ToArray())
+                if reader.IsEmptyElement then BinaryContent.Create([| |]) else
+                reader.Read() |> ignore
+                let bufferSize = 4096
+                let buffer = Array.zeroCreate<byte>(bufferSize)
+                use stream = new MemoryStream()
+                let rec readContents() =
+                    let readCount = reader.ReadContentAsBase64(buffer, 0, bufferSize)
+                    if readCount > 0 then stream.Write(buffer, 0, readCount)
+                    if readCount = bufferSize then readContents()
+                readContents()
+                stream.Flush()
+                stream.Position <- 0L
+                BinaryContent.Create(stream.ToArray())
             | contentID -> context.GetAttachment(contentID)
+    )
 
-    let deserializeXopBinaryContent (reader: XmlReader, context: SerializerContext) =
+    let deserializeXopBinaryContent (reader: XmlReader, context: SerializerContext) = readToNextWrapper reader (fun () ->
         let nilValue = match reader.GetAttribute("nil", XmlNamespace.Xsi) with null -> "" | x -> x
         match nilValue.ToLower() with
         | "true" | "1" -> null
         | _ ->
-            if reader.IsEmptyElement then BinaryContent.Create([| |])
-            else
-                let depth = reader.Depth + 1
-                let rec moveToXopInclude () =
-                    if reader.Read() then
-                        if reader.NodeType = XmlNodeType.EndElement && reader.Depth < depth then false
-                        elif reader.NodeType <> XmlNodeType.Element || reader.Depth <> depth || reader.LocalName <> "Include" || reader.NamespaceURI <> XmlNamespace.Xop then moveToXopInclude()
-                        else true
-                    else false
-                if moveToXopInclude () then
-                    match reader.GetAttribute("href") with
-                    | null -> failwithf "Missing reference to multipart content in xop:Include element."
-                    | contentID -> context.GetAttachment(contentID)
-                else BinaryContent.Create([| |])
+            if reader.IsEmptyElement then BinaryContent.Create([| |]) else
+            let depth = reader.Depth + 1
+            let rec moveToXopInclude () =
+                if reader.Read() then
+                    if reader.NodeType = XmlNodeType.EndElement && reader.Depth < depth then false
+                    elif reader.NodeType <> XmlNodeType.Element || reader.Depth <> depth || reader.LocalName <> "Include" || reader.NamespaceURI <> XmlNamespace.Xop then moveToXopInclude()
+                    else true
+                else false
+            if moveToXopInclude () then
+                match reader.GetAttribute("href") with
+                | null -> failwithf "Missing reference to multipart content in xop:Include element."
+                | contentID -> reader.Read() |> ignore; context.GetAttachment(contentID)
+            else BinaryContent.Create([| |])
+    )
 
     let private addTypeMap typ ser deser =
         let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
@@ -1370,6 +1403,18 @@ module internal DynamicMethods =
         let returnType = responseAttr.ReturnType |> Option.ofObj |> MyOption.defaultValue mi.ReturnType
         let typeMap = getCompleteTypeMap responseAttr.Encoded returnType
         typeMap.DeserializeDelegate.Value
+        (*
+        let method = DynamicMethod(sprintf "deserialize_%s" mi.Name, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
+        method.GetILGenerator() |> (emit' {
+            merge EmitDeserialization.emitXmlReaderRead
+            ldarg_0
+            ldarg_1
+            call typeMap.Deserialization.Root
+            ret
+        }) |> ignore
+        
+        method.CreateDelegate(typeof<DeserializerDelegate>) |> unbox
+        *)
         
     let emitSerializer (mi: MethodInfo) (requestAttr: XRoadRequestAttribute) : OperationSerializerDelegate =
         let method = 
