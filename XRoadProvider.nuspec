@@ -14,10 +14,8 @@
     <releaseNotes>@releaseNotes@</releaseNotes>
     <copyright>Copyright © 2015-2017</copyright>
     <tags>@tags@</tags>
-    <dependencies>
-      <group targetFramework=".NETFramework4.6.1"/>
-    </dependencies>
     <references>
+      <reference file="XRoadProvider.dll" />
     </references>
   </metadata>
   <files>
