@@ -1,3 +1,7 @@
+#### 1.0.0-alpha006 - 29.11.2017
+
+* Repackage
+
 #### 1.0.0-alpha005 - 28.11.2017
 
 * Custom serialization for better type support.

@@ -8,6 +8,7 @@ NUGET
       FSharpVSPowerTools.Core (>= 2.3 < 2.4)
     FSharpVSPowerTools.Core (2.3)
       FSharp.Compiler.Service (>= 2.0.0.3)
+    NuGet.CommandLine (4.4.1)
     Octokit (0.28)
     SourceLink.Fake (1.1)
 GITHUB

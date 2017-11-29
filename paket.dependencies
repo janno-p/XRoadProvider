@@ -3,6 +3,7 @@ framework: net461
 
 nuget FAKE
 nuget FSharp.Formatting
+nuget NuGet.CommandLine
 nuget SourceLink.Fake
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx

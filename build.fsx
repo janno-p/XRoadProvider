@@ -1,4 +1,4 @@
-open System.Diagnostics
+﻿open System.Diagnostics
 // --------------------------------------------------------------------------------------
 // FAKE build script
 // --------------------------------------------------------------------------------------
@@ -8,6 +8,7 @@ open System.Diagnostics
 open Fake
 open Fake.AssemblyInfoFile
 open Fake.ReleaseNotesHelper
+open System
 
 #if MONO
 #else
@@ -113,7 +114,7 @@ Target "AssemblyInfo" (fun _ ->
 Target "CopyBinaries" (fun _ ->
     !! "src/**/*.??proj"
     -- "src/**/*.shproj"
-    |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release/net461", "bin" </> (System.IO.Path.GetFileNameWithoutExtension f)))
+    |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release/net461", "bin/net461"))
     |>  Seq.iter (fun (fromDir, toDir) -> CopyDir toDir fromDir (fun _ -> true))
 )
 
@@ -179,15 +180,21 @@ Target "SourceLink" (fun _ ->
 // Build a NuGet package
 
 Target "NuGet" (fun _ ->
-    !! "src/**/*.fsproj"
-    |> Seq.iter (fun proj ->
-        DotNetCli.Pack
-            (fun p ->
-                { p with
-                    Project = proj
-                    OutputPath = __SOURCE_DIRECTORY__ </> "bin"
-                    Configuration = "Release"
-                    AdditionalArgs = [(sprintf "/p:PackageVersion=%s" release.NugetVersion)] }))
+    CopyDir @"temp/lib" "bin" allFiles
+
+    NuGet (fun p ->
+        { p with
+            Authors = authors
+            Project = project
+            Summary = summary
+            Description = description
+            Version = release.NugetVersion
+            ReleaseNotes = String.Join(Environment.NewLine, release.Notes)
+            Tags = tags
+            WorkingDir = "temp"
+            OutputPath = "bin"
+            Dependencies = [] })
+        (project + ".nuspec")
 )
 
 Target "PublishNuget" (fun _ ->

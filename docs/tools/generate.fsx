@@ -80,7 +80,7 @@ let binaries =
     let conventionBased = 
         directoryInfo bin 
         |> subDirectories
-        |> Array.map (fun d -> d.FullName </> (sprintf "%s.dll" d.Name))
+        |> Array.map (fun d -> d.FullName </> "XRoadProvider.dll")
         |> List.ofArray
 
     conventionBased @ manuallyAdded

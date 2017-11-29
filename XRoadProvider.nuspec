@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata minClientVersion="2.12">
+    <id>@project@</id>
+    <version>@build.number@</version>
+    <authors>@authors@</authors>
+    <owners>@authors@</owners>
+    <licenseUrl>http://github.com/janno-p/XRoadProvider/blob/master/LICENSE.txt</licenseUrl>
+    <projectUrl>http://github.com/janno-p/XRoadProvider</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/janno-p/XRoadProvider/master/docs/files/img/logo.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>@summary@</summary>
+    <description>@description@</description>
+    <releaseNotes>@releaseNotes@</releaseNotes>
+    <copyright>Copyright © 2015-2017</copyright>
+    <tags>@tags@</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.1"/>
+	</dependencies>
+  </metadata>
+  <files>
+    <file src="**/*.*" exclude="**/net461/FSharp.Core.dll" />
+  </files>
+</package>
