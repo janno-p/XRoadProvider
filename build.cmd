@@ -22,4 +22,4 @@ IF NOT EXIST build.fsx (
 
 del .fake\*_warnings.txt
 
-packages\FAKE\tools\FAKE.exe build.fsx %*
+packages\FAKE\tools\FAKE.exe encoding=utf-8 build.fsx %*

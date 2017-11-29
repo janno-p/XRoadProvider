@@ -16,7 +16,9 @@
     <tags>@tags@</tags>
     <dependencies>
       <group targetFramework=".NETFramework4.6.1"/>
-	</dependencies>
+    </dependencies>
+    <references>
+    </references>
   </metadata>
   <files>
     <file src="**/*.*" exclude="**/net461/FSharp.Core.dll" />
