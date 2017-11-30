@@ -90,35 +90,35 @@ producer names from specified security server and offers their details inside de
 <span class="l">30: </span>
 </pre></td>
 <td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="c">// Reference the type provider assembly.</span>
-<span class="prep">#r</span> <span class="s">&quot;XRoadProvider.dll&quot;</span>
+<span class="c">//#load &quot;packages/XRoadProvider/net461/XRoadProvider.fsx&quot;</span>
 
 <span class="k">open</span> <span class="i">XRoad</span>
 <span class="k">open</span> <span class="i">XRoad</span><span class="o">.</span><span class="i">Providers</span>
 
-<span class="k">let</span> [&lt;<span class="i">Literal</span>&gt;] <span class="i">maakatasterPath</span> <span class="o">=</span> <span class="s">@&quot;E:\Projects\XRoadProvider\tests\XRoadProvider.Tests\Wsdl\Maakataster.wsdl.xml&quot;</span>
-
-<span class="k">type</span> <span class="i">Maakataster</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span class="i">maakatasterPath</span><span class="o">&gt;</span>
+<span class="k">type</span> <span class="i">Xrd6</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span class="s">&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml&quot;</span><span class="o">&gt;</span>
 
 <span class="c">// Initialize service interface which provides access to operation methods.</span>
-<span class="k">let</span> <span class="i">myport</span> <span class="o">=</span> <span class="k">new</span> <span class="i">Maakataster</span><span class="o">.</span><span class="i">myservice</span><span class="o">.</span><span class="i">myport</span>()
+<span class="k">let</span> <span class="i">myport</span> <span class="o">=</span> <span class="i">Xrd6</span><span class="o">.</span><span class="i">producerPortService</span><span class="o">.</span><span class="i">getRandomPortSoap11</span>()
 
 <span class="c">// Override default values acquired from port definition (when necessary).</span>
-<span class="i">myport</span><span class="o">.</span><span class="i">ProducerName</span> <span class="o">&lt;-</span> <span class="s">&quot;maakataster&quot;</span>
 <span class="i">myport</span><span class="o">.</span><span class="i">ProducerUri</span> <span class="o">&lt;-</span> <span class="s">&quot;http://localhost:8001/&quot;</span>
 
 <span class="c">// Assign X-Road header values.</span>
-<span class="i">myport</span><span class="o">.</span><span class="i">Ametniknimi</span> <span class="o">&lt;-</span> <span class="s">&quot;toomas.dumpty&quot;</span>
+<span class="k">let</span> <span class="i">hdr</span> <span class="o">=</span> <span class="i">XRoadHeader</span>()
+<span class="i">hdr</span><span class="o">.</span><span class="i">Client</span> <span class="o">&lt;-</span> <span class="i">XRoadMemberIdentifier</span>(<span class="s">&quot;ee-dev&quot;</span>, <span class="s">&quot;GOV&quot;</span>, <span class="s">&quot;000000000&quot;</span>, <span class="s">&quot;sys&quot;</span>)
+<span class="i">hdr</span><span class="o">.</span><span class="i">Producer</span> <span class="o">&lt;-</span> <span class="i">XRoadMemberIdentifier</span>(<span class="s">&quot;ee-dev&quot;</span>, <span class="s">&quot;GOV&quot;</span>, <span class="s">&quot;00000000&quot;</span>, <span class="s">&quot;sys&quot;</span>)
+<span class="i">hdr</span><span class="o">.</span><span class="i">ProtocolVersion</span> <span class="o">&lt;-</span> <span class="s">&quot;4.0&quot;</span>
+<span class="i">hdr</span><span class="o">.</span><span class="i">UserId</span> <span class="o">&lt;-</span> <span class="s">&quot;30101010007&quot;</span>
 
 <span class="c">// Initialize request parameters.</span>
-<span class="k">let</span> <span class="i">request</span> <span class="o">=</span> <span class="k">new</span> <span class="i">Maakataster</span><span class="o">.</span><span class="i">DefinedTypes</span><span class="o">.</span><span class="i">maakataster</span><span class="o">.</span><span class="i">ky_paring</span>()
-<span class="i">request</span><span class="o">.</span><span class="i">katastritunnus</span> <span class="o">&lt;-</span> <span class="s">&quot;test&quot;</span>
-<span class="i">request</span><span class="o">.</span><span class="i">ky_max</span> <span class="o">&lt;-</span> <span class="k">new</span> <span class="i">Maakataster</span><span class="o">.</span><span class="i">DefinedTypes</span><span class="o">.</span><span class="i">maakataster</span><span class="o">.</span><span class="i">t_ky_max</span>(<span class="i">BaseValue</span><span class="o">=</span><span class="s">&quot;001&quot;</span>)
+<span class="k">let</span> <span class="i">request</span> <span class="o">=</span> <span class="i">Xrd6</span><span class="o">.</span><span class="i">DefinedTypes</span><span class="o">.</span><span class="i">ProducerXRoadEu</span><span class="o">.</span><span class="i">getRandom_requestType</span>()
+<span class="i">request</span><span class="o">.</span><span class="i">seed</span> <span class="o">&lt;-</span> (<span class="i">System</span><span class="o">.</span><span class="i">Guid</span><span class="o">.</span><span class="i">NewGuid</span>())<span class="o">.</span><span class="i">ToString</span>()
 
 <span class="c">// Execute service request against specified adapter.</span>
-<span class="k">let</span> <span class="i">response</span> <span class="o">=</span> <span class="i">myport</span><span class="o">.</span><span class="i">ky</span>(<span class="i">request</span>)
+<span class="k">let</span> <span class="i">response</span> <span class="o">=</span> <span class="i">myport</span><span class="o">.</span><span class="i">getRandom</span>(<span class="i">hdr</span>, <span class="i">request</span>)
 
 <span class="c">// Display results to console.</span>
-<span class="i">response</span> <span class="o">|&gt;</span> <span class="i">Array</span><span class="o">.</span><span class="i">iteri</span> (<span class="i">printfn</span> <span class="s">&quot;%d) %A&quot;</span>)
+<span class="i">printfn</span> <span class="s">&quot;getRandom response: %s&quot;</span> <span class="i">response</span><span class="o">.</span><span class="i">response</span><span class="o">.</span><span class="i">content</span>
 </code></pre></td>
 </tr>
 </table>
@@ -145,21 +145,21 @@ to X-Road specification.</p>
 <span class="l">14: </span>
 <span class="l">15: </span>
 </pre></td>
-<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">let</span> [&lt;<span class="i">Literal</span>&gt;] <span class="i">aktorsPath</span> <span class="o">=</span> <span class="s">@&quot;E:\Projects\XRoadProvider\tests\XRoadProvider.Tests\Wsdl\AktorstestService.wsdl.xml&quot;</span>
-
-<span class="k">type</span> <span class="i">Aktorstest</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span class="i">aktorsPath</span><span class="o">&gt;</span>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">type</span> <span class="i">Aktorstest</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span class="s">&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/AktorstestService.wsdl.xml&quot;</span><span class="o">&gt;</span>
 
 <span class="k">let</span> <span class="i">service</span> <span class="o">=</span> <span class="i">Aktorstest</span><span class="o">.</span><span class="i">aktorstestService</span><span class="o">.</span><span class="i">Test</span>()
 
-<span class="k">let</span> <span class="i">request</span> <span class="o">=</span> <span class="i">Aktorstest</span><span class="o">.</span><span class="i">DefinedTypes</span><span class="o">.</span><span class="i">aktorstest</span><span class="o">.</span><span class="i">fileUploadMTOM</span>()
-<span class="i">request</span><span class="o">.</span><span class="i">request</span> <span class="o">&lt;-</span> <span class="i">Aktorstest</span><span class="o">.</span><span class="i">DefinedTypes</span><span class="o">.</span><span class="i">aktorstest</span><span class="o">.</span><span class="i">fileUploadMTOM</span><span class="o">.</span><span class="i">requestType</span>()
-<span class="i">request</span><span class="o">.</span><span class="i">request</span><span class="o">.</span><span class="i">filemtom</span> <span class="o">&lt;-</span> <span class="i">BinaryContent</span><span class="o">.</span><span class="i">Create</span>([| <span class="n">0uy</span>; <span class="n">1uy</span>; <span class="n">2uy</span>; <span class="n">3uy</span> |])
-<span class="i">request</span><span class="o">.</span><span class="i">request</span><span class="o">.</span><span class="i">fileName</span> <span class="o">&lt;-</span> <span class="s">&quot;file.bin&quot;</span>
+<span class="k">let</span> <span class="i">request2</span> <span class="o">=</span> <span class="i">Aktorstest</span><span class="o">.</span><span class="i">DefinedTypes</span><span class="o">.</span><span class="i">aktorstest</span><span class="o">.</span><span class="i">fileUploadMTOM_requestType</span>()
+<span class="i">request2</span><span class="o">.</span><span class="i">filemtom</span> <span class="o">&lt;-</span> <span class="i">BinaryContent</span><span class="o">.</span><span class="i">Create</span>([| <span class="n">0uy</span>; <span class="n">1uy</span>; <span class="n">2uy</span>; <span class="n">3uy</span> |])
+<span class="i">request2</span><span class="o">.</span><span class="i">fileName</span> <span class="o">&lt;-</span> <span class="s">&quot;file.bin&quot;</span>
 
-<span class="k">let</span> <span class="i">response</span> <span class="o">=</span> <span class="i">service</span><span class="o">.</span><span class="i">fileUploadMTOM</span>(<span class="i">request</span>)
+<span class="k">let</span> <span class="i">docHdr</span> <span class="o">=</span> <span class="i">XRoadDocHeader</span>()
+<span class="i">docHdr</span><span class="o">.</span><span class="i">UserName</span> <span class="o">&lt;-</span> <span class="s">&quot;toomas.dumpty&quot;</span>
 
-<span class="i">printfn</span> <span class="s">&quot;%s&quot;</span> <span class="i">response</span><span class="o">.</span><span class="i">response</span><span class="o">.</span><span class="i">faultCode</span><span class="o">.</span><span class="i">BaseValue</span>
-<span class="i">printfn</span> <span class="s">&quot;%s&quot;</span> <span class="i">response</span><span class="o">.</span><span class="i">response</span><span class="o">.</span><span class="i">faultString</span><span class="o">.</span><span class="i">BaseValue</span>
+<span class="k">let</span> <span class="i">result</span> <span class="o">=</span> <span class="i">service</span><span class="o">.</span><span class="i">fileUploadMTOM</span>(<span class="i">docHdr</span>, <span class="i">request2</span>)
+
+<span class="i">printfn</span> <span class="s">&quot;%s&quot;</span> <span class="i">result</span><span class="o">.</span><span class="i">response</span><span class="o">.</span><span class="i">faultCode</span><span class="o">.</span><span class="i">BaseValue</span>
+<span class="i">printfn</span> <span class="s">&quot;%s&quot;</span> <span class="i">result</span><span class="o">.</span><span class="i">response</span><span class="o">.</span><span class="i">faultString</span><span class="o">.</span><span class="i">BaseValue</span>
 </code></pre></td>
 </tr>
 </table>
@@ -178,17 +178,53 @@ be used as parameter to <code>XRoadProducer</code> provider to initialize servic
 <span class="l"> 8: </span>
 <span class="l"> 9: </span>
 <span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+<span class="l">15: </span>
+<span class="l">16: </span>
+<span class="l">17: </span>
+<span class="l">18: </span>
+<span class="l">19: </span>
+<span class="l">20: </span>
+<span class="l">21: </span>
+<span class="l">22: </span>
+<span class="l">23: </span>
+<span class="l">24: </span>
+<span class="l">25: </span>
+<span class="l">26: </span>
+<span class="l">27: </span>
+<span class="l">28: </span>
 </pre></td>
-<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="c">// Acquire list of producer from security server.</span>
-<span class="k">type</span> <span class="i">SecurityServer</span> <span class="o">=</span> <span class="i">XRoadServer</span><span class="o">&lt;</span><span class="s">&quot;xxx.xxx.xx.xxx&quot;</span><span class="o">&gt;</span>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="k">open</span> <span class="i">XRoadProvider</span>
 
-<span class="c">// Initialize service interface for specific producer using details from security server.</span>
-<span class="k">type</span> <span class="i">Adsv5</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span class="i">SecurityServer</span><span class="o">.</span><span class="i">Producers</span><span class="o">.</span><span class="i">adsv5</span><span class="o">.</span><span class="i">WsdlUri</span><span class="o">&gt;</span>
+<span class="c">// Acquire list of producer from security server.</span>
+<span class="k">let</span> [&lt;<span class="i">Literal</span>&gt;] <span class="i">securityServerUrl</span> <span class="o">=</span> <span class="s">&quot;http://your-security-server-here/&quot;</span>
 
-<span class="k">let</span> <span class="i">service</span> <span class="o">=</span> <span class="i">Adsv5</span><span class="o">.</span><span class="i">myservice</span><span class="o">.</span><span class="i">myport</span>()
+<span class="k">type</span> <span class="i">SecurityServer</span> <span class="o">=</span> <span class="i">XRoadServer6</span><span class="o">&lt;</span><span class="i">securityServerUrl</span>, <span class="s">&quot;ee-dev&quot;</span>, <span class="s">&quot;COM&quot;</span>, <span class="s">&quot;12345678&quot;</span>, <span class="s">&quot;generic-consumer&quot;</span><span class="o">&gt;</span>
+<span class="k">type</span> <span class="i">AdsConfig</span> <span class="o">=</span> <span class="i">SecurityServer</span><span class="o">.</span><span class="i">Producers</span><span class="o">.</span><span class="i">GOV</span><span class="o">.</span><span class="i">``Maa-amet (70003098)``</span><span class="o">.</span><span class="i">``SUBSYSTEM:ads``</span>
+<span class="k">type</span> <span class="i">Ads</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span class="i">AdsConfig</span><span class="o">.</span><span class="i">``SERVICE:ADSaadrmuudatused``</span><span class="o">&gt;</span>
 
-<span class="c">// Use default security server end-point since WSDL has usually invalid value.</span>
-<span class="i">service</span><span class="o">.</span><span class="i">ProducerUri</span> <span class="o">&lt;-</span> <span class="i">SecurityServer</span><span class="o">.</span><span class="i">RequestUri</span>
+<span class="k">let</span> <span class="i">adsService</span> <span class="o">=</span> <span class="i">Ads</span><span class="o">.</span><span class="i">xroadeuService</span><span class="o">.</span><span class="i">xroadeuServicePort</span>(<span class="i">ProducerUri</span> <span class="o">=</span> <span class="i">securityServerUrl</span>)
+
+<span class="k">let</span> <span class="i">adsHeader</span> <span class="o">=</span>
+    <span class="i">XRoadHeader</span>(
+        <span class="i">Client</span> <span class="o">=</span> <span class="i">SecurityServer</span><span class="o">.</span><span class="i">Identifier</span>,
+        <span class="i">Producer</span> <span class="o">=</span> <span class="i">AdsConfig</span><span class="o">.</span><span class="i">Identifier</span>,
+        <span class="i">ProtocolVersion</span> <span class="o">=</span> <span class="s">&quot;4.0&quot;</span>
+    )
+
+<span class="k">let</span> <span class="i">adsResponse</span> <span class="o">=</span>
+    <span class="i">adsService</span><span class="o">.</span><span class="i">ADSaadrmuudatused</span>(
+        <span class="i">adsHeader</span>,
+        <span class="i">muudetudAlates</span> <span class="o">=</span> <span class="i">some</span>(<span class="i">NodaTime</span><span class="o">.</span><span class="i">LocalDate</span>(<span class="n">2017</span>, <span class="n">11</span>, <span class="n">28</span>))
+    )
+
+<span class="i">adsResponse</span><span class="o">.</span><span class="i">fault</span><span class="o">.</span><span class="i">MatchSome</span>(<span class="k">fun</span> <span class="i">f</span> <span class="k">-&gt;</span> <span class="i">failwithf</span> <span class="s">&quot;Invalid service response. %s: %s&quot;</span> <span class="i">f</span><span class="o">.</span><span class="i">faultCode</span> <span class="i">f</span><span class="o">.</span><span class="i">faultString</span>)
+
+<span class="k">let</span> <span class="i">muudatused</span> <span class="o">=</span> <span class="i">adsResponse</span><span class="o">.</span><span class="i">muudatused</span><span class="o">.</span><span class="i">ValueOr</span>([||])
+<span class="i">printfn</span> <span class="s">&quot;Got %d changes in response message.&quot;</span> <span class="i">muudatused</span><span class="o">.</span><span class="i">Length</span>
 </code></pre></td>
 </tr>
 </table>
