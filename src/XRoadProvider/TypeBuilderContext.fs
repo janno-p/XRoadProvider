@@ -132,6 +132,11 @@ type internal TypeBuilderContext =
                     | XmlNamespace.XRoad31Ee -> "xroad"
                     | ns -> ns.ToClassName()
                 let typ = Cls.create(producerName) |> Cls.addAttr TypeAttributes.Public
+                let fld =
+                    Fld.create<string> "__TargetNamespace__"
+                    |> Fld.init (!^ nsname.NamespaceName)
+                    |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Const)
+                    |> Fld.addTo typ
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
             | true, typ -> typ

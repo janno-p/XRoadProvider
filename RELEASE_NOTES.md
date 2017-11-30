@@ -1,6 +1,7 @@
 #### 1.0.0-alpha010 - Unreleased
 
 * Fix deserialization of empty elements.
+* Add constant `__TargetNamespace__` to `DefinedTypes` type collections which holds corresponding namespace in which these types are defined.
 
 #### 1.0.0-alpha009 - 30.11.2017
 
