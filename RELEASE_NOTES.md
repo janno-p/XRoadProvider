@@ -1,4 +1,4 @@
-#### 1.0.0-alpha009 - Unreleased
+#### 1.0.0-alpha009 - 30.11.2017
 
 * Fix object reference exception in X-Road v6 security server provider.
 * Add predefined identifiers for security server, member and subsystem identifiers.
