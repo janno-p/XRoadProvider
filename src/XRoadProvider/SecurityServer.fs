@@ -243,7 +243,7 @@ module internal SecurityServerV6 =
         let envelope = doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
         let body = envelope.Element(xnsname "Body" XmlNamespace.SoapEnv)
         let fault = body.Element(xnsname "Fault" XmlNamespace.SoapEnv)
-        if fault |> isNull then
+        if not (isNull fault) then
             let code = fault.Element(xname "faultcode") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
             let text = fault.Element(xname "faultstring") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
             failwithf "Opration resulted with error: FaultCode: %s; FaultString: %s" code text

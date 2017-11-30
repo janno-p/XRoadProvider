@@ -41,4 +41,9 @@
     <Compile Include="XRoadProvidedTypes.fsi" />
     <Compile Include="XRoadProvidedTypes.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="XRoadProvider.fsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

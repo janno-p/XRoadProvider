@@ -165,16 +165,21 @@ type XRoadProviders(config: TypeProviderConfig) as this =
         let centralServicesTy = ProvidedTypeDefinition("CentralServices", Some baseTy, HideObjectMethods = true)
         centralServicesTy.AddXmlDoc("All available central services in particular v6 X-Road instance.")
         thisTy.AddMember(centralServicesTy)
+        
+        let identifier = ProvidedProperty("Identifier", typeof<XRoadMemberIdentifier>, isStatic = true, getterCode = (fun _ -> <@@ XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, subsystemCode) @@>))
+        thisTy.AddMember(identifier)
 
         producersTy.AddMembersDelayed (fun _ ->
             SecurityServerV6.downloadProducerList securityServerUri xRoadInstance refresh
             |> List.map (fun memberClass ->
+                let memberClassName = memberClass.Name
                 let classTy = ProvidedTypeDefinition(memberClass.Name, Some baseTy, HideObjectMethods = true)
                 classTy.AddXmlDoc(memberClass.Name)
                 classTy.AddMember(ProvidedField.Literal("ClassName", typeof<string>, memberClass.Name))
                 classTy.AddMembersDelayed (fun () ->
                     memberClass.Members
                     |> List.map (fun memberItem ->
+                        let memberItemCode = memberItem.Code
                         let memberId = SecurityServerV6.Member(xRoadInstance, memberClass.Name, memberItem.Code)
                         let addServices provider addNote =
                             try
@@ -187,6 +192,7 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                         memberTy.AddXmlDoc(memberItem.Name)
                         memberTy.AddMember(ProvidedField.Literal("Name", typeof<string>, memberItem.Name))
                         memberTy.AddMember(ProvidedField.Literal("Code", typeof<string>, memberItem.Code))
+                        memberTy.AddMember(ProvidedProperty("Identifier", typeof<XRoadMemberIdentifier>, isStatic = true, getterCode = (fun _ -> <@@ XRoadMemberIdentifier(xRoadInstance, memberClassName, memberItemCode) @@>)))
                         memberTy.AddMembersDelayed(fun _ -> addServices memberId false)
                         memberTy.AddMembersDelayed(fun () ->
                             memberItem.Subsystems
@@ -195,6 +201,7 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                                 let subsystemTy = ProvidedTypeDefinition(sprintf "%s:%s" subsystemId.ObjectId subsystem, Some baseTy, HideObjectMethods = true)
                                 subsystemTy.AddXmlDoc(sprintf "Subsystem %s of X-Road member %s (%s)." subsystem memberItem.Name memberItem.Code)
                                 subsystemTy.AddMember(ProvidedField.Literal("Name", typeof<string>, subsystem))
+                                subsystemTy.AddMember(ProvidedProperty("Identifier", typeof<XRoadMemberIdentifier>, isStatic = true, getterCode = (fun _ -> <@@ XRoadMemberIdentifier(xRoadInstance, memberClassName, memberItemCode, subsystem) @@>)))
                                 subsystemTy.AddMembersDelayed(fun _ -> addServices subsystemId true)
                                 subsystemTy))
                         memberTy))

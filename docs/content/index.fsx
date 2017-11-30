@@ -1,7 +1,7 @@
 (*** hide ***)
 // This block of code is omitted in the generated HTML documentation. Use 
 // it to define helpers that you do not want to show in the documentation.
-#I "../../bin/XRoadProvider"
+#load "../../bin/net461/XRoadProvider.fsx"
 
 (**
 XRoadProvider
@@ -34,35 +34,35 @@ This example demonstrates the use of the XRoadProvider:
 
 *)
 // Reference the type provider assembly.
-#r "XRoadProvider.dll"
+//#load "packages/XRoadProvider/net461/XRoadProvider.fsx"
 
 open XRoad
 open XRoad.Providers
 
-let [<Literal>] maakatasterPath = @"E:\Projects\XRoadProvider\tests\XRoadProvider.Tests\Wsdl\Maakataster.wsdl.xml"
-
-type Maakataster = XRoadProducer<maakatasterPath>
+type Xrd6 = XRoadProducer<"/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml">
 
 // Initialize service interface which provides access to operation methods.
-let myport = new Maakataster.myservice.myport()
+let myport = Xrd6.producerPortService.getRandomPortSoap11()
 
 // Override default values acquired from port definition (when necessary).
-myport.ProducerName <- "maakataster"
 myport.ProducerUri <- "http://localhost:8001/"
 
 // Assign X-Road header values.
-myport.Ametniknimi <- "toomas.dumpty"
+let hdr = XRoadHeader()
+hdr.Client <- XRoadMemberIdentifier("ee-dev", "GOV", "000000000", "sys")
+hdr.Producer <- XRoadMemberIdentifier("ee-dev", "GOV", "00000000", "sys")
+hdr.ProtocolVersion <- "4.0"
+hdr.UserId <- "30101010007"
 
 // Initialize request parameters.
-let request = new Maakataster.DefinedTypes.maakataster.ky_paring()
-request.katastritunnus <- "test"
-request.ky_max <- new Maakataster.DefinedTypes.maakataster.t_ky_max(BaseValue="001")
+let request = Xrd6.DefinedTypes.ProducerXRoadEu.getRandom_requestType()
+request.seed <- (System.Guid.NewGuid()).ToString()
 
 // Execute service request against specified adapter.
-let response = myport.ky(request)
+let response = myport.getRandom(hdr, request)
 
 // Display results to console.
-response |> Array.iteri (printfn "%d) %A")
+printfn "getRandom response: %s" response.response.content
 
 (**
 
@@ -79,21 +79,21 @@ to X-Road specification.
 Usage example of `BinaryContent` type:
 
 *)
-let [<Literal>] aktorsPath = @"E:\Projects\XRoadProvider\tests\XRoadProvider.Tests\Wsdl\AktorstestService.wsdl.xml"
-
-type Aktorstest = XRoadProducer<aktorsPath>
+type Aktorstest = XRoadProducer<"/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/AktorstestService.wsdl.xml">
 
 let service = Aktorstest.aktorstestService.Test()
 
-let request = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM()
-request.request <- Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM.requestType()
-request.request.filemtom <- BinaryContent.Create([| 0uy; 1uy; 2uy; 3uy |])
-request.request.fileName <- "file.bin"
+let request2 = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM_requestType()
+request2.filemtom <- BinaryContent.Create([| 0uy; 1uy; 2uy; 3uy |])
+request2.fileName <- "file.bin"
 
-let response = service.fileUploadMTOM(request)
+let docHdr = XRoadDocHeader()
+docHdr.UserName <- "toomas.dumpty"
 
-printfn "%s" response.response.faultCode.BaseValue
-printfn "%s" response.response.faultString.BaseValue
+let result = service.fileUploadMTOM(docHdr, request2)
+
+printfn "%s" result.response.faultCode.BaseValue
+printfn "%s" result.response.faultString.BaseValue
 
 (**
 
@@ -107,16 +107,34 @@ be used as parameter to `XRoadProducer` provider to initialize service interface
 Example use of `XRoadServer` type provider:
 
 *)
+open XRoadProvider
+
 // Acquire list of producer from security server.
-type SecurityServer = XRoadServer<"xxx.xxx.xx.xxx">
+let [<Literal>] securityServerUrl = "http://your-security-server-here/"
 
-// Initialize service interface for specific producer using details from security server.
-type Adsv5 = XRoadProducer<SecurityServer.Producers.adsv5.WsdlUri>
+type SecurityServer = XRoadServer6<securityServerUrl, "ee-dev", "COM", "12345678", "generic-consumer">
+type AdsConfig = SecurityServer.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
+type Ads = XRoadProducer<AdsConfig.``SERVICE:ADSaadrmuudatused``>
 
-let service = Adsv5.myservice.myport()
+let adsService = Ads.xroadeuService.xroadeuServicePort(ProducerUri = securityServerUrl)
 
-// Use default security server end-point since WSDL has usually invalid value.
-service.ProducerUri <- SecurityServer.RequestUri
+let adsHeader =
+    XRoadHeader(
+        Client = SecurityServer.Identifier,
+        Producer = AdsConfig.Identifier,
+        ProtocolVersion = "4.0"
+    )
+
+let adsResponse =
+    adsService.ADSaadrmuudatused(
+        adsHeader,
+        muudetudAlates = some(NodaTime.LocalDate(2017, 11, 28))
+    )
+
+adsResponse.fault.MatchSome(fun f -> failwithf "Invalid service response. %s: %s" f.faultCode f.faultString)
+
+let muudatused = adsResponse.muudatused.ValueOr([||])
+printfn "Got %d changes in response message." muudatused.Length
 
 (**
 
