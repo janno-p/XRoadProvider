@@ -435,6 +435,21 @@ module EmitSerialization =
         |> (fun items -> if items.IsEmpty then id else items |> List.reduce ((>>)))
 
 module EmitDeserialization =
+    let emitDebug arg = emit' {
+        ldstr (sprintf "%s: {3}: <{1}:{0}> [{2}]" arg)
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).LocalName @>
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).Depth @>
+        box typeof<int>
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).NodeType @>
+        box typeof<int>
+        call_expr <@ Console.WriteLine("", "", "", "", "") @>
+    }
+
     /// Check if current element has `xsi:nil` attribute present.
     let private emitNullCheck = emit' {
         ldarg_0
@@ -466,7 +481,18 @@ module EmitDeserialization =
 
     /// Emit type (and its base types) content deserialization.
     let rec private emitContentDeserialization hasInlineContent (instance: LocalBuilder, depthVar: LocalBuilder) (typeMap: TypeMap) = emit' {
-        merge (if hasInlineContent then id else emitXmlReaderRead)
+        merge (
+            if hasInlineContent then id else
+            emit' {
+                ldarg_0
+                callvirt_expr <@ (null: XmlReader).IsEmptyElement @>
+                define_label (fun skipRead -> emit' {
+                    brtrue skipRead
+                    merge emitXmlReaderRead
+                    set_marker skipRead
+                })
+            }
+        )
         ldarg_0
         ldloc instance
         ldloc depthVar
@@ -552,21 +578,6 @@ module EmitDeserialization =
                 nop
                 merge (emitTypeHierarchyDeserialization hasInlineContent markReturn depthVar other qualifiedName typeMap)
             }
-            
-    let emitDebug = emit' {
-        ldstr "ROOT: {3}: <{1}:{0}> [{2}]"
-        ldarg_0
-        callvirt_expr <@ (null: XmlReader).LocalName @>
-        ldarg_0
-        callvirt_expr <@ (null: XmlReader).NamespaceURI @>
-        ldarg_0
-        callvirt_expr <@ (null: XmlReader).Depth @>
-        box typeof<int>
-        ldarg_0
-        callvirt_expr <@ (null: XmlReader).NodeType @>
-        box typeof<int>
-        call_expr <@ Console.WriteLine("", "", "", "", "") @>
-    }
 
     let emitRootDeserializerMethod hasInlineContent (subTypes: TypeMap list) (typeMap: TypeMap) = emit' {
         declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
@@ -795,7 +806,7 @@ module EmitDeserialization =
                 ldarg_0
                 ldloc depthVar
                 call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
-                
+
                 merge (
                     match nextRequired with
                     | Some(rp) ->
@@ -1406,21 +1417,7 @@ module internal DynamicMethods =
         let returnType = responseAttr.ReturnType |> Option.ofObj |> MyOption.defaultValue mi.ReturnType
         let typeMap = getCompleteTypeMap responseAttr.Encoded returnType
         typeMap.DeserializeDelegate.Value
-        (*let method = DynamicMethod(sprintf "deserialize_%s" mi.Name, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
-        method.GetILGenerator() |> (emit' {
-            ldarg_0
-            ldc_i4 3
-            call_expr <@ (null: XmlReader).FindNextStartElement(0) @>
-            pop
-            ldarg_0
-            ldarg_1
-            call typeMap.Deserialization.Root
-            ret
-        }) |> ignore
-        
-        method.CreateDelegate(typeof<DeserializerDelegate>) |> unbox
-        //*)
-        
+
     let emitSerializer (mi: MethodInfo) (requestAttr: XRoadRequestAttribute) : OperationSerializerDelegate =
         let method = 
             DynamicMethod

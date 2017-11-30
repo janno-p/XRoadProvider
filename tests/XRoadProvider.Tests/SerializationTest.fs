@@ -105,7 +105,25 @@ module Types =
         inherit AbstractBaseWithOptional()
         [<XRoadElement>]
         member val SubValue = Unchecked.defaultof<string> with get, set
-        
+
+    [<XRoadType(LayoutKind.Choice, IsAnonymous=true)>]
+    [<XRoadElement(1, "response", MergeContent=false)>]
+    [<XRoadElement(2, "fault", MergeContent=false)>]
+    type ComplexChoice =
+        val private __id: int
+        val private __value: obj
+        private new(id, value: obj) = { __id = id; __value = value }
+        member this.TryGet_response([<Out>] value: string[] byref) =
+            if this.__id = 1 then value <- unbox this.__value
+            else value <- null
+            this.__id = 1
+        member this.TryGet_fault([<Out>] value: int64 byref) =
+            if this.__id = 2 then value <- unbox this.__value
+            else value <- 0L
+            this.__id = 2
+        static member New_response(value: string[]) = ComplexChoice(1, box value)
+        static member New_fault(value: int64) = ComplexChoice(2, box value)
+
     [<XRoadType(LayoutKind.Choice)>]
     [<XRoadElement(1, "value1", MergeContent=false)>]
     [<XRoadElement(2, "value2", MergeContent=false)>]
@@ -240,6 +258,11 @@ module Types =
         member val Classificator = Unchecked.defaultof<Classificator> with get, set
         [<XRoadElement>]
         member val Regular = Unchecked.defaultof<string> with get, set
+        
+    [<XRoadType>]
+    type EmptyType() =
+        class
+        end
 
 module ResultTypes =
     type [<XRoadType>] Service1Result () =
@@ -328,6 +351,10 @@ module ResultTypes =
         
     type [<XRoadType(LayoutKind.Sequence, IsAnonymous=true)>] MergeArrayServiceResult () =
         [<XRoadElement(MergeContent=true); XRoadCollection("someString")>] member val response = Unchecked.defaultof<string[]> with get, set
+        
+    type [<XRoadType(IsAnonymous=true)>] ComplexChoiceServiceResult () =
+        [<XRoadElement>] member val request = Unchecked.defaultof<Types.EmptyType> with get, set
+        [<XRoadElement>] member val choice1 = Unchecked.defaultof<Types.ComplexChoice> with get, set
 
 type Services =
     [<XRoadOperation("Service1", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
@@ -484,6 +511,11 @@ type Services =
     [<XRoadRequest("MergeArrayService", producerNamespace)>]
     [<XRoadResponse("MergeArrayServiceResponse", producerNamespace, ReturnType=typeof<ResultTypes.MergeArrayServiceResult>)>]
     abstract MergeArrayService: [<XRoadElement("request")>] request: string[] -> string[]
+    
+    [<XRoadOperation("ComplexChoiceService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("ComplexChoiceService", producerNamespace)>]
+    [<XRoadResponse("ComplexChoiceServiceResponse", producerNamespace)>]
+    abstract ComplexChoiceService: [<XRoadElement("request")>] request: Types.EmptyType -> ResultTypes.ComplexChoiceServiceResult
 
 let serialize = SerializationUtil.serialize typeof<Services> producerNamespace
 let deserialize = SerializationUtil.deserialize typeof<Services>
@@ -1059,5 +1091,14 @@ let [<Tests>] tests =
             Expect.equal result.response.Length 2 ""
             Expect.equal result.response.[0] "A" ""
             Expect.equal result.response.[1] "regular" ""
+        }
+        
+        test "deserialize complex choice service" {
+            let result: ResultTypes.ComplexChoiceServiceResult = getResponse "ComplexChoiceService" @"<Body><tns:ComplexChoiceServiceResponse xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:tns=""http://producer.x-road.eu/"" xmlns:test=""testns""><request /><response><item>1</item><item>2</item></response></tns:ComplexChoiceServiceResponse></Body>"
+            let ok, response = result.choice1.TryGet_response()
+            Expect.isTrue ok ""
+            Expect.equal response.Length 2 ""
+            Expect.equal response.[0] "1" ""
+            Expect.equal response.[1] "2" ""
         }
     ]

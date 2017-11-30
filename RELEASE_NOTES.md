@@ -1,3 +1,7 @@
+#### 1.0.0-alpha010 - Unreleased
+
+* Fix deserialization of empty elements.
+
 #### 1.0.0-alpha009 - 30.11.2017
 
 * Fix object reference exception in X-Road v6 security server provider.

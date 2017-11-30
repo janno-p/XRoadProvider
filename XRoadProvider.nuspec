@@ -19,6 +19,6 @@
     </references>
   </metadata>
   <files>
-    <file src="**/*.*" exclude="**/net461/FSharp.Core.dll" />
+    <file src="lib/**/*.*" exclude="**/net461/FSharp.Core.dll" />
   </files>
 </package>
