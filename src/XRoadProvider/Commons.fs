@@ -707,7 +707,7 @@ module internal MultipartMessage =
         result
 
     let private readLine stream =
-        let mutable line = [| |] : byte []
+        let mutable line: byte[] = [||]
         let buffer = Array.zeroCreate<byte>(CHUNK_SIZE)
         let rec readChunk () =
             let (state, chunkSize) = stream |> readChunkOrLine buffer
@@ -725,10 +725,12 @@ module internal MultipartMessage =
             match Encoding.ASCII.GetString(stream |> readLine).Trim() with
             | null | "" -> ()
             | line ->
-                match line.Split([| ':' |], 2) with
-                | [| name |] -> yield (name.Trim(), "")
-                | [| name; content |] -> yield (name.Trim(), content.Trim())
-                | _ -> failwith "never"
+                let (key, value) =
+                    match line.Split([| ':' |], 2) with
+                    | [| name |] -> (name, "")
+                    | [| name; content |] -> (name, content)
+                    | _ -> failwith "never"
+                yield (key.Trim().ToLower(), value.Trim())
                 yield! getHeaders() }
         getHeaders() |> Map.ofSeq
 
@@ -747,9 +749,8 @@ module internal MultipartMessage =
 
     let private startsWith (value: byte []) (buffer: byte []) =
         let rec compare i =
-            if value.[i] = buffer.[i] then
-                if i = 0 then true else compare (i - 1)
-            else false
+            if value.[i] <> buffer.[i] then false else
+            if i = 0 then true else compare (i - 1)
         if buffer |> isNull || value |> isNull || value.Length > buffer.Length then false
         else compare (value.Length - 1)
 
@@ -758,36 +759,32 @@ module internal MultipartMessage =
         | Some(boundaryMarker) ->
             use stream = new PeekStream(response.GetResponseStream())
             let contents = List<string option * MemoryStream>()
-            let contentMarker = Encoding.ASCII.GetBytes(sprintf "--%s" boundaryMarker)
-            let endMarker = Encoding.ASCII.GetBytes(sprintf "--%s--" boundaryMarker)
-            let (|Content|End|Separator|) line =
-                if line |> startsWith endMarker then End
-                elif line |> startsWith contentMarker then Content
-                else Separator
+            let isContentMarker = startsWith (Encoding.ASCII.GetBytes (sprintf "--%s" boundaryMarker))
+            let isEndMarker = startsWith (Encoding.ASCII.GetBytes (sprintf "--%s--" boundaryMarker))
             let buffer = Array.zeroCreate<byte>(CHUNK_SIZE)
             let rec copyChunk addNewLine encoding (decoder: (Encoding -> byte[] -> byte[]) option) (contentStream: Stream) =
                 let (state,size) = stream |> readChunkOrLine buffer
-                if buffer |> startsWith endMarker then false
-                elif buffer |> startsWith contentMarker then true
+                if buffer |> isEndMarker then false
+                elif buffer |> isContentMarker then true
                 elif state = EndOfStream then failwith "Unexpected end of multipart stream."
                 else
                     if decoder.IsNone && addNewLine then contentStream.Write([| 13uy; 10uy |], 0, 2)
-                    let (decodedBuffer,size) = decoder |> Option.fold (fun (buf,_) func -> let buf = buf |> func encoding
-                                                                                           (buf,buf.Length)) (buffer,size)
+                    let (decodedBuffer,size) = decoder |> Option.fold (fun (buf,_) func -> let buf = buf |> func encoding in (buf,buf.Length)) (buffer,size)
                     contentStream.Write(decodedBuffer, 0, size)
                     match state with EndOfStream -> false | _ -> copyChunk (state = NewLine) encoding decoder contentStream
-            let parseContentPart () =
+            let rec parseNextContentPart () =
                 let headers = stream |> extractMultipartContentHeaders
                 let contentId = headers |> Map.tryFind("content-id") |> Option.map (fun x -> x.Trim().Trim('<', '>'))
                 let decoder = headers |> Map.tryFind("content-transfer-encoding") |> Option.bind (getDecoder)
                 let contentStream = new MemoryStream()
                 contents.Add(contentId, contentStream)
-                copyChunk false Encoding.UTF8 decoder contentStream
+                if copyChunk false Encoding.UTF8 decoder contentStream |> not then ()
+                else parseNextContentPart() 
             let rec parseContent () =
-                match stream |> readLine with
-                | Content -> if parseContentPart() then parseContent() else ()
-                | End -> ()
-                | Separator -> parseContent()
+                let line = stream |> readLine
+                if line |> isEndMarker then ()
+                elif line |> isContentMarker then parseNextContentPart()
+                else parseContent()
             parseContent()
             match contents |> Seq.toList with
             | (_,content)::attachments ->
