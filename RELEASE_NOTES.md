@@ -1,6 +1,7 @@
-#### 1.0.0-alpha011 - Unreleased
+#### 1.0.0-alpha011 - 01.12.2017
 
 * Handle xop binary content type elements.
+* Fix multipart message deserialization.
 
 #### 1.0.0-alpha010 - 30.11.2017
 
