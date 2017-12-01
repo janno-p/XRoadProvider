@@ -33,9 +33,10 @@ module TypeBuilder =
           IsAny: bool
           IsIgnored: bool
           // Documentation tooltips
-          Documentation: string option }
+          Documentation: string option
+          UseXop: bool }
         /// Initializes default property with name and optional value.
-        static member Create(name, isOptional, doc) =
+        static member Create(name, isOptional, doc, useXop) =
             { Type = PrimitiveType(typeof<Void>)
               IsNillable = false
               IsItemNillable = None
@@ -46,7 +47,8 @@ module TypeBuilder =
               IsAttribute = false
               IsAny = false
               IsIgnored = false
-              Documentation = doc }
+              Documentation = doc
+              UseXop = useXop }
 
     /// Build property declarations from property definitions and add them to owner type.
     let private addTypeProperties definitions ownerTy =
@@ -63,20 +65,20 @@ module TypeBuilder =
                 prop |> Prop.describe Attributes.XmlAttribute |> ignore
             else
                 match definition.IsWrappedArray, definition.Type with
-                | Some(hasWrapper), CollectionType(_, itemName, _) ->
+                | Some(hasWrapper), CollectionType(itemRty, itemName, _) ->
                     let isItemNillable = definition.IsItemNillable |> Option.fold (fun _ x -> x) false
-                    prop |> Prop.describe (Attributes.xrdElement(None, None, definition.IsNillable, not hasWrapper))
+                    prop |> Prop.describe (Attributes.xrdElement(None, None, definition.IsNillable, not hasWrapper, definition.UseXop))
                          |> Prop.describe (Attributes.xrdCollection(Some(itemName), isItemNillable))
                          |> ignore
                 | Some(_), _ -> failwith "Array should match to CollectionType."
-                | None, _ -> prop |> Prop.describe (Attributes.xrdElement(elementName, None, definition.IsNillable, false)) |> ignore
+                | None, rty -> prop |> Prop.describe (Attributes.xrdElement(elementName, None, definition.IsNillable, false, definition.UseXop)) |> ignore
             // Add extra types to owner type declaration.
             definition.AddedTypes |> List.iter (fun x -> ownerTy |> Cls.addMember x |> ignore)
         definitions |> List.iter (addTypePropertiesFromDefinition)
 
     /// Create definition of property that accepts any element not defined in schema.
     let private buildAnyProperty () =
-        let prop = PropertyDefinition.Create("AnyElements", false, None)
+        let prop = PropertyDefinition.Create("AnyElements", false, None, false)
         { prop with Type = PrimitiveType(typeof<XmlElement[]>); IsAny = true }
 
     let private annotationToText (context: TypeBuilderContext) (annotation: Annotation option) =
@@ -142,7 +144,7 @@ module TypeBuilder =
     and private buildElementProperty (context: TypeBuilderContext) (spec: ElementSpec) =
         let dspec, schemaType = context.DereferenceElementSpec(spec)
         let name = dspec.Name |> Option.get
-        buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (spec.MinOccurs = 0u) context (annotationToText context spec.Annotation)
+        buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (spec.MinOccurs = 0u) context (annotationToText context spec.Annotation) spec.ExpectedContentTypes.IsSome
 
     /// Create single property definition for given attribute-s schema specification.
     and private buildAttributeProperty (context: TypeBuilderContext) (spec: AttributeSpec) =
@@ -153,12 +155,12 @@ module TypeBuilder =
             | Definition(simpleTypeSpec) -> Definition(SimpleDefinition(simpleTypeSpec))
             | Name(name) -> Name(name)
         let isOptional = match spec.Use with Required -> true | _ -> false
-        let prop = buildPropertyDef schemaType 1u name false isOptional context (annotationToText context spec.Annotation)
+        let prop = buildPropertyDef schemaType 1u name false isOptional context (annotationToText context spec.Annotation) false
         { prop with IsAttribute = true }
 
     /// Build default property definition from provided schema information.
-    and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context doc =
-        let propertyDef = PropertyDefinition.Create(name, isOptional, doc)
+    and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context doc useXop =
+        let propertyDef = PropertyDefinition.Create(name, isOptional, doc, useXop)
         match schemaType with
         | Definition(ArrayContent itemSpec) ->
             match context.DereferenceElementSpec(itemSpec) with
@@ -275,14 +277,14 @@ module TypeBuilder =
                 match choiceContent with
                 | Element(spec) ->
                     let prop = buildElementProperty context spec
-                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name false) |> ignore
+                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name false prop.UseXop) |> ignore
                     addNewMethod (i + 1) prop.Name prop.Type
                     addTryMethod (i + 1) prop.Name prop.Type
                     None
                 | Sequence(spec) ->
                     let props = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
-                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName true) |> ignore
+                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName true false) |> ignore
                     let optionType = createOptionType optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod (i + 1) optionName optionRuntimeType
@@ -292,7 +294,7 @@ module TypeBuilder =
                 | Choice(_) -> failwith "Not implemented: choice in choice."
                 | Group -> failwith "Not implemented: group in choice.")
 
-        [{ PropertyDefinition.Create(choiceName, false, None) with Type = choiceRuntimeType; AddedTypes = choiceType::addedTypes }]
+        [{ PropertyDefinition.Create(choiceName, false, None, false) with Type = choiceRuntimeType; AddedTypes = choiceType::addedTypes }]
 
     /// Extract property definitions for all the elements defined in sequence element.
     and private buildSequenceMembers context (spec: ParticleSpec) =
@@ -324,7 +326,7 @@ module TypeBuilder =
                 let values = spec.Content |> buildEnumerationConstants runtimeType rtyp
                 values |> List.iter (providedTy.Members.Add >> ignore)
                 providedTy
-                |> addContentProperty("BaseValue", rtyp)
+                |> addContentProperty("BaseValue", rtyp, false)
                 |> iif (values |> List.isEmpty) (fun x -> x |> Ctor.setAttr (MemberAttributes.Public))
                 |> ignore
                 Ctor.create() |> providedTy.Members.Add |> ignore
@@ -347,7 +349,7 @@ module TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
-                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe Attributes.xrdContent |> ignore
+                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe (Attributes.xrdContent false) |> ignore
                         Some(spec.Content)
                     | _ ->
                         failwith "ComplexType-s simpleContent should not extend complex types."

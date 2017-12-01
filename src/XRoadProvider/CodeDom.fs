@@ -80,23 +80,26 @@ module Attributes =
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "IsAnonymous" (!^ true)
 
-    let xrdElement(elementName, elementNamespace, isNullable, mergeContent) =
+    let xrdElement(elementName, elementNamespace, isNullable, mergeContent, useXop) =
         let attr = Attr.create<XRoadElementAttribute>
         elementName |> Option.iter (fun name -> attr |> Attr.addArg (!^ name) |> ignore)
         elementNamespace |> Option.iter (fun ns -> attr |> Attr.addNamedArg "Namespace" (!^ ns) |> ignore)
         if isNullable then attr |> Attr.addNamedArg "IsNullable" (!^ true) |> ignore
         if mergeContent then attr |> Attr.addNamedArg "MergeContent" (!^ true) |> ignore
+        if useXop then attr |> Attr.addNamedArg "UseXop" (!^ true) |> ignore
         attr
 
-    let xrdContent =
+    let xrdContent useXop =
         Attr.create<XRoadElementAttribute>
         |> Attr.addNamedArg "MergeContent" (!^ true)
+        |> iif useXop (Attr.addNamedArg "UseXop" (!^ true))
 
-    let xrdChoiceOption (id: int) (name: string) (mergeContent: bool) =
+    let xrdChoiceOption (id: int) (name: string) (mergeContent: bool) useXop =
         Attr.create<XRoadElementAttribute>
         |> Attr.addArg (!^ id)
         |> Attr.addArg (!^ name)
-        |> Attr.addNamedArg "MergeContent" (!^ mergeContent)
+        |> iif mergeContent (Attr.addNamedArg "MergeContent" (!^ true))
+        |> iif useXop (Attr.addNamedArg "UseXop" (!^ true))
 
     let xrdCollection (itemName, isNullable) =
         itemName
@@ -318,7 +321,7 @@ type RuntimeType =
             let optionalType = CodeTypeReference(typedefof<Optional.Option<_>>)
             optionalType.TypeArguments.Add(ctr) |> ignore
             optionalType
-        | _ -> ctr
+        | _ -> ctr 
 
 /// Create property with backing field.
 let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
@@ -348,11 +351,11 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
     owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
     p
 
-let addContentProperty (name: string, ty: RuntimeType) (owner: CodeTypeDeclaration) =
+let addContentProperty (name: string, ty: RuntimeType, useXop) (owner: CodeTypeDeclaration) =
     let name = name.ToPropertyName()
     Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
     |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-    |> Fld.describe Attributes.xrdContent
+    |> Fld.describe (Attributes.xrdContent useXop)
     |> Fld.addTo owner
     |> ignore
     Ctor.create()

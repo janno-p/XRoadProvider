@@ -67,7 +67,7 @@ module internal Pattern =
                     | Some(typeName, _) ->
                         match getArrayItemElement(rstr.Content.Content) with
                         | Some(element) -> Some({ element with Definition = Explicit(Name(typeName)) })
-                        | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Definition = Explicit(Name(typeName)); Annotation = None })
+                        | None -> Some({ Name = Some("item"); MinOccurs = 0u; MaxOccurs = UInt32.MaxValue; IsNillable = true; Definition = Explicit(Name(typeName)); Annotation = None; ExpectedContentTypes = None })
                     | None -> failwith "Array underlying type specification is missing."
                 | _ ->
                     match getArrayItemElement(rstr.Content.Content) with

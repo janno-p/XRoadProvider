@@ -105,7 +105,7 @@ module ServiceBuilder =
                         let p =
                             let isOptional = dspec.MinOccurs = 0u
                             Param.create (runtimeType.AsCodeTypeReference(optional=isOptional)) name
-                            |> Param.describe (Attributes.xrdElement(None, None, false, false))
+                            |> Param.describe (Attributes.xrdElement(None, None, false, false, dspec.ExpectedContentTypes.IsSome))
                             |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ name)
@@ -115,7 +115,7 @@ module ServiceBuilder =
                             let argName = argNameGen()
                             Param.create (def.Type.AsCodeTypeReference(optional=def.IsOptional)) argName
                             //|> Code.comment (def.Documentation)
-                            |> Param.describe (Attributes.xrdElement(None, None, def.IsNillable, false))
+                            |> Param.describe (Attributes.xrdElement(None, None, def.IsNillable, false, false))
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ p.Name)
                         additionalMembers.AddRange(def.AddedTypes |> Seq.cast<_>)
@@ -149,13 +149,14 @@ module ServiceBuilder =
             let resultClass =
                 match elementType with
                 | CollectionType(_, itemName, _) ->
+                    let elementSpec = name |> context.GetElementSpec
                     let resultClass =
                         Cls.create (sprintf "%sResult" operation.Name)
                         |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
                         |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                     resultClass
                     |> addProperty("response", elementType, false)
-                    |> Prop.describe(Attributes.xrdContent)
+                    |> Prop.describe(Attributes.xrdContent elementSpec.ExpectedContentTypes.IsSome)
                     |> Prop.describe(Attributes.xrdCollection(Some(itemName), false))
                     |> ignore
                     Some(resultClass)

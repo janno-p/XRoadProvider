@@ -75,14 +75,16 @@ type ElementSpec =
       MinOccurs: uint32
       MaxOccurs: uint32
       IsNillable: bool
-      Definition: RefOrTypeDefinition<SchemaTypeDefinition> }
+      Definition: RefOrTypeDefinition<SchemaTypeDefinition>
+      ExpectedContentTypes: string option }
     static member FromNode(node) =
         { Annotation = None
           Name = None
           MinOccurs = readMinOccurs node
           MaxOccurs = readMaxOccurs node
           IsNillable = readNillable node
-          Definition = Explicit(Definition(EmptyDefinition)) }
+          Definition = Explicit(Definition(EmptyDefinition))
+          ExpectedContentTypes = node |> attr (XName.Get("expectedContentTypes", XmlNamespace.Xmime)) }
 
 /// Schema can give definitions simpleType or complexType; EmptyType is used when type information is not present.
 and SchemaTypeDefinition =

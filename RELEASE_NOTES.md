@@ -1,3 +1,7 @@
+#### 1.0.0-alpha011 - Unreleased
+
+* Handle xop binary content type elements.
+
 #### 1.0.0-alpha010 - 30.11.2017
 
 * Fix deserialization of empty elements.
