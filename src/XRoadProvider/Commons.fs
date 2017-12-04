@@ -326,11 +326,7 @@ type public XRoadHeader() =
 [<AllowNullLiteral>]
 type public BinaryContent internal (contentID: string, content: ContentType) =
     member val ContentEncoding = ContentEncoding.Binary with get, set
-    member __.ContentID
-        with get() =
-            match contentID with
-            | null | "" -> XRoadHelper.getUUID()
-            | _ -> contentID
+    member val ContentID = (match contentID with null | "" -> XRoadHelper.getUUID() | _ -> contentID) with get
     member __.OpenStream() : Stream =
         match content with
         | FileStorage(file) -> upcast file.OpenRead()
@@ -358,7 +354,7 @@ type SerializerContext() =
             let contentID = href.Substring(4)
             match attachments.TryGetValue(contentID) with
             | true, value -> value
-            | _ -> failwithf "Multipart message doesn't contain content part with ID `%s`." contentID
+            | _ -> null; //failwithf "Multipart message doesn't contain content part with ID `%s`." contentID
         else failwithf "Invalid multipart content reference: `%s`." href
 
 type MethodPartMap =

@@ -1,3 +1,9 @@
+#### 1.0.0-alpha012 - Unreleased
+
+* Clean property names of symbols which are not allowed in identifier.
+* Fix serialization of binary content without explicit ID.
+* Ignore missing content attachments.
+
 #### 1.0.0-alpha011 - 01.12.2017
 
 * Handle xop binary content type elements.
