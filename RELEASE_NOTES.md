@@ -1,4 +1,4 @@
-#### 1.0.0-alpha012 - Unreleased
+#### 1.0.0-alpha012 - 04.12.2017
 
 * Clean property names of symbols which are not allowed in identifier.
 * Fix serialization of binary content without explicit ID.
