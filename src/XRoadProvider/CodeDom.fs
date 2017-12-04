@@ -1,5 +1,6 @@
 ﻿module internal XRoad.CodeDom
 
+open Microsoft.CodeAnalysis.CSharp
 open Microsoft.CSharp
 open Microsoft.FSharp.Core.CompilerServices
 open System
@@ -287,14 +288,18 @@ module String =
                     |> join "")
                 |> join "_"
             // Check validity of generated class name.
-            if not <| CodeGenerator.IsValidLanguageIndependentIdentifier(className)
+            if not <| SyntaxFacts.IsValidIdentifier(className)
             then failwithf "invalid name %s" className
             className
-        member this.ToPropertyName() =
-            let fixedName = this.Replace('.', '_').Replace(' ', '_')
-            let fixedName = if this.[0] |> Char.IsDigit then sprintf "_%s" fixedName else fixedName
-            if not(CodeGenerator.IsValidLanguageIndependentIdentifier(fixedName))
-            then failwithf "Invalid property name `%s`." fixedName
+        member this.GetValidPropertyName() =
+            let propertyName = System.Text.StringBuilder()
+            if not (SyntaxFacts.IsIdentifierStartCharacter(this.[0])) then propertyName.Append("_") |> ignore
+            this.ToCharArray() |> Array.iter (fun c ->
+                if SyntaxFacts.IsIdentifierPartCharacter(c) then propertyName.Append(c) |> ignore
+                elif propertyName.[propertyName.Length - 1] <> '_' then propertyName.Append('_') |> ignore
+                else ())
+            let fixedName = propertyName.ToString()
+            if not (SyntaxFacts.IsValidIdentifier(fixedName)) then failwithf "Invalid property name `%s`." fixedName
             fixedName
 
 /// Type abstraction for code generator.
@@ -341,7 +346,7 @@ let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
 /// Add property to given type with backing field.
 /// For optional members, extra field is added to notify if property was assigned or not.
 let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration) =
-    let fixedName = name.ToPropertyName()
+    let fixedName = name.GetValidPropertyName()
     let f = Fld.createRef (ty.AsCodeTypeReference(optional=isOptional)) (fixedName + "__backing")
             |> Fld.describe Attributes.DebuggerBrowsable
     let p = Prop.createRef (ty.AsCodeTypeReference(optional=isOptional)) fixedName
@@ -352,7 +357,7 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
     p
 
 let addContentProperty (name: string, ty: RuntimeType, useXop) (owner: CodeTypeDeclaration) =
-    let name = name.ToPropertyName()
+    let name = name.GetValidPropertyName()
     Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
     |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
     |> Fld.describe (Attributes.xrdContent useXop)

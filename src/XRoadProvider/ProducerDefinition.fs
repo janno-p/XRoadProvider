@@ -110,7 +110,7 @@ module ServiceBuilder =
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ name)
                     | Choice(particleSpec) ->
-                        let def = TypeBuilder.collectChoiceProperties choiceNameGen context particleSpec |> List.head
+                        let def, addedTypes = TypeBuilder.collectChoiceProperties choiceNameGen context particleSpec
                         let p =
                             let argName = argNameGen()
                             Param.create (def.Type.AsCodeTypeReference(optional=def.IsOptional)) argName
@@ -118,7 +118,7 @@ module ServiceBuilder =
                             |> Param.describe (Attributes.xrdElement(None, None, def.IsNillable, false, false))
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ p.Name)
-                        additionalMembers.AddRange(def.AddedTypes |> Seq.cast<_>)
+                        additionalMembers.AddRange(addedTypes |> Seq.cast<_>)
                     | _ -> failwithf "%A" value)
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> MyOption.defaultValue "<unknown>")
 
