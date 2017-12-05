@@ -1,14 +1,38 @@
 ﻿namespace XRoad
 
 open System
+open System.Collections.Concurrent
 open System.Collections.Generic
 open System.IO
-open System.Net
-open System.Net.Security
 open System.Text
 open System.Xml
 open System.Xml.Linq
 open Wsdl
+
+module Http =
+    open System.Net.Http
+    
+    let contentType = sprintf "text/xml; charset=%s" Encoding.UTF8.HeaderName
+
+    let private createClient () =
+        let handler = new HttpClientHandler()
+        handler.ServerCertificateCustomValidationCallback <- (fun _ _ _ _ -> true)
+        new HttpClient(handler, true)
+        
+    let getFile (uri: string) path =
+        use client = createClient()
+        File.WriteAllBytes(path, client.GetByteArrayAsync(uri).Result)
+
+    let post (uri: string) stream =
+        use client = createClient()
+        use content = new StreamContent(stream)
+        content.Headers.ContentType <- Headers.MediaTypeHeaderValue.Parse(contentType)
+        content.Headers.Add("SOAPAction", "")
+        use response = client.PostAsync(uri, content).Result
+        let contentType = match response.Headers.TryGetValues("Content-Type") with true, values -> values |> Seq.tryHead | _ -> None
+        use responseStream = response.Content.ReadAsStreamAsync().Result
+        use stream = MultipartMessage.read contentType responseStream |> fst
+        XDocument.Load(stream)
 
 module internal SecurityServer =
     /// Represents single producer information acquired from security server.
@@ -21,33 +45,24 @@ module internal SecurityServer =
     /// All available producers are deserialized from response message and returned to caller.
     let discoverProducers serverIP =
         let doc =
-            // Prepare request message.
-            let serverUri = sprintf "http://%s/cgi-bin/consumer_proxy" serverIP
-            let request = System.Net.WebRequest.Create(serverUri)
-            request.Method <- "POST"
-            request.ContentType <- sprintf "text/xml; charset=%s" Encoding.UTF8.HeaderName
-            request.Headers.Set("SOAPAction", "")
-
             // Serialize request message content.
-            let writeRequest () =
-                use stream = request.GetRequestStream() in
-                use writer = XmlWriter.Create(stream)
-                writer.WriteStartDocument()
-                writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnv)
+            use stream = new MemoryStream()
+            use writer = XmlWriter.Create(stream)
 
-                writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
-                writer.WriteStartElement("listProducers", XmlNamespace.XRoad31Ee)
-                writer.WriteEndElement()
-                writer.WriteEndElement()
+            writer.WriteStartDocument()
+            writer.WriteStartElement("SOAP-ENV", "Envelope", XmlNamespace.SoapEnv)
 
-                writer.WriteEndElement()
-                writer.WriteEndDocument()
-            writeRequest()
+            writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
+            writer.WriteStartElement("listProducers", XmlNamespace.XRoad31Ee)
+            writer.WriteEndElement()
+            writer.WriteEndElement()
+
+            writer.WriteEndElement()
+            writer.WriteEndDocument()
+            writer.Flush()
 
             // Retrieve and load response message.
-            use resp = request.GetResponse()
-            use reader = new StreamReader(resp.GetResponseStream())
-            XDocument.Load(reader)
+            stream |> Http.post (sprintf "http://%s/cgi-bin/consumer_proxy" serverIP)
 
         // Locate response message main part in XDocument object.
         let envelope = doc.Elements(xnsname "Envelope" XmlNamespace.SoapEnv) |> Seq.exactlyOne
@@ -68,9 +83,6 @@ module internal SecurityServer =
 
 module internal SecurityServerV6 =
     let utf8WithoutBom = UTF8Encoding(false)
-
-    // Needs better solution to handle server certificates.
-    ServicePointManager.ServerCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
 
     /// Identifies X-Road service provider.
     type ServiceProvider =
@@ -124,30 +136,17 @@ module internal SecurityServerV6 =
                                .ToString()
 
     /// Remember previously downloaded content in temporary files.
-    let cache = Dictionary<string, FileInfo>()
+    let cache = ConcurrentDictionary<string, FileInfo>()
 
     /// Downloads producer list if not already downloaded previously.
     /// Can be forced to redownload file by `refresh` parameters.
     let getFile refresh uri =
-        if refresh || (not (cache.ContainsKey(uri))) then
+        let f uri =
             let fileName = Path.GetTempFileName()
-            use webClient = new WebClient()
-            webClient.DownloadFile(uri, fileName)
-            cache.[uri] <- FileInfo(fileName)
-        XDocument.Load(cache.[uri].OpenRead())
-
-    /// High-level function to execute web request against security server.
-    let makeWebRequest (serverUri: Uri) writeRequest =
-        let request = WebRequest.Create(serverUri) :?> HttpWebRequest
-        request.Method <- "POST"
-        request.ContentType <- sprintf "text/xml; charset=%s" Encoding.UTF8.HeaderName
-        request.Headers.Set("SOAPAction", "")
-        writeRequest request
-        use response = request.GetResponse()
-        use content = response |> MultipartMessage.read |> fst
-        content.Position <- 0L
-        use reader = new StreamReader(content)
-        XDocument.Load(reader)
+            Http.getFile uri fileName
+            FileInfo(fileName)
+        let file = if not refresh then cache.GetOrAdd(uri, f) else cache.AddOrUpdate(uri, f, (fun uri _ -> f uri))
+        XDocument.Load(file.OpenRead())
 
     /// Downloads and parses producer list for X-Road v6 security server.
     let downloadProducerList uri instance refresh =
@@ -204,8 +203,8 @@ module internal SecurityServerV6 =
 
     /// Downloads and parses method list of selected service provider.
     let downloadMethodsList uri (client: ServiceProvider) (service: Service) =
-        let doc = makeWebRequest uri (fun request ->
-            use stream = request.GetRequestStream()
+        let doc =
+            use stream = new MemoryStream()
             use streamWriter = new StreamWriter(stream, utf8WithoutBom)
             use writer = XmlWriter.Create(streamWriter)
             writer.WriteStartDocument()
@@ -239,7 +238,8 @@ module internal SecurityServerV6 =
             writer.WriteEndElement() // </soapenv:Body>
             writer.WriteEndElement() // </soapenv:Envelope>
             writer.WriteEndDocument()
-            writer.Flush())
+            writer.Flush()
+            stream |> Http.post (uri.ToString())
         let envelope = doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
         let body = envelope.Element(xnsname "Body" XmlNamespace.SoapEnv)
         let fault = body.Element(xnsname "Fault" XmlNamespace.SoapEnv)

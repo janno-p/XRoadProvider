@@ -62,7 +62,7 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
     member __.RetrieveMessage() =
         let attachments = Dictionary<string, BinaryContent>()
         use stream =
-            let stream, atts = response |> MultipartMessage.read
+            let stream, atts = MultipartMessage.read (response.ContentType |> Option.ofObj) (response.GetResponseStream())
             atts |> List.iter (fun content -> attachments.Add(content.ContentID, content))
             stream
         if log.IsTraceEnabled then
