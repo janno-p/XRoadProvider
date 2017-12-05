@@ -47,6 +47,17 @@ module TypeBuilder =
               Documentation = doc
               UseXop = useXop }
 
+    let private getAttributesForProperty idx elementName (prop: PropertyDefinition) =
+        match prop.IsWrappedArray, prop.Type with
+        | Some(hasWrapper), CollectionType(_,itemName,_) ->
+            let isItemNillable = prop.IsItemNillable |> MyOption.defaultValue false
+            [ Attributes.xrdElement idx elementName None prop.IsNillable (not hasWrapper) prop.UseXop
+              Attributes.xrdCollection idx (Some(itemName)) None isItemNillable false ]
+        | Some(_), _ ->
+            failwith "Array should match to CollectionType."
+        | None, rty ->
+            [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.UseXop ]
+
     /// Build property declarations from property definitions and add them to owner type.
     let private addTypeProperties (definitions, subTypes) ownerTy =
         let addTypePropertiesFromDefinition definition =
@@ -61,14 +72,7 @@ module TypeBuilder =
             elif definition.IsAttribute then
                 prop |> Prop.describe Attributes.XmlAttribute |> ignore
             else
-                match definition.IsWrappedArray, definition.Type with
-                | Some(hasWrapper), CollectionType(itemRty, itemName, _) ->
-                    let isItemNillable = definition.IsItemNillable |> Option.fold (fun _ x -> x) false
-                    prop |> Prop.describe (Attributes.xrdElement(None, None, definition.IsNillable, not hasWrapper, definition.UseXop))
-                         |> Prop.describe (Attributes.xrdCollection(Some(itemName), isItemNillable))
-                         |> ignore
-                | Some(_), _ -> failwith "Array should match to CollectionType."
-                | None, rty -> prop |> Prop.describe (Attributes.xrdElement(elementName, None, definition.IsNillable, false, definition.UseXop)) |> ignore
+                definition |> getAttributesForProperty None elementName |> List.iter (fun attr -> prop |> Prop.describe attr |> ignore) 
         definitions |> List.iter (addTypePropertiesFromDefinition)
         // Add extra types to owner type declaration.
         ownerTy.Members.AddRange(subTypes |> Seq.cast<_> |> Seq.toArray)
@@ -274,14 +278,14 @@ module TypeBuilder =
                 match choiceContent with
                 | Element(spec) ->
                     let prop, types = buildElementProperty context spec
-                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) prop.Name false prop.UseXop) |> ignore
+                    prop |> getAttributesForProperty (Some(i + 1)) (Some(prop.Name)) |> List.iter (fun attr -> choiceType |> Cls.describe attr |> ignore)
                     addNewMethod (i + 1) prop.Name prop.Type
                     addTryMethod (i + 1) prop.Name prop.Type
                     types
                 | Sequence(spec) ->
                     let props, types = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
-                    choiceType |> Cls.describe (Attributes.xrdChoiceOption (i + 1) optionName true false) |> ignore
+                    choiceType |> Cls.describe (Attributes.xrdElement (Some(i + 1)) (Some(optionName)) None false true false) |> ignore
                     let optionType = createOptionType optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod (i + 1) optionName optionRuntimeType
@@ -349,7 +353,7 @@ module TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
-                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe (Attributes.xrdContent false) |> ignore
+                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe (Attributes.xrdElement None None None false true false) |> ignore
                         Some(spec.Content)
                     | _ ->
                         failwith "ComplexType-s simpleContent should not extend complex types."

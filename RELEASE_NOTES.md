@@ -1,3 +1,7 @@
+#### 1.0.0-alpha013 - Unreleased
+
+* Fix deserialization of merged array content.
+
 #### 1.0.0-alpha012 - 04.12.2017
 
 * Clean property names of symbols which are not allowed in identifier.

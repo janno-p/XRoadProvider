@@ -18,7 +18,7 @@ type XRoadFault(faultCode: string, faultString) =
 module Stream =
     let toString (stream: Stream) =
         stream.Position <- 0L
-        let reader = new StreamReader(stream)
+        use reader = new StreamReader(stream, System.Text.Encoding.UTF8, true, 1024, true)
         reader.ReadToEnd()
 
 module private Response =

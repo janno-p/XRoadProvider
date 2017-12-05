@@ -81,31 +81,22 @@ module Attributes =
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "IsAnonymous" (!^ true)
 
-    let xrdElement(elementName, elementNamespace, isNullable, mergeContent, useXop) =
-        let attr = Attr.create<XRoadElementAttribute>
-        elementName |> Option.iter (fun name -> attr |> Attr.addArg (!^ name) |> ignore)
-        elementNamespace |> Option.iter (fun ns -> attr |> Attr.addNamedArg "Namespace" (!^ ns) |> ignore)
-        if isNullable then attr |> Attr.addNamedArg "IsNullable" (!^ true) |> ignore
-        if mergeContent then attr |> Attr.addNamedArg "MergeContent" (!^ true) |> ignore
-        if useXop then attr |> Attr.addNamedArg "UseXop" (!^ true) |> ignore
-        attr
-
-    let xrdContent useXop =
+    let xrdElement idx name ``namespace`` isNullable mergeContent useXop =
         Attr.create<XRoadElementAttribute>
-        |> Attr.addNamedArg "MergeContent" (!^ true)
-        |> iif useXop (Attr.addNamedArg "UseXop" (!^ true))
+        |> (match idx with Some(idx) -> (Attr.addArg (!^ idx)) | None -> id)
+        |> (match name with Some(name) -> (Attr.addArg (!^ name)) | None -> id)
+        |> (match ``namespace`` with Some(ns) -> (Attr.addNamedArg "Namespace" (!^ ns)) | None -> id)
+        |> (if isNullable then (Attr.addNamedArg "IsNullable" (!^ true)) else id)
+        |> (if mergeContent then (Attr.addNamedArg "MergeContent" (!^ true)) else id)
+        |> (if useXop then (Attr.addNamedArg "UseXop" (!^ true)) else id)
 
-    let xrdChoiceOption (id: int) (name: string) (mergeContent: bool) useXop =
-        Attr.create<XRoadElementAttribute>
-        |> Attr.addArg (!^ id)
-        |> Attr.addArg (!^ name)
-        |> iif mergeContent (Attr.addNamedArg "MergeContent" (!^ true))
-        |> iif useXop (Attr.addNamedArg "UseXop" (!^ true))
-
-    let xrdCollection (itemName, isNullable) =
-        itemName
-        |> Option.fold (fun attr name -> attr |> Attr.addArg (!^ name)) Attr.create<XRoadCollectionAttribute>
-        |> iif isNullable (fun attr -> attr |> Attr.addNamedArg "ItemIsNullable" (!^ true))
+    let xrdCollection idx itemName itemNamespace itemIsNullable mergeContent =
+        Attr.create<XRoadCollectionAttribute>
+        |> (match idx with Some(idx) -> (Attr.addArg (!^ idx)) | None -> id)
+        |> (match itemName with Some(name) -> (Attr.addArg (!^ name)) | None -> id)
+        |> (match itemNamespace with Some(ns) -> (Attr.addNamedArg "ItemNamespace" (!^ ns)) | None -> id)
+        |> (if itemIsNullable then (Attr.addNamedArg "ItemIsNullable" (!^ true)) else id)
+        |> (if mergeContent then (Attr.addNamedArg "MergeContent" (!^ true)) else id)
     
     let xrdOperation name (version: string option) (protocol: XRoadProtocol) messageProtocol =
         Attr.create<XRoadOperationAttribute>
@@ -360,7 +351,7 @@ let addContentProperty (name: string, ty: RuntimeType, useXop) (owner: CodeTypeD
     let name = name.GetValidPropertyName()
     Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
     |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-    |> Fld.describe (Attributes.xrdContent useXop)
+    |> Fld.describe (Attributes.xrdElement None None None false true useXop)
     |> Fld.addTo owner
     |> ignore
     Ctor.create()

@@ -60,6 +60,8 @@ type XRoadElementAttribute(id: int, name: string) =
     /// Initializes new attribute. Property name is used as element name in serialization.
     new() = XRoadElementAttribute(-1, "")
     
+    new(id) = XRoadElementAttribute(id, "")
+
     new(name) = XRoadElementAttribute(-1, name)
 
     /// Unique id for this attribute.
@@ -92,6 +94,8 @@ type XRoadCollectionAttribute(id: int, itemName: string) =
 
     /// Initializes new attribute with no item element name.
     new() = XRoadCollectionAttribute(-1, "")
+
+    new(id) = XRoadCollectionAttribute(id, "")
 
     new(itemName) = XRoadCollectionAttribute(-1, itemName)
 
