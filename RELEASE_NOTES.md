@@ -1,3 +1,7 @@
+#### 1.0.0-alpha014 - 06.12.2017
+
+* Certificate fixes.
+
 #### 1.0.0-alpha013 - 06.12.2017
 
 * Fix deserialization of merged array content.

@@ -6,7 +6,6 @@ open System
 open System.Collections.Concurrent
 open System.IO
 open System.Reflection
-open System.Security.Cryptography.X509Certificates
 open XRoad
 open XRoadProvider
 
@@ -99,8 +98,6 @@ type XRoadProviders(config: TypeProviderConfig) as this =
     let theAssembly = typeof<XRoadProviders>.Assembly
     let namespaceName = "XRoad.Providers"
     let baseTy = typeof<obj>
-    
-    let certCache = ConcurrentDictionary<Uri, X509Certificate2 option>()
 
     // Main type which provides access to producer list.
     let serverTy =
@@ -150,9 +147,6 @@ type XRoadProviders(config: TypeProviderConfig) as this =
         let subsystemCode: string = unbox args.[4]
         let refresh: bool = unbox args.[5]
 
-        let cert = certCache.GetOrAdd(securityServerUri, Http.loadCertificate)
-        let uriArgs = (securityServerUri, cert)
-
         let client =
             match subsystemCode with
             | null | "" -> SecurityServerV6.Member(xRoadInstance, memberClass, memberCode)
@@ -175,7 +169,7 @@ type XRoadProviders(config: TypeProviderConfig) as this =
 
         producersTy.AddMembersDelayed (fun _ ->
             try
-                SecurityServerV6.downloadProducerList uriArgs xRoadInstance refresh
+                SecurityServerV6.downloadProducerList securityServerUri xRoadInstance refresh
                 |> List.map (fun memberClass ->
                     let memberClassName = memberClass.Name
                     let classTy = ProvidedTypeDefinition(memberClass.Name, Some baseTy, HideObjectMethods = true)
@@ -189,7 +183,7 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                             let addServices provider =
                                 try
                                     let service: SecurityServerV6.Service = { Provider = provider; ServiceCode = "listMethods"; ServiceVersion = None }
-                                    SecurityServerV6.downloadMethodsList uriArgs client service
+                                    SecurityServerV6.downloadMethodsList securityServerUri client service
                                     |> List.map (fun x -> ProvidedField.Literal((sprintf "SERVICE:%s" x.ServiceCode), typeof<string>, Uri(securityServerUri, x.WsdlPath).ToString()) :> MemberInfo)
                                 with e -> [noteProperty (e.ToString())]
                             let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
@@ -214,7 +208,7 @@ type XRoadProviders(config: TypeProviderConfig) as this =
 
         centralServicesTy.AddMembersDelayed (fun _ ->
             try
-                match SecurityServerV6.downloadCentralServiceList uriArgs xRoadInstance refresh with
+                match SecurityServerV6.downloadCentralServiceList securityServerUri xRoadInstance refresh with
                 | [] -> [noteProperty "No central services are listed in this X-Road instance."]
                 | services -> services |> List.map (fun serviceCode -> upcast ProvidedField.Literal(serviceCode, typeof<string>, serviceCode))
             with e -> [noteProperty (e.ToString())])

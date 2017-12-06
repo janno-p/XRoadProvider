@@ -6,7 +6,6 @@ open System
 open System.CodeDom
 open System.Collections.Generic
 open System.Reflection
-open System.Security.Cryptography.X509Certificates
 open System.Xml
 open XRoad.Serialization.Attributes
 open TypeSchema
@@ -178,7 +177,6 @@ module ServiceBuilder =
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
                                     Expr.this @=> "ProducerUri"
-                                    Expr.this @=> "Certificate"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
                 |> Meth.addStmt (Stmt.ret ((!+ "__result") @=> "response"))
@@ -195,7 +193,6 @@ module ServiceBuilder =
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
                                     Expr.this @=> "ProducerUri"
-                                    Expr.this @=> "Certificate"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
                 |> ignore
@@ -286,13 +283,6 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
             producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
             producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
             producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
-            
-            let certificateField = CodeMemberField(typeof<X509Certificate>, "certificate")
-            let certificateFieldRef = Expr.this @=> certificateField.Name
-            let certificateProperty = CodeMemberProperty(Name="Certificate", Type=CodeTypeReference(typeof<X509Certificate>))
-            certificateProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-            certificateProperty.GetStatements.Add(Stmt.ret certificateFieldRef) |> ignore
-            certificateProperty.SetStatements.Add(Stmt.assign certificateFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
 
             let ctor =
                 Ctor.create()
@@ -311,8 +301,6 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
                 |> Cls.addMember addressProperty
                 |> Cls.addMember producerField
                 |> Cls.addMember producerProperty
-                |> Cls.addMember certificateField
-                |> Cls.addMember certificateProperty
                 |> Code.comment port.Documentation
             serviceTy |> Cls.addMember portTy |> ignore
 

@@ -21,8 +21,7 @@ module internal SecurityServer =
     /// All available producers are deserialized from response message and returned to caller.
     let discoverProducers serverIP =
         let uri = Uri(sprintf "http://%s/cgi-bin/consumer_proxy" serverIP)
-        let args = (uri, Http.loadCertificate uri) 
-    
+
         let doc =
             // Serialize request message content.
             use stream = new MemoryStream()
@@ -41,7 +40,7 @@ module internal SecurityServer =
             writer.Flush()
 
             // Retrieve and load response message.
-            stream |> Http.post args
+            uri |> Http.post stream
 
         // Locate response message main part in XDocument object.
         let envelope = doc.Elements(xnsname "Envelope" XmlNamespace.SoapEnv) |> Seq.exactlyOne
@@ -119,18 +118,18 @@ module internal SecurityServerV6 =
 
     /// Downloads producer list if not already downloaded previously.
     /// Can be forced to redownload file by `refresh` parameters.
-    let getFile args refresh =
+    let getFile refresh uri =
         let f uri =
             let fileName = Path.GetTempFileName()
-            Http.downloadFile args fileName
+            uri |> Http.downloadFile fileName
             FileInfo(fileName)
-        let file = if not refresh then cache.GetOrAdd(fst args, f) else cache.AddOrUpdate(fst args, f, (fun uri _ -> f uri))
+        let file = if not refresh then cache.GetOrAdd(uri, f) else cache.AddOrUpdate(uri, f, (fun uri _ -> f uri))
         XDocument.Load(file.OpenRead())
 
     /// Downloads and parses producer list for X-Road v6 security server.
-    let downloadProducerList (uri, cert) instance refresh =
+    let downloadProducerList uri instance refresh =
         // Read xml document from file and navigate to root element.
-        let doc = getFile (Uri(uri, sprintf "listClients?xRoadInstance=%s" instance), cert) refresh
+        let doc = Uri(uri, sprintf "listClients?xRoadInstance=%s" instance) |> getFile refresh
         let root = doc.Element(xnsname "clientList" XmlNamespace.XRoad40)
         // Data structures to support recomposition to records.
         let subsystems = Dictionary<string * string, ISet<string>>()
@@ -170,9 +169,9 @@ module internal SecurityServerV6 =
         |> Seq.toList
 
     /// Downloads and parses central service list from X-Road v6 security server.
-    let downloadCentralServiceList (uri, cert) instance refresh =
+    let downloadCentralServiceList uri instance refresh =
         // Read xml document from file and navigate to root element.
-        let doc = getFile (Uri(uri, sprintf "listCentralServices?xRoadInstance=%s" instance), cert) refresh
+        let doc = Uri(uri, sprintf "listCentralServices?xRoadInstance=%s" instance) |> getFile refresh
         let root = doc.Element(xnsname "centralServiceList" XmlNamespace.XRoad40)
         // Collect data about available central services.
         root.Elements(xnsname "centralService" XmlNamespace.XRoad40)
@@ -181,7 +180,7 @@ module internal SecurityServerV6 =
         |> Seq.toList
 
     /// Downloads and parses method list of selected service provider.
-    let downloadMethodsList args (client: ServiceProvider) (service: Service) =
+    let downloadMethodsList uri (client: ServiceProvider) (service: Service) =
         let doc =
             use stream = new MemoryStream()
             use streamWriter = new StreamWriter(stream, utf8WithoutBom)
@@ -218,7 +217,7 @@ module internal SecurityServerV6 =
             writer.WriteEndElement() // </soapenv:Envelope>
             writer.WriteEndDocument()
             writer.Flush()
-            stream |> Http.post args
+            uri |> Http.post stream
         let envelope = doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
         let body = envelope.Element(xnsname "Body" XmlNamespace.SoapEnv)
         let fault = body.Element(xnsname "Fault" XmlNamespace.SoapEnv)

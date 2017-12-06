@@ -544,11 +544,11 @@ module internal Wsdl =
     /// Check if given uri is valid network location or file path in local file system.
     let resolveUri uri =
         match Uri.IsWellFormedUriString(uri, UriKind.Absolute) with
-        | true -> uri
+        | true -> Uri(uri, UriKind.Absolute)
         | _ ->
             let fullPath = (FileInfo(uri)).FullName
             match File.Exists(fullPath) with
-            | true -> fullPath
+            | true -> Uri(fullPath)
             | _ -> failwith (sprintf "Cannot resolve url location `%s`" uri)
 
     /// Globally unique identifier for Xml Schema elements and types.
