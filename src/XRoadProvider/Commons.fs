@@ -666,9 +666,8 @@ module internal MultipartMessage =
             member __.Dispose() =
                 stream.Dispose()
 
-    let private getBoundaryMarker (contentType: string option) =
-        contentType
-        |> Option.bind (fun contentType ->
+    let private getBoundaryMarker (response: WebResponse) =
+        let parseMultipartContentType (contentType: string) =
             let parts = contentType.Split([| ';' |], StringSplitOptions.RemoveEmptyEntries)
                         |> List.ofArray
                         |> List.map (fun x -> x.Trim())
@@ -677,7 +676,10 @@ module internal MultipartMessage =
                 parts |> List.tryFind (fun x -> x.StartsWith("boundary="))
                       |> Option.map (fun x -> x.Substring(9).Trim('"'))
             | _ -> None
-        )
+        response
+        |> Option.ofObj
+        |> Option.map (fun r -> r.ContentType)
+        |> Option.bind (parseMultipartContentType)
 
     let [<Literal>] private CHUNK_SIZE = 4096
     let [<Literal>] private CR = 13
@@ -748,10 +750,10 @@ module internal MultipartMessage =
         if buffer |> isNull || value |> isNull || value.Length > buffer.Length then false
         else compare (value.Length - 1)
 
-    let internal read (contentType: string option) (responseStream: Stream) : Stream * BinaryContent list =
-        match contentType |> getBoundaryMarker with
+    let internal read (response: WebResponse) : Stream * BinaryContent list =
+        match response |> getBoundaryMarker with
         | Some(boundaryMarker) ->
-            use stream = new PeekStream(responseStream)
+            use stream = new PeekStream(response.GetResponseStream())
             let contents = List<string option * MemoryStream>()
             let isContentMarker = startsWith (Encoding.ASCII.GetBytes (sprintf "--%s" boundaryMarker))
             let isEndMarker = startsWith (Encoding.ASCII.GetBytes (sprintf "--%s--" boundaryMarker))
@@ -789,7 +791,7 @@ module internal MultipartMessage =
                                     BinaryContent.Create(name.Value, stream.ToArray())))
             | _ -> failwith "empty multipart content"
         | None ->
-            use stream = responseStream
+            use stream = response.GetResponseStream()
             let content = new MemoryStream()
             stream.CopyTo(content)
             (upcast content, [])
