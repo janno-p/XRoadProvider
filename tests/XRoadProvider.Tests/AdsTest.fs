@@ -182,6 +182,7 @@ type AdsAadrMuudatusedService () =
             typeof<AdsAadrMuudatusedService>,
             "ADSaadrmuudatused",
             "http://mixerlivebal.webdb.maaamet.ee/xtee-proxy",
+            null,
             header,
             [| muudetudAlates; muudetudPaevad; logId; maxarv; pSyndmused; sSyndmused; objekt; seosed; aadressKomp; aadressJarglased |])
         |> unbox<DefinedTypes.ADSaadrmuudatusedResponse>
