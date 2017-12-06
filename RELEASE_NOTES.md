@@ -1,3 +1,7 @@
+#### 1.0.0-alpha015 - 07.12.2017
+
+* Can handle self-signed certificates.
+
 #### 1.0.0-alpha014 - 06.12.2017
 
 * Certificate fixes.
