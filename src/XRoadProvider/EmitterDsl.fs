@@ -304,6 +304,10 @@ type EmitBuilder with
     member __.NewobjExpr(p: Emitter, e) = p >> createX e
     [<CustomOperation("ldfld", MaintainsVariableSpaceUsingBind = true)>]
     member __.Ldfld(p: Emitter, f) = p >> getField f
+    [<CustomOperation("ldlen", MaintainsVariableSpaceUsingBind = true)>]
+    member __.Ldlen(p: Emitter) = p >> getLen
+    [<CustomOperation("conv_i4", MaintainsVariableSpaceUsingBind = true)>]
+    member __.ConvInt4(p: Emitter) = p >> castInt
 
 let emit' = EmitBuilder()
 

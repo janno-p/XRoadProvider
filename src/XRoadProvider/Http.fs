@@ -22,7 +22,6 @@ let createRequest (uri, cert) =
     ServicePointManager.SecurityProtocol <- SecurityProtocolType.Tls12 ||| SecurityProtocolType.Tls11 ||| SecurityProtocolType.Tls
     let request = WebRequest.Create(uri: Uri) |> unbox<HttpWebRequest>
     request.Accept <- "application/xml"
-    request.ServerCertificateValidationCallback <- (fun _ _ _ _ -> true)
     cert |> Option.iter (request.ClientCertificates.Add >> ignore)
     request
 

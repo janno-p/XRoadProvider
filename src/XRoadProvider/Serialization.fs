@@ -7,6 +7,7 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Net
+open System.Security.Cryptography.X509Certificates
 open System.Xml
 open XRoad.Serialization.Attributes
 
@@ -95,12 +96,15 @@ type XRoadStreamReader() =
     class
     end
 
-type XRoadRequest(producerUri: string, methodMap: MethodMap) =
+type XRoadRequest(producerUri: string, methodMap: MethodMap, certificate: X509Certificate) =
     let log = LogManager.GetLogger()
 
-    let request = WebRequest.Create(producerUri, Method="POST", ContentType="text/xml; charset=utf-8")
-    do request.Headers.Set("SOAPAction", "")
-    
+    let request =
+        let request = WebRequest.Create(producerUri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
+        request.Headers.Set("SOAPAction", "")
+        if certificate |> isNull |> not then request.ClientCertificates.Add(certificate) |> ignore
+        request
+
     let addNamespace =
         let mutable i = 0
         (fun ns (writer: XmlWriter) ->
@@ -345,10 +349,10 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap) =
         new XRoadResponse(request.GetResponse(), methodMap)
 
 type public XRoadUtil =
-    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, header: AbstractXRoadHeader, args: obj[]) =
+    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, certificate: X509Certificate, header: AbstractXRoadHeader, args: obj[]) =
         let serviceMethod = serviceType.GetMethod(methodName)
         let serviceMethodMap = getMethodMap serviceMethod 
-        let request = XRoadRequest(producerUri, serviceMethodMap)
+        let request = XRoadRequest(producerUri, serviceMethodMap, certificate)
         request.SendMessage(header, args)
         use response = request.GetResponse(serviceMethodMap)
         response.RetrieveMessage()

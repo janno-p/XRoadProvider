@@ -366,42 +366,64 @@ module EmitSerialization =
                     ifSome property.SimpleTypeName (fun typeName -> emitTypeAttribute typeName.Name (Some(typeName.Namespace)))))
 
         // Serialize property content value according to its TypeMap.
-        let writePropertyContent =
-            beforeLabel (fun markReturn ->
-                match property with
-                | Individual propertyMap ->
-                    loadArg0
-                    >> emitValue propertyMap.TypeMap.Type
-                    >> loadArg2
-                    >> call propertyMap.TypeMap.Serialization.Root
-                    >> noop
-                | Array arrayMap ->
-                    emitValue arrayMap.Type
-                    >> emitNilAttribute markReturn
-                    >> emitValue arrayMap.Type
-                    >> useVar (lazy (declareLocal arrayMap.Type)) (fun arr ->
-                        setVar arr
-                        >> useVar (lazy (declareLocalOf<int>)) (fun i ->
-                            loadInt0
-                            >> setVar i
-                            >> withLabel (fun markLoopCondition ->
-                                goto markLoopCondition
-                                >> afterLabel (fun markLoopStart ->
-                                    let itemPropertyMap = Individual (arrayMap.GetItemPropertyMap())
-                                    noop
-                                    >> (emitPropertyContentSerialization (emitArrayItemValue arr i) isEncoded itemPropertyMap)
-                                    >> getVar i
-                                    >> loadInt1
-                                    >> add
-                                    >> setVar i
-                                    >> setLabel markLoopCondition
-                                    >> getVar i
-                                    >> getVar arr
-                                    >> getLen
-                                    >> castInt
-                                    >> lessThan
-                                    >> gotoT markLoopStart)))))
-            >> noop
+        let writePropertyContent = emit' {
+            define_label (fun markReturn -> emit' {
+                merge(
+                    match property with
+                    | Individual propertyMap ->
+                        emit' {
+                            ldarg_0
+                            merge (emitValue propertyMap.TypeMap.Type)
+                            ldarg_2
+                            call propertyMap.TypeMap.Serialization.Root
+                            nop
+                        }
+                    | Array arrayMap ->
+                        let itemPropertyMap = Individual (arrayMap.GetItemPropertyMap())
+                        emit' {
+                            merge (emitValue arrayMap.Type)
+                            merge (
+                                match property.Element with
+                                | Some(_) ->
+                                    emitNilAttribute markReturn
+                                | None -> 
+                                    emit' {
+                                        ldnull
+                                        ceq
+                                        brtrue markReturn
+                                    }
+                            )
+                            merge (emitValue arrayMap.Type)
+                            declare_variable (lazy (declareLocal arrayMap.Type)) (fun arr -> emit' {
+                                stloc arr
+                                declare_variable (lazy declareLocalOf<int>) (fun i -> emit' {
+                                    ldc_i4_0
+                                    stloc i
+                                    define_labels 2 (fun (List2(markLoopCondition, markLoopStart)) -> emit' {
+                                        br markLoopCondition
+                                        set_marker markLoopStart
+                                        nop
+                                        merge (emitPropertyContentSerialization (emitArrayItemValue arr i) isEncoded itemPropertyMap)
+                                        ldloc i
+                                        ldc_i4_1
+                                        add
+                                        stloc i
+                                        set_marker markLoopCondition
+                                        ldloc i
+                                        ldloc arr
+                                        ldlen
+                                        conv_i4
+                                        clt
+                                        brtrue markLoopStart
+                                    })
+                                })
+                            })
+                        }
+                )
+                set_marker markReturn
+                nop
+            })
+        }
 
         // Write end element if required.
         let writeEndElement =
