@@ -1,6 +1,9 @@
-#### 1.0.0-alpha013 - Unreleased
+#### 1.0.0-alpha013 - 06.12.2017
 
 * Fix deserialization of merged array content.
+* Fix serialization of merged array content.
+* Add https support for security server provider.
+* Add https support for generated producer provider service calls.
 
 #### 1.0.0-alpha012 - 04.12.2017
 
