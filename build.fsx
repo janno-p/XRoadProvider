@@ -138,7 +138,7 @@ Target "BuildDebug" (fun _ ->
         (fun p ->
             { p with
                 Configuration = "Debug"
-                WorkingDir = projectPath })
+                WorkingDir = testProjectPath })
 )
 
 Target "Build" (fun _ ->

@@ -10,7 +10,7 @@
     <DocumentationFile>bin\Debug\net461\XRoadProvider.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' == 'Unix' ">
-    <FrameworkPathOverride>/usr/lib/mono/4.6.1-api</FrameworkPathOverride>
+    <FrameworkPathOverride>../../packages/Microsoft.TargetingPack.NETFramework.v4.6.1/lib/net461</FrameworkPathOverride>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Common.Logging" Version="3.4.1" />
@@ -18,6 +18,9 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.4.0" />
     <PackageReference Include="NodaTime" Version="2.2.3" />
     <PackageReference Include="Optional" Version="3.2.0" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+    <Reference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">

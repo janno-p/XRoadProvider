@@ -11,9 +11,11 @@ NUGET
     NuGet.CommandLine (4.4.1)
     Octokit (0.28)
     SourceLink.Fake (1.1)
+  remote: https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
+    Microsoft.TargetingPack.NETFramework.v4.6.1 (1.0.1)
 GITHUB
   remote: fsharp/FAKE
     modules/Octokit/Octokit.fsx (0341a2e614eb2a7f34607cec914eb0ed83ce9add)
       Octokit (>= 0.20)
   remote: fsprojects/FSharp.TypeProviders.SDK
-    src/ProvidedTypes.fs (33fd1c0a95dd1ddfe77f12e4921b6983f72c8e62)
+    src/ProvidedTypes.fs (3438c4817b4e25884169ee7be6182efa39995057)

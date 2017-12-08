@@ -5,7 +5,7 @@
     <TargetFramework>net461</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' == 'Unix' ">
-    <FrameworkPathOverride>/usr/lib/mono/4.6.1-api</FrameworkPathOverride>
+    <FrameworkPathOverride>../../packages/Microsoft.TargetingPack.NETFramework.v4.6.1/lib/net461</FrameworkPathOverride>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\XRoadProvider\XRoadProvider.fsproj" />
