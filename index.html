@@ -85,9 +85,6 @@ producer names from specified security server and offers their details inside de
 <span class="l">25: </span>
 <span class="l">26: </span>
 <span class="l">27: </span>
-<span class="l">28: </span>
-<span class="l">29: </span>
-<span class="l">30: </span>
 </pre></td>
 <td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="c">// Reference the type provider assembly.</span>
 <span class="c">//#load &quot;packages/XRoadProvider/net461/XRoadProvider.fsx&quot;</span>
@@ -98,10 +95,7 @@ producer names from specified security server and offers their details inside de
 <span class="k">type</span> <span class="i">Xrd6</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span class="s">&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml&quot;</span><span class="o">&gt;</span>
 
 <span class="c">// Initialize service interface which provides access to operation methods.</span>
-<span class="k">let</span> <span class="i">myport</span> <span class="o">=</span> <span class="i">Xrd6</span><span class="o">.</span><span class="i">producerPortService</span><span class="o">.</span><span class="i">getRandomPortSoap11</span>()
-
-<span class="c">// Override default values acquired from port definition (when necessary).</span>
-<span class="i">myport</span><span class="o">.</span><span class="i">ProducerUri</span> <span class="o">&lt;-</span> <span class="s">&quot;http://localhost:8001/&quot;</span>
+<span class="k">let</span> <span class="i">myport</span> <span class="o">=</span> <span class="i">Xrd6</span><span class="o">.</span><span class="i">producerPortService</span><span class="o">.</span><span class="i">getRandomPortSoap11</span>(<span class="s">&quot;http://localhost:8001/&quot;</span>)
 
 <span class="c">// Assign X-Road header values.</span>
 <span class="k">let</span> <span class="i">hdr</span> <span class="o">=</span> <span class="i">XRoadHeader</span>()
@@ -206,7 +200,7 @@ be used as parameter to <code>XRoadProducer</code> provider to initialize servic
 <span class="k">type</span> <span class="i">AdsConfig</span> <span class="o">=</span> <span class="i">SecurityServer</span><span class="o">.</span><span class="i">Producers</span><span class="o">.</span><span class="i">GOV</span><span class="o">.</span><span class="i">``Maa-amet (70003098)``</span><span class="o">.</span><span class="i">``SUBSYSTEM:ads``</span>
 <span class="k">type</span> <span class="i">Ads</span> <span class="o">=</span> <span class="i">XRoadProducer</span><span class="o">&lt;</span><span class="i">AdsConfig</span><span class="o">.</span><span class="i">``SERVICE:ADSaadrmuudatused``</span><span class="o">&gt;</span>
 
-<span class="k">let</span> <span class="i">adsService</span> <span class="o">=</span> <span class="i">Ads</span><span class="o">.</span><span class="i">xroadeuService</span><span class="o">.</span><span class="i">xroadeuServicePort</span>(<span class="i">ProducerUri</span> <span class="o">=</span> <span class="i">securityServerUrl</span>)
+<span class="k">let</span> <span class="i">adsService</span> <span class="o">=</span> <span class="i">Ads</span><span class="o">.</span><span class="i">xroadeuService</span><span class="o">.</span><span class="i">xroadeuServicePort</span>(<span class="i">securityServerUrl</span>)
 
 <span class="k">let</span> <span class="i">adsHeader</span> <span class="o">=</span>
     <span class="i">XRoadHeader</span>(
