@@ -1,6 +1,10 @@
-#### 1.0.0-alpha016 - Unreleased
+#### 1.0.0-alpha016 - 08.12.2017
 
 * Support X-Road security server authentication certificates.
+* Remove `ProducerName` property from v6 producer description, since it doesn't exist.
+* Rename `ProducerUri` property to `Uri` in port types.
+* Overloaded constructors for port types.
+* Change `Uri` to read-only (assignment in overloaded constructor).
 
 #### 1.0.0-alpha015 - 07.12.2017
 

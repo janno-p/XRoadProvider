@@ -3,6 +3,7 @@ module XRoadProvider.Tests.AdsTest
 open Expecto
 open Microsoft.FSharp.Core.CompilerServices
 open NodaTime
+open System
 open System.Numerics
 open XRoad
 open XRoad.Serialization.Attributes
@@ -181,7 +182,7 @@ type AdsAadrMuudatusedService () =
         XRoadUtil.MakeServiceCall(
             typeof<AdsAadrMuudatusedService>,
             "ADSaadrmuudatused",
-            "http://mixerlivebal.webdb.maaamet.ee/xtee-proxy",
+            Uri("http://mixerlivebal.webdb.maaamet.ee/xtee-proxy"),
             null,
             ResizeArray<_>(),
             header,

@@ -97,11 +97,11 @@ type XRoadStreamReader() =
     class
     end
 
-type XRoadRequest(producerUri: string, methodMap: MethodMap, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>) =
+type XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>) =
     let log = LogManager.GetLogger()
 
     let request =
-        let request = WebRequest.Create(producerUri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
+        let request = WebRequest.Create(uri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
         request.Headers.Set("SOAPAction", "")
         if acceptedServerCertificate |> isNull |> not then
             request.ServerCertificateValidationCallback <-
@@ -353,10 +353,10 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap, acceptedServerCerti
         new XRoadResponse(request.GetResponse(), methodMap)
 
 type public XRoadUtil =
-    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>, header: AbstractXRoadHeader, args: obj[]) =
+    static member MakeServiceCall(serviceType: Type, methodName: string, uri: Uri, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>, header: AbstractXRoadHeader, args: obj[]) =
         let serviceMethod = serviceType.GetMethod(methodName)
         let serviceMethodMap = getMethodMap serviceMethod 
-        let request = XRoadRequest(producerUri, serviceMethodMap, acceptedServerCertificate, authenticationCertificates)
+        let request = XRoadRequest(uri, serviceMethodMap, acceptedServerCertificate, authenticationCertificates)
         request.SendMessage(header, args)
         use response = request.GetResponse(serviceMethodMap)
         response.RetrieveMessage()

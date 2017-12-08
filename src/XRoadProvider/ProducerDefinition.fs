@@ -177,7 +177,7 @@ module ServiceBuilder =
                             ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
-                                    Expr.this @=> "ProducerUri"
+                                    Expr.this @=> "Uri"
                                     Expr.this @=> "AcceptedServerCertificate"
                                     Expr.this @=> "AuthenticationCertificates"
                                     !+ "header"
@@ -195,7 +195,7 @@ module ServiceBuilder =
                             ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
-                                    Expr.this @=> "ProducerUri"
+                                    Expr.this @=> "Uri"
                                     Expr.this @=> "AcceptedServerCertificate"
                                     Expr.this @=> "AuthenticationCertificates"
                                     !+ "header"
@@ -229,9 +229,9 @@ module ServiceBuilder =
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
+let makeProducerType (typeNamePath: string [], uri, languageCode) =
     // Load schema details from specified file or network location.
-    let schema = ProducerDescription.Load(resolveUri producerUri, languageCode)
+    let schema = ProducerDescription.Load(resolveUri uri, languageCode)
 
     // Initialize type and schema element lookup context.
     let context = TypeBuilderContext.FromSchema(schema, languageCode)
@@ -273,12 +273,10 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
         |> List.iter (fun port ->
             // Create property and backing field for producer adapter server uri.
             // By default service port soap:address extension location value is used, but user can override that value.
-            let addressField = Fld.create<string> "producerUri"
-            let addressFieldRef = Expr.this @=> addressField.Name
-            let addressProperty = CodeMemberProperty(Name="ProducerUri", Type=CodeTypeReference(typeof<string>))
+            let addressField = Fld.create<Uri> "uri"
+            let addressProperty = CodeMemberProperty(Name="Uri", Type=CodeTypeReference(typeof<Uri>))
             addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-            addressProperty.GetStatements.Add(Stmt.ret addressFieldRef) |> ignore
-            addressProperty.SetStatements.Add(Stmt.assign addressFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
+            addressProperty.GetStatements.Add(Stmt.ret (Expr.this @=> addressField.Name)) |> ignore
 
             let certificateField = CodeMemberField(typeof<X509Certificate>, "acceptedServerCertificate")
             let certificateFieldRef = Expr.this @=> certificateField.Name
@@ -293,15 +291,32 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
             authenticationCertificatesProperty.GetStatements.Add(Stmt.ret (Expr.this @=> authenticationCertificatesField.Name)) |> ignore
 
             let ctor =
+                if Uri.IsWellFormedUriString(port.Uri, UriKind.Absolute) then
+                    Ctor.create()
+                    |> Ctor.setAttr MemberAttributes.Public
+                    |> Ctor.addChainedArg (Expr.inst<Uri> [!^ port.Uri])
+                    |> Some
+                else None
+
+            let ctor2 =
                 Ctor.create()
                 |> Ctor.setAttr MemberAttributes.Public
-                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerUri") (!^ port.Uri))
+                |> Ctor.addParam<string> "uri"
+                |> Ctor.addChainedArg (Expr.inst<Uri> [!+ "uri"])
+            
+            let ctor3 =
+                Ctor.create()
+                |> Ctor.setAttr MemberAttributes.Public
+                |> Ctor.addParam<Uri> "uri"
+                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "uri") (!+ "uri"))
                 |> Ctor.addStmt (Stmt.assign (Expr.this @=> "authenticationCertificates") (Expr.inst<ResizeArray<X509Certificate>> []))
 
             let portTy =
                 Cls.create port.Name
                 |> Cls.setAttr TypeAttributes.Public
-                |> Cls.addMember ctor
+                |> iif ctor.IsSome (Cls.addMember ctor.Value)
+                |> Cls.addMember ctor2
+                |> Cls.addMember ctor3
                 |> Cls.addMember addressField
                 |> Cls.addMember addressProperty
                 |> Cls.addMember certificateField
@@ -323,7 +338,7 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
                 producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
 
                 // Add default producer name value if message protocol defines it in service description.
-                ctor
+                ctor3
                 |> Ctor.addStmt (Stmt.assign producerFieldRef (!^ producerName))
                 |> ignore
 

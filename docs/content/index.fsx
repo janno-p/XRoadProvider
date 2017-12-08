@@ -42,10 +42,7 @@ open XRoad.Providers
 type Xrd6 = XRoadProducer<"/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml">
 
 // Initialize service interface which provides access to operation methods.
-let myport = Xrd6.producerPortService.getRandomPortSoap11()
-
-// Override default values acquired from port definition (when necessary).
-myport.ProducerUri <- "http://localhost:8001/"
+let myport = Xrd6.producerPortService.getRandomPortSoap11("http://localhost:8001/")
 
 // Assign X-Road header values.
 let hdr = XRoadHeader()
@@ -116,7 +113,7 @@ type SecurityServer = XRoadServer6<securityServerUrl, "ee-dev", "COM", "12345678
 type AdsConfig = SecurityServer.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
 type Ads = XRoadProducer<AdsConfig.``SERVICE:ADSaadrmuudatused``>
 
-let adsService = Ads.xroadeuService.xroadeuServicePort(ProducerUri = securityServerUrl)
+let adsService = Ads.xroadeuService.xroadeuServicePort(securityServerUrl)
 
 let adsHeader =
     XRoadHeader(

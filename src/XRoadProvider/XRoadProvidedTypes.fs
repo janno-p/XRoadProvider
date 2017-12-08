@@ -23,7 +23,7 @@ type XRoadProducerProvider() as this =
 
     // Available parameters to use for configuring type provider instance
     let staticParameters =
-        [ ProvidedStaticParameter("ProducerUri", typeof<string>), "WSDL document location (either local file or network resource)."
+        [ ProvidedStaticParameter("Uri", typeof<string>), "WSDL document location (either local file or network resource)."
           ProvidedStaticParameter("LanguageCode", typeof<string>, "et"), "Specify language code that is extracted as documentation tooltips. Default value is estonian (et)." ]
         |> List.map (fun (parameter, doc) -> parameter.AddXmlDoc(doc); parameter :> ParameterInfo)
         |> List.toArray
@@ -33,13 +33,13 @@ type XRoadProducerProvider() as this =
         override __.ApplyStaticArguments(typeWithoutArguments, typeNameWithArguments, staticArguments) =
             match typeWithoutArguments with
             | :? ProvidedTypeDefinition ->
-                let producerUri = unbox<string> staticArguments.[0]
+                let uri = unbox<string> staticArguments.[0]
                 let languageCode = unbox<string> staticArguments.[1]
 
                 // Same parameter set should have same output, so caching is reasonable.
-                let key = (String.Join(".", typeNameWithArguments), producerUri, languageCode)
+                let key = (String.Join(".", typeNameWithArguments), uri, languageCode)
                 match typeCache.TryGetValue(key) with
-                | false, _ -> typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, producerUri, languageCode)))
+                | false, _ -> typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, uri, languageCode)))
                 | true, typ -> typ
             | _ -> failwith "not implemented"
 

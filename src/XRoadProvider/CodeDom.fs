@@ -183,6 +183,7 @@ module Ctor =
     let addParamRef (r: CodeTypeReference) name (c: CodeConstructor) = c.Parameters.Add(CodeParameterDeclarationExpression(r, name)) |> ignore; c
     let addStmt (e: CodeStatement) (c: CodeConstructor) = c.Statements.Add(e) |> ignore; c
     let addBaseArg a (c: CodeConstructor) = c.BaseConstructorArgs.Add(a) |> ignore; c
+    let addChainedArg a (c: CodeConstructor) = c.ChainedConstructorArgs.Add(a) |> ignore; c
     let addTo (o: CodeTypeDeclaration) (c: CodeConstructor) = o.Members.Add(c) |> ignore; c
 
 /// Functions to simplify operator usage.
