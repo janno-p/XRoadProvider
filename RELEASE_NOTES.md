@@ -1,3 +1,7 @@
+#### 1.0.0-alpha016 - Unreleased
+
+* Support X-Road security server authentication certificates.
+
 #### 1.0.0-alpha015 - 07.12.2017
 
 * Can handle self-signed certificates.

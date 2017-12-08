@@ -178,7 +178,8 @@ module ServiceBuilder =
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
                                     Expr.this @=> "ProducerUri"
-                                    Expr.this @=> "AcceptedCertificate"
+                                    Expr.this @=> "AcceptedServerCertificate"
+                                    Expr.this @=> "AuthenticationCertificates"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
                 |> Meth.addStmt (Stmt.ret ((!+ "__result") @=> "response"))
@@ -195,7 +196,8 @@ module ServiceBuilder =
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
                                     Expr.this @=> "ProducerUri"
-                                    Expr.this @=> "AcceptedCertificate"
+                                    Expr.this @=> "AcceptedServerCertificate"
+                                    Expr.this @=> "AuthenticationCertificates"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
                 |> ignore
@@ -287,12 +289,18 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
             producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
             producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
             
-            let certificateField = CodeMemberField(typeof<X509Certificate>, "acceptedCertificate")
+            let certificateField = CodeMemberField(typeof<X509Certificate>, "acceptedServerCertificate")
             let certificateFieldRef = Expr.this @=> certificateField.Name
-            let certificateProperty = CodeMemberProperty(Name="AcceptedCertificate", Type=CodeTypeReference(typeof<X509Certificate>))
+            let certificateProperty = CodeMemberProperty(Name="AcceptedServerCertificate", Type=CodeTypeReference(typeof<X509Certificate>))
             certificateProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
             certificateProperty.GetStatements.Add(Stmt.ret certificateFieldRef) |> ignore
             certificateProperty.SetStatements.Add(Stmt.assign certificateFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
+
+            let authenticationCertificatesField = CodeMemberField(typeof<ResizeArray<X509Certificate>>, "authenticationCertificates")
+            authenticationCertificatesField.InitExpression <- CodeObjectCreateExpression(typeof<ResizeArray<X509Certificate>>)
+            let authenticationCertificatesProperty = CodeMemberProperty(Name="AuthenticationCertificates", Type=CodeTypeReference(typeof<List<X509Certificate>>))
+            authenticationCertificatesProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+            authenticationCertificatesProperty.GetStatements.Add(Stmt.ret (Expr.this @=> authenticationCertificatesField.Name)) |> ignore
 
             let ctor =
                 Ctor.create()
@@ -313,6 +321,8 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
                 |> Cls.addMember producerProperty
                 |> Cls.addMember certificateField
                 |> Cls.addMember certificateProperty
+                |> Cls.addMember authenticationCertificatesField
+                |> Cls.addMember authenticationCertificatesProperty
                 |> Code.comment port.Documentation
             serviceTy |> Cls.addMember portTy |> ignore
 

@@ -97,15 +97,16 @@ type XRoadStreamReader() =
     class
     end
 
-type XRoadRequest(producerUri: string, methodMap: MethodMap, certificate: X509Certificate) =
+type XRoadRequest(producerUri: string, methodMap: MethodMap, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>) =
     let log = LogManager.GetLogger()
 
     let request =
         let request = WebRequest.Create(producerUri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
         request.Headers.Set("SOAPAction", "")
-        if certificate |> isNull |> not then
+        if acceptedServerCertificate |> isNull |> not then
             request.ServerCertificateValidationCallback <-
-                (fun _ cert _ errors -> if errors = SslPolicyErrors.None then true else cert = certificate)
+                (fun _ cert _ errors -> if errors = SslPolicyErrors.None then true else cert = acceptedServerCertificate)
+        authenticationCertificates |> Seq.iter (request.ClientCertificates.Add >> ignore)
         request
 
     let addNamespace =
@@ -352,10 +353,10 @@ type XRoadRequest(producerUri: string, methodMap: MethodMap, certificate: X509Ce
         new XRoadResponse(request.GetResponse(), methodMap)
 
 type public XRoadUtil =
-    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, certificate: X509Certificate, header: AbstractXRoadHeader, args: obj[]) =
+    static member MakeServiceCall(serviceType: Type, methodName: string, producerUri: string, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>, header: AbstractXRoadHeader, args: obj[]) =
         let serviceMethod = serviceType.GetMethod(methodName)
         let serviceMethodMap = getMethodMap serviceMethod 
-        let request = XRoadRequest(producerUri, serviceMethodMap, certificate)
+        let request = XRoadRequest(producerUri, serviceMethodMap, acceptedServerCertificate, authenticationCertificates)
         request.SendMessage(header, args)
         use response = request.GetResponse(serviceMethodMap)
         response.RetrieveMessage()
