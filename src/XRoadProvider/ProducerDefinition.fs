@@ -280,15 +280,6 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
             addressProperty.GetStatements.Add(Stmt.ret addressFieldRef) |> ignore
             addressProperty.SetStatements.Add(Stmt.assign addressFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
 
-            // Create property and backing field for producer name.
-            // By default service port xrd/xtee:address extension producer value is used, but user can override that value.
-            let producerField = CodeMemberField(typeof<string>, "producerName")
-            let producerFieldRef = Expr.this @=> producerField.Name
-            let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
-            producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-            producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
-            producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
-            
             let certificateField = CodeMemberField(typeof<X509Certificate>, "acceptedServerCertificate")
             let certificateFieldRef = Expr.this @=> certificateField.Name
             let certificateProperty = CodeMemberProperty(Name="AcceptedServerCertificate", Type=CodeTypeReference(typeof<X509Certificate>))
@@ -297,7 +288,6 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
             certificateProperty.SetStatements.Add(Stmt.assign certificateFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
 
             let authenticationCertificatesField = CodeMemberField(typeof<ResizeArray<X509Certificate>>, "authenticationCertificates")
-            authenticationCertificatesField.InitExpression <- CodeObjectCreateExpression(typeof<ResizeArray<X509Certificate>>)
             let authenticationCertificatesProperty = CodeMemberProperty(Name="AuthenticationCertificates", Type=CodeTypeReference(typeof<List<X509Certificate>>))
             authenticationCertificatesProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
             authenticationCertificatesProperty.GetStatements.Add(Stmt.ret (Expr.this @=> authenticationCertificatesField.Name)) |> ignore
@@ -306,10 +296,7 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
                 Ctor.create()
                 |> Ctor.setAttr MemberAttributes.Public
                 |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerUri") (!^ port.Uri))
-
-            // Add default producer name value if message protocol defines it in service description.
-            port.MessageProtocol.ProducerName
-            |> Option.iter (fun producerName -> ctor |> Ctor.addStmt (Stmt.assign (Expr.this @=> "producerName") (!^ producerName)) |> ignore)
+                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "authenticationCertificates") (Expr.inst<ResizeArray<X509Certificate>> []))
 
             let portTy =
                 Cls.create port.Name
@@ -317,14 +304,33 @@ let makeProducerType (typeNamePath: string [], producerUri, languageCode) =
                 |> Cls.addMember ctor
                 |> Cls.addMember addressField
                 |> Cls.addMember addressProperty
-                |> Cls.addMember producerField
-                |> Cls.addMember producerProperty
                 |> Cls.addMember certificateField
                 |> Cls.addMember certificateProperty
                 |> Cls.addMember authenticationCertificatesField
                 |> Cls.addMember authenticationCertificatesProperty
                 |> Code.comment port.Documentation
             serviceTy |> Cls.addMember portTy |> ignore
+
+            // Create property and backing field for producer name.
+            // By default service port xrd/xtee:address extension producer value is used, but user can override that value.
+            port.MessageProtocol.ProducerName
+            |> Option.iter (fun producerName ->
+                let producerField = CodeMemberField(typeof<string>, "producerName")
+                let producerFieldRef = Expr.this @=> producerField.Name
+                let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
+                producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
+                producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
+                producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
+
+                // Add default producer name value if message protocol defines it in service description.
+                ctor
+                |> Ctor.addStmt (Stmt.assign producerFieldRef (!^ producerName))
+                |> ignore
+
+                portTy
+                |> Cls.addMember producerField
+                |> Cls.addMember producerProperty
+                |> ignore)
 
             port.Methods
             |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore))
