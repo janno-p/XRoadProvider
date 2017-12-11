@@ -204,55 +204,65 @@ let getContentOfChoice (choiceMap: TypeMap) : PropertyInput list =
 
 module EmitSerialization =
     /// Check if values type matches expected type.
-    let private emitValueTypeTest (expectedType: Type) =
-        loadArg1
-        >> callX <@ (null: obj).GetType() @>
-        >> callVirtX <@ (null: Type).FullName @>
-        >> loadString expectedType.FullName
-        >> stringEquals
+    let private emitValueTypeTest (expectedType: Type) = emit' {
+        ldarg_1
+        call_expr <@ (null: obj).GetType() @>
+        callvirt_expr <@ (null: Type).FullName @>
+        ldstr expectedType.FullName
+        string_equals
+    }
 
     /// Write type attribute according to TypeMap.
-    let emitTypeAttribute (typeName: string) (typeNamespace: string option) =
-        loadArg0
-        >> loadString "type"
-        >> loadString XmlNamespace.Xsi
-        >> callVirtX <@ (null: XmlWriter).WriteStartAttribute("", "") @>
-        >> noop
-        >> loadArg0
-        >> loadString typeName
-        >> ifSomeNone
-                typeNamespace
-                (fun ns ->
-                    loadString ns
-                    >> callVirtX <@ (null: XmlWriter).WriteQualifiedName("", "") @>)
-                (callVirtX <@ (null: XmlWriter).WriteString("") @>)
-        >> noop
-        >> loadArg0
-        >> callVirtX <@ (null: XmlWriter).WriteEndAttribute() @>
-        >> noop
+    let emitTypeAttribute (typeName: string) (typeNamespace: string option) = emit' {
+        ldarg_0
+        ldstr "type"
+        ldstr XmlNamespace.Xsi
+        callvirt_expr <@ (null: XmlWriter).WriteStartAttribute("", "") @>
+        nop
+        ldarg_0
+        ldstr typeName
+        merge (
+            match typeNamespace with
+            | Some(ns) ->
+                emit' {
+                    ldstr ns
+                    callvirt_expr <@ (null: XmlWriter).WriteQualifiedName("", "") @>
+                }
+            | None ->
+                emit' {
+                    callvirt_expr <@ (null: XmlWriter).WriteString("") @>
+                }
+        )
+        nop
+        ldarg_0
+        callvirt_expr <@ (null: XmlWriter).WriteEndAttribute() @>
+        nop
+    }
 
     /// Emit type (and its base types) content serialization.
-    let rec private emitContentSerialization (typeMap: TypeMap) =
-        ifSome typeMap.BaseType emitContentSerialization
-        >> loadArg0
-        >> loadArg1
-        >> loadArg2
-        >> call typeMap.Serialization.Content
-        >> noop
+    let rec private emitContentSerialization (typeMap: TypeMap) = emit' {
+        merge (match typeMap.BaseType with Some(tm) -> emitContentSerialization tm | None -> id)
+        ldarg_0
+        ldarg_1
+        ldarg_2
+        call typeMap.Serialization.Content
+        nop
+    }
 
     /// Emit abstract type test and exception.
-    let private emitAbstractTypeException (typeMap: TypeMap) =
-        loadString (sprintf "Cannot serialize abstract type `%s`." typeMap.FullName)
-        >> createX <@ Exception("") @>
-        >> throw
+    let private emitAbstractTypeException (typeMap: TypeMap) = emit' {
+        ldstr (sprintf "Cannot serialize abstract type `%s`." typeMap.FullName)
+        newobj_expr <@ Exception("") @>
+        throw
+    }
 
     /// Emit whole contents of TypeMap serialization.
     let private emitBodySerialization addType (typeMap: TypeMap) =
-        ifElse typeMap.Type.IsAbstract
-            (emitAbstractTypeException typeMap)
-            (iif addType (emitTypeAttribute typeMap.Name typeMap.Namespace)
+        if typeMap.Type.IsAbstract then emitAbstractTypeException typeMap else emit' {
+            merge (if addType then emitTypeAttribute typeMap.Name typeMap.Namespace else id)
              // TODO : Attributes
-             >> emitContentSerialization typeMap)
+            merge (emitContentSerialization typeMap)
+        }
 
     /// Emit serialization taking into consideration if actual type matches subtype or not.
     let rec private emitTypeHierarchySerialization (markReturn: Label) isEncoded (subTypes: TypeMap list) typeMap =
@@ -260,110 +270,143 @@ module EmitSerialization =
         | [] ->
             emitBodySerialization isEncoded typeMap
         | subType::other ->
-            beforeLabel (fun markNext ->
-                // Check if type matches current TypeMap.
-                emitValueTypeTest subType.Type
-                >> gotoF markNext
-                >> emitBodySerialization true subType
-                >> goto markReturn)
-            >> noop
-            >> emitTypeHierarchySerialization markReturn isEncoded other typeMap
+            emit' {
+                define_label (fun markNext -> emit' {
+                    // Check if type matches current TypeMap.
+                    merge (emitValueTypeTest subType.Type)
+                    brfalse markNext
+                    merge (emitBodySerialization true subType)
+                    br markReturn
+                    set_marker markNext
+                })
+                nop
+                merge (emitTypeHierarchySerialization markReturn isEncoded other typeMap)
+            }
 
-    let emitNilAttribute (markReturn: Label) =
-        beforeLabel (fun markNotNull ->
-            loadNull
-            >> equals
-            >> gotoF markNotNull
-            >> loadArg0
-            >> loadString "nil"
-            >> loadString XmlNamespace.Xsi
-            >> loadString "true"
-            >> callVirtX <@ (null: XmlWriter).WriteAttributeString("", "", "") @>
-            >> noop
-            >> goto markReturn)
-        >> noop
+    let emitNilAttribute (markReturn: Label) = emit' {
+        define_label (fun markNotNull -> emit' {
+            ldnull
+            ceq
+            brfalse markNotNull
+            ldarg_0
+            ldstr "nil"
+            ldstr XmlNamespace.Xsi
+            ldstr "true"
+            callvirt_expr <@ (null: XmlWriter).WriteAttributeString("", "", "") @>
+            nop
+            br markReturn
+            set_marker markNotNull
+        })
+        nop
+    }
 
     /// Emit root type serialization logic for given TypeMap.
-    let emitRootSerializerMethod isEncoded (subTypes: TypeMap list) (typeMap: TypeMap) =
-        beforeLabel (fun markReturn ->
+    let emitRootSerializerMethod isEncoded (subTypes: TypeMap list) (typeMap: TypeMap) = emit' {
+        define_label (fun markReturn -> emit' {
             // When value is `null`, write `xsi:nil` attribute and return.
-            loadArg1
-            >> emitNilAttribute markReturn
+            ldarg_1
+            merge (emitNilAttribute markReturn)
             // Serialize value according to its type.
-            >> emitTypeHierarchySerialization markReturn isEncoded subTypes typeMap)
+            merge (emitTypeHierarchySerialization markReturn isEncoded subTypes typeMap)
+            set_marker markReturn
+        })
         // Return
-        >> ret
+        ret
+    }
 
     /// Provides value for array item at current index.
-    let private emitArrayItemValue (array: LocalBuilder) (index: LocalBuilder) (typ: Type) =
-        getVar array
-        >> getVar index
-        >> getElem typ
-        >> iif typ.IsValueType (toBox typ)
+    let private emitArrayItemValue (array: LocalBuilder) (index: LocalBuilder) (typ: Type) = emit' {
+        ldloc array
+        ldloc index
+        ldelem typ
+        merge (if typ.IsValueType then emit' { box typ } else id)
+    }
 
     /// Emit validation for not nullable types to have value specified.
     let private emitNotNullableCheck (name: string) emitValue property =
         match property with
         | Array _
         | Individual { TypeMap = { CanHaveNullAsValue = true } } ->
-            beforeLabel (fun markSuccess ->
-                // Check if value is null.
-                emitValue property.Type
-                >> loadNull
-                >> equals
-                >> gotoF markSuccess
-                // Not nullable shouldn't have null as value, so throw exception.
-                >> loadString (sprintf "Not nullable property `%s` of type `%s` has null value." name property.Wrapper.Name)
-                >> createX <@ Exception("") @>
-                >> throw)
-            >> noop
+            emit' {
+                define_label (fun markSuccess -> emit' {
+                    // Check if value is null.
+                    merge (emitValue property.Type)
+                    ldnull
+                    ceq
+                    brfalse markSuccess
+                    // Not nullable shouldn't have null as value, so throw exception.
+                    ldstr (sprintf "Not nullable property `%s` of type `%s` has null value." name property.Wrapper.Name)
+                    newobj_expr <@ Exception("") @>
+                    throw
+                    set_marker markSuccess
+                })
+                nop
+            }
         | _ -> id
 
     let emitPropertyWrapperSerialization (property: Property) =
         match property.Wrapper with
         | Choice (_,_,fld,_,_) ->
             let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> MyOption.defaultWith (fun _ -> property.Type)
-            loadArg1
-            >> castClass fld.DeclaringType
-            >> getField fld
-            >> ifElse property.Type.IsValueType (fromBox ty) (castClass ty)
+            emit' {
+                ldarg_1
+                castclass fld.DeclaringType
+                ldfld fld
+                merge (if property.Type.IsValueType then emit' { unbox ty } else emit' { castclass ty })
+            }
         | Method (_, i) ->
             let ty = property.HasValueMethod |> Option.map (fun m -> m.DeclaringType) |> MyOption.defaultWith (fun _ -> property.Type)
-            loadArg1
-            >> loadInt i
-            >> getElemRef
-            >> ifElse ty.IsValueType (fromBox ty) (castClass ty)
+            emit' {
+                ldarg_1
+                ldc_i4 i
+                ldelem_ref
+                merge (if ty.IsValueType then emit' { unbox ty } else emit' { castclass ty })
+            }
         | Type tm ->
-            loadArg1
-            >> castClass tm.Type
-            >> callVirt property.GetMethod.Value
+            emit' {
+                ldarg_1
+                castclass tm.Type
+                callvirt property.GetMethod.Value
+            }
 
     let emitOptionalFieldSerialization (property: Property) emitContent =
         if not property.HasOptionalElement then emitContent else
-        emitPropertyWrapperSerialization property
-        >> useVar (lazy (declareLocal property.HasValueMethod.Value.DeclaringType)) (fun optionalType ->
-            setVar optionalType
-            >> getVarAddr optionalType
-            >> call property.HasValueMethod.Value
-            >> beforeLabel (fun endContentLabel ->
-                gotoF endContentLabel
-                >> noop
-                >> emitContent)
-            >> noop)
+        emit' {
+            merge (emitPropertyWrapperSerialization property)
+            declare_variable (lazy (declareLocal property.HasValueMethod.Value.DeclaringType)) (fun optionalType -> emit' {
+                stloc optionalType
+                ldloca optionalType
+                call property.HasValueMethod.Value
+                define_label (fun endContentLabel -> emit' {
+                    brfalse endContentLabel
+                    nop
+                    merge emitContent
+                    set_marker endContentLabel
+                })
+                nop
+            })
+        }
 
     /// Emit single property content serialization.
     let rec emitPropertyContentSerialization emitValue isEncoded (property: Property) : ILGenerator -> ILGenerator =
         // Write start element of the propery if its not merged with content.
         let writeStartElement =
-            ifSome property.Element (fun (name, isNullable, _) ->
-                loadArg0
-                >> loadString name.LocalName
-                >> loadString name.NamespaceName
-                >> callVirtX <@ (null: XmlWriter).WriteStartElement("", "") @>
-                >> noop
-                >> iif (not isNullable) (emitNotNullableCheck name.LocalName emitValue property)
-                >> iif (isEncoded) (
-                    ifSome property.SimpleTypeName (fun typeName -> emitTypeAttribute typeName.Name (Some(typeName.Namespace)))))
+            match property.Element with
+            | Some(name, isNullable, _) ->
+                emit' {
+                    ldarg_0
+                    ldstr name.LocalName
+                    ldstr name.NamespaceName
+                    callvirt_expr <@ (null: XmlWriter).WriteStartElement("", "") @>
+                    nop
+                    merge (if isNullable then id else emitNotNullableCheck name.LocalName emitValue property)
+                    merge (
+                        match isEncoded, property.SimpleTypeName with
+                        | true, Some(typeName) -> emitTypeAttribute typeName.Name (Some(typeName.Namespace))
+                        | _ -> id
+                    )
+                }
+            | None -> id
 
         // Serialize property content value according to its TypeMap.
         let writePropertyContent = emit' {
@@ -427,28 +470,40 @@ module EmitSerialization =
 
         // Write end element if required.
         let writeEndElement =
-            ifSome property.Element (fun _ ->
-                loadArg0
-                >> callVirtX <@ (null: XmlWriter).WriteEndElement() @>
-                >> noop)
+            match property.Element with
+            | Some(_) ->
+                emit' {
+                    ldarg_0
+                    callvirt_expr <@ (null: XmlWriter).WriteEndElement() @>
+                    nop
+                }
+            | None -> id
 
         writeStartElement >> writePropertyContent >> writeEndElement
 
     /// Unbox property value into correct type.
-    let emitPropertyValue (property: Property) (typ: Type) =
-        emitPropertyWrapperSerialization property
-        >> iif property.HasOptionalElement (
-            useVar (lazy (declareLocal property.HasValueMethod.Value.DeclaringType)) (fun opt ->
-                setVar opt
-                >> getVarAddr opt
-                >> ifElse typ.IsValueType
-                        (useVar (lazy (declareLocal typ)) (fun temp ->
-                            getVarAddr temp
-                            >> initObj typ
-                            >> getVar temp))
-                        loadNull
-                >> call (property.HasValueMethod.Value.DeclaringType.GetMethod("ValueOr", [| typ |]))))
-        >> iif typ.IsValueType (toBox typ)
+    let emitPropertyValue (property: Property) (typ: Type) = emit' {
+        merge (emitPropertyWrapperSerialization property)
+        merge (
+            if not property.HasOptionalElement then id else emit' {
+                declare_variable (lazy (declareLocal property.HasValueMethod.Value.DeclaringType)) (fun opt -> emit' {
+                    stloc opt
+                    ldloca opt
+                    merge (
+                        if not typ.IsValueType then emit' { ldnull } else emit' {
+                            declare_variable (lazy (declareLocal typ)) (fun temp -> emit' {
+                                ldloca temp
+                                initobj typ
+                                ldloc temp
+                            })
+                        }
+                    )
+                    call (property.HasValueMethod.Value.DeclaringType.GetMethod("ValueOr", [| typ |]))
+                })
+            }
+        )
+        merge (if typ.IsValueType then emit' { box typ } else id)
+    }
 
     /// Emit IL which serializes each property value into corresponding xml fragment.
     let emitContentSerializerMethod isEncoded (properties: Property list) =
@@ -928,8 +983,10 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
     #if PRINT_IL
     fprintfn stream "--------------------- <%s content ser> ---------------------" typ.FullName
     #endif
-    defineMethod typeMap.Serialization.Content
-        (EmitSerialization.emitContentSerializerMethod isEncoded properties >> ret)
+    defineMethod typeMap.Serialization.Content (emit' {
+        merge (EmitSerialization.emitContentSerializerMethod isEncoded properties)
+        ret
+    })
     #if PRINT_IL
     fprintfn stream "--------------------- </%s content ser> ---------------------" typ.FullName
     #endif
@@ -960,8 +1017,10 @@ and createTypeSerializers isEncoded (typeMap: TypeMap) =
         #if PRINT_IL
         fprintfn stream "--------------------- <%s match deser> ---------------------" typ.FullName
         #endif
-        defineMethod typeMap.Deserialization.MatchType
-            (EmitDeserialization.emitMatchType (properties |> List.tryHead) >> ret)
+        defineMethod typeMap.Deserialization.MatchType (emit' {
+            merge (EmitDeserialization.emitMatchType (properties |> List.tryHead))
+            ret
+        })
         #if PRINT_IL
         fprintfn stream "--------------------- </%s match deser> ---------------------" typ.FullName
         #endif

@@ -54,7 +54,7 @@ let inline declareLocal typ (il: ILGenerator) =
     il.DeclareLocal(typ)
     #endif
 
-let inline setLabel label (il: ILGenerator) =
+let inline private setLabel label (il: ILGenerator) =
     #if PRINT_IL
     let id = labels.GetOrAdd(label, (fun _ -> nextLabelId()))
     fprintfn stream "%-10s : @{%A}" "@label" id
@@ -119,93 +119,23 @@ let inline private emitvar opCode (var: LocalBuilder) (il: ILGenerator) =
     il.Emit(opCode, var)
     il
     
-let inline callCtor (typ: Type) args (il: ILGenerator) =
+let inline private callCtor (typ: Type) args (il: ILGenerator) =
     #if PRINT_IL
     fprintfn stream "%-10s : %s(%s)" (OpCodes.Newobj.ToString()) (typeName typ) (String.Join(",", args |> List.map typeName))
     #endif
     il.Emit(OpCodes.Newobj, typ.GetConstructor(args |> List.toArray))
     il
 
-let inline create (ci: ConstructorInfo) (il: ILGenerator) =
+let inline private create (ci: ConstructorInfo) (il: ILGenerator) =
     #if PRINT_IL
     fprintfn stream "%-10s : %s" (OpCodes.Newobj.ToString()) (ctorName ci)
     #endif
     il.Emit(OpCodes.Newobj, ci)
     il
 
-let inline createX expr il = il |> create (!!@ expr) 
-let inline defineLabel (il: ILGenerator) = il.DefineLabel()
-let inline defineLabel' (il: ILGenerator) = (il.DefineLabel(), il)
 let inline declareLocalOf<'T> il = il |> declareLocal(typeof<'T>)
-let inline loadArg0 (il: ILGenerator) = il |> emit OpCodes.Ldarg_0
-let inline loadArg1 (il: ILGenerator) = il |> emit OpCodes.Ldarg_1
-let inline loadArg2 (il: ILGenerator) = il |> emit OpCodes.Ldarg_2
-let inline loadArg3 (il: ILGenerator) = il |> emit OpCodes.Ldarg_3
-let inline call mi il = il |> emitmi OpCodes.Call mi
-let inline callX expr il = il |> emitmi OpCodes.Call (!@ expr)
-let inline stringEquals il = il |> callX <@ "" = "" @>
-let inline stringFormat2 il = il |> callX <@ String.Format("", "") @>
-let inline stringFormat3 il = il |> callX <@ String.Format("", "", "") @>
-let inline callVirt mi il = il |> emitmi OpCodes.Callvirt mi
-let inline callVirtX expr il = il |> callVirt (!@ expr)
-let inline loadString value il = il |> emitstr OpCodes.Ldstr value
-let inline noop il = il |> emit OpCodes.Nop
-let inline dup il = il |> emit OpCodes.Dup
-let inline pop il = il |> emit OpCodes.Pop
-let inline throw il = il |> emit OpCodes.Throw
-let inline loadNull il = il |> emit OpCodes.Ldnull
-let inline equals il = il |> emit OpCodes.Ceq
-let inline ret il = il |> emit OpCodes.Ret
-let inline gotoF label il = il |> emitlbl OpCodes.Brfalse label
-let inline gotoT label il = il |> emitlbl OpCodes.Brtrue label
-let inline goto label il = il |> emitlbl OpCodes.Br label
-let inline setVar var il = il |> emitvar OpCodes.Stloc var
-let inline getVar var il = il |> emitvar OpCodes.Ldloc var
-let inline getVarAddr var il = il |> emitvar OpCodes.Ldloca var
-let inline getElem typ il = il |> emittyp OpCodes.Ldelem typ
-let inline getElemRef il = il |> emit OpCodes.Ldelem_Ref
-let inline toBox typ il = il |> emittyp OpCodes.Box typ
-let inline fromBox typ il = il |> emittyp OpCodes.Unbox_Any typ
-let inline castClass typ il = il |> emittyp OpCodes.Castclass typ
-let inline getField fi il = il |> emitfld OpCodes.Ldfld fi
-let inline initObj typ il = il |> emittyp OpCodes.Initobj typ
-let inline loadInt i il = il |> emitint OpCodes.Ldc_I4 i
-let inline loadInt0 il = il |> emit OpCodes.Ldc_I4_0
-let inline loadInt1 il = il |> emit OpCodes.Ldc_I4_1
-let inline loadInt2 il = il |> emit OpCodes.Ldc_I4_2
-let inline add il = il |> emit OpCodes.Add
-let inline div il = il |> emit OpCodes.Div
-let inline setElem il = il |> emit OpCodes.Stelem_I4
-let inline getLen il = il |> emit OpCodes.Ldlen
-let inline castInt il = il |> emit OpCodes.Conv_I4
-let inline lessThan il = il |> emit OpCodes.Clt
-let inline createArrayOf<'T> il = il |> emittyp OpCodes.Newarr typeof<char>
 
-let inline iif cond f (il: ILGenerator) = if cond then f il else il
-let inline ifElse cond ftrue ffalse (il: ILGenerator) = if cond then ftrue il else ffalse il
-let inline ifSome opt f (il: ILGenerator) = match opt with Some(o) -> f o il | None -> il
-let inline ifSomeNone opt fsome fnone (il: ILGenerator) = match opt with Some(o) -> fsome o il | None -> fnone il
-
-let afterLabel f il =
-    let label = il |> defineLabel
-    il |> setLabel label |> f label 
-
-let beforeLabel f il =
-    let label = il |> defineLabel
-    il |> f label |> setLabel label
-
-let withLabel f il =
-    let label = il |> defineLabel
-    il |> f label
-
-let withLabels n f il =
-    let labels = [
-        for _ in 1..n do
-            yield il |> defineLabel
-    ]
-    il |> f labels
-    
-let useVar (v: Lazy<_>) f il = il |> f (il |> v.Value)
+let inline private defineLabel (il: ILGenerator) = il.DefineLabel()
 
 let defineMethod (mi: MethodInfo) f =
     match mi with
@@ -221,93 +151,101 @@ type EmitBuilder() =
 
 type EmitBuilder with
     [<CustomOperation("castclass", MaintainsVariableSpaceUsingBind = true)>]
-    member __.CastClass(p: Emitter, t) = p >> castClass t
+    member __.CastClass(p: Emitter, t) = p >> emittyp OpCodes.Castclass t
     [<CustomOperation("ldarg_0", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldarg0(p: Emitter) = p >> loadArg0
+    member __.Ldarg0(p: Emitter) = p >> emit OpCodes.Ldarg_0
     [<CustomOperation("ldarg_1", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldarg1(p: Emitter) = p >> loadArg1
+    member __.Ldarg1(p: Emitter) = p >> emit OpCodes.Ldarg_1
     [<CustomOperation("ldarg_2", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldarg2(p: Emitter) = p >> loadArg2
+    member __.Ldarg2(p: Emitter) = p >> emit OpCodes.Ldarg_2
     [<CustomOperation("ldarg_3", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldarg3(p: Emitter) = p >> loadArg3
+    member __.Ldarg3(p: Emitter) = p >> emit OpCodes.Ldarg_3
     [<CustomOperation("ldarg_4", MaintainsVariableSpaceUsingBind = true)>]
     member __.Ldarg4(p: Emitter) = p >> emitint OpCodes.Ldarg 4us
     [<CustomOperation("callvirt", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Callvirt(p: Emitter, mi) = p >> callVirt mi
+    member __.Callvirt(p: Emitter, mi) = p >> emitmi OpCodes.Callvirt mi
     [<CustomOperation("callvirt_expr", MaintainsVariableSpaceUsingBind = true)>]
-    member __.CallvirtExpr(p: Emitter, e) = p >> callVirtX e
+    member __.CallvirtExpr(p: Emitter, e) = p >> emitmi OpCodes.Callvirt (!@ e)
     [<CustomOperation("ldloc", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldloc(p: Emitter, v) = p >> getVar v
+    member __.Ldloc(p: Emitter, v) = p >> emitvar OpCodes.Ldloc v
     [<CustomOperation("stloc", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Stloc(p: Emitter, v) = p >> setVar v
+    member __.Stloc(p: Emitter, v) = p >> emitvar OpCodes.Stloc v
     [<CustomOperation("ceq", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ceq(p: Emitter) = p >> equals
+    member __.Ceq(p: Emitter) = p >> emit OpCodes.Ceq
     [<CustomOperation("ldc_node_type", MaintainsVariableSpaceUsingBind = true)>]
-    member __.LdcXmlNodeType(p: Emitter, i: Xml.XmlNodeType) = p >> loadInt i
+    member __.LdcXmlNodeType(p: Emitter, i: Xml.XmlNodeType) = p >> emitint OpCodes.Ldc_I4 i
     [<CustomOperation("ldc_i4", MaintainsVariableSpaceUsingBind = true)>]
-    member __.LdcInt(p: Emitter, i) = p >> loadInt i
+    member __.LdcInt(p: Emitter, i) = p >> emitint OpCodes.Ldc_I4 i
     [<CustomOperation("ldc_i4_0", MaintainsVariableSpaceUsingBind = true)>]
-    member __.LdcInt0(p: Emitter) = p >> loadInt0
+    member __.LdcInt0(p: Emitter) = p >> emit OpCodes.Ldc_I4_0
     [<CustomOperation("ldc_i4_1", MaintainsVariableSpaceUsingBind = true)>]
-    member __.LdcInt1(p: Emitter) = p >> loadInt1
+    member __.LdcInt1(p: Emitter) = p >> emit OpCodes.Ldc_I4_1
     [<CustomOperation("ldc_i4_2", MaintainsVariableSpaceUsingBind = true)>]
-    member __.LdcInt2(p: Emitter) = p >> loadInt2
+    member __.LdcInt2(p: Emitter) = p >> emit OpCodes.Ldc_I4_2
     [<CustomOperation("brfalse", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Brfalse(p: Emitter, l) = p >> gotoF l
+    member __.Brfalse(p: Emitter, l) = p >> emitlbl OpCodes.Brfalse l
     [<CustomOperation("brtrue", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Brtrue(p: Emitter, l) = p >> gotoT l
+    member __.Brtrue(p: Emitter, l) = p >> emitlbl OpCodes.Brtrue l
     [<CustomOperation("br", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Br(p: Emitter, l) = p >> goto l
+    member __.Br(p: Emitter, l) = p >> emitlbl OpCodes.Br l
     [<CustomOperation("clt", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Clt(p: Emitter) = p >> lessThan
+    member __.Clt(p: Emitter) = p >> emit OpCodes.Clt
     [<CustomOperation("nop", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Nop(p: Emitter) = p >> noop
+    member __.Nop(p: Emitter) = p >> emit OpCodes.Nop
     [<CustomOperation("unbox", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Unbox(p: Emitter, t) = p >> fromBox t
+    member __.Unbox(p: Emitter, t) = p >> emittyp OpCodes.Unbox_Any t
     [<CustomOperation("box", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Box(p: Emitter, t) = p >> toBox t
+    member __.Box(p: Emitter, t) = p >> emittyp OpCodes.Box t
     [<CustomOperation("set_marker", MaintainsVariableSpaceUsingBind = true)>]
     member __.MarkLabel(p: Emitter, l) = p >> setLabel l
     [<CustomOperation("define_label", MaintainsVariableSpaceUsingBind = true)>]
-    member __.DefineLabel(p: Emitter, e) = p >> withLabel e
+    member __.DefineLabel(p: Emitter, e) = p >> (fun il -> let label = il |> defineLabel in il |> e label)
     [<CustomOperation("define_labels", MaintainsVariableSpaceUsingBind = true)>]
-    member __.DefineLabels(p: Emitter, n, e) = p >> withLabels n e
+    member __.DefineLabels(p: Emitter, n, e) = p >> (fun il -> let labels = [ for _ in 1..n do yield il |> defineLabel ] in il |> e labels)
     [<CustomOperation("declare_variable", MaintainsVariableSpaceUsingBind = true)>]
-    member __.DeclareVariable(p: Emitter, v, f) = p >> useVar v f
+    member __.DeclareVariable(p: Emitter, (v: Lazy<_>), f) = p >> (fun il -> il |> f (il |> v.Value))
     [<CustomOperation("merge", MaintainsVariableSpaceUsingBind = true)>]
     member __.Merge(p: Emitter, e) = p >> e
     [<CustomOperation("call", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Call(p: Emitter, mi) = p >> call mi
+    member __.Call(p: Emitter, mi) = p >> emitmi OpCodes.Call mi
     [<CustomOperation("call_expr", MaintainsVariableSpaceUsingBind = true)>]
-    member __.CallExpr(p: Emitter, e) = p >> callX e
+    member __.CallExpr(p: Emitter, e) = p >> emitmi OpCodes.Call (!@ e)
     [<CustomOperation("ldstr", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldstr(p: Emitter, s) = p >> loadString s
+    member __.Ldstr(p: Emitter, s) = p >> emitstr OpCodes.Ldstr s
     [<CustomOperation("string_equals", MaintainsVariableSpaceUsingBind = true)>]
-    member __.StringEquals(p: Emitter) = p >> stringEquals
+    member __.StringEquals(p: Emitter) = p >> emitmi OpCodes.Call (!@ <@ "" = "" @>)
     [<CustomOperation("add", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Add(p: Emitter) = p >> add
+    member __.Add(p: Emitter) = p >> emit OpCodes.Add
     [<CustomOperation("div", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Div(p: Emitter) = p >> div
+    member __.Div(p: Emitter) = p >> emit OpCodes.Div
     [<CustomOperation("ret", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ret(p: Emitter) = p >> ret
+    member __.Ret(p: Emitter) = p >> emit OpCodes.Ret
     [<CustomOperation("pop", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Pop(p: Emitter) = p >> pop
+    member __.Pop(p: Emitter) = p >> emit OpCodes.Pop
     [<CustomOperation("throw", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Throw(p: Emitter) = p >> throw
+    member __.Throw(p: Emitter) = p >> emit OpCodes.Throw
     [<CustomOperation("ldnull", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldnull(p: Emitter) = p >> loadNull
+    member __.Ldnull(p: Emitter) = p >> emit OpCodes.Ldnull
     [<CustomOperation("newobj", MaintainsVariableSpaceUsingBind = true)>]
     member __.Newobj(p: Emitter, ci) = p >> create ci
     [<CustomOperation("dup", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Dup(p: Emitter) = p >> dup
+    member __.Dup(p: Emitter) = p >> emit OpCodes.Dup
     [<CustomOperation("newobj_expr", MaintainsVariableSpaceUsingBind = true)>]
-    member __.NewobjExpr(p: Emitter, e) = p >> createX e
+    member __.NewobjExpr(p: Emitter, e) = p >> create (!!@ e)
     [<CustomOperation("ldfld", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldfld(p: Emitter, f) = p >> getField f
+    member __.Ldfld(p: Emitter, f) = p >> emitfld OpCodes.Ldfld f
     [<CustomOperation("ldlen", MaintainsVariableSpaceUsingBind = true)>]
-    member __.Ldlen(p: Emitter) = p >> getLen
+    member __.Ldlen(p: Emitter) = p >> emit OpCodes.Ldlen
     [<CustomOperation("conv_i4", MaintainsVariableSpaceUsingBind = true)>]
-    member __.ConvInt4(p: Emitter) = p >> castInt
+    member __.ConvInt4(p: Emitter) = p >> emit OpCodes.Conv_I4
+    [<CustomOperation("ldelem_ref", MaintainsVariableSpaceUsingBind = true)>]
+    member __.LdelemRef(p: Emitter) = p >> emit OpCodes.Ldelem_Ref
+    [<CustomOperation("ldelem", MaintainsVariableSpaceUsingBind = true)>]
+    member __.Ldelem(p: Emitter, t) = p >> emittyp OpCodes.Ldelem t
+    [<CustomOperation("ldloca", MaintainsVariableSpaceUsingBind = true)>]
+    member __.Ldloca(p: Emitter, v) = p >> emitvar OpCodes.Ldloca v
+    [<CustomOperation("initobj", MaintainsVariableSpaceUsingBind = true)>]
+    member __.Initobj(p: Emitter, t) = p >> emittyp OpCodes.Initobj t
 
 let emit' = EmitBuilder()
 

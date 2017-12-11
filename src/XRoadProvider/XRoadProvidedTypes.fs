@@ -7,7 +7,6 @@ open System.Collections.Concurrent
 open System.IO
 open System.Reflection
 open XRoad
-open XRoadProvider
 
 /// Generated type providers for X-Road infrastructure.
 /// Currently only one type provider is available, which builds service interface for certain producer.
