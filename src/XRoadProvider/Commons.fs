@@ -343,12 +343,11 @@ type public BinaryContent internal (contentID: string, content: ContentType) =
 [<AllowNullLiteral>]
 type SerializerContext() =
     let attachments = Dictionary<string, BinaryContent>()
-    let mutable isMtomMessage = false
-    member val IsMtomMessage = isMtomMessage with get
+    member val IsMtomMessage = false with get, set
     member val IsMultipart = false with get, set
     member val Attachments = attachments with get
-    member __.AddAttachment(contentID, content, useXop) =
-        isMtomMessage <- isMtomMessage || useXop
+    member this.AddAttachment(contentID, content, useXop) =
+        if useXop then this.IsMtomMessage <- true
         attachments.Add(contentID, content)
     member __.GetAttachment(href: string) =
         if href.StartsWith("cid:") then
