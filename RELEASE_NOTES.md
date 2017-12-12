@@ -1,3 +1,7 @@
+#### 1.0.0-alpha017 - 12.12.2017
+
+* Fix `Content-Type` header in MTOM requests.
+
 #### 1.0.0-alpha016 - 08.12.2017
 
 * Support X-Road security server authentication certificates.

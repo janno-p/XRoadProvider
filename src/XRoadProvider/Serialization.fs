@@ -38,6 +38,7 @@ module private Response =
 
 open Response
 open System.Xml.XPath
+open Emitter
 
 type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
     let log = LogManager.GetLogger()
@@ -127,14 +128,18 @@ type XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X50
 
     let serializeMultipartMessage (attachments: Dictionary<string,BinaryContent>) (serializeContent: Stream -> unit) =
         use stream = request.GetRequestStream()
+        let isXop = attachments |> Seq.exists (fun x -> x.Value :? XopBinaryContent)
         if attachments.Count > 0 then
             use writer = new StreamWriter(stream, NewLine = "\r\n")
             let boundaryMarker = Guid.NewGuid().ToString()
-            request.ContentType <- sprintf @"multipart/related; type=""text/xml""; boundary=""%s""" boundaryMarker
+            request.ContentType <-
+                if isXop then sprintf @"multipart/related; type=""application/xop+xml""; start=""<XML-%s>""; start-info=""text/xml""; boundary=""%s""" boundaryMarker boundaryMarker
+                else sprintf @"multipart/related; type=""text/xml""; start=""<XML-%s>""; boundary=""%s""" boundaryMarker boundaryMarker
             request.Headers.Add("MIME-Version", "1.0")
             writer.WriteLine()
             writer.WriteLine("--{0}", boundaryMarker)
-            writer.WriteLine("Content-Type: text/xml; charset=UTF-8")
+            if isXop then writer.WriteLine(@"Content-Type: application/xop+xml; charset=UTF-8; type=""text/xml""")
+            else writer.WriteLine("Content-Type: text/xml; charset=UTF-8")
             writer.WriteLine("Content-Transfer-Encoding: 8bit")
             writer.WriteLine("Content-ID: <XML-{0}>", boundaryMarker)
             writer.WriteLine()

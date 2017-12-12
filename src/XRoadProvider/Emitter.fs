@@ -138,7 +138,7 @@ let firstRequired (properties: Property list) =
     properties
     |> List.tryPick (fun p -> match p.Element with Some(_,_,false) -> Some(p) | _ -> None)
 
-type private XopBinaryContent() =
+type internal XopBinaryContent() =
     inherit BinaryContent("", Data [| |])
 
 let (|Serializable|NotSerializable|) (typ: Type) =
