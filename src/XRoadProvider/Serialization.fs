@@ -78,7 +78,7 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
         if not (reader.MoveToElement(1, "Body", XmlNamespace.SoapEnv)) then
             failwith "Soap body element was not found in response message."
         let context = SerializerContext()
-        context.AddAttachments(attachments)
+        attachments |> Seq.iter (fun kvp -> context.AddAttachment(kvp.Key, kvp.Value, false))
         if not (reader.MoveToElement(2, null, null)) then
             failwith "Soap message has empty payload in response."
         // TODO : validate response wrapper element
@@ -126,26 +126,26 @@ type XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X50
         content.Position <- 0L
         writeChunk()
 
-    let serializeMultipartMessage (attachments: Dictionary<string,BinaryContent>) (serializeContent: Stream -> unit) =
+    let serializeMultipartMessage (context: SerializerContext) (serializeContent: Stream -> unit) =
         use stream = request.GetRequestStream()
-        let isXop = attachments |> Seq.exists (fun x -> x.Value :? XopBinaryContent)
-        if attachments.Count > 0 then
+        if context.Attachments.Count > 0 then
             use writer = new StreamWriter(stream, NewLine = "\r\n")
             let boundaryMarker = Guid.NewGuid().ToString()
             request.ContentType <-
-                if isXop then sprintf @"multipart/related; type=""application/xop+xml""; start=""<XML-%s>""; start-info=""text/xml""; boundary=""%s""" boundaryMarker boundaryMarker
+                if context.IsMtomMessage then sprintf @"multipart/related; type=""application/xop+xml""; start=""<XML-%s>""; start-info=""text/xml""; boundary=""%s""" boundaryMarker boundaryMarker
                 else sprintf @"multipart/related; type=""text/xml""; start=""<XML-%s>""; boundary=""%s""" boundaryMarker boundaryMarker
             request.Headers.Add("MIME-Version", "1.0")
             writer.WriteLine()
             writer.WriteLine("--{0}", boundaryMarker)
-            if isXop then writer.WriteLine(@"Content-Type: application/xop+xml; charset=UTF-8; type=""text/xml""")
+            if context.IsMtomMessage then writer.WriteLine(@"Content-Type: application/xop+xml; charset=UTF-8; type=""text/xml""")
             else writer.WriteLine("Content-Type: text/xml; charset=UTF-8")
             writer.WriteLine("Content-Transfer-Encoding: 8bit")
             writer.WriteLine("Content-ID: <XML-{0}>", boundaryMarker)
             writer.WriteLine()
             writer.Flush()
             stream |> serializeContent
-            attachments |> Seq.iter (fun kvp ->
+            context.Attachments
+            |> Seq.iter (fun kvp ->
                 writer.WriteLine()
                 writer.WriteLine("--{0}", boundaryMarker)
                 writer.WriteLine("Content-Disposition: attachment; filename=notAnswering")
@@ -160,8 +160,8 @@ type XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X50
             writer.WriteLine("--{0}--", boundaryMarker)
         else stream |> serializeContent
 
-    let serializeMessage (content: Stream) (attachments: Dictionary<string,BinaryContent>) =
-        serializeMultipartMessage attachments (fun s -> writeContent s content)
+    let serializeMessage (context: SerializerContext) (content: Stream) =
+        serializeMultipartMessage context (fun s -> writeContent s content)
 
     let writeIdHeader value ns req (writer: XmlWriter) =
         if req |> Array.exists ((=) "id") || value |> String.IsNullOrEmpty |> not then
@@ -353,7 +353,7 @@ type XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X50
         writer.Flush()
         if log.IsTraceEnabled then
             log.Trace(content |> Stream.toString)
-        serializeMessage content context.Attachments
+        content |> serializeMessage context
     member __.GetResponse(methodMap: MethodMap) =
         new XRoadResponse(request.GetResponse(), methodMap)
 

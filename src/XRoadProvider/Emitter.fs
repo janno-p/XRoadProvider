@@ -138,7 +138,7 @@ let firstRequired (properties: Property list) =
     properties
     |> List.tryPick (fun p -> match p.Element with Some(_,_,false) -> Some(p) | _ -> None)
 
-type internal XopBinaryContent() =
+type private XopBinaryContent() =
     inherit BinaryContent("", Data [| |])
 
 let (|Serializable|NotSerializable|) (typ: Type) =
@@ -1396,7 +1396,7 @@ module internal XsdTypes =
         | _ ->
             let content = unbox<BinaryContent> value
             if context.IsMultipart then
-                context.Attachments.Add(content.ContentID, content)
+                context.AddAttachment(content.ContentID, content, false)
                 writer.WriteAttributeString("href", sprintf "cid:%s" content.ContentID)
             else
                 let bytes = (unbox<BinaryContent> value).GetBytes()
@@ -1408,7 +1408,7 @@ module internal XsdTypes =
         | _ ->
             writer.WriteStartElement("xop", "Include", XmlNamespace.Xop)
             let content = unbox<BinaryContent> value
-            context.Attachments.Add(content.ContentID, content)
+            context.AddAttachment(content.ContentID, content, true)
             writer.WriteAttributeString("href", sprintf "cid:%s" content.ContentID)
             writer.WriteEndElement()
 

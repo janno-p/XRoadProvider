@@ -343,18 +343,19 @@ type public BinaryContent internal (contentID: string, content: ContentType) =
 [<AllowNullLiteral>]
 type SerializerContext() =
     let attachments = Dictionary<string, BinaryContent>()
+    let mutable isMtomMessage = false
+    member val IsMtomMessage = isMtomMessage with get
     member val IsMultipart = false with get, set
     member val Attachments = attachments with get
-    member this.AddAttachments(attachments: IDictionary<_,_>) =
-        match attachments with
-        | null -> ()
-        | _ -> attachments |> Seq.iter (fun kvp -> this.Attachments.Add(kvp.Key, kvp.Value))
+    member __.AddAttachment(contentID, content, useXop) =
+        isMtomMessage <- isMtomMessage || useXop
+        attachments.Add(contentID, content)
     member __.GetAttachment(href: string) =
         if href.StartsWith("cid:") then
             let contentID = href.Substring(4)
             match attachments.TryGetValue(contentID) with
             | true, value -> value
-            | _ -> null; //failwithf "Multipart message doesn't contain content part with ID `%s`." contentID
+            | _ -> null;
         else failwithf "Invalid multipart content reference: `%s`." href
 
 type MethodPartMap =
