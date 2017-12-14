@@ -11,7 +11,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' == 'Unix' ">
     <FrameworkPathOverride Condition=" '$(TargetFramework)' == 'net461' ">../../packages/Microsoft.TargetingPack.NETFramework.v4.6.1/lib/net461</FrameworkPathOverride>
-    <FrameworkPathOverride Condition=" '$(TargetFramework)' == 'net40' ">../../packages/Microsoft.TargetingPack.NETFramework.v4.0/lib/net40</FrameworkPathOverride>
+    <FrameworkPathOverride Condition=" '$(TargetFramework)' == 'net40' ">/usr/lib/mono/4.0-api</FrameworkPathOverride>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <PackageReference Include="FSharp.Core" Version="4.2.3" />

@@ -190,3 +190,5 @@ docs/content/release-notes.md
 # FAKE tool
 .fake
 .idea
+
+src/XRoadProvider/XRoadProvider.xml

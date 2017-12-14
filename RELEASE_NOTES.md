@@ -1,3 +1,7 @@
+#### 1.0.0-alpha018 - 14.12.2017
+
+* Experimental .NET 4.0 support added.
+
 #### 1.0.0-alpha017 - 12.12.2017
 
 * Fix `Content-Type` header in MTOM requests.
