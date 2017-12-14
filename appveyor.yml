@@ -13,5 +13,7 @@ before_test:
   - cmd: .paket\paket.bootstrapper.exe
   - cmd: .paket\paket.exe restore
   - cmd: dotnet restore
+  - cmd: dotnet build tests\XRoadProvider.Tests\XRoadProvider.Tests.fsproj --configuration Debug
 test_script:
-  - cmd: dotnet test tests\XRoadProvider.Tests\XRoadProvider.Tests.fsproj --configuration Debug
+  - cmd: tests\XRoadProvider.Tests\bin\Debug\net40\XRoadProvider.Tests.exe
+  - cmd: dotnet test tests\XRoadProvider.Tests\XRoadProvider.Tests.fsproj --configuration Debug --framework net461

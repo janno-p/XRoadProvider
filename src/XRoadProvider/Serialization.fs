@@ -7,8 +7,13 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Net
+
+#if !NET40
 open System.Net.Security
+#endif
+
 open System.Security.Cryptography.X509Certificates
+open System.Text
 open System.Xml
 open XRoad.Serialization.Attributes
 
@@ -20,7 +25,11 @@ type XRoadFault(faultCode: string, faultString) =
 module Stream =
     let toString (stream: Stream) =
         stream.Position <- 0L
-        use reader = new StreamReader(stream, System.Text.Encoding.UTF8, true, 1024, true)
+#if NET40
+        let reader = new StreamReader(stream, Encoding.UTF8)
+#else
+        use reader = new StreamReader(stream, Encoding.UTF8, true, 1024, true)
+#endif
         reader.ReadToEnd()
 
 module private Response =
@@ -104,9 +113,11 @@ type XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X50
     let request =
         let request = WebRequest.Create(uri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
         request.Headers.Set("SOAPAction", "")
+#if !NET40
         if acceptedServerCertificate |> isNull |> not then
             request.ServerCertificateValidationCallback <-
                 (fun _ cert _ errors -> if errors = SslPolicyErrors.None then true else cert = acceptedServerCertificate)
+#endif
         authenticationCertificates |> Seq.iter (request.ClientCertificates.Add >> ignore)
         request
 

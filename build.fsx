@@ -50,7 +50,7 @@ let projectPath = __SOURCE_DIRECTORY__ </> "src" </> "XRoadProvider"
 let testProjectPath = __SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests"
 
 // Pattern specifying assemblies to be tested using NUnit
-let testAssemblies = "tests/**/bin/Debug/net461/*Tests*.exe"
+let testAssemblies = "tests/**/bin/Debug/**/*Tests*.exe"
 
 // Git configuration (used for publishing documentation in gh-pages branch)
 // The profile where the project is posted
@@ -114,7 +114,7 @@ Target "AssemblyInfo" (fun _ ->
 Target "CopyBinaries" (fun _ ->
     !! "src/**/*.??proj"
     -- "src/**/*.shproj"
-    |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release/net461", "bin/net461"))
+    |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release", "bin"))
     |>  Seq.iter (fun (fromDir, toDir) -> CopyDir toDir fromDir (fun _ -> true))
 )
 

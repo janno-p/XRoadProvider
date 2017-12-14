@@ -1,6 +1,9 @@
 ﻿module internal XRoad.CodeDom
 
+#if !NET40
 open Microsoft.CodeAnalysis.CSharp
+#endif
+
 open Microsoft.CSharp
 open Microsoft.FSharp.Core.CompilerServices
 open System
@@ -260,6 +263,46 @@ module Compiler =
 /// Extensions for String module and class.
 [<AutoOpen>]
 module String =
+    let isNullOrEmpty = String.IsNullOrEmpty
+
+#if NET40
+    // http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-334.pdf
+
+    let isLetterCharacter (ch: char) =
+        match CharUnicodeInfo.GetUnicodeCategory(ch) with
+        | UnicodeCategory.UppercaseLetter
+        | UnicodeCategory.LowercaseLetter
+        | UnicodeCategory.TitlecaseLetter
+        | UnicodeCategory.ModifierLetter
+        | UnicodeCategory.OtherLetter
+        | UnicodeCategory.LetterNumber -> true
+        | _ -> false
+
+    let isCombiningCharacter (ch: char) =
+        match CharUnicodeInfo.GetUnicodeCategory(ch) with
+        | UnicodeCategory.NonSpacingMark
+        | UnicodeCategory.SpacingCombiningMark -> true
+        | _ -> false
+
+    let inline private isDecimalDigitCharacter (ch: char) = CharUnicodeInfo.GetUnicodeCategory(ch) = UnicodeCategory.DecimalDigitNumber
+    let inline private isConnectingCharacter (ch: char) = CharUnicodeInfo.GetUnicodeCategory(ch) = UnicodeCategory.ConnectorPunctuation
+    let inline private isFormattingCharacter (ch: char) = CharUnicodeInfo.GetUnicodeCategory(ch) = UnicodeCategory.Format
+    let inline private isUnderscoreCharacter (ch: char) = ch = '_'
+    let inline private isIdentifierStartCharacter (ch: char) = isLetterCharacter ch || isUnderscoreCharacter ch
+
+    let private isIdentifierPartCharacter (ch: char) =
+        isLetterCharacter ch || isDecimalDigitCharacter ch || isConnectingCharacter ch || isCombiningCharacter ch || isFormattingCharacter ch
+
+    let private isValidIdentifier (name: string) =
+        if name |> isNullOrEmpty then false else
+        if isIdentifierStartCharacter name.[0] |> not then false else
+        Array.TrueForAll(name.ToCharArray() |> Array.skip 1, Predicate(isIdentifierPartCharacter))
+#else
+    let private isIdentifierPartCharacter = SyntaxFacts.IsIdentifierPartCharacter
+    let private isIdentifierStartCharacter = SyntaxFacts.IsIdentifierStartCharacter
+    let private isValidIdentifier = SyntaxFacts.IsValidIdentifier
+#endif
+
     /// Joins sequence of elements with given separator to string.
     let join (sep: string) (arr: seq<'T>) = String.Join(sep, arr)
 
@@ -280,18 +323,17 @@ module String =
                     |> join "")
                 |> join "_"
             // Check validity of generated class name.
-            if not <| SyntaxFacts.IsValidIdentifier(className)
-            then failwithf "invalid name %s" className
+            if not (isValidIdentifier className) then failwithf "invalid name %s" className
             className
         member this.GetValidPropertyName() =
-            let propertyName = System.Text.StringBuilder()
-            if not (SyntaxFacts.IsIdentifierStartCharacter(this.[0])) then propertyName.Append("_") |> ignore
+            let propertyName = Text.StringBuilder()
+            if not (isIdentifierStartCharacter this.[0]) then propertyName.Append("_") |> ignore
             this.ToCharArray() |> Array.iter (fun c ->
-                if SyntaxFacts.IsIdentifierPartCharacter(c) then propertyName.Append(c) |> ignore
+                if isIdentifierPartCharacter c then propertyName.Append(c) |> ignore
                 elif propertyName.[propertyName.Length - 1] <> '_' then propertyName.Append('_') |> ignore
                 else ())
             let fixedName = propertyName.ToString()
-            if not (SyntaxFacts.IsValidIdentifier(fixedName)) then failwithf "Invalid property name `%s`." fixedName
+            if not (isValidIdentifier fixedName) then failwithf "Invalid property name `%s`." fixedName
             fixedName
 
 /// Type abstraction for code generator.

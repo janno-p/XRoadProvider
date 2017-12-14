@@ -178,7 +178,11 @@ module ServiceBuilder =
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
                                     Expr.this @=> "Uri"
+#if NET40
+                                    Expr.nil
+#else
                                     Expr.this @=> "AcceptedServerCertificate"
+#endif
                                     Expr.this @=> "AuthenticationCertificates"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
@@ -196,7 +200,11 @@ module ServiceBuilder =
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
                                     Expr.this @=> "Uri"
+#if NET40
+                                    Expr.nil
+#else
                                     Expr.this @=> "AcceptedServerCertificate"
+#endif
                                     Expr.this @=> "AuthenticationCertificates"
                                     !+ "header"
                                     Arr.create (argumentExpressions |> Seq.toList)])))
@@ -278,12 +286,14 @@ let makeProducerType (typeNamePath: string [], uri, languageCode) =
             addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
             addressProperty.GetStatements.Add(Stmt.ret (Expr.this @=> addressField.Name)) |> ignore
 
+#if !NET40
             let certificateField = CodeMemberField(typeof<X509Certificate>, "acceptedServerCertificate")
             let certificateFieldRef = Expr.this @=> certificateField.Name
             let certificateProperty = CodeMemberProperty(Name="AcceptedServerCertificate", Type=CodeTypeReference(typeof<X509Certificate>))
             certificateProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
             certificateProperty.GetStatements.Add(Stmt.ret certificateFieldRef) |> ignore
             certificateProperty.SetStatements.Add(Stmt.assign certificateFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
+#endif
 
             let authenticationCertificatesField = CodeMemberField(typeof<ResizeArray<X509Certificate>>, "authenticationCertificates")
             let authenticationCertificatesProperty = CodeMemberProperty(Name="AuthenticationCertificates", Type=CodeTypeReference(typeof<List<X509Certificate>>))
@@ -319,8 +329,10 @@ let makeProducerType (typeNamePath: string [], uri, languageCode) =
                 |> Cls.addMember ctor3
                 |> Cls.addMember addressField
                 |> Cls.addMember addressProperty
+#if !NET40
                 |> Cls.addMember certificateField
                 |> Cls.addMember certificateProperty
+#endif
                 |> Cls.addMember authenticationCertificatesField
                 |> Cls.addMember authenticationCertificatesProperty
                 |> Code.comment port.Documentation

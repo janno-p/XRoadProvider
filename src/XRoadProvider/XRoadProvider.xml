@@ -1,0 +1,2577 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doc>
+<assembly><name>XRoadProvider</name></assembly>
+<members>
+<member name="F:XRoad.XRoadHeader.ProtocolVersion@">
+<summary>
+ X-Road message protocol version. The value of this field MUST be 4.0
+</summary>
+</member>
+<member name="F:XRoad.XRoadHeader.Issue@">
+<summary>
+ Identifies received application, issue or document that was the cause of the service request.
+ This field may be used by the client information system to connect service requests (and responses) to working procedures.
+</summary>
+</member>
+<member name="F:XRoad.XRoadHeader.RequestHashAlgorithm@">
+<summary>
+ Identifies the hash algorithm that was used to calculate the value of the requestHash field.
+ The algorithms are specified as URIs listed in the XML-DSIG specification [DSIG].
+</summary>
+</member>
+<member name="F:XRoad.XRoadHeader.RequestHash@">
+<summary>
+ For responses, this field contains a Base64 encoded hash of the request SOAP message.
+ This field is automatically filled in by the service provider&apos;s security server.
+</summary>
+</member>
+<member name="F:XRoad.XRoadHeader.UserId@">
+<summary>
+ User whose action initiated the request. The user ID should be prefixed with two-letter ISO country code (e.g., EE12345678901).
+</summary>
+</member>
+<member name="F:XRoad.XRoadHeader.Id@">
+<summary>
+ Unique identifier for this message. The recommended form of message ID is UUID.
+</summary>
+</member>
+<member name="F:XRoad.XRoadHeader.CentralService@">
+<summary>
+ Identifies the central service that is invoked by the request.
+</summary>
+</member>
+<member name="F:XRoad.XRoadHeader.Producer@">
+<summary>
+ Identifies the service that is invoked by the request.
+</summary>
+</member>
+<member name="F:XRoad.XRoadHeader.Client@">
+<summary>
+ Identifies a service client – an entity that initiates the service call.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.UserId(System.String)">
+<summary>
+ User whose action initiated the request. The user ID should be prefixed with two-letter ISO country code (e.g., EE12345678901).
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.RequestHashAlgorithm(System.String)">
+<summary>
+ Identifies the hash algorithm that was used to calculate the value of the requestHash field.
+ The algorithms are specified as URIs listed in the XML-DSIG specification [DSIG].
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.RequestHash(System.String)">
+<summary>
+ For responses, this field contains a Base64 encoded hash of the request SOAP message.
+ This field is automatically filled in by the service provider&apos;s security server.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.ProtocolVersion(System.String)">
+<summary>
+ X-Road message protocol version. The value of this field MUST be 4.0
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.Producer(XRoad.XRoadMemberIdentifier)">
+<summary>
+ Identifies the service that is invoked by the request.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.Issue(System.String)">
+<summary>
+ Identifies received application, issue or document that was the cause of the service request.
+ This field may be used by the client information system to connect service requests (and responses) to working procedures.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.Id(System.String)">
+<summary>
+ Unique identifier for this message. The recommended form of message ID is UUID.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.Client(XRoad.XRoadMemberIdentifier)">
+<summary>
+ Identifies a service client – an entity that initiates the service call.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.CentralService(XRoad.XRoadCentralServiceIdentifier)">
+<summary>
+ Identifies the central service that is invoked by the request.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.UserId">
+<summary>
+ User whose action initiated the request. The user ID should be prefixed with two-letter ISO country code (e.g., EE12345678901).
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.RequestHashAlgorithm">
+<summary>
+ Identifies the hash algorithm that was used to calculate the value of the requestHash field.
+ The algorithms are specified as URIs listed in the XML-DSIG specification [DSIG].
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.RequestHash">
+<summary>
+ For responses, this field contains a Base64 encoded hash of the request SOAP message.
+ This field is automatically filled in by the service provider&apos;s security server.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.ProtocolVersion">
+<summary>
+ X-Road message protocol version. The value of this field MUST be 4.0
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.Producer">
+<summary>
+ Identifies the service that is invoked by the request.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.Issue">
+<summary>
+ Identifies received application, issue or document that was the cause of the service request.
+ This field may be used by the client information system to connect service requests (and responses) to working procedures.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.Id">
+<summary>
+ Unique identifier for this message. The recommended form of message ID is UUID.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.Client">
+<summary>
+ Identifies a service client – an entity that initiates the service call.
+</summary>
+</member>
+<member name="P:XRoad.XRoadHeader.CentralService">
+<summary>
+ Identifies the central service that is invoked by the request.
+</summary>
+</member>
+<member name="T:XRoad.XRoadHeader">
+<summary>
+ Combines X-Road SOAP headers for X-Road v6.
+</summary>
+</member>
+<member name="F:XRoad.XRoadCentralServiceIdentifier.ServiceCode@">
+<summary>
+ The service code is chosen by the service provider.
+</summary>
+</member>
+<member name="F:XRoad.XRoadCentralServiceIdentifier.XRoadInstance@">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadCentralServiceIdentifier.XRoadInstance(System.String)">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadCentralServiceIdentifier.ServiceCode(System.String)">
+<summary>
+ The service code is chosen by the service provider.
+</summary>
+</member>
+<member name="P:XRoad.XRoadCentralServiceIdentifier.XRoadInstance">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadCentralServiceIdentifier.ServiceCode">
+<summary>
+ The service code is chosen by the service provider.
+</summary>
+</member>
+<member name="T:XRoad.XRoadCentralServiceIdentifier">
+<summary>
+ Represents identifiers of central services.
+</summary>
+</member>
+<member name="F:XRoad.XRoadServiceIdentifier.ServiceVersion@">
+<summary>
+ Version is optional and can be used to distinguish between technically incompatible versions of the same basic service.
+</summary>
+</member>
+<member name="F:XRoad.XRoadServiceIdentifier.ServiceCode@">
+<summary>
+ The service code is chosen by the service provider.
+</summary>
+</member>
+<member name="F:XRoad.XRoadServiceIdentifier.SubsystemCode@">
+<summary>
+ Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
+</summary>
+</member>
+<member name="F:XRoad.XRoadServiceIdentifier.MemberCode@">
+<summary>
+ Member code that uniquely identifies the given X-Road member within its member class.
+</summary>
+</member>
+<member name="F:XRoad.XRoadServiceIdentifier.MemberClass@">
+<summary>
+ Code identifying the member class (e.g., government agency, private enterprise, physical person).
+</summary>
+</member>
+<member name="F:XRoad.XRoadServiceIdentifier.XRoadInstance@">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.XRoadInstance(System.String)">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.SubsystemCode(System.String)">
+<summary>
+ Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.ServiceVersion(System.String)">
+<summary>
+ Version is optional and can be used to distinguish between technically incompatible versions of the same basic service.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.ServiceCode(System.String)">
+<summary>
+ The service code is chosen by the service provider.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.MemberCode(System.String)">
+<summary>
+ Member code that uniquely identifies the given X-Road member within its member class.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.MemberClass(System.String)">
+<summary>
+ Code identifying the member class (e.g., government agency, private enterprise, physical person).
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.XRoadInstance">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.SubsystemCode">
+<summary>
+ Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.ServiceVersion">
+<summary>
+ Version is optional and can be used to distinguish between technically incompatible versions of the same basic service.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.ServiceCode">
+<summary>
+ The service code is chosen by the service provider.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.MemberCode">
+<summary>
+ Member code that uniquely identifies the given X-Road member within its member class.
+</summary>
+</member>
+<member name="P:XRoad.XRoadServiceIdentifier.MemberClass">
+<summary>
+ Code identifying the member class (e.g., government agency, private enterprise, physical person).
+</summary>
+</member>
+<member name="T:XRoad.XRoadServiceIdentifier">
+<summary>
+ Represents identifiers of services.
+</summary>
+</member>
+<member name="F:XRoad.XRoadMemberIdentifier.SubsystemCode@">
+<summary>
+ Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
+</summary>
+</member>
+<member name="F:XRoad.XRoadMemberIdentifier.MemberCode@">
+<summary>
+ Member code that uniquely identifies the given X-Road member within its member class.
+</summary>
+</member>
+<member name="F:XRoad.XRoadMemberIdentifier.MemberClass@">
+<summary>
+ Code identifying the member class (e.g., government agency, private enterprise, physical person).
+</summary>
+</member>
+<member name="F:XRoad.XRoadMemberIdentifier.XRoadInstance@">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadMemberIdentifier.XRoadInstance(System.String)">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadMemberIdentifier.SubsystemCode(System.String)">
+<summary>
+ Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
+</summary>
+</member>
+<member name="P:XRoad.XRoadMemberIdentifier.MemberCode(System.String)">
+<summary>
+ Member code that uniquely identifies the given X-Road member within its member class.
+</summary>
+</member>
+<member name="P:XRoad.XRoadMemberIdentifier.MemberClass(System.String)">
+<summary>
+ Code identifying the member class (e.g., government agency, private enterprise, physical person).
+</summary>
+</member>
+<member name="P:XRoad.XRoadMemberIdentifier.XRoadInstance">
+<summary>
+ Code identifying the instance of the X-Road system.
+</summary>
+</member>
+<member name="P:XRoad.XRoadMemberIdentifier.SubsystemCode">
+<summary>
+ Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
+</summary>
+</member>
+<member name="P:XRoad.XRoadMemberIdentifier.MemberCode">
+<summary>
+ Member code that uniquely identifies the given X-Road member within its member class.
+</summary>
+</member>
+<member name="P:XRoad.XRoadMemberIdentifier.MemberClass">
+<summary>
+ Code identifying the member class (e.g., government agency, private enterprise, physical person).
+</summary>
+</member>
+<member name="T:XRoad.XRoadMemberIdentifier">
+<summary>
+ Represents identifiers that can be used by the service clients, namely X-Road members and subsystems.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.EncryptedCert@">
+<summary>
+ If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Encrypted@">
+<summary>
+ If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.EncryptCert@">
+<summary>
+ Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Encrypt@">
+<summary>
+ If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Paid@">
+<summary>
+ The amount of money paid for invoking the service.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Authenticator@">
+<summary>
+ Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Async@">
+<summary>
+ Specifies asynchronous service. If the value is &quot;true&quot;, then the security server performs the service call asynchronously.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.UserName@">
+<summary>
+ Name of the person invoking the service.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Position@">
+<summary>
+ Organizational position or role of the person invoking the service.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Unit@">
+<summary>
+ Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal).
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Issue@">
+<summary>
+ Name of file or document related to the service invocation.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Id@">
+<summary>
+ Service invocation nonce (unique identifier).
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.UserId@">
+<summary>
+ ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518.
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Producer@">
+<summary>
+ DNS-name of the database
+</summary>
+</member>
+<member name="F:XRoad.XRoadDocHeader.Consumer@">
+<summary>
+ DNS-name of the institution
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.UserName(System.String)">
+<summary>
+ Name of the person invoking the service.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.UserId(System.String)">
+<summary>
+ ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Unit(System.String)">
+<summary>
+ Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal).
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Producer(System.String)">
+<summary>
+ DNS-name of the database
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Position(System.String)">
+<summary>
+ Organizational position or role of the person invoking the service.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Paid(System.String)">
+<summary>
+ The amount of money paid for invoking the service.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Issue(System.String)">
+<summary>
+ Name of file or document related to the service invocation.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Id(System.String)">
+<summary>
+ Service invocation nonce (unique identifier).
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.EncryptedCert(System.String)">
+<summary>
+ If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Encrypted(System.String)">
+<summary>
+ If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.EncryptCert(System.Byte[])">
+<summary>
+ Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Encrypt(System.String)">
+<summary>
+ If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Consumer(System.String)">
+<summary>
+ DNS-name of the institution
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Authenticator(System.String)">
+<summary>
+ Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Async(System.Nullable{System.Boolean})">
+<summary>
+ Specifies asynchronous service. If the value is &quot;true&quot;, then the security server performs the service call asynchronously.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.UserName">
+<summary>
+ Name of the person invoking the service.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.UserId">
+<summary>
+ ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Unit">
+<summary>
+ Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal).
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Producer">
+<summary>
+ DNS-name of the database
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Position">
+<summary>
+ Organizational position or role of the person invoking the service.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Paid">
+<summary>
+ The amount of money paid for invoking the service.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Issue">
+<summary>
+ Name of file or document related to the service invocation.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Id">
+<summary>
+ Service invocation nonce (unique identifier).
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.EncryptedCert">
+<summary>
+ If the query header contains the encryptedCert tag and the query log has been successfully encrypted, an empty encryptedCert tag will accordingly be inserted in the reply header.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Encrypted">
+<summary>
+ If the query header contains the encrypt tag and the query log as been successfully encrypted, an empty encrypted tag will be inserted in the reply header.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.EncryptCert">
+<summary>
+ Authentication certificate of the query invokers ID Card, in the base64-encoded DER format. Occurrence of this tag in the query header represents the wish to encrypt the query log in the organizations security server, using authentication key of the query invokers ID Card. This field is used in the Citizen Query Portal only.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Encrypt">
+<summary>
+ If an organization has got the right from the X-Road Center to hide queries, with the database agreeing to hide the query, the occurrence of this tag in the query header makes the database security server to encrypt the query log, using the encryption key of the X-Road Center.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Consumer">
+<summary>
+ DNS-name of the institution
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Authenticator">
+<summary>
+ Authentication method, one of the following: ID-CARD - with a certificate of identity; CERT - with another certificate; EXTERNAL - through a third-party service; PASSWORD - with user ID and a password. Details of the authentication (e.g. the identification of a bank for external authentication) can be given in brackets after the authentication method.
+</summary>
+</member>
+<member name="P:XRoad.XRoadDocHeader.Async">
+<summary>
+ Specifies asynchronous service. If the value is &quot;true&quot;, then the security server performs the service call asynchronously.
+</summary>
+</member>
+<member name="T:XRoad.XRoadDocHeader">
+<summary>
+ Combines X-Road SOAP headers for document style messages.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.SalastatudSertifikaadiga@">
+<summary>
+ Kui päringu päises oli element salastada_sertifikaadiga ja päringulogi salastamine õnnestus, siis vastuse päisesesse lisatakse tühi element salastatud_sertifikaadiga.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Salastatud@">
+<summary>
+ Kui päringu välja päises oli element salastada ja päringulogi salastamine õnnestus, siis vastuse päisesse lisatakse tühi element salastatud.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.SalastadaSertifikaadiga@">
+<summary>
+ Päringu sooritaja ID-kaardi autentimissertifikaat DERkujul base64 kodeerituna. Selle elemendi olemasolu päringu päises väljendab soovi päringu logi salastamiseks asutuse turvaserveris päringu sooritaja ID-kaardi autentimisvõtmega. Seda välja kasutatakse ainult kodaniku päringute portaalis.&quot;
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Salastada@">
+<summary>
+ Kui asutusele on X-tee keskuse poolt antud päringute salastamise õigus ja andmekogu on nõus päringut salastama, siis selle elemendi olemasolul päringu päises andmekogu turvaserver krüpteerib päringu logi, kasutades selleks X-tee keskuse salastusvõtit.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Makstud@">
+<summary>
+ Teenuse kasutamise eest makstud summa.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Autentija@">
+<summary>
+ Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis).
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Asynkroonne@">
+<summary>
+ Teenuse kasutamise asünkroonsus. Kui väärtus on &quot;true&quot;, siis sooritab turvaserver päringu asünkroonselt.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.AmetnikNimi@">
+<summary>
+ Teenuse kasutaja nimi.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Amet@">
+<summary>
+ Teenuse kasutaja ametikoht.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Allasutus@">
+<summary>
+ Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis).
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Toimik@">
+<summary>
+ Teenuse väljakutsega seonduva toimiku number (mittekohustuslik).
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Id@">
+<summary>
+ Teenuse väljakutse nonss (unikaalne identifikaator).
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Ametnik@">
+<summary>
+ Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0).
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Isikukood@">
+<summary>
+ Teenuse kasutaja isikukood, millele eelneb kahekohaline maa kood. Näiteks EE37702026518.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Andmekogu@">
+<summary>
+ Andmekogu DNS-nimi.
+</summary>
+</member>
+<member name="F:XRoad.XRoadRpcHeader.Asutus@">
+<summary>
+ Asutuse DNS-nimi.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Toimik(System.String)">
+<summary>
+ Teenuse väljakutsega seonduva toimiku number (mittekohustuslik).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.SalastatudSertifikaadiga(System.String)">
+<summary>
+ Kui päringu päises oli element salastada_sertifikaadiga ja päringulogi salastamine õnnestus, siis vastuse päisesesse lisatakse tühi element salastatud_sertifikaadiga.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Salastatud(System.String)">
+<summary>
+ Kui päringu välja päises oli element salastada ja päringulogi salastamine õnnestus, siis vastuse päisesse lisatakse tühi element salastatud.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.SalastadaSertifikaadiga(System.Byte[])">
+<summary>
+ Päringu sooritaja ID-kaardi autentimissertifikaat DERkujul base64 kodeerituna. Selle elemendi olemasolu päringu päises väljendab soovi päringu logi salastamiseks asutuse turvaserveris päringu sooritaja ID-kaardi autentimisvõtmega. Seda välja kasutatakse ainult kodaniku päringute portaalis.&quot;
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Salastada(System.String)">
+<summary>
+ Kui asutusele on X-tee keskuse poolt antud päringute salastamise õigus ja andmekogu on nõus päringut salastama, siis selle elemendi olemasolul päringu päises andmekogu turvaserver krüpteerib päringu logi, kasutades selleks X-tee keskuse salastusvõtit.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Makstud(System.String)">
+<summary>
+ Teenuse kasutamise eest makstud summa.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Isikukood(System.String)">
+<summary>
+ Teenuse kasutaja isikukood, millele eelneb kahekohaline maa kood. Näiteks EE37702026518.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Id(System.String)">
+<summary>
+ Teenuse väljakutse nonss (unikaalne identifikaator).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Autentija(System.String)">
+<summary>
+ Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Asynkroonne(System.Nullable{System.Boolean})">
+<summary>
+ Teenuse kasutamise asünkroonsus. Kui väärtus on &quot;true&quot;, siis sooritab turvaserver päringu asünkroonselt.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Asutus(System.String)">
+<summary>
+ Asutuse DNS-nimi.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Andmekogu(System.String)">
+<summary>
+ Andmekogu DNS-nimi.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.AmetnikNimi(System.String)">
+<summary>
+ Teenuse kasutaja nimi.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Ametnik(System.String)">
+<summary>
+ Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Amet(System.String)">
+<summary>
+ Teenuse kasutaja ametikoht.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Allasutus(System.String)">
+<summary>
+ Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Toimik">
+<summary>
+ Teenuse väljakutsega seonduva toimiku number (mittekohustuslik).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.SalastatudSertifikaadiga">
+<summary>
+ Kui päringu päises oli element salastada_sertifikaadiga ja päringulogi salastamine õnnestus, siis vastuse päisesesse lisatakse tühi element salastatud_sertifikaadiga.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Salastatud">
+<summary>
+ Kui päringu välja päises oli element salastada ja päringulogi salastamine õnnestus, siis vastuse päisesse lisatakse tühi element salastatud.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.SalastadaSertifikaadiga">
+<summary>
+ Päringu sooritaja ID-kaardi autentimissertifikaat DERkujul base64 kodeerituna. Selle elemendi olemasolu päringu päises väljendab soovi päringu logi salastamiseks asutuse turvaserveris päringu sooritaja ID-kaardi autentimisvõtmega. Seda välja kasutatakse ainult kodaniku päringute portaalis.&quot;
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Salastada">
+<summary>
+ Kui asutusele on X-tee keskuse poolt antud päringute salastamise õigus ja andmekogu on nõus päringut salastama, siis selle elemendi olemasolul päringu päises andmekogu turvaserver krüpteerib päringu logi, kasutades selleks X-tee keskuse salastusvõtit.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Makstud">
+<summary>
+ Teenuse kasutamise eest makstud summa.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Isikukood">
+<summary>
+ Teenuse kasutaja isikukood, millele eelneb kahekohaline maa kood. Näiteks EE37702026518.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Id">
+<summary>
+ Teenuse väljakutse nonss (unikaalne identifikaator).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Autentija">
+<summary>
+ Teenuse kasutaja autentimise viis. Võimalikud variandid on: ID - ID-kaardiga autenditud; SERT - muu sertifikaadiga autenditud; PANK - panga kaudu autenditud; PAROOL - kasutajatunnuse ja parooliga autenditud. Autentimise viisi järel võib sulgudes olla täpsustus (näiteks panga kaudu autentimisel panga tunnus infosüsteemis).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Asynkroonne">
+<summary>
+ Teenuse kasutamise asünkroonsus. Kui väärtus on &quot;true&quot;, siis sooritab turvaserver päringu asünkroonselt.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Asutus">
+<summary>
+ Asutuse DNS-nimi.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Andmekogu">
+<summary>
+ Andmekogu DNS-nimi.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.AmetnikNimi">
+<summary>
+ Teenuse kasutaja nimi.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Ametnik">
+<summary>
+ Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0).
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Amet">
+<summary>
+ Teenuse kasutaja ametikoht.
+</summary>
+</member>
+<member name="P:XRoad.XRoadRpcHeader.Allasutus">
+<summary>
+ Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis).
+</summary>
+</member>
+<member name="T:XRoad.XRoadRpcHeader">
+<summary>
+ Combines X-Road SOAP headers for RPC style messages.
+</summary>
+</member>
+<member name="F:XRoad.AbstractXRoadHeader.Unresolved@">
+<summary>
+ Unresolved header elements.
+</summary>
+</member>
+<member name="P:XRoad.AbstractXRoadHeader.Unresolved(System.Collections.Generic.List{System.Xml.Linq.XElement})">
+<summary>
+ Unresolved header elements.
+</summary>
+</member>
+<member name="P:XRoad.AbstractXRoadHeader.Unresolved">
+<summary>
+ Unresolved header elements.
+</summary>
+</member>
+<member name="P:XRoad.TypeBuilderContext.LanguageCode">
+<summary>
+ Language code preferred for code comments.
+</summary>
+</member>
+<member name="P:XRoad.TypeBuilderContext.MessageProtocol">
+<summary>
+ X-Road protocol used by this producer.
+</summary>
+</member>
+<member name="P:XRoad.TypeBuilderContext.Types">
+<summary>
+ Schema level type definition lookup.
+</summary>
+</member>
+<member name="P:XRoad.TypeBuilderContext.Elements">
+<summary>
+ Schema level element definition lookup.
+</summary>
+</member>
+<member name="P:XRoad.TypeBuilderContext.Attributes">
+<summary>
+ Schema level attribute definition lookup.
+</summary>
+</member>
+<member name="P:XRoad.TypeBuilderContext.CachedNamespaces">
+<summary>
+ Provided types generated to group types from same namespace.
+</summary>
+</member>
+<member name="P:XRoad.TypeBuilderContext.CachedTypes">
+<summary>
+ Provided types generated from type schema definitions.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.GetSchemaTypeDefinition(XRoad.TypeSchema.TypeDefinition{XRoad.TypeSchema.SchemaTypeDefinition})">
+<summary>
+ Resolves real type definition from lookup by following the XML schema references if present.
+ Returns value of type definitions which actually contains definition, not references other definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.GetSchemaType(System.Xml.Linq.XName)">
+<summary>
+ Finds element specification from schema-level type lookup.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.GetRuntimeType(XRoad.Wsdl.SchemaName)">
+<summary>
+ Get runtime type from cached types if exists.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.GetOrCreateType(XRoad.Wsdl.SchemaName)">
+<summary>
+ Get runtime type from cached types if exists; otherwise create the type.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.GetOrCreateNamespace(System.Xml.Linq.XNamespace)">
+<summary>
+ Find generated type that corresponds to given namespace name.
+ If type exists, the existing instance is used; otherwise new type is generated.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.GetElementSpec(System.Xml.Linq.XName)">
+<summary>
+ Finds element specification from schema-level element lookup.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.GetAttributeDefinition(XRoad.TypeSchema.AttributeSpec)">
+<summary>
+ Resolves real atrribute definition from lookup by following the XML schema references if present.
+ Returns value of attribute definitions which actually contains definition, not references other definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.FromSchema(XRoad.ProducerDescription,System.String)">
+<summary>
+ Initializes new context object from given schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.DereferenceElementSpec(XRoad.TypeSchema.ElementSpec)">
+<summary>
+ Resolves real element definition from lookup by following the XML schema references if present.
+ Returns value of element definitions which actually contains definition, not references other definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeBuilderContext.CreateType(XRoad.Wsdl.SchemaName)">
+<summary>
+ Generates new RuntimeType instance depending on given type:
+ xsd:base64Binary and xsd:hexBinary types represent ContentType.
+ Types that are mapped to system types represent PrimitiveType value.
+ Types that have multiplicity larger than 1 are defined as CollectionTypes.
+ Other types will define separate ProvidedType in generated assembly.
+</summary>
+</member>
+<member name="T:XRoad.TypeBuilderContext">
+<summary>
+ Context keeps track of already generated types for provided types and namespaces
+ to simplify reuse and resolve mutual dependencies between types.
+</summary>
+</member>
+<member name="M:XRoad.ProducerDescription.Load(System.Uri,System.String)">
+<summary>
+ Load producer definition from given uri location.
+</summary>
+</member>
+<member name="T:XRoad.ProducerDescription">
+<summary>
+ Combines operations and types documented in producer definitions.
+</summary>
+</member>
+<member name="T:XRoad.Serialization.Attributes.XRoadResponseAttribute">
+<summary>
+ Describes accessor element for X-Road operation response.
+</summary>
+</member>
+<member name="T:XRoad.Serialization.Attributes.XRoadRequestAttribute">
+<summary>
+ Describes accessor element for X-Road operation request.
+</summary>
+</member>
+<member name="T:XRoad.Serialization.Attributes.XRoadOperationAttribute">
+<summary>
+ Metadata of X-Road operation.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadRequiredHeadersAttribute.Names@">
+<summary>
+ List of required header names.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadRequiredHeadersAttribute.Namespace@">
+<summary>
+ XML namespace of listed header names.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadRequiredHeadersAttribute.Namespace">
+<summary>
+ XML namespace of listed header names.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadRequiredHeadersAttribute.Names">
+<summary>
+ List of required header names.
+</summary>
+</member>
+<member name="T:XRoad.Serialization.Attributes.XRoadRequiredHeadersAttribute">
+<summary>
+ Describes required header elements of specified X-Road operation.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadCollectionAttribute.MergeContent@">
+<summary>
+ When true, no extra element is serialized for this property. Instead, all collection
+ item elements become direct child elements of property owner element.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadCollectionAttribute.ItemIsNullable@">
+<summary>
+ Specifies if collection elements item element is allowed to contain `null` values.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadCollectionAttribute.ItemNamespace@">
+<summary>
+ Item element namespace for particular collection element.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadCollectionAttribute.ItemName@">
+<summary>
+ Item element name for particular collection element.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadCollectionAttribute.Id@">
+<summary>
+ Unique id for this attribute.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadCollectionAttribute.MergeContent(System.Boolean)">
+<summary>
+ When true, no extra element is serialized for this property. Instead, all collection
+ item elements become direct child elements of property owner element.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadCollectionAttribute.ItemNamespace(System.String)">
+<summary>
+ Item element namespace for particular collection element.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadCollectionAttribute.ItemIsNullable(System.Boolean)">
+<summary>
+ Specifies if collection elements item element is allowed to contain `null` values.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadCollectionAttribute.MergeContent">
+<summary>
+ When true, no extra element is serialized for this property. Instead, all collection
+ item elements become direct child elements of property owner element.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadCollectionAttribute.ItemNamespace">
+<summary>
+ Item element namespace for particular collection element.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadCollectionAttribute.ItemName">
+<summary>
+ Item element name for particular collection element.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadCollectionAttribute.ItemIsNullable">
+<summary>
+ Specifies if collection elements item element is allowed to contain `null` values.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadCollectionAttribute.Id">
+<summary>
+ Unique id for this attribute.
+</summary>
+</member>
+<member name="M:XRoad.Serialization.Attributes.XRoadCollectionAttribute.#ctor">
+<summary>
+ Initializes new attribute with no item element name.
+</summary>
+</member>
+<member name="T:XRoad.Serialization.Attributes.XRoadCollectionAttribute">
+<summary>
+ Provides serialization option for various collection types.
+ Initializes new attribute with item element name.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop@">
+<summary>
+ Applicable for binary properties. When true, given property is serialized using
+ MTOM+XOP protocol.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadElementAttribute.MergeContent@">
+<summary>
+ When true, no extra element is serialized for this property. Instead, property
+ contents become direct child elements of property owner element.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadElementAttribute.Namespace@">
+<summary>
+ Namespace of the element in serialization context. By default empty namespace is used.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadElementAttribute.Name@">
+<summary>
+ Name of the element in serialization context. By default property name is used.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadElementAttribute.IsNullable@">
+<summary>
+ Specifies if element is allowed to contain `null` values.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadElementAttribute.Id@">
+<summary>
+ Unique id for this attribute.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop(System.Boolean)">
+<summary>
+ Applicable for binary properties. When true, given property is serialized using
+ MTOM+XOP protocol.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.Namespace(System.String)">
+<summary>
+ Namespace of the element in serialization context. By default empty namespace is used.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.MergeContent(System.Boolean)">
+<summary>
+ When true, no extra element is serialized for this property. Instead, property
+ contents become direct child elements of property owner element.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.IsNullable(System.Boolean)">
+<summary>
+ Specifies if element is allowed to contain `null` values.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop">
+<summary>
+ Applicable for binary properties. When true, given property is serialized using
+ MTOM+XOP protocol.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.Namespace">
+<summary>
+ Namespace of the element in serialization context. By default empty namespace is used.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.Name">
+<summary>
+ Name of the element in serialization context. By default property name is used.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.MergeContent">
+<summary>
+ When true, no extra element is serialized for this property. Instead, property
+ contents become direct child elements of property owner element.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.IsNullable">
+<summary>
+ Specifies if element is allowed to contain `null` values.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadElementAttribute.Id">
+<summary>
+ Unique id for this attribute.
+</summary>
+</member>
+<member name="M:XRoad.Serialization.Attributes.XRoadElementAttribute.#ctor">
+<summary>
+ Initializes new attribute. Property name is used as element name in serialization.
+</summary>
+</member>
+<member name="T:XRoad.Serialization.Attributes.XRoadElementAttribute">
+<summary>
+ Attribute which identifies serializable property.
+ Provides overrides for property serialization.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadTypeAttribute.Namespace@">
+<summary>
+ Namespace of the type in serialization context. Empty (unqualified) by default.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadTypeAttribute.Name@">
+<summary>
+ Name of type in serialization context. If not present the runtime type
+ name is used instead.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.XRoadTypeAttribute.Layout@">
+<summary>
+ Content layout for the type.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadTypeAttribute.Namespace(System.String)">
+<summary>
+ Namespace of the type in serialization context. Empty (unqualified) by default.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadTypeAttribute.Namespace">
+<summary>
+ Namespace of the type in serialization context. Empty (unqualified) by default.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadTypeAttribute.Name">
+<summary>
+ Name of type in serialization context. If not present the runtime type
+ name is used instead.
+</summary>
+</member>
+<member name="P:XRoad.Serialization.Attributes.XRoadTypeAttribute.Layout">
+<summary>
+ Content layout for the type.
+</summary>
+</member>
+<member name="M:XRoad.Serialization.Attributes.XRoadTypeAttribute.#ctor(XRoad.Serialization.Attributes.LayoutKind)">
+<summary>
+ Initializes new attribute by givin content layout value.
+ Runtime type name is used as type name in serialization.
+</summary>
+</member>
+<member name="M:XRoad.Serialization.Attributes.XRoadTypeAttribute.#ctor">
+<summary>
+ Initializes new attribute with sequential layout.
+</summary>
+</member>
+<member name="T:XRoad.Serialization.Attributes.XRoadTypeAttribute">
+<summary>
+ Attribute which identifies serializable type.
+ Provides overrides for content layout, type name and namespace.
+ Default constructor initializes new attribute by giving type name and content layout.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.LayoutKind.Sequence">
+<summary>
+ Corresponds to `xs:sequence` element which forces certain element order.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.LayoutKind.Choice">
+<summary>
+ Corresponds to `xs:choice` element which allows alternative contents.
+</summary>
+</member>
+<member name="F:XRoad.Serialization.Attributes.LayoutKind.All">
+<summary>
+ Corresponds to `xs:all` element which doesn&apos;t force particular order for elements.
+</summary>
+</member>
+<member name="T:XRoad.Serialization.Attributes.LayoutKind">
+<summary>
+ Specifies content layout for a type. Controls how element properties are
+ handled in deserialization.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.Service">
+<summary>
+ All operations defined for single producer.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.ServicePort">
+<summary>
+ Collects multiple operations into logical group.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.ServicePortMethod">
+<summary>
+ Definition for method which corresponds to single X-Road operation.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.MethodCall">
+<summary>
+ Type that represents different style of message formats.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.OperationContent">
+<summary>
+ Combines parameter for request or response.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.Parameter">
+<summary>
+ Service method parameters for X-Road operations.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.BindingStyle">
+<summary>
+ WSDL and SOAP binding style.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.SchemaName">
+<summary>
+ Globally unique identifier for Xml Schema elements and types.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.resolveUri(System.String)">
+<summary>
+ Check if given uri is valid network location or file path in local file system.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.parseXName(System.Xml.Linq.XElement,System.String)">
+<summary>
+ Parse qualified name from given string.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.isQualified(System.Xml.Linq.XName,System.Xml.Linq.XElement)">
+<summary>
+ Check if given node is constrained to use qualified form.
+ Returns true if node requires qualified name.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.reqAttr(System.Xml.Linq.XName,System.Xml.Linq.XElement)">
+<summary>
+ Extracts value of required attribute from current element.
+ When attribute is not found, exception is thrown.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.attrOrDefault(System.Xml.Linq.XName,System.String,System.Xml.Linq.XElement)">
+<summary>
+ Extracts optional attribute value from current element.
+ Return default value if attribute is missing.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.attr(System.Xml.Linq.XName,System.Xml.Linq.XElement)">
+<summary>
+ Extracts optional attribute value from current element.
+ Returns None if attribute is missing.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.xnsname(System.String,System.String)">
+<summary>
+ Helper function for generating XName-s with namespace qualifier.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.xname(System.String)">
+<summary>
+ Helper function for generating XName-s.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.xns(System.String)">
+<summary>
+ Helper function for generating XNamespace-s.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|XRoadHeader|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches X-Road header elements.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|XteeHeader|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches X-Road legacy format header elements.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|BinaryType|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches system types which can be serialized as MIME multipart attachments:
+ From X-Road service protocol: if the message is encoded as MIME container then values of all scalar elements
+ of the input with type of either `xsd:base64Binary` or `xsd:hexBinary` will be sent as attachments.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|SystemType|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches type names which are mapped to system types.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|Xsd|_|(System.Xml.Linq.XElement)">
+<summary>
+ Matches elements defined in `http://www.w3.org/2001/XMLSchema` namespace.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|SoapEncName|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches names defined in `http://schemas.xmlsoap.org/soap/encoding/` namespace.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|XteeName|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches names defined in `http://x-tee.riik.ee/xsd/xtee.xsd` namespace.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|XrdName|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches names defined in `http://x-road.ee/xsd/x-road.xsd` namespace.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|XmlName|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches names defined in `http://www.w3.org/XML/1998/namespace` namespace.
+</summary>
+</member>
+<member name="M:XRoad.Wsdl.Pattern.|XsdName|_|(System.Xml.Linq.XName)">
+<summary>
+ Matches names defined in `http://www.w3.org/2001/XMLSchema` namespace.
+</summary>
+</member>
+<member name="T:XRoad.Wsdl.Pattern">
+<summary>
+ Active patterns for matching XML document nodes from various namespaces.
+</summary>
+</member>
+<member name="P:XRoad.XmlNamespace.predefined">
+<summary>
+ Defines namespaces which are handled separately (not generated).
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitDeserialization.emitArrayPropertyDeserialization(System.Boolean,System.Reflection.Emit.LocalBuilder,XRoad.Emitter.ArrayMap)">
+<summary>
+ Emits array type deserialization logic.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitDeserialization.emitTypeHierarchyDeserialization(System.Boolean,System.Reflection.Emit.Label,System.Reflection.Emit.LocalBuilder,Microsoft.FSharp.Collections.FSharpList{XRoad.Emitter.TypeMap},System.Reflection.Emit.LocalBuilder,XRoad.Emitter.TypeMap)">
+<summary>
+ Emit deserialization taking into consideration if actual type matches subtype or not.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitDeserialization.emitBodyDeserialization(System.Boolean,System.Reflection.Emit.LocalBuilder,XRoad.Emitter.TypeMap)">
+<summary>
+ Emit whole contents of TypeMap deserialization.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitDeserialization.emitAbstractTypeException(XRoad.Emitter.TypeMap)">
+<summary>
+ Emit abstract type test and exception.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitDeserialization.emitContentDeserialization(System.Boolean,System.Reflection.Emit.LocalBuilder,System.Reflection.Emit.LocalBuilder,XRoad.Emitter.TypeMap)">
+<summary>
+ Emit type (and its base types) content deserialization.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitDeserialization.emitValueTypeTest(System.Boolean,System.Reflection.Emit.LocalBuilder,XRoad.Emitter.TypeMap)">
+<summary>
+ Check if value type matches expected type.
+</summary>
+</member>
+<member name="P:XRoad.Emitter.EmitDeserialization.emitTypeAttributeRead">
+<summary>
+ Reads type attribute value and stores name and namespace in variables.
+</summary>
+</member>
+<member name="P:XRoad.Emitter.EmitDeserialization.emitNullCheck">
+<summary>
+ Check if current element has `xsi:nil` attribute present.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitContentSerializerMethod(System.Boolean,Microsoft.FSharp.Collections.FSharpList{XRoad.Emitter.Property})">
+<summary>
+ Emit IL which serializes each property value into corresponding xml fragment.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitPropertyValue(XRoad.Emitter.Property,System.Type)">
+<summary>
+ Unbox property value into correct type.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitPropertyContentSerialization(Microsoft.FSharp.Core.FSharpFunc{System.Type,Microsoft.FSharp.Core.FSharpFunc{System.Reflection.Emit.ILGenerator,System.Reflection.Emit.ILGenerator}},System.Boolean,XRoad.Emitter.Property)">
+<summary>
+ Emit single property content serialization.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitNotNullableCheck(System.String,Microsoft.FSharp.Core.FSharpFunc{System.Type,Microsoft.FSharp.Core.FSharpFunc{System.Reflection.Emit.ILGenerator,System.Reflection.Emit.ILGenerator}},XRoad.Emitter.Property)">
+<summary>
+ Emit validation for not nullable types to have value specified.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitArrayItemValue(System.Reflection.Emit.LocalBuilder,System.Reflection.Emit.LocalBuilder,System.Type)">
+<summary>
+ Provides value for array item at current index.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitRootSerializerMethod(System.Boolean,Microsoft.FSharp.Collections.FSharpList{XRoad.Emitter.TypeMap},XRoad.Emitter.TypeMap)">
+<summary>
+ Emit root type serialization logic for given TypeMap.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitTypeHierarchySerialization(System.Reflection.Emit.Label,System.Boolean,Microsoft.FSharp.Collections.FSharpList{XRoad.Emitter.TypeMap},XRoad.Emitter.TypeMap)">
+<summary>
+ Emit serialization taking into consideration if actual type matches subtype or not.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitBodySerialization(System.Boolean,XRoad.Emitter.TypeMap)">
+<summary>
+ Emit whole contents of TypeMap serialization.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitAbstractTypeException(XRoad.Emitter.TypeMap)">
+<summary>
+ Emit abstract type test and exception.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitContentSerialization(XRoad.Emitter.TypeMap)">
+<summary>
+ Emit type (and its base types) content serialization.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitTypeAttribute(System.String,Microsoft.FSharp.Core.FSharpOption{System.String})">
+<summary>
+ Write type attribute according to TypeMap.
+</summary>
+</member>
+<member name="M:XRoad.Emitter.EmitSerialization.emitValueTypeTest(System.Type)">
+<summary>
+ Check if values type matches expected type.
+</summary>
+</member>
+<member name="T:XRoad.ServiceDescription.MimeContent">
+<summary>
+ Temporary type for MIME:content binding elements.
+</summary>
+</member>
+<member name="T:XRoad.ServiceDescription.SoapHeader">
+<summary>
+ Temporary type for SOAP:header binding elements.
+</summary>
+</member>
+<member name="T:XRoad.ServiceDescription.SoapBody">
+<summary>
+ Temporary type for SOAP:body binding elements.
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseServices(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Parse all service elements defined as immediate child elements of current element.
+ http://www.w3.org/TR/wsdl#_services
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parsePortBinding(System.String,System.Xml.Linq.XElement,System.Xml.Linq.XElement)">
+<summary>
+ Parse port binding element contents.
+ http://www.w3.org/TR/wsdl#_ports
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseBinding(System.String,System.Xml.Linq.XElement,System.Xml.Linq.XName,XRoad.Wsdl.ServicePort)">
+<summary>
+ Parse operations bindings block.
+ http://www.w3.org/TR/wsdl#_bindings
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseOperation(System.String,System.Xml.Linq.XElement,System.Xml.Linq.XElement,System.Xml.Linq.XElement,XRoad.Wsdl.BindingStyle,System.String,XRoad.XRoadMessageProtocolVersion)">
+<summary>
+ Parse operation binding and bind to abstract message definitions.
+ http://www.w3.org/TR/wsdl#_bindings
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseOperationMessage(XRoad.Wsdl.BindingStyle,XRoad.XRoadMessageProtocolVersion,System.Xml.Linq.XElement,System.Xml.Linq.XElement,System.Xml.Linq.XElement,System.String,System.String)">
+<summary>
+ Read operation message and its parts definitions from document.
+ http://www.w3.org/TR/wsdl#_abstract-v
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.validateEncodedParameters(Microsoft.FSharp.Collections.FSharpList{XRoad.Wsdl.Parameter},System.String)">
+<summary>
+ Check if encoded part of message is correct.
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.validateLiteralParameters(Microsoft.FSharp.Collections.FSharpList{XRoad.Wsdl.Parameter},System.String)">
+<summary>
+ Check if literal part of message is correct.
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.partitionMessageParts``1(Microsoft.FSharp.Collections.FSharpMap{System.String,``0},XRoad.ServiceDescription.SoapBody,Microsoft.FSharp.Collections.FSharpList{XRoad.ServiceDescription.MimeContent},Microsoft.FSharp.Collections.FSharpList{XRoad.ServiceDescription.SoapHeader},System.String,System.Xml.Linq.XElement,System.Xml.Linq.XElement,XRoad.XRoadMessageProtocolVersion)">
+<summary>
+ Partition all message parts into body and header components.
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseBindingParts(System.Xml.Linq.XElement)">
+<summary>
+ Get message parts from service operation binding.
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseSoapHeader(System.Xml.Linq.XElement)">
+<summary>
+ Parse header elements defined in concrete binding.
+ http://www.w3.org/TR/wsdl#_soap:header
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseSoapBody(System.Xml.Linq.XElement)">
+<summary>
+ Parse primary operation parameters (operation body).
+ http://www.w3.org/TR/wsdl#_soap:body
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseAbstractParts(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Collect parts of given message.
+ Returns name-indexed map of schema entities.
+ http://www.w3.org/TR/wsdl#_message
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.findMessageElement(System.Xml.Linq.XElement,System.Xml.Linq.XName)">
+<summary>
+ Locate message element definition in WSDL document.
+ http://www.w3.org/TR/wsdl#_messages
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.parseMessageName(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Parse qualified name for message attribute value.
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.readDocumentation(System.String,XRoad.XRoadMessageProtocolVersion,System.Xml.Linq.XElement)">
+<summary>
+ Read documentation element contents into language code indexed dictionary.
+</summary>
+</member>
+<member name="M:XRoad.ServiceDescription.readLanguages(System.String,XRoad.XRoadMessageProtocolVersion,System.Xml.Linq.XElement)">
+<summary>
+ Parse X-Road title elements for various languages.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.SchemaNode.Merge(XRoad.TypeSchema.SchemaNode)">
+<summary>
+ Merge schema node with another defining same namespace.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.SchemaNode.FromNode(System.Xml.Linq.XElement)">
+<summary>
+ Initializes empty SchemaNode from given `schema` node.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.SchemaNode">
+<summary>
+ Root type to hold definition for entire type schema.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.Annotation">
+<summary>
+ Documentation info extracted from service descriptions.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.AttributeGroupSpec">
+<summary>
+ Wrap multiple attribute definitions into predefined group.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ParticleContent">
+<summary>
+ Single choice alternative or sequence can contain `any` node to mark acceptance of any element; sub-choice nodes;
+ concrete element definitions; references to predefined element groups; or element sequences.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ParticleSpec">
+<summary>
+ Defines alternatives for current choice or sequence.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.AllSpec">
+<summary>
+ Elements defined in `all` node can appear in any order.
+</summary>
+</member>
+<member name="P:XRoad.TypeSchema.AttributeSpec.ArrayType">
+<summary>
+ Used for SOAP-encoded array-s.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.AttributeSpec">
+<summary>
+ Single attribute definition.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ComplexTypeParticle">
+<summary>
+ Complex type can define its content by referencing global group definitions, list of possible elements,
+ alternative combinations of elements, or element sequences.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ComplexContentRestrictionSpec">
+<summary>
+ Complex content restriction identifies type to restrict and gives definition for restrictions.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ExtensionSpec">
+<summary>
+ Extension identifies type to extend and gives definition for extension.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.SimpleContentRestrictionSpec">
+<summary>
+ Simple content restriction defines simple type to restrict and restrictions to apply on that type.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.RestrictionContent">
+<summary>
+ Various options to restrict simple type definitions.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ComplexTypeContentSpec">
+<summary>
+ Complex type content defines elements and attributes that are allowed in that type.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ComplexContentSpec">
+<summary>
+ Complex type `complexContent` either restricts or extends existing types.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.SimpleContentSpec">
+<summary>
+ Complex type `simpleContent` either restricts or extends existing simple types.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.UnionSpec">
+<summary>
+ Wraps `union` node definition (types included in union).
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.SimpleTypeRestrictionSpec">
+<summary>
+ Describes other simpleType definition to restrict and wraps the definition of restrictions.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ComplexTypeContent">
+<summary>
+ Wraps `complexType` node content definition.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.SimpleTypeSpec">
+<summary>
+ Simple types can restrict existing simple types or combine existing simple types to list and unions.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ComplexTypeSpec">
+<summary>
+ Wraps complex type definition.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.SchemaTypeDefinition">
+<summary>
+ Schema can give definitions simpleType or complexType; EmptyType is used when type information is not present.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.ElementSpec">
+<summary>
+ Type schemas `element` node definition.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.RefOrTypeDefinition`1">
+<summary>
+ Schema objects can be defined using qualified name of global definition, referencing another object with
+ `ref` attribute or give object definition in place.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.AttributeUse">
+<summary>
+ Describes attribute usage.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.notImplementedIn``1(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Helper method for parsing to notify about schema element definition constructs which are not yet supported.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.notExpectedIn``1(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Helper method for parsing to notify about erroneous schema element definitions.
+</summary>
+</member>
+<member name="P:XRoad.TypeSchema.readNillable">
+<summary>
+ Read boolean value which identifies if attribute is nillable.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.readDecimal(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Read attribute contents as decimal value.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.readInt(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Read integer value from attribute.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.readBoolean(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Read boolean value from attribute.
+</summary>
+</member>
+<member name="P:XRoad.TypeSchema.readMaxOccurs">
+<summary>
+ Read maxOccurs value from current element, use default value 1 if attribute is missing.
+</summary>
+</member>
+<member name="P:XRoad.TypeSchema.readMinOccurs">
+<summary>
+ Read minOccurs value from current element, use default value 1 if attribute is missing.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.readValue``1(Microsoft.FSharp.Core.FSharpFunc{System.String,``0},System.String,``0,System.Xml.Linq.XElement)">
+<summary>
+ General function for reading typed values from attributes with unqualified name.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.readBoundsValue(System.Xml.Linq.XName,System.Xml.Linq.XElement)">
+<summary>
+ Extract numberical bound limits from current element.
+</summary>
+</member>
+<member name="T:XRoad.TypeSchema.Parser.State">
+<summary>
+ Keeps internal state of parsing for current node.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseSchema(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Parses all type schemas defined and referenced in current WSDL document.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.findSchemaNode``1(System.Uri,System.Collections.Generic.Dictionary{System.Tuple{System.String,System.String},XRoad.TypeSchema.SchemaNode},Microsoft.FSharp.Collections.FSharpMap{System.String,``0},System.Xml.Linq.XElement)">
+<summary>
+ Parses all definitions in given schema node.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseSchemaNode(XRoad.TypeSchema.SchemaNode,System.Xml.Linq.XElement)">
+<summary>
+ Parses `schema` node contents and completes schemaNode definition details.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseAttributeGroup(System.Xml.Linq.XElement)">
+<summary>
+ Extracts `attributeGroup` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseUnion(System.Xml.Linq.XElement)">
+<summary>
+ Extracts simpleType-s `union` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseSimpleTypeRestriction(System.Xml.Linq.XElement)">
+<summary>
+ Extracts simpleType-s `restriction` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseSimpleType(System.Xml.Linq.XElement)">
+<summary>
+ Extracts `simpleType` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseElement(System.Xml.Linq.XElement)">
+<summary>
+ Extracts `element` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseComplexContentRestriction(System.Xml.Linq.XElement)">
+<summary>
+ Extracts complexType-s complexContent-s `restriction` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseExtension(System.Xml.Linq.XElement)">
+<summary>
+ Extracts `extension` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseSimpleContentRestriction(System.Xml.Linq.XElement)">
+<summary>
+ Extracts complexType-s `simpleContent` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseAttribute(System.Xml.Linq.XElement)">
+<summary>
+ Extracts `attribute` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseAll(System.Xml.Linq.XElement)">
+<summary>
+ Extracts `all` element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseParticle(System.String,System.Xml.Linq.XElement)">
+<summary>
+ Extracts choice or sequence element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseComplexContent(System.Xml.Linq.XElement)">
+<summary>
+ Extracts complexType-s complexContent element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseSimpleContent(System.Xml.Linq.XElement)">
+<summary>
+ Extracts complexType-s simpleContent element specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseComplexType(System.Xml.Linq.XElement)">
+<summary>
+ Extracts complexType specification from schema definition.
+</summary>
+</member>
+<member name="M:XRoad.TypeSchema.Parser.parseAnnotation(System.Xml.Linq.XElement)">
+<summary>
+ Extracts documentation from annotation element definition.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.RuntimeType.ContentType">
+<summary>
+ Binary content types are handled separately.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.RuntimeType.CollectionType">
+<summary>
+ Types that represent collection or array of runtime type.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.RuntimeType.ProvidedType">
+<summary>
+ Types that are provided by generated assembly.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.RuntimeType.PrimitiveType">
+<summary>
+ Simple types that are presented with system runtime types.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.RuntimeType.AsCodeTypeReference(Microsoft.FSharp.Core.FSharpOption{System.Boolean},Microsoft.FSharp.Core.FSharpOption{System.Boolean})">
+<summary>
+ Get type name reference for this instance.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.RuntimeType">
+<summary>
+ Type abstraction for code generator.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.addProperty(System.String,XRoad.CodeDom.RuntimeType,System.Boolean,System.CodeDom.CodeTypeDeclaration)">
+<summary>
+ Add property to given type with backing field.
+ For optional members, extra field is added to notify if property was assigned or not.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.createProperty``1(System.String,Microsoft.FSharp.Core.FSharpOption{System.String},System.CodeDom.CodeTypeDeclaration)">
+<summary>
+ Create property with backing field.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.op_BangHat``1(``0)">
+<summary>
+ Value reference operator
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.op_BangPlus(System.String)">
+<summary>
+ Variable reference operator
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.op_AtPercent(System.CodeDom.CodeMethodReferenceExpression,Microsoft.FSharp.Collections.FSharpList{System.CodeDom.CodeExpression})">
+<summary>
+ Add parameter values to method call.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.op_AtMinusGreater(System.CodeDom.CodeExpression,System.String)">
+<summary>
+ Method call operator.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.op_AtEqualsGreater(System.CodeDom.CodeExpression,System.String)">
+<summary>
+ Property reference operator.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.iif``1(System.Boolean,Microsoft.FSharp.Core.FSharpFunc{``0,``0},``0)">
+<summary>
+ Applies function to argument if condition is met.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.typeRef``1">
+<summary>
+ Get type reference from generic argument.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.String.String.ToClassName(System.String)">
+<summary>
+ Converts given XML namespace to class name.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.String.join``1(System.String,System.Collections.Generic.IEnumerable{``0})">
+<summary>
+ Joins sequence of elements with given separator to string.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.String">
+<summary>
+ Extensions for String module and class.
+</summary>
+</member>
+<member name="M:XRoad.CodeDom.Compiler.buildAssembly(System.CodeDom.CodeNamespace)">
+<summary>
+ Builds new assembly for provided namespace.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Arr">
+<summary>
+ Functions to create and manipulate arrays.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Cls">
+<summary>
+ Functions to create and manipulate types.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Op">
+<summary>
+ Functions to simplify operator usage.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Ctor">
+<summary>
+ Functions to create and manipulate type constructors.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Meth">
+<summary>
+ Functions to create and manipulate type methods.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Stmt">
+<summary>
+ Functions to simplify handling of code statements.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Prop">
+<summary>
+ Functions to create and manipulate type properties.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Fld">
+<summary>
+ Functions to create and manipulate type fields.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Attributes">
+<summary>
+ Predefined attributes for code generator.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Attr">
+<summary>
+ Functions to create and manipulate code attributes.
+</summary>
+</member>
+<member name="T:XRoad.CodeDom.Expr">
+<summary>
+ Functions to simplify handling of code expressions.
+</summary>
+</member>
+<member name="M:XRoad.Pattern.|ArrayContent|_|(XRoad.TypeSchema.SchemaTypeDefinition)">
+<summary>
+ Active pattern which checks type definition against collection characteristics.
+ Returns match if given type should be treated as CollectionType.
+</summary>
+</member>
+<member name="M:XRoad.Pattern.providedTypeFullName(System.String,System.String)">
+<summary>
+ Helper function to create full name for given type name.
+</summary>
+</member>
+<member name="P:XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition.IsWrappedArray">
+<summary>
+ Does array type property specify wrapper element around items?
+</summary>
+</member>
+<member name="P:XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition.IsOptional">
+<summary>
+ Can property value be unspecified in resulting SOAP message.
+</summary>
+</member>
+<member name="P:XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition.IsItemNillable">
+<summary>
+ Can array items be nil values?
+</summary>
+</member>
+<member name="P:XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition.IsNillable">
+<summary>
+ Does property accept nil values?
+</summary>
+</member>
+<member name="P:XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition.Type">
+<summary>
+ Runtime type to use on property.
+</summary>
+</member>
+<member name="P:XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition.Name">
+<summary>
+ Name of the property.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition.Create(System.String,System.Boolean,Microsoft.FSharp.Core.FSharpOption{System.String},System.Boolean)">
+<summary>
+ Initializes default property with name and optional value.
+</summary>
+</member>
+<member name="T:XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition">
+<summary>
+ Describes single property for type declaration.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.build(XRoad.TypeBuilderContext,XRoad.CodeDom.RuntimeType,XRoad.TypeSchema.SchemaTypeDefinition)">
+<summary>
+ Populate generated type declaration with properties specified in type schema definition.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.buildSequenceMembers(XRoad.TypeBuilderContext,XRoad.TypeSchema.ParticleSpec)">
+<summary>
+ Extract property definitions for all the elements defined in sequence element.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.collectChoiceProperties(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,System.String},XRoad.TypeBuilderContext,XRoad.TypeSchema.ParticleSpec)">
+<summary>
+ Create property definitions for choice element specification.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.collectSequenceProperties``1(``0,XRoad.TypeBuilderContext,XRoad.TypeSchema.ParticleSpec)">
+<summary>
+ Create property definitions for sequence element specification.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.buildPropertyDef(XRoad.TypeSchema.TypeDefinition{XRoad.TypeSchema.SchemaTypeDefinition},System.UInt32,System.String,System.Boolean,System.Boolean,XRoad.TypeBuilderContext,Microsoft.FSharp.Core.FSharpOption{System.String},System.Boolean)">
+<summary>
+ Build default property definition from provided schema information.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.buildAttributeProperty(XRoad.TypeBuilderContext,XRoad.TypeSchema.AttributeSpec)">
+<summary>
+ Create single property definition for given attribute-s schema specification.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.buildElementProperty(XRoad.TypeBuilderContext,XRoad.TypeSchema.ElementSpec)">
+<summary>
+ Create single property definition for given element-s schema specification.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.collectComplexTypeContentProperties``1(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,System.String},``0,XRoad.TypeBuilderContext,XRoad.TypeSchema.ComplexTypeContentSpec)">
+<summary>
+ Collects property definitions from every content element of complexType.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.buildAnyProperty">
+<summary>
+ Create definition of property that accepts any element not defined in schema.
+</summary>
+</member>
+<member name="M:XRoad.CodeDomGenerator.TypeBuilder.addTypeProperties(Microsoft.FSharp.Collections.FSharpList{XRoad.CodeDomGenerator.TypeBuilder.PropertyDefinition},System.Collections.IEnumerable,System.CodeDom.CodeTypeDeclaration)">
+<summary>
+ Build property declarations from property definitions and add them to owner type.
+</summary>
+</member>
+<member name="T:XRoad.CodeDomGenerator.TypeBuilder">
+<summary>
+ Functions and types to handle type building process.
+</summary>
+</member>
+<member name="M:XRoad.ProducerDefinition.makeProducerType(System.String[],System.String,System.String)">
+<summary>
+ Builds all types, namespaces and services for give producer definition.
+ Called by type provider to retrieve assembly details for generated types.
+</summary>
+</member>
+<member name="M:XRoad.ProducerDefinition.ServiceBuilder.build(XRoad.TypeBuilderContext,System.Xml.Linq.XNamespace,XRoad.Wsdl.ServicePortMethod)">
+<summary>
+ Build content for each individual service call method.
+</summary>
+</member>
+<member name="M:XRoad.ProducerDefinition.ServiceBuilder.instQN(System.String,System.String)">
+<summary>
+ Creates return type for the operation.
+ To support returning multiple output parameters, they are wrapped into tuples accordingly:
+ Single parameter responses return that single parameter.
+ Multiple parameter responses are wrapped into tuples, since C# provides tuples upto 8 arguments,
+ some composition is required when more output parameters are present.
+</summary>
+</member>
+<member name="T:XRoad.ProducerDefinition.ServiceBuilder">
+<summary>
+ Functions and types to handle building methods for services and operation bindings.
+</summary>
+</member>
+<member name="T:XRoad.SecurityServerV6.MemberClass">
+<summary>
+ Represents single member class and all producers belonging to that class.
+</summary>
+</member>
+<member name="T:XRoad.SecurityServerV6.Member">
+<summary>
+ Represents single member and its subsystems.
+</summary>
+</member>
+<member name="T:XRoad.SecurityServerV6.Service">
+<summary>
+ Identifies X-Road service.
+</summary>
+</member>
+<member name="T:XRoad.SecurityServerV6.ServiceProvider">
+<summary>
+ Identifies X-Road service provider.
+</summary>
+</member>
+<member name="M:XRoad.SecurityServerV6.downloadMethodsList(System.Uri,XRoad.SecurityServerV6.ServiceProvider,XRoad.SecurityServerV6.Service)">
+<summary>
+ Downloads and parses method list of selected service provider.
+</summary>
+</member>
+<member name="M:XRoad.SecurityServerV6.downloadCentralServiceList(System.Uri,System.String,System.Boolean)">
+<summary>
+ Downloads and parses central service list from X-Road v6 security server.
+</summary>
+</member>
+<member name="M:XRoad.SecurityServerV6.downloadProducerList(System.Uri,System.String,System.Boolean)">
+<summary>
+ Downloads and parses producer list for X-Road v6 security server.
+</summary>
+</member>
+<member name="M:XRoad.SecurityServerV6.getFile(System.Boolean,System.Uri)">
+<summary>
+ Downloads producer list if not already downloaded previously.
+ Can be forced to redownload file by `refresh` parameters.
+</summary>
+</member>
+<member name="P:XRoad.SecurityServerV6.cache">
+<summary>
+ Remember previously downloaded content in temporary files.
+</summary>
+</member>
+<member name="T:XRoad.SecurityServer.Producer">
+<summary>
+ Represents single producer information acquired from security server.
+</summary>
+</member>
+<member name="M:XRoad.SecurityServer.discoverProducers(System.String)">
+<summary>
+ Executes listProducers service call on specified security server.
+ All available producers are deserialized from response message and returned to caller.
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.AssemblyCompiler">
+<summary>
+ Implements System.Reflection.Assembly backed by ILModuleReader over generated bytes 
+</summary>
+</member>
+<member name="F:ProviderImplementation.ProvidedTypes.ProvidedTypesContext.varTableFwd">
+<summary>
+ When translating quotations, Expr.Var&apos;s are translated to new variable respecting reference equality.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceTypeToTarget(System.Type)">
+<summary>
+ Gets the equivalent target type
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.ProvidedTypesContext">
+<summary>
+ Represents the type binding context for the type provider based on the set of assemblies
+ referenced by the compilation.
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.QuotationSimplifier">
+<summary>
+ the target model, i.e. before it is handed to the F# compiler (for erasing type providers) or 
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.TargetAssembly">
+<summary>
+ Implements System.Reflection.Assembly backed by .NET metadata provided by an ILModuleReader
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.TargetTypeDefinition">
+<summary>
+ Makes a type definition read from a binary available as a System.Type. Not all methods are implemented.
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.TypeSymbol">
+<summary>
+ Represents an array or other symbolic type involving a provided type as the argument.
+ See the type provider spec for the methods that must be implemented.
+ Note that the type provider specification does not require us to implement pointer-equality for provided types.
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.TypeSymbolKind">
+<summary>
+ Represents the type constructor in a provided symbol type.
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.FieldSymbol">
+<summary>
+ Represents a field in an instantiated type
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.EventSymbol">
+<summary>
+ Represents an event in an instantiated type
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.PropertySymbol">
+<summary>
+ Represents a property in an instantiated type
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.MethodSymbol">
+<summary>
+ Represents a method in an instantiated type
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.ConstructorSymbol">
+<summary>
+ Represents a constructor in an instantiated type
+</summary>
+</member>
+<member name="F:ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.membersQueue">
+<summary>
+ Represents delayed members, as yet uncomputed
+</summary>
+</member>
+<member name="F:ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.members">
+<summary>
+ Represents the evaluated members so far
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.GetStaticParametersInternal">
+<summary>
+ Get ParameterInfo[] for the parametric type parameters 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.DefineStaticParameters(Microsoft.FSharp.Collections.FSharpList{ProviderImplementation.ProvidedTypes.ProvidedStaticParameter},Microsoft.FSharp.Core.FSharpFunc{System.String,Microsoft.FSharp.Core.FSharpFunc{System.Object[],ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition}})">
+<summary>
+ Abstract a type to a parametric-type. Requires &quot;formal parameters&quot; and &quot;instantiation function&quot;.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.ApplyStaticArguments(System.String,System.Object[])">
+<summary>
+ Instantiate parametric type
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedProperty.#ctor(System.String,System.Type,Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Collections.FSharpList{Microsoft.FSharp.Quotations.FSharpExpr},Microsoft.FSharp.Quotations.FSharpExpr}},Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Collections.FSharpList{Microsoft.FSharp.Quotations.FSharpExpr},Microsoft.FSharp.Quotations.FSharpExpr}},Microsoft.FSharp.Core.FSharpOption{System.Boolean},Microsoft.FSharp.Core.FSharpOption{Microsoft.FSharp.Collections.FSharpList{ProviderImplementation.ProvidedTypes.ProvidedParameter}})">
+<summary>
+ The public constructor for the design-time/source model
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedMethod.GetStaticParametersInternal">
+<summary>
+ Get ParameterInfo[] for the parametric type parameters
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedMethod.DefineStaticParameters(Microsoft.FSharp.Collections.FSharpList{ProviderImplementation.ProvidedTypes.ProvidedStaticParameter},Microsoft.FSharp.Core.FSharpFunc{System.String,Microsoft.FSharp.Core.FSharpFunc{System.Object[],ProviderImplementation.ProvidedTypes.ProvidedMethod}})">
+<summary>
+ Abstract a type to a parametric-type. Requires &quot;formal parameters&quot; and &quot;instantiation function&quot;.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedMethod.ApplyStaticArguments(System.String,System.Object[])">
+<summary>
+ Instantiate parametric method
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.ProvidedMethod.#ctor(System.String,Microsoft.FSharp.Collections.FSharpList{ProviderImplementation.ProvidedTypes.ProvidedParameter},System.Type,Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Collections.FSharpList{Microsoft.FSharp.Quotations.FSharpExpr},Microsoft.FSharp.Quotations.FSharpExpr},Microsoft.FSharp.Core.FSharpOption{System.Boolean})">
+<summary>
+ The public constructor for the design-time/source model
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.FullName">
+<summary>
+ Substitute types for type variables.
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.DeclaringType">
+<summary>
+ Although not strictly required by the type provider specification, this is required when doing basic operations like FullName on
+ .NET symbolic types made from this type, e.g. when building Nullable&lt;SomeProvidedType[]&gt;.FullName
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol">
+<summary>
+ Represents an array or other symbolic type involving a provided type as the argument.
+ See the type provider spec for the methods that must be implemented.
+ Note that the type provider specification does not require us to implement pointer-equality for provided types.
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.ProvidedTypeSymbolKind">
+<summary>
+ Represents the type constructor in a provided symbol type.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.XRoadProviders.#ctor(Microsoft.FSharp.Core.CompilerServices.TypeProviderConfig)">
+<summary>
+ Initializes new type provider instance
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.XRoadProviders">
+<summary>
+ Erased type provider for acquiring X-Road producers from security server.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.XRoadProducerProvider.#ctor">
+<summary>
+ Initializes new type provider instance.
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.XRoadProducerProvider">
+<summary>
+ Generated type provider for X-Road infrastructure.
+ Builds service interface for certain producer.
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.seh">
+<summary>
+ data for exception handling clauses 
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.reqdStringFixupsInMethod">
+<summary>
+ code loc to fixup in code buffer 
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.reqdBrFixups">
+<summary>
+ (instruction; optional short form); start of instr in code buffer; code loc for the end of the instruction the fixup resides in ; where is the destination of the fixup 
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.tables">
+<summary>
+ The following are all used to generate unique items in the output 
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.trefCache">
+<summary>
+ Caches
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.resources">
+<summary>
+ Raw resource data, to go into the data section 
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.data">
+<summary>
+ Raw data, to go into the data section 
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.requiredStringFixups">
+<summary>
+ References to strings in codestreams: offset of code and a (fixup-location , string token) list) 
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.BinaryWriter.FieldDefKey">
+<summary>
+ We use this key type to help find ILFieldDefs for FieldRefs
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.BinaryWriter.MethodDefKey">
+<summary>
+ We use this key type to help find ILMethodDefs for MethodRefs 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.SetRowsOfTable(`0[])">
+<summary>
+ This is only used in one special place - see further below. 
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.BinaryWriter.UnsharedRow">
+<summary>
+ Unshared rows are used for definitional tables where elements do not need to be made unique
+ e.g. ILMethodDef and ILTypeDef. Most tables are like this. We don&apos;t precompute a 
+ hash code for these rows, and indeed the GetHashCode and Equals should not be needed.
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.BinaryWriter.SharedRow">
+<summary>
+ This is the representation of shared rows is used for most shared row types.
+ Rows ILAssemblyRef and ILMethodRef are very common and are given their own
+ representations.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.GenTypeDefPass4(Microsoft.FSharp.Collections.FSharpList{System.String},ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef)">
+<summary>
+ ILTypeDef --&gt; generate generic params on ILMethodDef: ensures
+ GenericParam table is built sorted by owner.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.GenEventAsEventRow(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv,ProviderImplementation.ProvidedTypes.AssemblyReader.ILEventDef)">
+<summary>
+ ILEventDef --&gt; Event Row + MethodSemantics entries
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.GenPropertyPass3(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv,ProviderImplementation.ProvidedTypes.AssemblyReader.ILPropertyDef)">
+<summary>
+ ILPropertyDef --&gt; Property Row + MethodSemantics entries
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.MemberRefRow(ProviderImplementation.ProvidedTypes.BinaryWriter.RowElement,System.Int32,System.Int32)">
+<summary>
+ Special representation the computes the hash more efficiently
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.AssemblyRefRow(System.UInt16,System.UInt16,System.UInt16,System.UInt16,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)">
+<summary>
+ Special representation: Note, only hashing by name
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.SimpleIndex(ProviderImplementation.ProvidedTypes.AssemblyReader.ILTableName,System.Int32)">
+<summary>
+ pos. in some table 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.StringE(System.Int32)">
+<summary>
+ pos. in string array 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.Blob(System.Int32)">
+<summary>
+ pos. in blob array 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.Guid(System.Int32)">
+<summary>
+ pos. in guid array 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.Data(System.Int32,System.Boolean)">
+<summary>
+ Index into cenv.data or cenv.resources.  Gets fixed up later once we known an overall
+ location for the data section.  flag indicates if offset is relative to cenv.resources. 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.checkFixup32(System.Byte[],System.Int32,System.Int32)">
+<summary>
+ Check that the data held at a fixup is some special magic value, as a sanity check
+ to ensure the fixup is being placed at a ood location.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.align(System.Int32,System.Int32)">
+<summary>
+ Alignment and padding
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitInstrCode(ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer,System.Int32)">
+<summary>
+ Emit the code for an instruction
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugMapping">
+<summary>
+ Indicates that a particular local variable has a particular source 
+ language name within a given set of ranges. This does not effect local 
+ variable numbering, which is global over the whole method. 
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingConvStatics">
+<summary>
+ Static storage to amortize the allocation of ILCallingConv.Instance and ILCallingConv.Static
+</summary>
+</member>
+<member name="T:ProviderImplementation.ProvidedTypes.AssemblyReader.ILArgConvention">
+<summary>
+ Calling conventions.  These are used in method pointer types.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.encodeCustomAttrPrimValue(System.Object)">
+<summary>
+ Given a custom attribute element, encode it to a binary representation according to the rules in Ecma 335 Partition II.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.encodeCustomAttrElemTypeForObject(System.Object)">
+<summary>
+ Given a custom attribute element, work out the type of the .NET argument for that element.
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer.Z32Size(System.Int32)">
+<summary>
+ Z32 = compressed unsigned integer 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer.EmitZ32(System.Int32)">
+<summary>
+ Emit int32 as compressed unsigned integer
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.AssemblyReader.ILTableNames.sortedTableInfo">
+<summary>
+ Which tables are sorted and by which column. 
+</summary>
+</member>
+<member name="M:ProviderImplementation.ProvidedTypes.Misc.mkXmlDocCustomAttributeDataLazy(System.Lazy{System.String})">
+<summary>
+ This makes an xml doc attribute w.r.t. an amortized computation of an xml doc string.
+ It is important that the text of the xml doc only get forced when poking on the ConstructorArguments
+ for the CustomAttributeData object.
+</summary>
+</member>
+<member name="P:ProviderImplementation.ProvidedTypes.Utils.emptyAttributes">
+<summary>
+ Internal code of .NET expects the obj[] returned by GetCustomAttributes to be an Attribute[] even in the case of empty arrays
+</summary>
+</member>
+</members>
+</doc>
