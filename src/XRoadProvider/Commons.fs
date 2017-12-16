@@ -7,6 +7,23 @@ open System.Xml
 open System.Xml.Linq
 open XRoad.Serialization.Attributes
 
+#if NET40
+[<AutoOpen>]
+module Extensions =
+    let isNull = function null -> true | _ -> false
+
+module Option =
+    let ofObj = function null -> None | x -> Some(x)
+
+module Array =
+    open System.Linq
+    let exactlyOne (arr: 'T []) = arr.SingleOrDefault()
+    let skip n (arr: 'T []) = arr.Skip(n).ToArray()
+
+module List =
+    let tryHead = function [] -> None | x::_ -> Some(x)
+#endif
+
 module MyOption =
     let defaultValue d o = o |> Option.fold (fun _ x -> x) d
     let defaultWith f o = match o with Some(o) -> o | None -> f()
