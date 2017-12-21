@@ -1,4 +1,4 @@
-module XRoad.XmlExtensions
+module internal XRoad.XmlExtensions
 
 open System.Xml
 open XRoad

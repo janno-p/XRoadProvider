@@ -1,6 +1,6 @@
 namespace XRoadProvider.Tests
 
-module SoapUtil =
+module internal SoapUtil =
     open XRoad
 
     let makeSoapResponse content =
@@ -11,7 +11,7 @@ module SoapUtil =
     </soapenv:Body>
 </soapenv:Envelope>" XmlNamespace.SoapEnv content
 
-module SerializationUtil =
+module internal SerializationUtil =
     open Expecto
     open System
     open System.IO

@@ -517,8 +517,8 @@ type Services =
     [<XRoadResponse("ComplexChoiceServiceResponse", producerNamespace)>]
     abstract ComplexChoiceService: [<XRoadElement("request")>] request: Types.EmptyType -> ResultTypes.ComplexChoiceServiceResult
 
-let serialize = SerializationUtil.serialize typeof<Services> producerNamespace
-let deserialize = SerializationUtil.deserialize typeof<Services>
+let internal serialize = SerializationUtil.serialize typeof<Services> producerNamespace
+let internal deserialize = SerializationUtil.deserialize typeof<Services>
 let deserialize' = deserialize (SerializerContext())
 let serialize' = serialize (SerializerContext())
 let getResponse<'T> = SerializationUtil.getResponse<'T> typeof<Services> (SerializerContext())

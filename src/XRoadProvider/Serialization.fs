@@ -17,12 +17,12 @@ open System.Text
 open System.Xml
 open XRoad.Serialization.Attributes
 
-type XRoadFault(faultCode: string, faultString) =
+type internal XRoadFault(faultCode: string, faultString) =
     inherit Exception(faultString)
     member val FaultCode = faultCode with get
     member val FaultString = faultString with get
 
-module Stream =
+module internal Stream =
     let toString (stream: Stream) =
         stream.Position <- 0L
 #if NET40
@@ -49,7 +49,7 @@ open Response
 open System.Xml.XPath
 open Emitter
 
-type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
+type internal XRoadResponse(response: WebResponse, methodMap: MethodMap) =
     let log = LogManager.GetLogger()
 
     let checkXRoadFault (stream: Stream) =
@@ -99,15 +99,7 @@ type XRoadResponse(response: WebResponse, methodMap: MethodMap) =
         member __.Dispose() =
             (response :> IDisposable).Dispose()
 
-type XRoadStreamWriter() =
-    class
-    end
-
-type XRoadStreamReader() =
-    class
-    end
-
-type XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>) =
+type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>) =
     let log = LogManager.GetLogger()
 
     let request =

@@ -9,22 +9,23 @@ open XRoad.Serialization.Attributes
 
 #if NET40
 [<AutoOpen>]
-module Extensions =
+module internal Extensions =
     let isNull = function null -> true | _ -> false
 
-module Option =
+module internal Option =
     let ofObj = function null -> None | x -> Some(x)
 
-module Array =
+module internal Array =
     open System.Linq
+
     let exactlyOne (arr: 'T []) = arr.SingleOrDefault()
     let skip n (arr: 'T []) = arr.Skip(n).ToArray()
 
-module List =
+module internal List =
     let tryHead = function [] -> None | x::_ -> Some(x)
 #endif
 
-module MyOption =
+module internal MyOption =
     let defaultValue d o = o |> Option.fold (fun _ x -> x) d
     let defaultWith f o = match o with Some(o) -> o | None -> f()
 
@@ -123,7 +124,7 @@ module private XRoadProtocolExtensions =
         | Version31Eu(_) -> isHeaderOf XmlNamespace.XRoad31Eu docLegacyHeaders
         | Version40(_) -> isHeaderOf XmlNamespace.XRoad40 docHeaders
 
-module XRoadHelper =
+module internal XRoadHelper =
     let getUUID () = Guid.NewGuid().ToString()
 
     let getSystemTypeName = function
@@ -358,7 +359,7 @@ type public BinaryContent internal (contentID: string, content: ContentType) =
     static member Create(contentID, data) = BinaryContent(contentID, Data(data))
 
 [<AllowNullLiteral>]
-type SerializerContext() =
+type internal SerializerContext() =
     let attachments = Dictionary<string, BinaryContent>()
     member val IsMtomMessage = false with get, set
     member val IsMultipart = false with get, set
@@ -374,16 +375,16 @@ type SerializerContext() =
             | _ -> null;
         else failwithf "Invalid multipart content reference: `%s`." href
 
-type MethodPartMap =
+type internal MethodPartMap =
     { IsEncoded: bool
       IsMultipart: bool
       Accessor: XmlQualifiedName option }
 
-type DeserializerDelegate = delegate of XmlReader * SerializerContext -> obj
-type SerializerDelegate = delegate of XmlWriter * obj * SerializerContext -> unit
-type OperationSerializerDelegate = delegate of XmlWriter * obj[] * SerializerContext -> unit
+type internal DeserializerDelegate = delegate of XmlReader * SerializerContext -> obj
+type internal SerializerDelegate = delegate of XmlWriter * obj * SerializerContext -> unit
+type internal OperationSerializerDelegate = delegate of XmlWriter * obj[] * SerializerContext -> unit
 
-type MethodMap =
+type internal MethodMap =
     { Deserializer: DeserializerDelegate
       Serializer: OperationSerializerDelegate
       Protocol: XRoadProtocol
@@ -393,11 +394,6 @@ type MethodMap =
       ServiceVersion: string option
       Namespaces: string list
       RequiredHeaders: IDictionary<string, string[]> }
-
-type SoapHeaderValue(name: XmlQualifiedName, value: obj, required: bool) =
-    member val Name = name with get
-    member val Value = value with get
-    member val IsRequired = required with get
 
 module internal Wsdl =
     /// Helper function for generating XNamespace-s.

@@ -190,7 +190,7 @@ type AdsAadrMuudatusedService () =
         |> unbox<DefinedTypes.ADSaadrmuudatusedResponse>
 
 let getResponse<'T> = SerializationUtil.getResponse<'T> typeof<AdsAadrMuudatusedService> (SerializerContext())
-let serialize = SerializationUtil.serialize typeof<AdsAadrMuudatusedService> "http://www.maaamet.ee"
+let internal serialize = SerializationUtil.serialize typeof<AdsAadrMuudatusedService> "http://www.maaamet.ee"
 let serialize' = serialize (SerializerContext())
 
 let none<'T> () = Optional.Option.None<'T>()
