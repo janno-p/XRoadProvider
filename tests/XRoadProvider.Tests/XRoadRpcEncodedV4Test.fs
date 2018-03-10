@@ -7,7 +7,7 @@ open XRoad
 let [<Tests>] tests =
     testList "rpc/encoded style tests" [
         test "parse Maakataster xml schema definition" {
-            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml"), "et")
+            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/Wsdl/Maakataster.wsdl.xml"), "et", [])
             let typeSchemas = schema.TypeSchemas
             Expect.equal typeSchemas.Count 3 "should parse 3 type schemas"
             Expect.isTrue (typeSchemas.ContainsKey "http://producers.maakataster.xtee.riik.ee/producer/maakataster") "should contain default schema"

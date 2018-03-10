@@ -23,7 +23,8 @@ type XRoadProducerProvider() as this =
     // Available parameters to use for configuring type provider instance
     let staticParameters =
         [ ProvidedStaticParameter("Uri", typeof<string>), "WSDL document location (either local file or network resource)."
-          ProvidedStaticParameter("LanguageCode", typeof<string>, "et"), "Specify language code that is extracted as documentation tooltips. Default value is estonian (et)." ]
+          ProvidedStaticParameter("LanguageCode", typeof<string>, "et"), "Specify language code that is extracted as documentation tooltips. Default value is estonian (et)."
+          ProvidedStaticParameter("Filter", typeof<string>, ""), "Comma separated list of operations which should be included in definitions. By default, all operations are included." ]
         |> List.map (fun (parameter, doc) -> parameter.AddXmlDoc(doc); parameter :> ParameterInfo)
         |> List.toArray
 
@@ -34,11 +35,17 @@ type XRoadProducerProvider() as this =
             | :? ProvidedTypeDefinition ->
                 let uri = unbox<string> staticArguments.[0]
                 let languageCode = unbox<string> staticArguments.[1]
+                let filter = unbox<string> staticArguments.[2]
 
                 // Same parameter set should have same output, so caching is reasonable.
-                let key = (String.Join(".", typeNameWithArguments), uri, languageCode)
+                let key = (String.Join(".", typeNameWithArguments), uri, languageCode, filter)
                 match typeCache.TryGetValue(key) with
-                | false, _ -> typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, uri, languageCode)))
+                | false, _ ->
+                    let operationFilter =
+                        match filter with
+                        | null -> []
+                        | value -> value.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun x -> x.Trim()) |> List.ofArray
+                    typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, uri, languageCode, operationFilter)))
                 | true, typ -> typ
             | _ -> failwith "not implemented"
 

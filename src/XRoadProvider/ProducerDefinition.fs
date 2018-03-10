@@ -237,9 +237,9 @@ module ServiceBuilder =
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (typeNamePath: string [], uri, languageCode) =
+let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
     // Load schema details from specified file or network location.
-    let schema = ProducerDescription.Load(resolveUri uri, languageCode)
+    let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
 
     // Initialize type and schema element lookup context.
     let context = TypeBuilderContext.FromSchema(schema, languageCode)

@@ -224,8 +224,9 @@ let private parseOperationMessage style messageProtocol (binding: XElement) defi
 
 /// Parse operation binding and bind to abstract message definitions.
 /// http://www.w3.org/TR/wsdl#_bindings
-let private parseOperation languageCode operation portType definitions style ns messageProtocol =
+let private parseOperation languageCode filter operation portType definitions style ns messageProtocol =
     let name = operation |> reqAttr (xname "name")
+    if not (filter |> List.isEmpty || filter |> List.exists ((=) name)) then None else
     // Extract X-Road version of the operation (optional: not used for metaservice operations).
     let version =
         match operation %! (versionElementName messageProtocol) with
@@ -250,15 +251,15 @@ let private parseOperation languageCode operation portType definitions style ns 
         let bindingElement = (operation %! xnsname direction XmlNamespace.Wsdl)
         parseOperationMessage style messageProtocol bindingElement definitions message name ns
     // Combine abstract and concrete part information about service implementation.
-    { Name = name
-      Version = version
-      InputParameters = parseParameters "input"
-      OutputParameters = parseParameters "output"
-      Documentation = readDocumentation languageCode messageProtocol abstractDesc }
+    Some({ Name = name
+           Version = version
+           InputParameters = parseParameters "input"
+           OutputParameters = parseParameters "output"
+           Documentation = readDocumentation languageCode messageProtocol abstractDesc })
 
 /// Parse operations bindings block.
 /// http://www.w3.org/TR/wsdl#_bindings
-let private parseBinding languageCode definitions (bindingName: XName) (servicePort: ServicePort) =
+let private parseBinding languageCode operationFilter definitions (bindingName: XName) (servicePort: ServicePort) =
     // Default namespace for operations
     let targetNamespace = definitions |> attrOrDefault (xname "targetNamespace") ""
     // Find binding element in current document
@@ -285,13 +286,13 @@ let private parseBinding languageCode definitions (bindingName: XName) (serviceP
     // Parse individual operations from current binding element.
     let methods =
         binding %* xnsname "operation" XmlNamespace.Wsdl
-        |> Seq.map (fun op -> parseOperation languageCode op portType definitions bindingStyle ns servicePort.MessageProtocol)
+        |> Seq.choose (fun op -> parseOperation languageCode operationFilter op portType definitions bindingStyle ns servicePort.MessageProtocol)
         |> List.ofSeq
     { servicePort with Methods = methods }
 
 /// Parse port binding element contents.
 /// http://www.w3.org/TR/wsdl#_ports
-let private parsePortBinding languageCode definitions element =
+let private parsePortBinding languageCode operationFilter definitions element =
     let name = element |> reqAttr (xname "name")
     let binding = element |> reqAttr (xname "binding") |> parseXName element
     // http://www.w3.org/TR/wsdl#_soap:address
@@ -317,17 +318,17 @@ let private parsePortBinding languageCode definitions element =
           Uri = address
           Methods = []
           MessageProtocol = messageProtocol }
-    Some(servicePort |> parseBinding languageCode definitions binding)
+    Some(servicePort |> parseBinding languageCode operationFilter definitions binding)
 
 /// Parse all service elements defined as immediate child elements of current element.
 /// http://www.w3.org/TR/wsdl#_services
-let parseServices languageCode (definitions: XElement) =
+let parseServices languageCode operationFilter (definitions: XElement) =
     let targetNamespace = definitions.Attribute(xname "targetNamespace").Value |> xns
     definitions %* xnsname "service" XmlNamespace.Wsdl
     |> Seq.map (fun service ->
         let ports =
             service %* xnsname "port" XmlNamespace.Wsdl
-            |> Seq.choose (parsePortBinding languageCode definitions)
+            |> Seq.choose (parsePortBinding languageCode operationFilter definitions)
             |> List.ofSeq
         { Name = service |> reqAttr (xname "name"); Ports = ports; Namespace = targetNamespace })
     |> List.ofSeq
