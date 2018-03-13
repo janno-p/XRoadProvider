@@ -1,7 +1,8 @@
-#### 1.0.0 - Unreleased
+#### 1.0.0 - 13.03.2018
 
 * Use F# 3.1 for .NET 4.0 framework version.
 * Add operation filter static parameter to producer provider.
+* Netstandard 2.0 support.
 
 #### 1.0.0-alpha018 - 14.12.2017
 
