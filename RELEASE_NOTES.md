@@ -1,3 +1,8 @@
+#### 1.0.1 - 13.03.2018
+
+* Netstandard doesn't work..
+* Downgrade FSharp.Core version
+
 #### 1.0.0 - 13.03.2018
 
 * Use F# 3.1 for .NET 4.0 framework version.

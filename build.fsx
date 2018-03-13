@@ -116,9 +116,9 @@ Target "CopyBinaries" (fun _ ->
     |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release", "bin"))
     |>  Seq.iter (fun (fromDir, toDir) -> CopyDir toDir fromDir (fun _ -> true))
 
-    [ "netstandard.dll"; "System.Reflection.dll"; "System.Runtime.dll" ]
-    |> List.map (fun f -> __SOURCE_DIRECTORY__ </> "packages" </> "NETStandard.Library.NETFramework" </> "build" </> "net461" </> "lib" </> f)
-    |> List.iter (fun f -> CopyFile (__SOURCE_DIRECTORY__ </> "bin" </> "netstandard2.0") f)
+    //[ "netstandard.dll"; "System.Reflection.dll"; "System.Runtime.dll" ]
+    //|> List.map (fun f -> __SOURCE_DIRECTORY__ </> "packages" </> "NETStandard.Library.NETFramework" </> "build" </> "net461" </> "lib" </> f)
+    //|> List.iter (fun f -> CopyFile (__SOURCE_DIRECTORY__ </> "bin" </> "netstandard2.0") f)
 )
 
 // --------------------------------------------------------------------------------------
