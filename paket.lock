@@ -1,21 +1,19 @@
 RESTRICTION: == net461
 NUGET
   remote: https://www.nuget.org/api/v2
-    FAKE (4.64.2)
+    FAKE (4.64.11)
     FSharp.Compiler.Service (2.0.0.6)
     FSharp.Formatting (2.14.4)
       FSharp.Compiler.Service (2.0.0.6)
       FSharpVSPowerTools.Core (>= 2.3 < 2.4)
     FSharpVSPowerTools.Core (2.3)
       FSharp.Compiler.Service (>= 2.0.0.3)
-    NuGet.CommandLine (4.4.1)
-    Octokit (0.28)
+    NuGet.CommandLine (4.5.1)
+    Octokit (0.29)
     SourceLink.Fake (1.1)
-  remote: https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
-    Microsoft.TargetingPack.NETFramework.v4.6.1 (1.0.1)
 GITHUB
   remote: fsharp/FAKE
-    modules/Octokit/Octokit.fsx (0341a2e614eb2a7f34607cec914eb0ed83ce9add)
+    modules/Octokit/Octokit.fsx (96f1594fd50ced6c1aa45d7cf74fb6c067d08ac1)
       Octokit (>= 0.20)
   remote: fsprojects/FSharp.TypeProviders.SDK
-    src/ProvidedTypes.fs (3438c4817b4e25884169ee7be6182efa39995057)
+    src/ProvidedTypes.fs (f0c4a6300db313eb2616c4f792cd6ae68c255e56)

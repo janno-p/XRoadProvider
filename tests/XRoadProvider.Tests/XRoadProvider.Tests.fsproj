@@ -1,12 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\src\NetFx.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net40;net461</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' == 'Unix' ">
-    <FrameworkPathOverride Condition=" '$(TargetFramework)' == 'net461' ">../../packages/Microsoft.TargetingPack.NETFramework.v4.6.1/lib/net461</FrameworkPathOverride>
-    <FrameworkPathOverride Condition=" '$(TargetFramework)' == 'net40' ">/usr/lib/mono/4.0-api</FrameworkPathOverride>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
     <AppConfig>App.net40.config</AppConfig>

@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\NetFx.props" />
   <PropertyGroup>
     <AssemblyName>XRoadProvider</AssemblyName>
     <RootNamespace>XRoad</RootNamespace>
@@ -8,10 +9,6 @@
     <NoWarn>$(NoWarn);2003</NoWarn>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <DocumentationFile>XRoadProvider.xml</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' == 'Unix' ">
-    <FrameworkPathOverride Condition=" '$(TargetFramework)' == 'net461' ">../../packages/Microsoft.TargetingPack.NETFramework.v4.6.1/lib/net461</FrameworkPathOverride>
-    <FrameworkPathOverride Condition=" '$(TargetFramework)' == 'net40' ">/usr/lib/mono/4.0-api</FrameworkPathOverride>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <PackageReference Include="FSharp.Core" Version="4.2.3" />
@@ -25,9 +22,6 @@
   <ItemGroup>
     <PackageReference Include="Common.Logging" Version="3.4.1" />
     <PackageReference Include="Optional" Version="3.2.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
-    <Reference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
