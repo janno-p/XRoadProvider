@@ -159,12 +159,12 @@ Target "Build" (fun _ ->
 
 Target "RunTests" (fun _ ->
     Fake.Testing.Expecto.Expecto id (!! testAssemblies)
-    Fake.DotNetCli.Test
-        (fun p ->
-            { p with
-                WorkingDir = testProjectPath
-                Configuration = "Debug"
-                Framework = "netcoreapp2.0" })
+    //Fake.DotNetCli.Test
+    //    (fun p ->
+    //        { p with
+    //            WorkingDir = testProjectPath
+    //            Configuration = "Debug"
+    //            Framework = "netcoreapp2.0" })
 )
 
 #if MONO
