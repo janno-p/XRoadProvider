@@ -4,7 +4,6 @@ open CodeDom
 open System
 open System.CodeDom
 open System.Reflection
-open System.Xml
 open System.Xml.Linq
 open TypeSchema
 open Wsdl
@@ -55,7 +54,7 @@ module TypeBuilder =
               Attributes.xrdCollection idx (Some(itemName)) None isItemNillable false ]
         | Some(_), _ ->
             failwith "Array should match to CollectionType."
-        | None, rty ->
+        | None, _ ->
             [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.UseXop ]
 
     /// Build property declarations from property definitions and add them to owner type.

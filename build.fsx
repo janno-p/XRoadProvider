@@ -45,7 +45,6 @@ let authors = [ "Janno Põldma" ]
 let tags = "F# fsharp x-road xroad typeproviders x-tee xtee"
 
 // File system information
-let solutionFile  = "XRoadProvider.sln"
 let projectPath = __SOURCE_DIRECTORY__ </> "src" </> "XRoadProvider"
 let testProjectPath = __SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests"
 
@@ -116,6 +115,10 @@ Target "CopyBinaries" (fun _ ->
     -- "src/**/*.shproj"
     |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin/Release", "bin"))
     |>  Seq.iter (fun (fromDir, toDir) -> CopyDir toDir fromDir (fun _ -> true))
+
+    [ "netstandard.dll"; "System.Reflection.dll"; "System.Runtime.dll" ]
+    |> List.map (fun f -> __SOURCE_DIRECTORY__ </> "packages" </> "NETStandard.Library.NETFramework" </> "build" </> "net461" </> "lib" </> f)
+    |> List.iter (fun f -> CopyFile (__SOURCE_DIRECTORY__ </> "bin" </> "netstandard2.0") f)
 )
 
 // --------------------------------------------------------------------------------------
@@ -156,6 +159,12 @@ Target "Build" (fun _ ->
 
 Target "RunTests" (fun _ ->
     Fake.Testing.Expecto.Expecto id (!! testAssemblies)
+    Fake.DotNetCli.Test
+        (fun p ->
+            { p with
+                WorkingDir = testProjectPath
+                Configuration = "Debug"
+                Framework = "netcoreapp2.0" })
 )
 
 #if MONO

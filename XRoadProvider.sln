@@ -22,6 +22,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{BF60
 		XRoadProvider.nuspec = XRoadProvider.nuspec
 		paket.dependencies = paket.dependencies
 		paket.lock = paket.lock
+		appveyor.yml = appveyor.yml
+		.travis.yml = .travis.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{ED8079DD-2B06-4030-9F0F-DC548F98E1C4}"

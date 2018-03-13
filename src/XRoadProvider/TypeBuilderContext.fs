@@ -10,7 +10,6 @@ open System.Xml.Linq
 open XRoad.Serialization.Attributes
 open TypeSchema
 open Wsdl
-open XRoadProvider
 
 [<AutoOpen>]
 module internal Pattern =
@@ -133,11 +132,11 @@ type internal TypeBuilderContext =
                     | XmlNamespace.XRoad31Ee -> "xroad"
                     | ns -> ns.ToClassName()
                 let typ = Cls.create(producerName) |> Cls.addAttr TypeAttributes.Public
-                let fld =
-                    Fld.create<string> "__TargetNamespace__"
-                    |> Fld.init (!^ nsname.NamespaceName)
-                    |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Const)
-                    |> Fld.addTo typ
+                Fld.create<string> "__TargetNamespace__"
+                |> Fld.init (!^ nsname.NamespaceName)
+                |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Const)
+                |> Fld.addTo typ
+                |> ignore
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
             | true, typ -> typ

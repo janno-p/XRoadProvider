@@ -1,4 +1,4 @@
-module internal XRoadProvider.Http
+module internal XRoad.Http
 
 open System
 open System.IO
@@ -18,7 +18,7 @@ let private acceptServerCertificate () =
 
 let createRequest (uri: Uri)  =
 #if NET40
-    ServicePointManager.SecurityProtocol <- (3072 |> unbox<SecurityProtocolType>) ||| (786 |> unbox<SecurityProtocolType>) ||| SecurityProtocolType.Tls
+    ServicePointManager.SecurityProtocol <- (3072 |> unbox<SecurityProtocolType>) ||| (768 |> unbox<SecurityProtocolType>) ||| SecurityProtocolType.Tls
 #else
     ServicePointManager.SecurityProtocol <- SecurityProtocolType.Tls12 ||| SecurityProtocolType.Tls11 ||| SecurityProtocolType.Tls
 #endif
