@@ -205,6 +205,8 @@ module Cls =
     let describe a (t: CodeTypeDeclaration) = t.CustomAttributes.Add(a) |> ignore; t
     let setParent (p: CodeTypeReference) (t: CodeTypeDeclaration) = t.BaseTypes.Add(p) |> ignore; t
 
+    let implements (i: CodeTypeReference) (c: CodeTypeDeclaration) = c.BaseTypes.Add(i) |> ignore; c
+
 module Code =
     let comment (text: string option) (t: #CodeTypeMember) =
         match text with

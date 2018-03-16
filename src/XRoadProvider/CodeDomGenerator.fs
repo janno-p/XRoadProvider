@@ -138,6 +138,9 @@ module TypeBuilder =
                 |> Some
             | _ -> None)
 
+    let getChoiceInterface len =
+        if len > 0 && len < 9 then Some(CodeTypeReference(sprintf "XRoad.Choices.IChoiceOf%d" len)) else None
+
     /// Collects property definitions from every content element of complexType.
     let rec private collectComplexTypeContentProperties choiceNameGen seqNameGen context (spec: ComplexTypeContentSpec) =
         // Attribute definitions
@@ -257,9 +260,12 @@ module TypeBuilder =
             |> Ctor.addStmt (Stmt.assign (Expr.this @=> "__id") (!+ "id"))
             |> Ctor.addStmt (Stmt.assign (Expr.this @=> "__value") (!+ "value"))
 
+        let choiceInterface = getChoiceInterface spec.Content.Length
+
         let choiceName = choiceNameGenerator()
         let choiceType =
             Cls.create (choiceName + "Type")
+            |> iif choiceInterface.IsSome (Cls.implements choiceInterface.Value)
             |> Cls.setAttr (TypeAttributes.Public ||| TypeAttributes.Sealed)
             |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Choice)
             |> Cls.addMembers [idField; valueField; ctor]
@@ -273,9 +279,9 @@ module TypeBuilder =
             optionType |> addTypeProperties context (propList, [])
             optionType
 
-        let addTryMethod context (id: int) (name: string) (runtimeType: RuntimeType) =
+        let addTryMethod context (id: int) (mname: string) (runtimeType: RuntimeType) =
             let tryMethod =
-                Meth.create (sprintf "TryGet%s%s" (if Char.IsLower(name.[0]) then "_" else "") name)
+                Meth.create mname
                 |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
                 |> Meth.returns<bool>
                 |> Meth.addOutParamRef (runtimeType.AsCodeTypeReference(context)) "value"
@@ -295,16 +301,33 @@ module TypeBuilder =
             choiceType |> Cls.addMember(newMethod) |> ignore
 
         let optionNameGenerator = nameGenerator (sprintf "%sOption" choiceName)
+        
+        let addChoiceMethod i mname (t: CodeTypeReference) =
+            choiceInterface
+            |> Option.iter
+                (fun x ->
+                    x.TypeArguments.Add(t) |> ignore
+                    let m =
+                        Meth.create (sprintf "TryGetOption%d" i)
+                        |> Meth.returns<bool>
+                        |> Meth.addOutParamRef t "value"
+                        |> Meth.addStmt (Stmt.ret ((Expr.this @-> mname) @% [!+ "out value"]))
+                    m.PrivateImplementationType <- x
+                    choiceType |> Cls.addMember m |> ignore)
 
         let addedTypes =
             spec.Content
             |> List.mapi (fun i choiceContent ->
+                let mname (name: string) =
+                    sprintf "TryGet%s%s" (if Char.IsLower(name.[0]) then "_" else "") name
                 match choiceContent with
                 | Element(spec) ->
                     let prop, types = buildElementProperty context spec
                     prop |> getAttributesForProperty (Some(i + 1)) (Some(prop.Name)) |> List.iter (fun attr -> choiceType |> Cls.describe attr |> ignore)
                     addNewMethod context (i + 1) prop.Name prop.Type
-                    addTryMethod context (i + 1) prop.Name prop.Type
+                    let name = mname prop.Name
+                    addTryMethod context (i + 1) name prop.Type
+                    addChoiceMethod (i + 1) name (prop.Type.AsCodeTypeReference(context))
                     types
                 | Sequence(spec) ->
                     let props, types = buildSequenceMembers context spec
@@ -313,7 +336,9 @@ module TypeBuilder =
                     let optionType = createOptionType context optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod context (i + 1) optionName optionRuntimeType
-                    addTryMethod context (i + 1) optionName optionRuntimeType
+                    let name = mname optionName
+                    addTryMethod context (i + 1) name optionRuntimeType
+                    addChoiceMethod (i + 1) name (optionRuntimeType.AsCodeTypeReference(context))
                     optionType::types
                 | Any -> failwith "Not implemented: any in choice."
                 | Choice(_) -> failwith "Not implemented: choice in choice."
