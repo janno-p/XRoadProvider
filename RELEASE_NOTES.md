@@ -1,3 +1,8 @@
+#### 1.0.2 - Unreleased
+
+* Parse type schemas which provide only imported schemas, but no types on their own.
+* Allow customize usage of `Optional.Option` types in generated property definitions through `XRoadProducer` configuration option `UseOptional`.
+
 #### 1.0.1 - 13.03.2018
 
 * Netstandard doesn't work..

@@ -9,6 +9,31 @@ open TypeSchema
 open Wsdl
 open XRoad.Serialization.Attributes
 
+/// Add property to given type with backing field.
+/// For optional members, extra field is added to notify if property was assigned or not.
+let addProperty (name : string, ty: RuntimeType, isOptional, context) (owner: CodeTypeDeclaration) =
+    let fixedName = name.GetValidPropertyName()
+    let f = Fld.createRef (ty.AsCodeTypeReference(context, optional=isOptional)) (fixedName + "__backing")
+            |> Fld.describe Attributes.DebuggerBrowsable
+    let p = Prop.createRef (ty.AsCodeTypeReference(context, optional=isOptional)) fixedName
+            |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+            |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
+            |> Prop.addSetStmt (Stmt.assign (Expr.this @=> f.Name) (Prop.setValue))
+    owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
+    p
+
+let addContentProperty (name: string, ty: RuntimeType, useXop, context) (owner: CodeTypeDeclaration) =
+    let name = name.GetValidPropertyName()
+    Fld.createRef (ty.AsCodeTypeReference(context, true)) (sprintf "%s { get; private set; } //" name)
+    |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
+    |> Fld.describe (Attributes.xrdElement None None None false true useXop)
+    |> Fld.addTo owner
+    |> ignore
+    Ctor.create()
+    |> Ctor.addParamRef (ty.AsCodeTypeReference(context)) "value"
+    |> Ctor.addStmt (Stmt.assign (Expr.this @=> name) (!+ "value"))
+    |> Ctor.addTo owner
+
 /// Functions and types to handle type building process.
 module TypeBuilder =
     /// Describes single property for type declaration.
@@ -58,10 +83,10 @@ module TypeBuilder =
             [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.UseXop ]
 
     /// Build property declarations from property definitions and add them to owner type.
-    let private addTypeProperties (definitions, subTypes) ownerTy =
+    let private addTypeProperties context (definitions, subTypes) ownerTy =
         let addTypePropertiesFromDefinition definition =
             // Most of the conditions handle XmlSerializer specific attributes.
-            let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional)
+            let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional, context)
                                |> Code.comment (definition.Documentation)
             let elementName = if prop.Name <> definition.Name then Some(definition.Name) else None
             if definition.IsIgnored then
@@ -98,7 +123,7 @@ module TypeBuilder =
             num := !num + 1
             sprintf "%s%d" name !num)
 
-    let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
+    let private buildEnumerationConstants context (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
         let valueExpr (value: string) =
             match itemType with
             | PrimitiveType(t) when t = typeof<int32> -> !^ (Convert.ToInt32(value))
@@ -107,9 +132,9 @@ module TypeBuilder =
         |> List.choose (fun x ->
             match x with
             | Enumeration(value) ->
-                Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.GetValidPropertyName())
+                Fld.createRef (runtimeType.AsCodeTypeReference(context, true)) (value.GetValidPropertyName())
                 |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Static)
-                |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [valueExpr value])
+                |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference(context)) [valueExpr value])
                 |> Some
             | _ -> None)
 
@@ -241,32 +266,32 @@ module TypeBuilder =
 
         let choiceRuntimeType = ProvidedType(choiceType, choiceType.Name)
 
-        let createOptionType name (propList: PropertyDefinition list) =
+        let createOptionType context name (propList: PropertyDefinition list) =
             let optionType =
                 Cls.create (name + "Type")
                 |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
-            optionType |> addTypeProperties (propList, [])
+            optionType |> addTypeProperties context (propList, [])
             optionType
 
-        let addTryMethod (id: int) (name: string) (runtimeType: RuntimeType) =
+        let addTryMethod context (id: int) (name: string) (runtimeType: RuntimeType) =
             let tryMethod =
                 Meth.create (sprintf "TryGet%s%s" (if Char.IsLower(name.[0]) then "_" else "") name)
                 |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
                 |> Meth.returns<bool>
-                |> Meth.addOutParamRef (runtimeType.AsCodeTypeReference()) "value"
-                |> Meth.addStmt (Stmt.assign (!+ "value") (Expr.defaultValue (runtimeType.AsCodeTypeReference())))
+                |> Meth.addOutParamRef (runtimeType.AsCodeTypeReference(context)) "value"
+                |> Meth.addStmt (Stmt.assign (!+ "value") (Expr.defaultValue (runtimeType.AsCodeTypeReference(context))))
                 |> Meth.addStmt (Stmt.condIf (Op.equals (Expr.this @=> "__id") (!^ id))
-                                             [Stmt.assign (!+ "value") (Expr.cast (runtimeType.AsCodeTypeReference()) (Expr.this @=> "__value"))])
+                                             [Stmt.assign (!+ "value") (Expr.cast (runtimeType.AsCodeTypeReference(context)) (Expr.this @=> "__value"))])
                 |> Meth.addStmt (Stmt.ret (Op.equals (Expr.this @=> "__id") (!^ id)))
             choiceType |> Cls.addMember(tryMethod) |> ignore
 
-        let addNewMethod id (name: string) (runtimeType: RuntimeType) =
+        let addNewMethod context id (name: string) (runtimeType: RuntimeType) =
             let newMethod =
                 Meth.create (sprintf "New%s%s" (if Char.IsLower(name.[0]) then "_" else "") name)
                 |> Meth.setAttr (MemberAttributes.Static ||| MemberAttributes.Public)
-                |> Meth.returnsOf (choiceRuntimeType.AsCodeTypeReference())
-                |> Meth.addParamRef (runtimeType.AsCodeTypeReference()) "value"
-                |> Meth.addStmt (Stmt.ret (Expr.instOf (choiceRuntimeType.AsCodeTypeReference()) [!^ id; !+ "value"]))
+                |> Meth.returnsOf (choiceRuntimeType.AsCodeTypeReference(context))
+                |> Meth.addParamRef (runtimeType.AsCodeTypeReference(context)) "value"
+                |> Meth.addStmt (Stmt.ret (Expr.instOf (choiceRuntimeType.AsCodeTypeReference(context)) [!^ id; !+ "value"]))
             choiceType |> Cls.addMember(newMethod) |> ignore
 
         let optionNameGenerator = nameGenerator (sprintf "%sOption" choiceName)
@@ -278,17 +303,17 @@ module TypeBuilder =
                 | Element(spec) ->
                     let prop, types = buildElementProperty context spec
                     prop |> getAttributesForProperty (Some(i + 1)) (Some(prop.Name)) |> List.iter (fun attr -> choiceType |> Cls.describe attr |> ignore)
-                    addNewMethod (i + 1) prop.Name prop.Type
-                    addTryMethod (i + 1) prop.Name prop.Type
+                    addNewMethod context (i + 1) prop.Name prop.Type
+                    addTryMethod context (i + 1) prop.Name prop.Type
                     types
                 | Sequence(spec) ->
                     let props, types = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
                     choiceType |> Cls.describe (Attributes.xrdElement (Some(i + 1)) (Some(optionName)) None false true false) |> ignore
-                    let optionType = createOptionType optionName props
+                    let optionType = createOptionType context optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
-                    addNewMethod (i + 1) optionName optionRuntimeType
-                    addTryMethod (i + 1) optionName optionRuntimeType
+                    addNewMethod context (i + 1) optionName optionRuntimeType
+                    addTryMethod context (i + 1) optionName optionRuntimeType
                     optionType::types
                 | Any -> failwith "Not implemented: any in choice."
                 | Choice(_) -> failwith "Not implemented: choice in choice."
@@ -326,10 +351,10 @@ module TypeBuilder =
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | ContentType
             | PrimitiveType(_) as rtyp ->
-                let values = spec.Content |> buildEnumerationConstants runtimeType rtyp
+                let values = spec.Content |> buildEnumerationConstants context runtimeType rtyp
                 values |> List.iter (providedTy.Members.Add >> ignore)
                 providedTy
-                |> addContentProperty("BaseValue", rtyp, false)
+                |> addContentProperty("BaseValue", rtyp, false, context)
                 |> iif (values |> List.isEmpty) (fun x -> x |> Ctor.setAttr (MemberAttributes.Public))
                 |> ignore
                 Ctor.create() |> providedTy.Members.Add |> ignore
@@ -352,7 +377,9 @@ module TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
-                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe (Attributes.xrdElement None None None false true false) |> ignore
+                        providedTy
+                        |> addProperty("BaseValue", rtyp, false, context)
+                        |> Prop.describe (Attributes.xrdElement None None None false true false) |> ignore
                         Some(spec.Content)
                     | _ ->
                         failwith "ComplexType-s simpleContent should not extend complex types."
@@ -360,7 +387,7 @@ module TypeBuilder =
                     failwith "Not implemented: restriction in complexType-s simpleContent."
                 | ComplexContent(Extension(spec)) ->
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
-                    | ProvidedType(_) as baseTy -> providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
+                    | ProvidedType(_) as baseTy -> providedTy |> Cls.setParent (baseTy.AsCodeTypeReference(context)) |> ignore
                     | _ -> failwithf "Only complex types can be inherited! (%A)" spec.Base
                     Some(spec.Content)
                 | ComplexContent(Restriction(_)) ->
@@ -370,7 +397,11 @@ module TypeBuilder =
                 | Empty ->
                     None
             specContent
-            |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGen seqNameGen context content)) ()
+            |> Option.fold
+                (fun _ content ->
+                    providedTy
+                    |> addTypeProperties context (collectComplexTypeContentProperties choiceNameGen seqNameGen context content))
+                ()
         | EmptyDefinition -> ()
 
     let removeFaultDescription (definition: SchemaTypeDefinition) =

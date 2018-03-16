@@ -92,9 +92,37 @@ type internal ProducerDescription =
             { Services = definitions |> ServiceDescription.parseServices languageCode operationFilter
               TypeSchemas = definitions |> Parser.parseSchema (uri.ToString()) }
 
+/// Type abstraction for code generator.
+type internal RuntimeType =
+    /// Simple types that are presented with system runtime types.
+    | PrimitiveType of Type
+    /// Types that are provided by generated assembly.
+    | ProvidedType of CodeTypeDeclaration * string
+    /// Types that represent collection or array of runtime type.
+    | CollectionType of RuntimeType * string * SchemaTypeDefinition option
+    /// Binary content types are handled separately.
+    | ContentType
+    /// Get type name reference for this instance.
+    member this.AsCodeTypeReference(context: TypeBuilderContext, ?readonly, ?optional): CodeTypeReference =
+        let readonly = match readonly with Some(true) -> "readonly " | _ -> ""
+        let ctr, makeNullable =
+            match this with
+            | PrimitiveType(typ) -> (CodeTypeReference(typ), typ.IsValueType)
+            | ProvidedType(_,name) -> (CodeTypeReference(readonly + name), false)
+            | CollectionType(typ,_,_) -> (CodeTypeReference(typ.AsCodeTypeReference(context), 1), false)
+            | ContentType -> (CodeTypeReference(typeof<BinaryContent>), false)
+        match optional with
+        | Some(true) ->
+            if context.Packages.HasFlag(NuGetPackage.Optional) then
+                let optionalType = CodeTypeReference(typedefof<Optional.Option<_>>)
+                optionalType.TypeArguments.Add(ctr) |> ignore
+                optionalType
+            else ctr
+        | _ -> ctr 
+
 /// Context keeps track of already generated types for provided types and namespaces
 /// to simplify reuse and resolve mutual dependencies between types.
-type internal TypeBuilderContext =
+and internal TypeBuilderContext =
     { /// Provided types generated from type schema definitions.
       CachedTypes: Dictionary<SchemaName,RuntimeType>
       /// Provided types generated to group types from same namespace.
@@ -108,7 +136,9 @@ type internal TypeBuilderContext =
       /// X-Road protocol used by this producer.
       MessageProtocol: XRoadMessageProtocolVersion
       /// Language code preferred for code comments.
-      LanguageCode: string }
+      LanguageCode: string
+      /// Available NuGet packages.
+      Packages: NuGetPackage }
     with
         /// Find generated type that corresponds to given namespace name.
         /// If type exists, the existing instance is used; otherwise new type is generated.
@@ -262,7 +292,7 @@ type internal TypeBuilderContext =
             findElementDefinition(spec)
 
         /// Initializes new context object from given schema definition.
-        static member FromSchema(schema, languageCode) =
+        static member FromSchema(schema, languageCode, packages) =
             // Validates that schema contains single operation style, as required by X-Road specification.
             let messageProtocol =
                 let reduceStyle s1 s2 =
@@ -290,4 +320,5 @@ type internal TypeBuilderContext =
                   |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
               MessageProtocol = messageProtocol
-              LanguageCode = languageCode }
+              LanguageCode = languageCode
+              Packages = packages }

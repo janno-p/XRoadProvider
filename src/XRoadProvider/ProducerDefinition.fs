@@ -105,7 +105,7 @@ module ServiceBuilder =
                             | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
                         let p =
                             let isOptional = dspec.MinOccurs = 0u
-                            Param.create (runtimeType.AsCodeTypeReference(optional=isOptional)) name
+                            Param.create (runtimeType.AsCodeTypeReference(context, optional=isOptional)) name
                             |> Param.describe (Attributes.xrdElement None None None false false dspec.ExpectedContentTypes.IsSome)
                             |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
@@ -114,7 +114,7 @@ module ServiceBuilder =
                         let def, addedTypes = TypeBuilder.collectChoiceProperties choiceNameGen context particleSpec
                         let p =
                             let argName = argNameGen()
-                            Param.create (def.Type.AsCodeTypeReference(optional=def.IsOptional)) argName
+                            Param.create (def.Type.AsCodeTypeReference(context, optional=def.IsOptional)) argName
                             //|> Code.comment (def.Documentation)
                             |> Param.describe (Attributes.xrdElement None None None def.IsNillable false false)
                         m |> Meth.addParamExpr p |> ignore
@@ -156,14 +156,14 @@ module ServiceBuilder =
                         |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
                         |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                     resultClass
-                    |> addProperty("response", elementType, false)
+                    |> addProperty("response", elementType, false, context)
                     |> Prop.describe(Attributes.xrdElement None None None false true elementSpec.ExpectedContentTypes.IsSome)
                     |> Prop.describe(Attributes.xrdCollection None (Some(itemName)) None false false)
                     |> ignore
                     Some(resultClass)
                 | _ -> None
             m
-            |> Meth.returnsOf (elementType.AsCodeTypeReference())
+            |> Meth.returnsOf (elementType.AsCodeTypeReference(context))
             |> ignore
             match resultClass with
             | Some(cls) ->
@@ -195,7 +195,7 @@ module ServiceBuilder =
                 |> Meth.addStmt
                     (Stmt.ret
                         (Expr.cast
-                            (elementType.AsCodeTypeReference())
+                            (elementType.AsCodeTypeReference(context))
                             ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
                                 @% [(Expr.this @-> "GetType") @% []
                                     !^ operation.Name
@@ -237,12 +237,12 @@ module ServiceBuilder =
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
+let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter, packages) =
     // Load schema details from specified file or network location.
     let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
 
     // Initialize type and schema element lookup context.
-    let context = TypeBuilderContext.FromSchema(schema, languageCode)
+    let context = TypeBuilderContext.FromSchema(schema, languageCode, packages)
 
     // Create base type which holds types generated from all provided schema-s.
     let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
@@ -372,5 +372,5 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
     codeNamespace.Types.Add(targetClass) |> ignore
 
     // Compile the assembly and return to type provider.
-    let assembly = Compiler.buildAssembly(codeNamespace)
+    let assembly = Compiler.buildAssembly codeNamespace packages
     assembly.GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)

@@ -7,6 +7,8 @@ open System.Collections.Concurrent
 open System.IO
 open System.Reflection
 open XRoad
+open XRoad
+open XRoad
 
 /// Generated type providers for X-Road infrastructure.
 /// Currently only one type provider is available, which builds service interface for certain producer.
@@ -22,9 +24,13 @@ type XRoadProducerProvider() as this =
 
     // Available parameters to use for configuring type provider instance
     let staticParameters =
-        [ ProvidedStaticParameter("Uri", typeof<string>), "WSDL document location (either local file or network resource)."
-          ProvidedStaticParameter("LanguageCode", typeof<string>, "et"), "Specify language code that is extracted as documentation tooltips. Default value is estonian (et)."
-          ProvidedStaticParameter("Filter", typeof<string>, ""), "Comma separated list of operations which should be included in definitions. By default, all operations are included." ]
+        [
+            ProvidedStaticParameter("Uri", typeof<string>), "WSDL document location (either local file or network resource)."
+            ProvidedStaticParameter("LanguageCode", typeof<string>, "et"), "Specify language code that is extracted as documentation tooltips. Default value is estonian (et)."
+            ProvidedStaticParameter("Filter", typeof<string>, ""), "Comma separated list of operations which should be included in definitions. By default, all operations are included."
+            ProvidedStaticParameter("UseOptional", typeof<bool>, true), "Generate explicit optional types for xml element defainitions with minOccurs=`0` (using `Optional` nuget package). Default value is `true`."
+            ProvidedStaticParameter("UseNodaTime", typeof<bool>, true), "Generate date/time property types using `NodaTime` nuget package, otherwise standard System types are used. Default value is `true`."  
+        ]
         |> List.map (fun (parameter, doc) -> parameter.AddXmlDoc(doc); parameter :> ParameterInfo)
         |> List.toArray
 
@@ -37,15 +43,19 @@ type XRoadProducerProvider() as this =
                 let languageCode = unbox<string> staticArguments.[1]
                 let filter = unbox<string> staticArguments.[2]
 
+                let packages =
+                    (if unbox<bool> staticArguments.[3] then NuGetPackage.Optional else NuGetPackage.None) |||
+                    (if unbox<bool> staticArguments.[4] then NuGetPackage.NodaTime else NuGetPackage.None)
+
                 // Same parameter set should have same output, so caching is reasonable.
-                let key = (String.Join(".", typeNameWithArguments), uri, languageCode, filter)
+                let key = (String.Join(".", typeNameWithArguments), uri, languageCode, filter, packages)
                 match typeCache.TryGetValue(key) with
                 | false, _ ->
                     let operationFilter =
                         match filter with
                         | null -> []
                         | value -> value.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun x -> x.Trim()) |> List.ofArray
-                    typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, uri, languageCode, operationFilter)))
+                    typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, uri, languageCode, operationFilter, packages)))
                 | true, typ -> typ
             | _ -> failwith "not implemented"
 
