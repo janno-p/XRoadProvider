@@ -34,6 +34,7 @@
     </Compile>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="AssemblyInfo.Build.fs" />
+    <Compile Include="Preamble.fs" />
     <Compile Include="Attributes.fs" />
     <Compile Include="Choices.fs" />
     <Compile Include="Commons.fs" />

@@ -25,35 +25,16 @@ module internal List =
     let tryHead = function [] -> None | x::_ -> Some(x)
 #endif
 
+[<Flags>]
+type internal NuGetPackage =
+    | None     = 0b00
+    | NodaTime = 0b01
+    | Optional = 0b10
+    | All      = 0b11
+
 module internal MyOption =
     let defaultValue d o = o |> Option.fold (fun _ x -> x) d
     let defaultWith f o = match o with Some(o) -> o | None -> f()
-
-[<RequireQualifiedAccessAttribute>]
-module internal XmlNamespace =
-    let [<Literal>] Http = "http://schemas.xmlsoap.org/soap/http"
-    let [<Literal>] Mime = "http://schemas.xmlsoap.org/wsdl/mime/"
-    let [<Literal>] Soap = "http://schemas.xmlsoap.org/wsdl/soap/"
-    let [<Literal>] SoapEnc = "http://schemas.xmlsoap.org/soap/encoding/"
-    let [<Literal>] SoapEnv = "http://schemas.xmlsoap.org/soap/envelope/"
-    let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
-    let [<Literal>] Xmime = "http://www.w3.org/2005/05/xmlmime"
-    let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
-    let [<Literal>] Xmlns = "http://www.w3.org/2000/xmlns/";
-    let [<Literal>] Xop = "http://www.w3.org/2004/08/xop/include"
-    let [<Literal>] XRoad20 = "http://x-tee.riik.ee/xsd/xtee.xsd"
-    let [<Literal>] XRoad30 = "http://x-rd.net/xsd/xroad.xsd"
-    let [<Literal>] XRoad31Ee = "http://x-road.ee/xsd/x-road.xsd"
-    let [<Literal>] XRoad31Eu = "http://x-road.eu/xsd/x-road.xsd"
-    let [<Literal>] XRoad40 = "http://x-road.eu/xsd/xroad.xsd"
-    let [<Literal>] XRoad40Id = "http://x-road.eu/xsd/identifiers"
-    let [<Literal>] XRoad40Repr = "http://x-road.eu/xsd/representation.xsd"
-    let [<Literal>] Xsd = "http://www.w3.org/2001/XMLSchema"
-    let [<Literal>] Xsi = "http://www.w3.org/2001/XMLSchema-instance"
-
-    /// Defines namespaces which are handled separately (not generated).
-    let predefined =
-        [ Http; Mime; Soap; SoapEnc; SoapEnv; Wsdl; Xmime; Xml; Xmlns; Xop; Xsd; Xsi; XRoad40; XRoad40Id; XRoad40Repr ]
 
 type XRoadMessageProtocolVersion =
     | Version20 of string
@@ -126,19 +107,6 @@ module private XRoadProtocolExtensions =
 
 module internal XRoadHelper =
     let getUUID () = Guid.NewGuid().ToString()
-
-    let getSystemTypeName = function
-        | "NodaTime.LocalDate" -> Some(XmlQualifiedName("date", XmlNamespace.Xsd))
-        | "NodaTime.LocalDateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
-        | "System.String" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
-        | "System.Boolean" -> Some(XmlQualifiedName("boolean", XmlNamespace.Xsd))
-        | "System.Decimal" -> Some(XmlQualifiedName("decimal", XmlNamespace.Xsd))
-        | "System.Double" -> Some(XmlQualifiedName("double", XmlNamespace.Xsd))
-        | "System.Float" -> Some(XmlQualifiedName("float", XmlNamespace.Xsd))
-        | "System.Int32" -> Some(XmlQualifiedName("int", XmlNamespace.Xsd))
-        | "System.Numerics.BigInteger" -> Some(XmlQualifiedName("integer", XmlNamespace.Xsd))
-        | "System.Int64" -> Some(XmlQualifiedName("long", XmlNamespace.Xsd))
-        | _ -> None
 
 type internal ContentType =
     | FileStorage of FileInfo
@@ -449,12 +417,9 @@ module internal Wsdl =
             | XsdName name -> Some name
             | _ -> None
 
-        /// Matches type names which are mapped to system types.
-        let (|SystemType|_|) = function
+        let private getSystemType = function
             | XsdName "anyURI" -> Some typeof<string>
             | XsdName "boolean" -> Some typeof<bool>
-            | XsdName "date" -> Some typeof<LocalDate>
-            | XsdName "dateTime" -> Some typeof<LocalDateTime>
             | XsdName "decimal" -> Some typeof<decimal>
             | XsdName "double" -> Some typeof<double>
             | XsdName "float" -> Some typeof<single>
@@ -467,6 +432,25 @@ module internal Wsdl =
             | XsdName name -> failwithf "Unmapped XSD type %s" name
             | SoapEncName name -> failwithf "Unmapped SOAP-ENC type %s" name
             | _ -> None
+
+        /// Matches type names which are mapped to system types.
+        let (|NodaSystemType|_|) (nm: XName) =
+            match nm |> getSystemType with
+            | Some(_) as t -> t
+            | None ->
+                match nm with 
+                | XsdName "date" -> Some typeof<LocalDate>
+                | XsdName "dateTime" -> Some typeof<LocalDateTime>
+                | _ -> None
+            
+        let (|SystemType|_|) (nm: XName) =
+            match nm |> getSystemType with
+            | Some(_) as t -> t
+            | None ->
+                match nm with 
+                | XsdName "date" -> Some typeof<DateTime>
+                | XsdName "dateTime" -> Some typeof<DateTime>
+                | _ -> None
 
         /// Matches system types which can be serialized as MIME multipart attachments:
         /// From X-Road service protocol: if the message is encoded as MIME container then values of all scalar elements
@@ -808,13 +792,6 @@ module internal MultipartMessage =
             let content = new MemoryStream()
             stream.CopyTo(content)
             (upcast content, [])
-
-[<Flags>]
-type internal NuGetPackage =
-    | None     = 0b00
-    | NodaTime = 0b01
-    | Optional = 0b10
-    | All      = 0b11
 
 /// Extensions for String module and class.
 [<AutoOpen>]

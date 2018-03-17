@@ -42,7 +42,7 @@ let serializeOptionalProperty (v: HasOptionalElements) =
     let ownerTypeMap = createTypeMap ownerType
     let p = ownerType.GetProperty("Value2")
     let property = Individual { TypeMap = propertyTypeMap
-                                SimpleTypeName = XRoadHelper.getSystemTypeName (propertyType.FullName)
+                                SimpleTypeName = getDefaultSystemTypeName (propertyType.FullName)
                                 Element = Some(XName.Get("Value2"), false, true)
                                 Wrapper = Type ownerTypeMap
                                 GetMethod = Some(p.GetGetMethod())

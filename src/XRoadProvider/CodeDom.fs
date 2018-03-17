@@ -79,7 +79,7 @@ module Attributes =
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "IsAnonymous" (!^ true)
 
-    let xrdElement idx name ``namespace`` isNullable mergeContent useXop =
+    let xrdElement idx name ``namespace`` isNullable mergeContent useXop (dataType: XName option) =
         Attr.create<XRoadElementAttribute>
         |> (match idx with Some(idx) -> (Attr.addArg (!^ idx)) | None -> id)
         |> (match name with Some(name) -> (Attr.addArg (!^ name)) | None -> id)
@@ -87,6 +87,9 @@ module Attributes =
         |> (if isNullable then (Attr.addNamedArg "IsNullable" (!^ true)) else id)
         |> (if mergeContent then (Attr.addNamedArg "MergeContent" (!^ true)) else id)
         |> (if useXop then (Attr.addNamedArg "UseXop" (!^ true)) else id)
+        |> (match dataType with
+            | Some(nm) -> (Attr.addNamedArg "DataType" (!^ nm.LocalName)) >> (Attr.addNamedArg "DataTypeNamespace" (!^ nm.NamespaceName))
+            | None -> id)
 
     let xrdCollection idx itemName itemNamespace itemIsNullable mergeContent =
         Attr.create<XRoadCollectionAttribute>

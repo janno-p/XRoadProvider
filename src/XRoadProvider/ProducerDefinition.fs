@@ -105,8 +105,9 @@ module ServiceBuilder =
                             | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
                         let p =
                             let isOptional = dspec.MinOccurs = 0u
+                            let dtxn = match runtimeType with PrimitiveType(_,x) -> x | _ -> None
                             Param.create (runtimeType.AsCodeTypeReference(context, optional=isOptional)) name
-                            |> Param.describe (Attributes.xrdElement None None None false false dspec.ExpectedContentTypes.IsSome)
+                            |> Param.describe (Attributes.xrdElement None None None false false dspec.ExpectedContentTypes.IsSome dtxn)
                             |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ name)
@@ -114,9 +115,10 @@ module ServiceBuilder =
                         let def, addedTypes = TypeBuilder.collectChoiceProperties choiceNameGen context particleSpec
                         let p =
                             let argName = argNameGen()
+                            let dtxn = match def.Type with PrimitiveType(_,x) -> x | _ -> None
                             Param.create (def.Type.AsCodeTypeReference(context, optional=def.IsOptional)) argName
                             //|> Code.comment (def.Documentation)
-                            |> Param.describe (Attributes.xrdElement None None None def.IsNillable false false)
+                            |> Param.describe (Attributes.xrdElement None None None def.IsNillable false false dtxn)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ p.Name)
                         additionalMembers.AddRange(addedTypes |> Seq.cast<_>)
@@ -149,15 +151,16 @@ module ServiceBuilder =
             let elementType = TypeBuilder.buildResponseElementType context name
             let resultClass =
                 match elementType with
-                | CollectionType(_, itemName, _) ->
+                | CollectionType(itemType, itemName, _) ->
                     let elementSpec = name |> context.GetElementSpec
                     let resultClass =
                         Cls.create (sprintf "%sResult" operation.Name)
                         |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
                         |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+                    let dtxn = match itemType with PrimitiveType(_,x) -> x | _ -> None
                     resultClass
                     |> addProperty("response", elementType, false, context)
-                    |> Prop.describe(Attributes.xrdElement None None None false true elementSpec.ExpectedContentTypes.IsSome)
+                    |> Prop.describe(Attributes.xrdElement None None None false true elementSpec.ExpectedContentTypes.IsSome dtxn)
                     |> Prop.describe(Attributes.xrdCollection None (Some(itemName)) None false false)
                     |> ignore
                     Some(resultClass)

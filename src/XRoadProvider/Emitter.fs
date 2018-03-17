@@ -152,6 +152,24 @@ type Property =
     member this.HasValueMethod with get() = match this with | Individual(x) -> x.HasValueMethod | Array(x) -> x.HasValueMethod
     member this.HasOptionalElement with get() = match this with Individual(x) -> x.HasOptionalElement | Array(x) -> x.HasOptionalElement
 
+let getDefaultSystemTypeName = function
+| "NodaTime.LocalDate" -> Some(XmlQualifiedName("date", XmlNamespace.Xsd))
+| "NodaTime.LocalDateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
+| "System.String" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
+| "System.Boolean" -> Some(XmlQualifiedName("boolean", XmlNamespace.Xsd))
+| "System.DateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
+| "System.Decimal" -> Some(XmlQualifiedName("decimal", XmlNamespace.Xsd))
+| "System.Double" -> Some(XmlQualifiedName("double", XmlNamespace.Xsd))
+| "System.Float" -> Some(XmlQualifiedName("float", XmlNamespace.Xsd))
+| "System.Int32" -> Some(XmlQualifiedName("int", XmlNamespace.Xsd))
+| "System.Numerics.BigInteger" -> Some(XmlQualifiedName("integer", XmlNamespace.Xsd))
+| "System.Int64" -> Some(XmlQualifiedName("long", XmlNamespace.Xsd))
+| _ -> None
+
+let applyDataType (attr: XRoadElementAttribute) xmlType =
+    if attr.DataType |> String.isNullOrEmpty then xmlType
+    else Some(XmlQualifiedName(attr.DataType, attr.DataTypeNamespace))
+
 let firstRequired (properties: Property list) =
     properties
     |> List.tryPick (fun p -> match p.Element with Some(_,_,false) -> Some(p) | _ -> None)
@@ -1193,7 +1211,7 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
                         Element = element
                         ItemTypeMap = itemTypeMap
                         ItemElement = itemElement
-                        ItemSimpleTypeName = XRoadHelper.getSystemTypeName elementType.FullName
+                        ItemSimpleTypeName = getDefaultSystemTypeName elementType.FullName |> applyDataType attr
                         Wrapper = wrapper
                         GetMethod = getMethod
                         SetMethod = setMethod
@@ -1202,7 +1220,7 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
                 let propertyTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else propertyType) |> tmf
                 let element = if propertyTypeMap.Layout <> Some(LayoutKind.Choice) then element else None
                 Individual { TypeMap = propertyTypeMap
-                             SimpleTypeName = XRoadHelper.getSystemTypeName (propertyType.FullName)
+                             SimpleTypeName = getDefaultSystemTypeName (propertyType.FullName) |> applyDataType attr
                              Element = element
                              Wrapper = wrapper
                              GetMethod = getMethod
