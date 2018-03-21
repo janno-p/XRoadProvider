@@ -36,6 +36,45 @@ module internal MyOption =
     let defaultValue d o = o |> Option.fold (fun _ x -> x) d
     let defaultWith f o = match o with Some(o) -> o | None -> f()
 
+module internal Noda =
+    open System.Reflection
+
+    let assembly =
+        lazy
+    #if NET40
+            let assemblyName =AssemblyName("NodaTime, Version=1.4.0.0, Culture=neutral, PublicKeyToken=4226afe0d9b296d1")
+    #else
+            let assemblyName =AssemblyName("NodaTime, Version=2.2.4.0, Culture=neutral, PublicKeyToken=4226afe0d9b296d1")
+    #endif
+            Assembly.Load(assemblyName)
+
+    let dateType = lazy assembly.Value.GetType("NodaTime.LocalDate")
+    let dateTimeType = lazy assembly.Value.GetType("NodaTime.LocalDateTime")
+    let offsetDateTimeType = lazy assembly.Value.GetType("NodaTime.OffsetDateTime")
+    let datePattern = lazy assembly.Value.GetType("NodaTime.Text.LocalDatePattern")
+    let dateTimePattern = lazy assembly.Value.GetType("NodaTime.Text.LocalDateTimePattern")
+    let offsetDateTimePattern = lazy assembly.Value.GetType("NodaTime.Text.OffsetDateTimePattern")
+    let dateParseResult = lazy assembly.Value.GetType("NodaTime.Text.ParseResult`1").MakeGenericType([| dateType.Value |])
+    let dateTimeParseResult = lazy assembly.Value.GetType("NodaTime.Text.ParseResult`1").MakeGenericType([| dateTimeType.Value |])
+    let offsetDateTimeParseResult = lazy assembly.Value.GetType("NodaTime.Text.ParseResult`1").MakeGenericType([| offsetDateTimeType.Value |])
+
+module internal Opt =
+    open System.Reflection
+
+    let assembly =
+        lazy
+            let assemblyName = AssemblyName("Optional, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null")
+            Assembly.Load(assemblyName)
+
+    let optionType = lazy assembly.Value.GetType("Optional.Option`1")
+    let optionExtType = lazy assembly.Value.GetType("Optional.Option")
+
+    let optionalSomeMethod =
+        lazy
+            optionExtType.Value.GetMethods()
+            |> Array.filter (fun m -> m.Name = "Some" && m.GetGenericArguments().Length = 1)
+            |> Array.exactlyOne
+
 type XRoadMessageProtocolVersion =
     | Version20 of string
     | Version30 of string
@@ -379,8 +418,6 @@ module internal Wsdl =
     /// Active patterns for matching XML document nodes from various namespaces.
     [<AutoOpen>]
     module Pattern =
-        open NodaTime
-
         /// Matches names defined in `http://www.w3.org/2001/XMLSchema` namespace.
         let (|XsdName|_|) (name: XName) =
             match name.NamespaceName with
@@ -417,40 +454,23 @@ module internal Wsdl =
             | XsdName name -> Some name
             | _ -> None
 
-        let private getSystemType = function
-            | XsdName "anyURI" -> Some typeof<string>
-            | XsdName "boolean" -> Some typeof<bool>
-            | XsdName "decimal" -> Some typeof<decimal>
-            | XsdName "double" -> Some typeof<double>
-            | XsdName "float" -> Some typeof<single>
-            | XsdName "int" -> Some typeof<int>
-            | XsdName "integer" -> Some typeof<bigint>
-            | XsdName "long" -> Some typeof<int64>
-            | XsdName "string" -> Some typeof<string>
-            | XsdName "ID" -> Some typeof<string>
-            | XsdName "NMTOKEN" -> Some typeof<string>
-            | XsdName name -> failwithf "Unmapped XSD type %s" name
+        /// Matches type names which are mapped to system types.
+        let (|SystemType|_|) = function
+            | XsdName "anyURI" -> Some (typeof<string>, SerializationHint.None)
+            | XsdName "boolean" -> Some (typeof<bool>, SerializationHint.None)
+            | XsdName "date" -> Some (typeof<DateTime>, SerializationHint.IsDate)
+            | XsdName "dateTime" -> Some (typeof<DateTime>, SerializationHint.None)
+            | XsdName "decimal" -> Some (typeof<decimal>, SerializationHint.None)
+            | XsdName "double" -> Some (typeof<double>, SerializationHint.None)
+            | XsdName "float" -> Some (typeof<single>, SerializationHint.None)
+            | XsdName "int" -> Some (typeof<int>, SerializationHint.None)
+            | XsdName "integer" -> Some (typeof<bigint>, SerializationHint.None)
+            | XsdName "long" -> Some (typeof<int64>, SerializationHint.None)
+            | XsdName "string" -> Some (typeof<string>, SerializationHint.None)
+            | XsdName "ID" -> Some (typeof<string>, SerializationHint.None)
+            | XsdName "NMTOKEN" -> Some (typeof<string>, SerializationHint.None)
             | SoapEncName name -> failwithf "Unmapped SOAP-ENC type %s" name
             | _ -> None
-
-        /// Matches type names which are mapped to system types.
-        let (|NodaSystemType|_|) (nm: XName) =
-            match nm |> getSystemType with
-            | Some(_) as t -> t
-            | None ->
-                match nm with 
-                | XsdName "date" -> Some typeof<LocalDate>
-                | XsdName "dateTime" -> Some typeof<LocalDateTime>
-                | _ -> None
-            
-        let (|SystemType|_|) (nm: XName) =
-            match nm |> getSystemType with
-            | Some(_) as t -> t
-            | None ->
-                match nm with 
-                | XsdName "date" -> Some typeof<DateTime>
-                | XsdName "dateTime" -> Some typeof<DateTime>
-                | _ -> None
 
         /// Matches system types which can be serialized as MIME multipart attachments:
         /// From X-Road service protocol: if the message is encoded as MIME container then values of all scalar elements

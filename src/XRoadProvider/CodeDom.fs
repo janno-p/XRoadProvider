@@ -7,6 +7,7 @@ open System.CodeDom
 open System.CodeDom.Compiler
 open System.Diagnostics
 open System.IO
+open System.Reflection
 
 open TypeSchema
 
@@ -79,7 +80,14 @@ module Attributes =
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "IsAnonymous" (!^ true)
 
-    let xrdElement idx name ``namespace`` isNullable mergeContent useXop (dataType: XName option) =
+    let xrdElement idx name ``namespace`` isNullable mergeContent useXop (hint: SerializationHint) =
+        let hintExpr (h: SerializationHint) =
+            Enum.GetValues(typeof<SerializationHint>)
+            |> Seq.cast<SerializationHint>
+            |> Seq.filter (fun x -> x <> SerializationHint.None && h.HasFlag(x))
+            |> Seq.map (fun x -> Enum.GetName(typeof<SerializationHint>, x))
+            |> Seq.map (fun x -> Expr.typeRefOf<SerializationHint> @=> x)
+            |> Seq.reduce (fun x y -> CodeBinaryOperatorExpression(x, CodeBinaryOperatorType.BitwiseOr, y) :> CodeExpression)
         Attr.create<XRoadElementAttribute>
         |> (match idx with Some(idx) -> (Attr.addArg (!^ idx)) | None -> id)
         |> (match name with Some(name) -> (Attr.addArg (!^ name)) | None -> id)
@@ -87,9 +95,7 @@ module Attributes =
         |> (if isNullable then (Attr.addNamedArg "IsNullable" (!^ true)) else id)
         |> (if mergeContent then (Attr.addNamedArg "MergeContent" (!^ true)) else id)
         |> (if useXop then (Attr.addNamedArg "UseXop" (!^ true)) else id)
-        |> (match dataType with
-            | Some(nm) -> (Attr.addNamedArg "DataType" (!^ nm.LocalName)) >> (Attr.addNamedArg "DataTypeNamespace" (!^ nm.NamespaceName))
-            | None -> id)
+        |> (if hint = SerializationHint.None then id else (Attr.addNamedArg "Hint" (hintExpr hint)))
 
     let xrdCollection idx itemName itemNamespace itemIsNullable mergeContent =
         Attr.create<XRoadCollectionAttribute>
@@ -98,7 +104,7 @@ module Attributes =
         |> (match itemNamespace with Some(ns) -> (Attr.addNamedArg "ItemNamespace" (!^ ns)) | None -> id)
         |> (if itemIsNullable then (Attr.addNamedArg "ItemIsNullable" (!^ true)) else id)
         |> (if mergeContent then (Attr.addNamedArg "MergeContent" (!^ true)) else id)
-    
+
     let xrdOperation name (version: string option) (protocol: XRoadProtocol) messageProtocol =
         Attr.create<XRoadOperationAttribute>
         |> Attr.addArg (!^ name)
@@ -243,9 +249,9 @@ module Compiler =
         codeCompileUnit.ReferencedAssemblies.Add(typeof<ITypeProvider>.Assembly.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add(typeof<BinaryContent>.Assembly.Location) |> ignore
         if packages.HasFlag NuGetPackage.NodaTime then
-            codeCompileUnit.ReferencedAssemblies.Add(typeof<NodaTime.LocalDate>.Assembly.Location) |> ignore
+            codeCompileUnit.ReferencedAssemblies.Add(Noda.assembly.Value.Location) |> ignore
         if packages.HasFlag NuGetPackage.Optional then
-            codeCompileUnit.ReferencedAssemblies.Add(typeof<Optional.Option>.Assembly.Location) |> ignore
+            codeCompileUnit.ReferencedAssemblies.Add(Opt.assembly.Value.Location) |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Net.dll") |> ignore
         codeCompileUnit.ReferencedAssemblies.Add("System.Numerics.dll") |> ignore

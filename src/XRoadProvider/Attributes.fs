@@ -3,6 +3,15 @@
 open System
 open XRoad
 
+
+/// Provide extra options for serializer to customize default behavior.
+[<Flags>]
+type SerializationHint =
+    | None       = 0b00
+    | IsOptional = 0b01
+    | IsDate     = 0b10
+
+
 /// Specifies content layout for a type. Controls how element properties are
 /// handled in deserialization.
 type LayoutKind =
@@ -84,12 +93,9 @@ type XRoadElementAttribute(id: int, name: string) =
     /// Applicable for binary properties. When true, given property is serialized using
     /// MTOM+XOP protocol.
     member val UseXop = false with get, set
-    
-    /// Customize serialized data type (allows to use same runtime type to handle multiple different xml types).
-    member val DataType = Unchecked.defaultof<string> with get, set
-    
-    /// Customize serialized data type (allows to use same runtime type to handle multiple different xml types).
-    member val DataTypeNamespace = "" with get, set
+
+    /// Customize default serialization behavior
+    member val Hint = SerializationHint.None with get, set
 
 
 /// Provides serialization option for various collection types.

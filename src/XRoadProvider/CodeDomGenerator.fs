@@ -23,7 +23,7 @@ let addProperty (name : string, ty: RuntimeType, isOptional, context) (owner: Co
     p
 
 let addContentProperty (name: string, ty: RuntimeType, useXop, context) (owner: CodeTypeDeclaration) =
-    let dtxn = match ty with PrimitiveType(_,x) -> x | _ -> None
+    let dtxn = match ty with PrimitiveType(_,x) -> x | _ -> SerializationHint.None
     let name = name.GetValidPropertyName()
     Fld.createRef (ty.AsCodeTypeReference(context, true)) (sprintf "%s { get; private set; } //" name)
     |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
@@ -60,7 +60,7 @@ module TypeBuilder =
           UseXop: bool }
         /// Initializes default property with name and optional value.
         static member Create(name, isOptional, doc, useXop) =
-            { Type = PrimitiveType(typeof<Void>, None)
+            { Type = PrimitiveType(typeof<Void>, SerializationHint.None)
               IsNillable = false
               IsItemNillable = None
               IsOptional = isOptional
@@ -76,13 +76,13 @@ module TypeBuilder =
         match prop.IsWrappedArray, prop.Type with
         | Some(hasWrapper), CollectionType(itemType,itemName,_) ->
             let isItemNillable = prop.IsItemNillable |> MyOption.defaultValue false
-            let dtxn = match itemType with PrimitiveType(_,x) -> x | _ -> None
+            let dtxn = match itemType with PrimitiveType(_,x) -> x | _ -> SerializationHint.None
             [ Attributes.xrdElement idx elementName None prop.IsNillable (not hasWrapper) prop.UseXop dtxn
               Attributes.xrdCollection idx (Some(itemName)) None isItemNillable false ]
         | Some(_), _ ->
             failwith "Array should match to CollectionType."
         | None, _ ->
-            let dtxn = match prop.Type with PrimitiveType(_,x) -> x | _ -> None
+            let dtxn = match prop.Type with PrimitiveType(_,x) -> x | _ -> SerializationHint.None
             [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.UseXop dtxn ]
 
     /// Build property declarations from property definitions and add them to owner type.
@@ -107,7 +107,7 @@ module TypeBuilder =
     /// Create definition of property that accepts any element not defined in schema.
     let private buildAnyProperty () =
         let prop = PropertyDefinition.Create("AnyElements", false, None, false)
-        { prop with Type = PrimitiveType(typeof<XElement[]>, None); IsAny = true }
+        { prop with Type = PrimitiveType(typeof<XElement[]>, SerializationHint.None); IsAny = true }
 
     let private annotationToText (context: TypeBuilderContext) (annotation: Annotation option) =
         annotation
@@ -335,7 +335,7 @@ module TypeBuilder =
                 | Sequence(spec) ->
                     let props, types = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
-                    choiceType |> Cls.describe (Attributes.xrdElement (Some(i + 1)) (Some(optionName)) None false true false None) |> ignore
+                    choiceType |> Cls.describe (Attributes.xrdElement (Some(i + 1)) (Some(optionName)) None false true false SerializationHint.None) |> ignore
                     let optionType = createOptionType context optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod context (i + 1) optionName optionRuntimeType
@@ -405,7 +405,7 @@ module TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
-                        let dtxn = match rtyp with PrimitiveType(_,x) -> x | _ -> None
+                        let dtxn = match rtyp with PrimitiveType(_,x) -> x | _ -> SerializationHint.None
                         providedTy
                         |> addProperty("BaseValue", rtyp, false, context)
                         |> Prop.describe (Attributes.xrdElement None None None false true false dtxn) |> ignore

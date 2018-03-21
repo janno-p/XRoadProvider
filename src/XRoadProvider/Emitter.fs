@@ -152,6 +152,8 @@ type Property =
     member this.HasValueMethod with get() = match this with | Individual(x) -> x.HasValueMethod | Array(x) -> x.HasValueMethod
     member this.HasOptionalElement with get() = match this with Individual(x) -> x.HasOptionalElement | Array(x) -> x.HasOptionalElement
 
+type DatePlaceholder = struct end
+
 let getDefaultSystemTypeName = function
 | "NodaTime.LocalDate" -> Some(XmlQualifiedName("date", XmlNamespace.Xsd))
 | "NodaTime.LocalDateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
@@ -167,8 +169,9 @@ let getDefaultSystemTypeName = function
 | _ -> None
 
 let applyDataType (attr: XRoadElementAttribute) xmlType =
-    if attr.DataType |> String.isNullOrEmpty then xmlType
-    else Some(XmlQualifiedName(attr.DataType, attr.DataTypeNamespace))
+    if attr.Hint.HasFlag(SerializationHint.IsDate)
+    then Some(XmlQualifiedName("date", XmlNamespace.Xsd)) 
+    else xmlType
 
 let firstRequired (properties: Property list) =
     properties
@@ -178,9 +181,12 @@ type private XopBinaryContent() =
     inherit BinaryContent("", Data [| |])
 
 let (|Serializable|NotSerializable|) (typ: Type) =
-    match typ.GetCustomAttribute<XRoadTypeAttribute>() with
-    | null -> NotSerializable
-    | attr -> Serializable(attr)
+    let typName = match Nullable.GetUnderlyingType(typ) with null -> typ.FullName | typ -> typ.FullName
+    match typName, typ.GetCustomAttribute<XRoadTypeAttribute>() with
+    | "NodaTime.LocalDateTime", null
+    | "NodaTime.LocalDate", null -> Serializable(None)
+    | _, null -> NotSerializable
+    | _, attr -> Serializable(Some(attr))
 
 let safe (name: XName) = if name.NamespaceName = "" then name.LocalName else sprintf "%s:%s" name.NamespaceName name.LocalName
 
@@ -194,7 +200,7 @@ let getContentOfType (typeMap: TypeMap) : PropertyInput list =
     |> List.map
         (fun (p, attr) ->
             let propertyType, isOptionalType, hasValueMethod =
-                if p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() = typedefof<Optional.Option<_>> then
+                if p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() = Opt.optionType.Value then
                     p.PropertyType.GenericTypeArguments.[0], true, Some(p.PropertyType.GetProperty("HasValue").GetGetMethod())
                 else p.PropertyType, false, None
             Type typeMap, p.Name, propertyType, isOptionalType, hasValueMethod, Some(p.GetGetMethod()), Some(p.GetSetMethod(true)), attr, p.GetCustomAttribute<XRoadCollectionAttribute>() |> Option.ofObj)
@@ -204,7 +210,7 @@ let getContentOfMethod (mi: MethodInfo) : PropertyInput list =
     |> Seq.choose (fun p -> p.GetCustomAttribute<XRoadElementAttribute>() |> Option.ofObj |> Option.map (fun x -> (p, x)))
     |> Seq.mapi (fun i (p, attr) ->
         let parameterType, isOptionalType, hasValueMethod =
-            if p.ParameterType.IsGenericType && p.ParameterType.GetGenericTypeDefinition() = typedefof<Optional.Option<_>> then
+            if p.ParameterType.IsGenericType && p.ParameterType.GetGenericTypeDefinition() = Opt.optionType.Value then
                 p.ParameterType.GenericTypeArguments.[0], true, Some(p.ParameterType.GetProperty("HasValue").GetGetMethod())
             else p.ParameterType, false, None
         Method(mi, i), p.Name, parameterType, isOptionalType, hasValueMethod, None, None, attr, p.GetCustomAttribute<XRoadCollectionAttribute>() |> Option.ofObj)
@@ -231,12 +237,20 @@ let getContentOfChoice (choiceMap: TypeMap) : PropertyInput list =
                         | [| pi |] -> (pi.ParameterType, mi)
                         | _ -> failwithf "Type `%s` method `New%s` should have exactly one argument." choiceType.FullName attr.Name
             let parameterType, isOptionalType, hasValueMethod =
-                if typ.IsGenericType && typ.GetGenericTypeDefinition() = typedefof<Optional.Option<_>> then
+                if typ.IsGenericType && typ.GetGenericTypeDefinition() = Opt.optionType.Value then
                     typ.GenericTypeArguments.[0], true, Some(typ.GetProperty("HasValue").GetGetMethod())
                 else typ, false, None
             let collectionAttr = choiceType.GetCustomAttributes<XRoadCollectionAttribute>() |> Seq.tryFind (fun a -> a.Id = attr.Id)
             Choice (choiceMap, idField, valueField, attr.Id, mi), attr.Name, parameterType, isOptionalType, hasValueMethod, None, None, attr, collectionAttr)
     |> Seq.toList
+
+let emitDefaultValue typ = emit' {
+    declare_variable (lazy declareLocal typ) (fun x -> emit' {
+        ldloca x
+        initobj typ
+        ldloc x
+    })
+}
 
 module EmitSerialization =
     /// Check if values type matches expected type.
@@ -478,7 +492,7 @@ module EmitSerialization =
                                 declare_variable (lazy declareLocalOf<int>) (fun i -> emit' {
                                     ldc_i4_0
                                     stloc i
-                                    define_labels 2 (fun (List2(markLoopCondition, markLoopStart)) -> emit' {
+                                    define_labels_2 (fun markLoopCondition markLoopStart -> emit' {
                                         br markLoopCondition
                                         set_marker markLoopStart
                                         nop
@@ -526,13 +540,7 @@ module EmitSerialization =
                     stloc opt
                     ldloca opt
                     merge (
-                        if not typ.IsValueType then emit' { ldnull } else emit' {
-                            declare_variable (lazy (declareLocal typ)) (fun temp -> emit' {
-                                ldloca temp
-                                initobj typ
-                                ldloc temp
-                            })
-                        }
+                        if not typ.IsValueType then emit' { ldnull } else (emitDefaultValue typ)
                     )
                     call (property.HasValueMethod.Value.DeclaringType.GetMethod("ValueOr", [| typ |]))
                 })
@@ -546,6 +554,24 @@ module EmitSerialization =
         properties
         |> List.map (fun property -> emitOptionalFieldSerialization property (emitPropertyContentSerialization (emitPropertyValue property) isEncoded property))
         |> (fun items -> if items.IsEmpty then id else items |> List.reduce ((>>)))
+        
+    let emitSerializeNullable fser = emit' {
+        define_labels_2 (fun lbl1 lbl2 -> emit' {
+            ldarg_1
+            ldnull
+            ceq
+            brtrue lbl1
+            merge fser
+            br lbl2
+            set_marker lbl1
+            ldarg_0
+            ldstr "nil"
+            ldstr XmlNamespace.Xsi
+            ldstr "true"
+            callvirt_expr <@ (null: XmlWriter).WriteAttributeString("", "", "") @>
+            set_marker lbl2
+        })
+    }
 
 module EmitDeserialization =
     let emitDebug arg = emit' {
@@ -741,11 +767,6 @@ module EmitDeserialization =
             castclass tm.Type
         }
 
-    let optionalSomeMethod =
-        typeof<Optional.Option>.GetMethods()
-        |> Array.filter (fun m -> m.Name = "Some" && m.GetGenericArguments().Length = 1)
-        |> Array.exactlyOne
-
     let emitIndividualPropertyDeserialization isContent (propertyMap: PropertyMap) = emit' {
         merge (emitPropertyValueDeserialization isContent propertyMap.TypeMap)
         declare_variable (lazy (declareLocal propertyMap.TypeMap.Type)) (fun x -> emit' {
@@ -754,7 +775,7 @@ module EmitDeserialization =
             ldloc x
             merge (
                 if propertyMap.HasOptionalElement then (emit' {
-                    call (optionalSomeMethod.MakeGenericMethod([| propertyMap.TypeMap.Type |]))
+                    call (Opt.optionalSomeMethod.Value.MakeGenericMethod([| propertyMap.TypeMap.Type |]))
                 }) else id
             )
         })
@@ -796,7 +817,7 @@ module EmitDeserialization =
             ldloc arrDepthVar
             declare_variable (lazy declareLocalOf<int>) (fun depthVar -> emit' {
                 stloc depthVar
-                define_labels 3 (fun (List3 (markArrayNull, markArrayEnd, markLoopStart)) -> emit' {
+                define_labels_3 (fun markArrayNull markArrayEnd markLoopStart -> emit' {
                     merge (
                         if arrayMap.Element.IsSome then (emit' {
                             merge emitNullCheck
@@ -862,7 +883,7 @@ module EmitDeserialization =
                             ldloc instance
                             merge (
                                 if arrayMap.HasOptionalElement then (emit' {
-                                    call (optionalSomeMethod.MakeGenericMethod([| arrayMap.Type |]))
+                                    call (Opt.optionalSomeMethod.Value.MakeGenericMethod([| arrayMap.Type |]))
                                 }) else id
                             )
                         })
@@ -933,7 +954,7 @@ module EmitDeserialization =
                     | None -> emit' { brfalse returnLabel }
                 )
 
-                define_labels 2 (fun (List2(markNext, markDeserialize)) -> emit' {
+                define_labels_2 (fun markNext markDeserialize -> emit' {
                     merge (
                         match property with
                         | Individual { Element = Some(name,_,isOptional) }
@@ -955,6 +976,98 @@ module EmitDeserialization =
                 })
             }
 
+    let emitReadToNextWrapper typ f = emit' {
+        declare_variable (lazy declareLocalOf<int32>) (fun depth -> emit' {
+            ldarg_0
+            callvirt_expr <@ (null: XmlReader).Depth @>
+            stloc depth
+            declare_variable (lazy declareLocalOf<string>) (fun name -> emit' {
+                ldarg_0
+                callvirt_expr <@ (null: XmlReader).LocalName @>
+                stloc name
+                declare_variable (lazy declareLocalOf<string>) (fun ns -> emit' {
+                    ldarg_0
+                    callvirt_expr <@ (null: XmlReader).NamespaceURI @>
+                    stloc ns
+                    declare_variable (lazy declareLocal typ) (fun v -> emit' {
+                        merge f
+                        stloc v
+                        ldarg_0
+                        ldloc name
+                        ldloc ns
+                        ldloc depth
+                        ldc_i4_0
+                        call_expr <@ (null: XmlReader).ReadToNextElement("", "", 0, false) @>
+                        ldloc v
+                    })
+                })
+            })
+        })
+    }
+
+    let emitDeserializeValue (typ: Type) f = emit' {
+        ldarg_0
+        callvirt_expr <@ (null: XmlReader).IsEmptyElement @>
+        define_labels_3 (fun lbl1 lbl2 lbl3 -> emit' {
+            brfalse lbl1
+            merge (emitDefaultValue typ)
+            br lbl3
+            set_marker lbl1
+            ldarg_0
+            callvirt_expr <@ (null: XmlReader).Read() @>
+            brfalse lbl2
+            merge f
+            br lbl3
+            set_marker lbl2
+            ldstr "Unexpected end of SOAP message."
+            newobj_expr <@ Exception("") @>
+            throw
+            set_marker lbl3
+        })
+    }
+
+    let emitDeserializeNullable (typ: Type) fdeser = emit' {
+        ldarg_0
+        ldstr "nil"
+        ldstr XmlNamespace.Xsi
+        callvirt_expr <@ (null: XmlReader).GetAttribute("", "") @>
+        declare_variable (lazy declareLocalOf<string>) (fun nilValue -> emit' {
+            stloc nilValue
+            ldloc nilValue
+            ldnull
+            ceq
+            define_label (fun lbl -> emit' {
+                brfalse lbl
+                ldstr ""
+                stloc nilValue
+                set_marker lbl
+                ldloc nilValue
+                callvirt_expr <@ "".ToLower() @>
+                stloc nilValue
+            })
+            ldloc nilValue
+            ldstr "1"
+            string_equals
+            define_labels_2 (fun lbl1 lbl2 -> emit' {
+                brtrue lbl1
+                ldloc nilValue
+                ldstr "true"
+                string_equals
+                brtrue lbl1
+                declare_variable (lazy declareLocal typ) (fun n -> emit' {
+                    ldloca n
+                    merge fdeser
+                    ctor (typ.GetConstructor([| Nullable.GetUnderlyingType(typ) |]))
+                    ldloc n
+                })
+                br lbl2
+                set_marker lbl1
+                ldnull
+                set_marker lbl2
+            })
+        })
+    }
+
 let (|InlineContent|_|) (properties: Property list) =
     match properties with
     | [Individual({ Element = None; TypeMap = typeMap }) as prop]
@@ -963,6 +1076,83 @@ let (|InlineContent|_|) (properties: Property list) =
         | Some(LayoutKind.Choice) -> None
         | _ -> Some(prop)
     | _ -> None
+
+let systemTypeMap: Map<string, Lazy<(Emitter * Emitter)>> =
+    Map.ofList
+        [
+            ("NodaTime.LocalDate",
+                lazy
+                    let typ = Noda.dateType.Value
+                    let isoProp = Noda.datePattern.Value.GetProperty("Iso")
+                    let formatMeth = Noda.datePattern.Value.GetMethod("Format", [| typ |])
+                    let ser = emit' {
+                        ldarg_0
+                        call (isoProp.GetGetMethod())
+                        ldarg_1
+                        unbox typ
+                        callvirt formatMeth
+                        callvirt_expr <@ (null: XmlWriter).WriteValue("") @>
+                    }
+                    let parseMeth = Noda.datePattern.Value.GetMethod("Parse", [| typeof<string> |])
+                    let valueOrThrowMeth = Noda.dateParseResult.Value.GetMethod("GetValueOrThrow", [||])
+                    let deser = emit' {
+                        call (isoProp.GetGetMethod())
+                        ldarg_0
+                        callvirt_expr <@ (null: XmlReader).ReadContentAsString() @>
+                        callvirt parseMeth
+                        callvirt valueOrThrowMeth
+                    }
+                    (ser, deser))
+            ("NodaTime.LocalDateTime",
+                lazy
+                    let typ = Noda.dateTimeType.Value
+                    let isoProp = Noda.dateTimePattern.Value.GetProperty("GeneralIso")
+                    let formatMeth = Noda.dateTimePattern.Value.GetMethod("Format", [| typ |])
+                    let ser = emit' {
+                        ldarg_0
+                        call (isoProp.GetGetMethod())
+                        ldarg_1
+                        unbox typ
+                        callvirt formatMeth
+                        callvirt_expr <@ (null: XmlWriter).WriteValue("") @>
+                    }
+                    let extendedIsoProp = Noda.dateTimePattern.Value.GetProperty("ExtendedIso").GetGetMethod()
+                    let offsetExtendedIsoProp = Noda.dateTimePattern.Value.GetProperty("ExtendedIso").GetGetMethod()
+                    let parseMethod = Noda.dateTimePattern.Value.GetMethod("Parse", [| typeof<string> |])
+                    let successProp = Noda.dateTimeParseResult.Value.GetProperty("Success").GetGetMethod()
+                    let valueProp = Noda.dateTimeParseResult.Value.GetProperty("Value").GetGetMethod()
+                    let valueOrThrowMeth = Noda.offsetDateTimeParseResult.Value.GetMethod("GetValueOrThrow", [||])
+                    let localDateTimeProp = Noda.offsetDateTimeType.Value.GetProperty("LocalDateTime").GetGetMethod()
+                    let deser = emit' {
+                        ldarg_0
+                        callvirt_expr <@ (null: XmlReader).ReadContentAsString() @>
+                        declare_variable (lazy declareLocalOf<string>) (fun value -> emit' {
+                            stloc value
+                            define_labels_2 (fun lbl1 lbl2 -> emit' {
+                                call extendedIsoProp
+                                ldloc value
+                                callvirt parseMethod
+                                declare_variable (lazy declareLocal Noda.dateTimeParseResult.Value) (fun result -> emit' {
+                                    stloc result
+                                    ldloc result
+                                    callvirt successProp
+                                    brfalse lbl1
+                                    ldloc result
+                                    callvirt valueProp
+                                    br lbl2
+                                    set_marker lbl1
+                                    call offsetExtendedIsoProp
+                                    ldloc value
+                                    callvirt parseMethod
+                                    callvirt valueOrThrowMeth
+                                    callvirt localDateTimeProp
+                                })
+                                set_marker lbl2
+                            })
+                        })
+                    }
+                    (ser, deser))
+        ]
 
 let rec private createDeserializeContentMethodBody (typeMap: TypeMap) (properties: Property list) =
     emit' {
@@ -1230,6 +1420,11 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
 and private typeMaps = ConcurrentDictionary<Type, TypeMap>()
 and private uncompleteTypeMaps = ConcurrentDictionary<Type, TypeMap>()
 
+and private addSystemTypeMap typ ser deser =
+    let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
+    typeMap.IsComplete <- true
+    typeMaps.TryAdd(typ, typeMap) |> ignore
+
 and private createTypeMap (isEncoded: bool) (typ: Type) =
     let addTypeMap (init: TypeMap -> unit) (typ: Type) =
         let serialization, deserialization = typ |> Serialization.Create, typ |> Deserialization.Create
@@ -1248,12 +1443,37 @@ and private createTypeMap (isEncoded: bool) (typ: Type) =
     match typ with
     | NotSerializable ->
         failwithf "Type `%s` is not serializable." typ.FullName
-    | Serializable(typeAttribute) ->
+    | Serializable(Some(typeAttribute)) ->
         typ |> addTypeMap (fun typeMap ->
             match typeAttribute.Layout with
             | LayoutKind.Choice -> typeMap |> createChoiceTypeSerializers isEncoded (getContentOfChoice typeMap |> getProperties (getTypeMap isEncoded))
             | _ -> typeMap |> createTypeSerializers isEncoded
             )
+    | Serializable(None) ->
+        let typName, isNullable = match Nullable.GetUnderlyingType(typ) with null -> typ.FullName, false | typ -> typ.FullName, true
+        let emitSer, emitDeser = (systemTypeMap |> Map.find typName).Value
+        if isNullable then
+            let utyp = Nullable.GetUnderlyingType(typ)
+            let nullSer = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |], true)
+            defineMethod nullSer (EmitSerialization.emitSerializeNullable emitSer)
+            let nullDeser = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
+            defineMethod nullDeser (emit' {
+                merge (EmitDeserialization.emitReadToNextWrapper typ (EmitDeserialization.emitDeserializeNullable typ (EmitDeserialization.emitDeserializeValue utyp emitDeser)))
+                box typ
+                ret
+            })
+            addSystemTypeMap typ nullSer nullDeser
+        else
+            let ser = DynamicMethod(sprintf "%s_Serialize" typ.FullName, null, [| typeof<XmlWriter>; typeof<obj>; typeof<SerializerContext> |], true)
+            defineMethod ser emitSer
+            let deser = DynamicMethod(sprintf "%s_Deserialize" typ.FullName, typeof<obj>, [| typeof<XmlReader>; typeof<SerializerContext> |], true)
+            defineMethod deser (emit' {
+                merge (EmitDeserialization.emitReadToNextWrapper typ (EmitDeserialization.emitDeserializeValue typ emitDeser))
+                box typ
+                ret
+            })
+            addSystemTypeMap typ ser deser
+        typeMaps.[typ]
 
 and internal getTypeMap (isEncoded: bool) (typ: Type) : TypeMap =
     match typeMaps.TryGetValue(typ) with
@@ -1284,9 +1504,8 @@ let getCompleteTypeMap isEncoded typ =
     typeMap
 
 module internal XsdTypes =
-    open NodaTime
-    open NodaTime.Text
     open System.IO
+    open System.Globalization
 
     let readToNextWrapper (r: XmlReader) f =
         let depth = r.Depth
@@ -1311,11 +1530,11 @@ module internal XsdTypes =
         if value |> isNull then writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
         else fser(writer, value, context)
 
-    let serializeLocalDate (writer: XmlWriter, value: obj, _: SerializerContext) =
-        writer.WriteValue(LocalDatePattern.Iso.Format(unbox value))
+    let serializeDate (writer: XmlWriter, value: obj, _: SerializerContext) =
+        writer.WriteValue(XmlConvert.ToString(unbox<DateTime> value, "yyyy-MM-dd"));
 
-    let serializeLocalDateTime (writer: XmlWriter, value: obj, _: SerializerContext) =
-        writer.WriteValue(LocalDateTimePattern.GeneralIso.Format(unbox value))
+    let serializeDateTime (writer: XmlWriter, value: obj, _: SerializerContext) =
+        writer.WriteValue(value);
 
     let deserializeNullable (reader: XmlReader) (context: SerializerContext) fdeser =
         let nilValue = reader.GetAttribute("nil", XmlNamespace.Xsi)
@@ -1332,15 +1551,33 @@ module internal XsdTypes =
         elif reader.Read() then reader.ReadContentAsString() |> box
         else failwith "Unexpected end of SOAP message."
 
+    let dateFormats =
+        [|
+            "yyyy-MM-dd"
+            "'+'yyyy-MM-dd"
+            "'-'yyyy-MM-dd"
+            "yyyy-MM-ddzzz"
+            "'+'yyyy-MM-ddzzz"
+            "'-'yyyy-MM-ddzzz"
+            "yyyy-MM-dd'Z'"
+            "'+'yyyy-MM-dd'Z'"
+            "'-'yyyy-MM-dd'Z'"
+        |]
+
+    let deserializeDateValue value =
+        if value |> String.IsNullOrEmpty then DateTime() else
+        let date = DateTime.ParseExact(value, dateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None);
+        if value.[value.Length - 1] = 'Z' then date.ToLocalTime() else date
+
     let deserializeDateTimeValue value =
-        match LocalDateTimePattern.ExtendedIso.Parse(value) with
-        | result when result.Success -> result.Value
-        | _ -> OffsetDateTimePattern.ExtendedIso.Parse(value).GetValueOrThrow().LocalDateTime
+        if value |> String.IsNullOrEmpty then DateTime() else
+        let dateTime = XmlConvert.ToDateTimeOffset(value).DateTime
+        dateTime.AddTicks(-(dateTime.Ticks % TimeSpan.TicksPerSecond))
 
     let serializeNullableDefault (writer, value, context) = serializeNullable writer value context serializeDefault
     let serializeNullableBigInteger (writer, value, context) = serializeNullable writer value context serializeBigInteger
-    let serializeNullableLocalDate (writer, value, context) = serializeNullable writer value context serializeLocalDate
-    let serializeNullableLocalDateTime (writer, value, context) = serializeNullable writer value context serializeLocalDateTime
+    let serializeNullableDate (writer, value, context) = serializeNullable writer value context serializeDate
+    let serializeNullableDateTime (writer, value, context) = serializeNullable writer value context serializeDateTime
 
     let deserializeBoolean (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsBoolean)
     let deserializeDecimal (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsDecimal)
@@ -1348,8 +1585,8 @@ module internal XsdTypes =
     let deserializeInt32 (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsInt)
     let deserializeInt64 (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context reader.ReadContentAsLong)
     let deserializeBigInteger (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger))
-    let deserializeLocalDate (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> LocalDatePattern.Iso.Parse(reader.ReadContentAsString()).GetValueOrThrow()))
-    let deserializeLocalDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateTimeValue))
+    let deserializeDate (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateValue))
+    let deserializeDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateTimeValue))
 
     let deserializeNullableBoolean (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeBoolean)
     let deserializeNullableDecimal (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeDecimal)
@@ -1357,8 +1594,8 @@ module internal XsdTypes =
     let deserializeNullableInt32 (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeInt32)
     let deserializeNullableInt64 (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeInt64)
     let deserializeNullableBigInteger (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeBigInteger)
-    let deserializeNullableLocalDate (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeLocalDate)
-    let deserializeNullableLocalDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeLocalDateTime)
+    let deserializeNullableDate (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeDate)
+    let deserializeNullableDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeDateTime)
     let deserializeString (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeStringValue)
 
     let serializeBinaryContent (writer: XmlWriter, value: obj, context: SerializerContext) =
@@ -1426,11 +1663,6 @@ module internal XsdTypes =
             else BinaryContent.Create([| |])
     )
 
-    let private addTypeMap typ ser deser =
-        let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
-        typeMap.IsComplete <- true
-        typeMaps.TryAdd(typ, typeMap) |> ignore
-
     let private addBinaryTypeMap typ ser deser =
         let typeMap = TypeMap.Create(typeof<BinaryContent>, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
         typeMap.IsComplete <- true
@@ -1439,23 +1671,23 @@ module internal XsdTypes =
     let mi e = match e with Call(_,mi,_) -> mi | _ -> failwith "do not use for that"
 
     let init () =
-        addTypeMap typeof<bool> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeBoolean(null, null) @>)
-        addTypeMap typeof<Nullable<bool>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableBoolean(null, null) @>)
-        addTypeMap typeof<decimal> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeDecimal(null, null) @>)
-        addTypeMap typeof<Nullable<decimal>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableDecimal(null, null) @>)
-        addTypeMap typeof<double> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeDouble(null, null) @>)
-        addTypeMap typeof<Nullable<double>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableDouble(null, null) @>)
-        addTypeMap typeof<int32> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeInt32(null, null) @>)
-        addTypeMap typeof<Nullable<int32>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableInt32(null, null) @>)
-        addTypeMap typeof<int64> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeInt64(null, null) @>)
-        addTypeMap typeof<Nullable<int64>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableInt64(null, null) @>)
-        addTypeMap typeof<BigInteger> (mi <@ serializeBigInteger(null, null, null) @>) (mi <@ deserializeBigInteger(null, null) @>)
-        addTypeMap typeof<Nullable<BigInteger>> (mi <@ serializeNullableBigInteger(null, null, null) @>) (mi <@ deserializeNullableBigInteger(null, null) @>)
-        addTypeMap typeof<LocalDate> (mi <@ serializeLocalDate(null, null, null) @>) (mi <@ deserializeLocalDate(null, null) @>)
-        addTypeMap typeof<Nullable<LocalDate>> (mi <@ serializeNullableLocalDate(null, null, null) @>) (mi <@ deserializeNullableLocalDate(null, null) @>)
-        addTypeMap typeof<LocalDateTime> (mi <@ serializeLocalDateTime(null, null, null) @>) (mi <@ deserializeLocalDateTime(null, null) @>)
-        addTypeMap typeof<Nullable<LocalDateTime>> (mi <@ serializeNullableLocalDateTime(null, null, null) @>) (mi <@ deserializeNullableLocalDateTime(null, null) @>)
-        addTypeMap typeof<string> (mi <@ serializeString(null, null, null) @>) (mi <@ deserializeString(null, null) @>)
+        addSystemTypeMap typeof<bool> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeBoolean(null, null) @>)
+        addSystemTypeMap typeof<Nullable<bool>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableBoolean(null, null) @>)
+        addSystemTypeMap typeof<decimal> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeDecimal(null, null) @>)
+        addSystemTypeMap typeof<Nullable<decimal>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableDecimal(null, null) @>)
+        addSystemTypeMap typeof<double> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeDouble(null, null) @>)
+        addSystemTypeMap typeof<Nullable<double>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableDouble(null, null) @>)
+        addSystemTypeMap typeof<int32> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeInt32(null, null) @>)
+        addSystemTypeMap typeof<Nullable<int32>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableInt32(null, null) @>)
+        addSystemTypeMap typeof<int64> (mi <@ serializeDefault(null, null, null) @>) (mi <@ deserializeInt64(null, null) @>)
+        addSystemTypeMap typeof<Nullable<int64>> (mi <@ serializeNullableDefault(null, null, null) @>) (mi <@ deserializeNullableInt64(null, null) @>)
+        addSystemTypeMap typeof<BigInteger> (mi <@ serializeBigInteger(null, null, null) @>) (mi <@ deserializeBigInteger(null, null) @>)
+        addSystemTypeMap typeof<Nullable<BigInteger>> (mi <@ serializeNullableBigInteger(null, null, null) @>) (mi <@ deserializeNullableBigInteger(null, null) @>)
+        addSystemTypeMap typeof<DatePlaceholder> (mi <@ serializeDate(null, null, null) @>) (mi <@ deserializeDate(null, null) @>)
+        addSystemTypeMap typeof<Nullable<DatePlaceholder>> (mi <@ serializeNullableDate(null, null, null) @>) (mi <@ deserializeNullableDate(null, null) @>)
+        addSystemTypeMap typeof<DateTime> (mi <@ serializeDateTime(null, null, null) @>) (mi <@ deserializeDateTime(null, null) @>)
+        addSystemTypeMap typeof<Nullable<DateTime>> (mi <@ serializeNullableDateTime(null, null, null) @>) (mi <@ deserializeNullableDateTime(null, null) @>)
+        addSystemTypeMap typeof<string> (mi <@ serializeString(null, null, null) @>) (mi <@ deserializeString(null, null) @>)
         addBinaryTypeMap typeof<BinaryContent> (mi <@ serializeBinaryContent(null, null, null) @>) (mi <@ deserializeBinaryContent(null, null) @>)
         addBinaryTypeMap typeof<XopBinaryContent> (mi <@ serializeXopBinaryContent(null, null, null) @>) (mi <@ deserializeXopBinaryContent(null, null) @>)
 

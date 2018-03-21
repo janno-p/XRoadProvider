@@ -78,8 +78,6 @@ module internal Pattern =
             | _ -> None
         | EmptyDefinition
         | SimpleDefinition(_) -> None
-        
-    let xsdDate = XName.Get("date", XmlNamespace.Xsd)
 
 /// Combines operations and types documented in producer definitions.
 type internal ProducerDescription =
@@ -97,7 +95,7 @@ type internal ProducerDescription =
 /// Type abstraction for code generator.
 type internal RuntimeType =
     /// Simple types that are presented with system runtime types.
-    | PrimitiveType of Type * XName option
+    | PrimitiveType of Type * SerializationHint
     /// Types that are provided by generated assembly.
     | ProvidedType of CodeTypeDeclaration * string
     /// Types that represent collection or array of runtime type.
@@ -116,7 +114,7 @@ type internal RuntimeType =
         match optional with
         | Some(true) ->
             if context.Packages.HasFlag(NuGetPackage.Optional) then
-                let optionalType = CodeTypeReference(typedefof<Optional.Option<_>>)
+                let optionalType = CodeTypeReference(Opt.optionType.Value)
                 optionalType.TypeArguments.Add(ctr) |> ignore
                 optionalType
             else ctr
@@ -193,17 +191,15 @@ and internal TypeBuilderContext =
             match this.CachedTypes.TryGetValue(resolvedName) with
             | true, typeInfo -> typeInfo
             | _ ->
-                if this.Packages.HasFlag(NuGetPackage.NodaTime) then
-                    match resolvedName.XName with
-                    | BinaryType(_) -> ContentType
-                    | NodaSystemType(typ) -> PrimitiveType(typ, None)
-                    | _ -> failwithf "Invalid type name `%A`: type not found in cache." resolvedName
-                else
-                    match resolvedName.XName with
-                    | BinaryType(_) -> ContentType
-                    | SystemType(typ) when resolvedName.XName = xsdDate -> PrimitiveType(typ, Some xsdDate)
-                    | SystemType(typ) -> PrimitiveType(typ, None)
-                    | _ -> failwithf "Invalid type name `%A`: type not found in cache." resolvedName
+                match resolvedName.XName with
+                | BinaryType(_) -> ContentType
+                | SystemType(typ, hint) ->
+                    let typ =
+                        if this.Packages.HasFlag(NuGetPackage.NodaTime) && typ = typeof<DateTime> then
+                            if hint.HasFlag(SerializationHint.IsDate) then Noda.dateType.Value else Noda.dateTimeType.Value
+                        else typ
+                    PrimitiveType(typ, hint)
+                | _ -> failwithf "Invalid type name `%A`: type not found in cache." resolvedName
 
         /// Generates new RuntimeType instance depending on given type:
         /// xsd:base64Binary and xsd:hexBinary types represent ContentType.
@@ -241,17 +237,15 @@ and internal TypeBuilderContext =
                     let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
                     nstyp |> Cls.addMember typ |> ignore
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
-            if this.Packages.HasFlag(NuGetPackage.NodaTime) then
-                match name.XName with
-                | BinaryType(_) -> ContentType
-                | NodaSystemType(typ) -> PrimitiveType(typ, None)
-                | _ -> createType()
-            else
-                match name.XName with
-                | BinaryType(_) -> ContentType
-                | SystemType(typ) when name.XName = xsdDate -> PrimitiveType(typ, Some xsdDate)
-                | SystemType(typ) -> PrimitiveType(typ, None)
-                | _ -> createType()
+            match name.XName with
+            | BinaryType(_) -> ContentType
+            | SystemType(typ, hint) ->
+                let typ =
+                    if this.Packages.HasFlag(NuGetPackage.NodaTime) && typ = typeof<DateTime> then
+                        if hint.HasFlag(SerializationHint.IsDate) then Noda.dateType.Value else Noda.dateTimeType.Value
+                    else typ
+                PrimitiveType(typ, hint)
+            | _ -> createType()
 
         /// Finds element specification from schema-level element lookup.
         member this.GetElementSpec(name: XName) =

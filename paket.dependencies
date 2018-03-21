@@ -4,7 +4,9 @@ framework: net461
 nuget FAKE
 nuget FSharp.Formatting
 nuget NETStandard.Library.NETFramework
+nuget NodaTime
 nuget NuGet.CommandLine
+nuget Optional
 nuget SourceLink.Fake
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx

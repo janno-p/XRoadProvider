@@ -69,6 +69,10 @@ let inline private create (ci: ConstructorInfo) (il: ILGenerator) =
     il.Emit(OpCodes.Newobj, ci)
     il
 
+let inline private emitctor opCode (ci: ConstructorInfo) (il: ILGenerator) =
+    il.Emit(opCode, ci)
+    il
+
 let inline declareLocalOf<'T> il = il |> declareLocal(typeof<'T>)
 
 let inline private defineLabel (il: ILGenerator) = il.DefineLabel()
@@ -136,14 +140,20 @@ type EmitBuilder with
     member __.MarkLabel(p: Emitter, l) = p >> setLabel l
     [<CustomOperation("define_label", MaintainsVariableSpaceUsingBind = true)>]
     member __.DefineLabel(p: Emitter, e) = p >> (fun il -> let label = il |> defineLabel in il |> e label)
-    [<CustomOperation("define_labels", MaintainsVariableSpaceUsingBind = true)>]
-    member __.DefineLabels(p: Emitter, n, e) = p >> (fun il -> let labels = [ for _ in 1..n do yield il |> defineLabel ] in il |> e labels)
+    [<CustomOperation("define_labels_2", MaintainsVariableSpaceUsingBind = true)>]
+    member __.DefineLabels2(p: Emitter, e) = p >> (fun il -> il |> e (il |> defineLabel) (il |> defineLabel))
+    [<CustomOperation("define_labels_3", MaintainsVariableSpaceUsingBind = true)>]
+    member __.DefineLabels3(p: Emitter, e) = p >> (fun il -> il |> e (il |> defineLabel) (il |> defineLabel) (il |> defineLabel))
+    [<CustomOperation("define_labels_4", MaintainsVariableSpaceUsingBind = true)>]
+    member __.DefineLabels4(p: Emitter, e) = p >> (fun il -> il |> e (il |> defineLabel) (il |> defineLabel) (il |> defineLabel) (il |> defineLabel))
     [<CustomOperation("declare_variable", MaintainsVariableSpaceUsingBind = true)>]
     member __.DeclareVariable(p: Emitter, (v: Lazy<_>), f) = p >> (fun il -> il |> f (il |> v.Value))
     [<CustomOperation("merge", MaintainsVariableSpaceUsingBind = true)>]
     member __.Merge(p: Emitter, e) = p >> e
     [<CustomOperation("call", MaintainsVariableSpaceUsingBind = true)>]
     member __.Call(p: Emitter, mi) = p >> emitmi OpCodes.Call mi
+    [<CustomOperation("ctor", MaintainsVariableSpaceUsingBind = true)>]
+    member __.Ctor(p: Emitter, ci) = p >> emitctor OpCodes.Call ci
     [<CustomOperation("call_expr", MaintainsVariableSpaceUsingBind = true)>]
     member __.CallExpr(p: Emitter, e) = p >> emitmi OpCodes.Call (!@ e)
     [<CustomOperation("ldstr", MaintainsVariableSpaceUsingBind = true)>]
@@ -184,8 +194,3 @@ type EmitBuilder with
     member __.Initobj(p: Emitter, t) = p >> emittyp OpCodes.Initobj t
 
 let emit' = EmitBuilder()
-
-let (|List1|) = function [a] -> (a) | _ -> failwith "invalid list"
-let (|List2|) = function [a; b] -> (a, b) | _ -> failwith "invalid list"
-let (|List3|) = function [a; b; c] -> (a, b, c) | _ -> failwith "invalid list"
-let (|List4|) = function [a; b; c; d] -> (a, b, c, d) | _ -> failwith "invalid list"
