@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8"/>
-    <title>XRoadOperationAttribute - XRoadProvider</title>
+    <title>IChoiceOf4<'a, 'b, 'c, 'd> - XRoadProvider</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta name="description" content=""/>
     <meta name="author" content="Janno Põldma"/>
@@ -35,41 +35,12 @@
 
 
 
-<h1>XRoadOperationAttribute</h1>
+<h1>IChoiceOf4<'a, 'b, 'c, 'd></h1>
 <p>
-  <span>Namespace: XRoad.Serialization.Attributes</span><br />
+  <span>Namespace: XRoad.Choices</span><br />
 </p>
 <div class="xmldoc">
-<p>Metadata of X-Road operation.</p>
-
 </div>
-  <h3>Constructors</h3>
-  <table class="table table-bordered member-list">
-    <thead>
-      <tr><td>Constructor</td><td>Description</td></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="member-name">
-
-          <code onmouseout="hideTip(event, '2445', 2445)" onmouseover="showTip(event, '2445', 2445)">
-            new(...)
-          </code>
-          <div class="tip" id="2445">
-            <strong>Signature:</strong> (serviceCode:string * serviceVersion:string * protocol:XRoadProtocol) -&gt; XRoadOperationAttribute<br />
-                      </div>
-        </td>
-        <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Attributes.fs#L135-135" class="github-link">
-              <img src="../content/img/github.png" class="normal" />
-              <img src="../content/img/github-blue.png" class="hover" />
-            </a>
-          
-              <p>CompiledName: <code>.ctor</code></p>
-        </td>
-      </tr>
-    </tbody>
-  </table>
   <h3>Instance members</h3>
   <table class="table table-bordered member-list">
     <thead>
@@ -79,96 +50,77 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2446', 2446)" onmouseover="showTip(event, '2446', 2446)">
-            Protocol
+          <code onmouseout="hideTip(event, '2376', 2376)" onmouseover="showTip(event, '2376', 2376)">
+            TryGetOption1(value)
           </code>
-          <div class="tip" id="2446">
-            <strong>Signature:</strong> XRoadProtocol<br />
+          <div class="tip" id="2376">
+            <strong>Signature:</strong> value:byref&lt;&#39;a&gt; -&gt; bool<br />
+              <strong>Modifiers:</strong> abstract<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Attributes.fs#L140-140" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L18-18" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
-              <p>CompiledName: <code>get_Protocol</code></p>
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2447', 2447)" onmouseover="showTip(event, '2447', 2447)">
-            ProtocolVersion()
+          <code onmouseout="hideTip(event, '2377', 2377)" onmouseover="showTip(event, '2377', 2377)">
+            TryGetOption2(value)
           </code>
-          <div class="tip" id="2447">
-            <strong>Signature:</strong> unit -&gt; string<br />
+          <div class="tip" id="2377">
+            <strong>Signature:</strong> value:byref&lt;&#39;b&gt; -&gt; bool<br />
+              <strong>Modifiers:</strong> abstract<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Attributes.fs#L141-141" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L19-19" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
-              <p>CompiledName: <code>set_ProtocolVersion</code></p>
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2448', 2448)" onmouseover="showTip(event, '2448', 2448)">
-            ProtocolVersion()
+          <code onmouseout="hideTip(event, '2378', 2378)" onmouseover="showTip(event, '2378', 2378)">
+            TryGetOption3(value)
           </code>
-          <div class="tip" id="2448">
-            <strong>Signature:</strong> unit -&gt; unit<br />
+          <div class="tip" id="2378">
+            <strong>Signature:</strong> value:byref&lt;&#39;c&gt; -&gt; bool<br />
+              <strong>Modifiers:</strong> abstract<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Attributes.fs#L141-141" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L20-20" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
-              <p>CompiledName: <code>get_ProtocolVersion</code></p>
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2449', 2449)" onmouseover="showTip(event, '2449', 2449)">
-            ServiceCode
+          <code onmouseout="hideTip(event, '2379', 2379)" onmouseover="showTip(event, '2379', 2379)">
+            TryGetOption4(value)
           </code>
-          <div class="tip" id="2449">
-            <strong>Signature:</strong> string<br />
+          <div class="tip" id="2379">
+            <strong>Signature:</strong> value:byref&lt;&#39;d&gt; -&gt; bool<br />
+              <strong>Modifiers:</strong> abstract<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Attributes.fs#L138-138" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L21-21" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
-              <p>CompiledName: <code>get_ServiceCode</code></p>
-        </td>
-      </tr>
-      <tr>
-        <td class="member-name">
-
-          <code onmouseout="hideTip(event, '2450', 2450)" onmouseover="showTip(event, '2450', 2450)">
-            ServiceVersion
-          </code>
-          <div class="tip" id="2450">
-            <strong>Signature:</strong> string<br />
-                      </div>
-        </td>
-        <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Attributes.fs#L139-139" class="github-link">
-              <img src="../content/img/github.png" class="normal" />
-              <img src="../content/img/github-blue.png" class="hover" />
-            </a>
-          
-              <p>CompiledName: <code>get_ServiceVersion</code></p>
         </td>
       </tr>
     </tbody>
