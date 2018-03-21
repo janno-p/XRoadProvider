@@ -1,3 +1,8 @@
+#### 1.0.2 - 21.03.2018
+
+* Parse type schemas which provide only imported schemas, but no types on their own.
+* Common interfaces for Choice types with 1-8 alternative options.
+
 #### 1.0.1 - 13.03.2018
 
 * Netstandard doesn't work..
