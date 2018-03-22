@@ -1,3 +1,7 @@
+#### 1.0.3 - 23.03.2018
+
+* Fix invalid generated type of merged array content.
+
 #### 1.0.2 - 21.03.2018
 
 * Parse type schemas which provide only imported schemas, but no types on their own.
