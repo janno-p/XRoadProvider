@@ -167,13 +167,12 @@ module TypeBuilder =
 
     /// Build default property definition from provided schema information.
     and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context doc useXop : PropertyDefinition * CodeTypeDeclaration list =
-        let propertyDef = PropertyDefinition.Create(name, isOptional, doc, useXop)
         match schemaType with
         | Definition(ArrayContent itemSpec) ->
             match context.DereferenceElementSpec(itemSpec) with
             | dspec, Name(n) ->
                 let itemName = dspec.Name |> Option.get
-                ({ propertyDef with
+                ({ PropertyDefinition.Create(name, isOptional, doc, useXop) with
                     Type = CollectionType(context.GetRuntimeType(SchemaType(n)), itemName, None)
                     IsNillable = isNillable
                     IsItemNillable = Some(itemSpec.IsNillable)
@@ -184,7 +183,7 @@ module TypeBuilder =
                 let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
-                ({ propertyDef with
+                ({ PropertyDefinition.Create(name, isOptional, doc, useXop) with
                     Type = CollectionType(runtimeType, itemName, None)
                     IsNillable = isNillable
                     IsItemNillable = Some(itemSpec.IsNillable)
@@ -194,27 +193,27 @@ module TypeBuilder =
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then
-                ({ propertyDef with
+                ({ PropertyDefinition.Create(name, false, doc, useXop) with
                     Type = CollectionType(runtimeType, name, None)
                     IsNillable = isNillable
                     IsWrappedArray = Some(false) }, [subTy])
             else
-                ({ propertyDef with
+                ({ PropertyDefinition.Create(name, isOptional, doc, useXop) with
                     Type = runtimeType
                     IsNillable = isNillable }, [subTy])
         | Name(n) ->
             match context.GetRuntimeType(SchemaType(n)) with
             | x when maxOccurs > 1u ->
-                ({ propertyDef with
+                ({ PropertyDefinition.Create(name, false, doc, useXop) with
                     Type = CollectionType(x, name, None)
                     IsNillable = isNillable
                     IsWrappedArray = Some(false) }, [])
             | PrimitiveType(x) when x.IsValueType ->
-                ({ propertyDef with
+                ({ PropertyDefinition.Create(name, isOptional, doc, useXop) with
                     Type = PrimitiveType(if isNillable then typedefof<Nullable<_>>.MakeGenericType(x) else x)
                     IsNillable = isNillable }, [])
             | x ->
-                ({ propertyDef with
+                ({ PropertyDefinition.Create(name, isOptional, doc, useXop) with
                     Type = x
                     IsNillable = isNillable }, [])
 
