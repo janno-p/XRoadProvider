@@ -5,8 +5,11 @@
 #r "System.Xml.Linq"
 #r "XRoadProvider"
 
-let (!?) = System.Nullable<'T>
-let (?=) (o: 'T option) =
-    match o with
-    | Some(v) -> Optional.Option.Some<'T>(v)
-    | None -> Optional.Option.None<'T>() 
+let (!?) =
+    System.Nullable<'T>
+
+let (!@) (v: 'T) =
+    Optional.Option.Some<'T>(v)
+
+let (!&) (v: 'T) =
+    !@ (!? v)

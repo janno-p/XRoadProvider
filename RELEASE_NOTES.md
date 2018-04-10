@@ -1,3 +1,8 @@
+#### 1.0.4 - 10.04.2018
+
+* Remove Common.Logging dependency since not used any more.
+* Provide serialization/deserialization events instead of logging (that can be used for logging).
+
 #### 1.0.3 - 23.03.2018
 
 * Fix invalid generated type of merged array content.
