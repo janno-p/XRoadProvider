@@ -1,6 +1,5 @@
 ﻿namespace XRoad
 
-open Common.Logging
 open Emitter
 open FSharp.Core
 open System
@@ -22,16 +21,6 @@ type internal XRoadFault(faultCode: string, faultString) =
     member val FaultCode = faultCode with get
     member val FaultString = faultString with get
 
-module internal Stream =
-    let toString (stream: Stream) =
-        stream.Position <- 0L
-#if NET40
-        let reader = new StreamReader(stream, Encoding.UTF8)
-#else
-        use reader = new StreamReader(stream, Encoding.UTF8, true, 1024, true)
-#endif
-        reader.ReadToEnd()
-
 module private Response =
     type XmlReader with
         member this.MoveToElement(depth, name, ns) =
@@ -50,7 +39,7 @@ open System.Xml.XPath
 open Emitter
 
 type internal XRoadResponse(response: WebResponse, methodMap: MethodMap) =
-    let log = LogManager.GetLogger()
+    let stream = new MemoryStream()
 
     let checkXRoadFault (stream: Stream) =
         let faultPath = "/*[local-name()='Envelope' and namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*[local-name()='Body' and namespace-uri()='http://schemas.xmlsoap.org/soap/envelope/']/*"
@@ -72,16 +61,18 @@ type internal XRoadResponse(response: WebResponse, methodMap: MethodMap) =
             raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
 
     member __.RetrieveMessage() =
+        use responseStream = response.GetResponseStream()
+        responseStream.CopyTo(stream)
+
         let attachments = Dictionary<string, BinaryContent>()
-        use stream =
-            let stream, atts = response |> MultipartMessage.read
+        use content =
+            stream.Position <- 0L
+            let contentStream, atts = (stream, response) ||> MultipartMessage.read
             atts |> List.iter (fun content -> attachments.Add(content.ContentID, content))
-            stream
-        if log.IsTraceEnabled then
-            log.Trace(stream |> Stream.toString)
-        stream |> checkXRoadFault
-        stream.Position <- 0L
-        use reader = XmlReader.Create(stream)
+            contentStream
+        content |> checkXRoadFault
+        content.Position <- 0L
+        use reader = XmlReader.Create(content)
         if not (reader.MoveToElement(0, "Envelope", XmlNamespace.SoapEnv)) then
             failwith "Soap envelope element was not found in response message."
         if not (reader.MoveToElement(1, "Body", XmlNamespace.SoapEnv)) then
@@ -95,13 +86,19 @@ type internal XRoadResponse(response: WebResponse, methodMap: MethodMap) =
         | "Fault", XmlNamespace.SoapEnv -> failwithf "Request resulted an error: %s" (reader.ReadInnerXml())
         | _ -> methodMap.Deserializer.Invoke(reader, context)
 
+    interface IXRoadResponse with
+        member __.Save(outputStream: Stream) =
+            let headers = response.Headers.ToByteArray()
+            outputStream.Write(headers, 0, headers.Length)
+            stream.Position <- 0L
+            stream.CopyTo(outputStream)
+
     interface IDisposable with
         member __.Dispose() =
+            stream.Dispose()
             (response :> IDisposable).Dispose()
 
 type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>) =
-    let log = LogManager.GetLogger()
-
     let request =
         let request = WebRequest.Create(uri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
         request.Headers.Set("SOAPAction", "")
@@ -129,8 +126,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
         content.Position <- 0L
         writeChunk()
 
-    let serializeMultipartMessage (context: SerializerContext) (serializeContent: Stream -> unit) =
-        use stream = request.GetRequestStream()
+    let serializeMultipartMessage (context: SerializerContext) (serializeContent: Stream -> unit) (stream: Stream) =
         if context.Attachments.Count > 0 then
             use writer = new StreamWriter(stream, NewLine = "\r\n")
             let boundaryMarker = Guid.NewGuid().ToString()
@@ -330,7 +326,9 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
         | _ -> failwithf "Unexpected X-Road header type `%s`." (header.GetType().FullName)
         header.Unresolved |> Seq.iter (fun e -> e.WriteTo(writer))
 
-    member __.SendMessage(header: AbstractXRoadHeader, args: obj[]) =
+    let stream = new MemoryStream() :> Stream
+
+    member __.CreateMessage(header, args) =
         use content = new MemoryStream()
         use sw = new StreamWriter(content)
         let context = SerializerContext(IsMultipart = methodMap.Request.IsMultipart)
@@ -347,24 +345,41 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
         writer |> writeXRoadHeader header
         writer.WriteEndElement()
-        
         writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
         methodMap.Serializer.Invoke(writer, args, context)
         writer.WriteEndElement()
-
         writer.WriteEndDocument()
         writer.Flush()
-        if log.IsTraceEnabled then
-            log.Trace(content |> Stream.toString)
-        content |> serializeMessage context
+        (content, stream) ||> serializeMessage context
+
+    member __.SendMessage() =
+        stream.Position <- 0L
+        use networkStream = request.GetRequestStream()
+        stream.CopyTo(networkStream)
+
     member __.GetResponse(methodMap: MethodMap) =
         new XRoadResponse(request.GetResponse(), methodMap)
 
+    interface IXRoadRequest with
+        member __.Save(outputStream: Stream) =
+            let headers = request.Headers.ToByteArray()
+            outputStream.Write(headers, 0, headers.Length)
+            stream.Position <- 0L
+            stream.CopyTo(outputStream)
+
+    interface IDisposable with
+        member __.Dispose() =
+            stream.Dispose()
+
 type public XRoadUtil =
-    static member MakeServiceCall(serviceType: Type, methodName: string, uri: Uri, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>, header: AbstractXRoadHeader, args: obj[]) =
-        let serviceMethod = serviceType.GetMethod(methodName)
+    static member MakeServiceCall(endpoint: AbstractEndpointDeclaration, methodName: string, header: AbstractXRoadHeader, args: obj[]) =
+        let serviceMethod = endpoint.GetType().GetMethod(methodName)
         let serviceMethodMap = getMethodMap serviceMethod 
-        let request = XRoadRequest(uri, serviceMethodMap, acceptedServerCertificate, authenticationCertificates)
-        request.SendMessage(header, args)
+        use request = new XRoadRequest(endpoint.Uri, serviceMethodMap, endpoint.AcceptedServerCertificate, endpoint.AuthenticationCertificates)
+        request.CreateMessage(header, args)
+        endpoint.TriggerRequestReady(RequestReadyEventArgs(request))
+        request.SendMessage()
         use response = request.GetResponse(serviceMethodMap)
-        response.RetrieveMessage()
+        let result = response.RetrieveMessage()
+        endpoint.TriggerResponseReady(ResponseReadyEventArgs(response))
+        result

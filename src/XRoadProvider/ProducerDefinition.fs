@@ -175,17 +175,7 @@ module ServiceBuilder =
                         (Expr.cast
                             ctr
                             ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
-                                @% [(Expr.this @-> "GetType") @% []
-                                    !^ operation.Name
-                                    Expr.this @=> "Uri"
-#if NET40
-                                    Expr.nil
-#else
-                                    Expr.this @=> "AcceptedServerCertificate"
-#endif
-                                    Expr.this @=> "AuthenticationCertificates"
-                                    !+ "header"
-                                    Arr.create (argumentExpressions |> Seq.toList)])))
+                                @% [Expr.this; !^ operation.Name; !+ "header"; Arr.create (argumentExpressions |> Seq.toList)])))
                 |> Meth.addStmt (Stmt.ret ((!+ "__result") @=> "response"))
                 |> ignore
                 additionalMembers.Add(cls)
@@ -197,17 +187,7 @@ module ServiceBuilder =
                         (Expr.cast
                             (elementType.AsCodeTypeReference())
                             ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
-                                @% [(Expr.this @-> "GetType") @% []
-                                    !^ operation.Name
-                                    Expr.this @=> "Uri"
-#if NET40
-                                    Expr.nil
-#else
-                                    Expr.this @=> "AcceptedServerCertificate"
-#endif
-                                    Expr.this @=> "AuthenticationCertificates"
-                                    !+ "header"
-                                    Arr.create (argumentExpressions |> Seq.toList)])))
+                                @% [Expr.this; !^ operation.Name; !+ "header"; Arr.create (argumentExpressions |> Seq.toList)])))
                 |> ignore
 //        | DocEncoded(encodingNamespace, wrapper) ->
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
@@ -279,27 +259,6 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
         let serviceTy = Cls.create service.Name |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
         service.Ports
         |> List.iter (fun port ->
-            // Create property and backing field for producer adapter server uri.
-            // By default service port soap:address extension location value is used, but user can override that value.
-            let addressField = Fld.create<Uri> "uri"
-            let addressProperty = CodeMemberProperty(Name="Uri", Type=CodeTypeReference(typeof<Uri>))
-            addressProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-            addressProperty.GetStatements.Add(Stmt.ret (Expr.this @=> addressField.Name)) |> ignore
-
-#if !NET40
-            let certificateField = CodeMemberField(typeof<X509Certificate>, "acceptedServerCertificate")
-            let certificateFieldRef = Expr.this @=> certificateField.Name
-            let certificateProperty = CodeMemberProperty(Name="AcceptedServerCertificate", Type=CodeTypeReference(typeof<X509Certificate>))
-            certificateProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-            certificateProperty.GetStatements.Add(Stmt.ret certificateFieldRef) |> ignore
-            certificateProperty.SetStatements.Add(Stmt.assign certificateFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
-#endif
-
-            let authenticationCertificatesField = CodeMemberField(typeof<ResizeArray<X509Certificate>>, "authenticationCertificates")
-            let authenticationCertificatesProperty = CodeMemberProperty(Name="AuthenticationCertificates", Type=CodeTypeReference(typeof<List<X509Certificate>>))
-            authenticationCertificatesProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-            authenticationCertificatesProperty.GetStatements.Add(Stmt.ret (Expr.this @=> authenticationCertificatesField.Name)) |> ignore
-
             let ctor =
                 if Uri.IsWellFormedUriString(port.Uri, UriKind.Absolute) then
                     Ctor.create()
@@ -318,23 +277,15 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
                 Ctor.create()
                 |> Ctor.setAttr MemberAttributes.Public
                 |> Ctor.addParam<Uri> "uri"
-                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "uri") (!+ "uri"))
-                |> Ctor.addStmt (Stmt.assign (Expr.this @=> "authenticationCertificates") (Expr.inst<ResizeArray<X509Certificate>> []))
+                |> Ctor.addBaseArg (!+ "uri")
 
             let portTy =
                 Cls.create port.Name
+                |> Cls.implements typeRef<AbstractEndpointDeclaration>
                 |> Cls.setAttr TypeAttributes.Public
                 |> iif ctor.IsSome (Cls.addMember ctor.Value)
                 |> Cls.addMember ctor2
                 |> Cls.addMember ctor3
-                |> Cls.addMember addressField
-                |> Cls.addMember addressProperty
-#if !NET40
-                |> Cls.addMember certificateField
-                |> Cls.addMember certificateProperty
-#endif
-                |> Cls.addMember authenticationCertificatesField
-                |> Cls.addMember authenticationCertificatesProperty
                 |> Code.comment port.Documentation
             serviceTy |> Cls.addMember portTy |> ignore
 

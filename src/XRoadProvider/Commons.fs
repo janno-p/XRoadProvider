@@ -3,6 +3,7 @@
 open System
 open System.Collections.Generic
 open System.IO
+open System.Security.Cryptography.X509Certificates
 open System.Xml
 open System.Xml.Linq
 open XRoad.Serialization.Attributes
@@ -661,12 +662,14 @@ module internal MultipartMessage =
 
     type private PeekStream(stream: Stream) =
         let mutable borrow = None : int option
+
         member __.Read() =
             match borrow with
             | Some(x) ->
                 borrow <- None
                 x
             | None -> stream.ReadByte()
+
         member __.Peek() =
             match borrow with
             | None ->
@@ -674,10 +677,9 @@ module internal MultipartMessage =
                 borrow <- Some(x)
                 x
             | Some(x) -> x
-        member __.Flush() = stream.Flush()
-        interface IDisposable with
-            member __.Dispose() =
-                stream.Dispose()
+
+        member __.Flush() =
+            stream.Flush()
 
     let private getBoundaryMarker (response: WebResponse) =
         let parseMultipartContentType (contentType: string) =
@@ -763,10 +765,10 @@ module internal MultipartMessage =
         if buffer |> isNull || value |> isNull || value.Length > buffer.Length then false
         else compare (value.Length - 1)
 
-    let internal read (response: WebResponse) : Stream * BinaryContent list =
+    let internal read (stream: Stream) (response: WebResponse) : Stream * BinaryContent list =
         match response |> getBoundaryMarker with
         | Some(boundaryMarker) ->
-            use stream = new PeekStream(response.GetResponseStream())
+            let stream = PeekStream(stream)
             let contents = List<string option * MemoryStream>()
             let isContentMarker = startsWith (Encoding.ASCII.GetBytes (sprintf "--%s" boundaryMarker))
             let isEndMarker = startsWith (Encoding.ASCII.GetBytes (sprintf "--%s--" boundaryMarker))
@@ -804,7 +806,43 @@ module internal MultipartMessage =
                                     BinaryContent.Create(name.Value, stream.ToArray())))
             | _ -> failwith "empty multipart content"
         | None ->
-            use stream = response.GetResponseStream()
             let content = new MemoryStream()
             stream.CopyTo(content)
             (upcast content, [])
+
+[<Interface>]
+type IXRoadRequest =
+    abstract Save: Stream -> unit
+
+[<Interface>]
+type IXRoadResponse =
+    abstract Save: Stream -> unit
+
+type RequestReadyEventArgs(request: IXRoadRequest) =
+    inherit EventArgs()
+    member this.Request = request
+
+type ResponseReadyEventArgs(response: IXRoadResponse) =
+    inherit EventArgs()
+    member this.Response = response
+
+type RequestReadyEventHandler = delegate of obj * RequestReadyEventArgs -> unit
+type ResponseReadyEventHandler = delegate of obj * ResponseReadyEventArgs -> unit
+
+[<AbstractClass>]
+type AbstractEndpointDeclaration (uri: Uri) =
+    let requestEvent = Event<RequestReadyEventHandler, RequestReadyEventArgs>()
+    let responseEvent = Event<ResponseReadyEventHandler, ResponseReadyEventArgs>()
+
+    member val AcceptedServerCertificate = Unchecked.defaultof<X509Certificate> with get, set
+    member val AuthenticationCertificates = new ResizeArray<X509Certificate>() with get
+    member val Uri = uri with get
+
+    [<CLIEvent>]
+    member this.RequestReady = requestEvent.Publish
+
+    [<CLIEvent>]
+    member this.ResponseReady = responseEvent.Publish
+
+    member internal this.TriggerRequestReady args = requestEvent.Trigger(this, args)
+    member internal this.TriggerResponseReady args = responseEvent.Trigger(this, args)

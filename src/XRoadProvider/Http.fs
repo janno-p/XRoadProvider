@@ -54,7 +54,8 @@ let post (stream: Stream) uri =
     requestStream.Flush()
     requestStream.Close()
     use response = request.GetResponse()
-    use contentStream = response |> MultipartMessage.read |> fst
+    use stream  = response.GetResponseStream()
+    use contentStream = (stream, response) ||> MultipartMessage.read |> fst
     contentStream.Position <- 0L
     XDocument.Load(contentStream)
 

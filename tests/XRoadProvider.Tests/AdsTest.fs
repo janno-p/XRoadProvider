@@ -162,13 +162,15 @@ module DefinedTypes =
         [<XRoadElement>]
         member val fault = Optional.Option.None<faultType>() with get, set
 
-type AdsAadrMuudatusedService () =
+type AdsAadrMuudatusedService () as this =
+    inherit AbstractEndpointDeclaration(Uri("http://mixerlivebal.webdb.maaamet.ee/xtee-proxy"))
+
     [<XRoadOperation("ADSaadrmuudatused", "v4", XRoad.Serialization.Attributes.XRoadProtocol.Version40, ProtocolVersion="4.0")>]
     [<TypeProviderXmlDoc("Aadressi muudatuste päring")>]
     [<XRoadRequiredHeaders("http://x-road.eu/xsd/xroad.xsd", "protocolVersion", "issue", "userId", "id", "service", "client")>]
     [<XRoadRequest("ADSaadrmuudatused", "http://www.maaamet.ee")>]
     [<XRoadResponse("ADSaadrmuudatusedResponse", "http://www.maaamet.ee")>]
-    member this.ADSaadrmuudatused(header: XRoadHeader,
+    member __.ADSaadrmuudatused(header: XRoadHeader,
                                   [<XRoadElement>] muudetudAlates: Optional.Option<LocalDate>,
                                   [<XRoadElement>] muudetudPaevad: Optional.Option<DefinedTypes.ADSaadrmuudatused_muudetudPaevadType>,
                                   [<XRoadElement>] logId: Optional.Option<bigint>,
@@ -180,11 +182,8 @@ type AdsAadrMuudatusedService () =
                                   [<XRoadElement>] aadressKomp: Optional.Option<bool>,
                                   [<XRoadElement>] aadressJarglased: Optional.Option<bool>) =
         XRoadUtil.MakeServiceCall(
-            typeof<AdsAadrMuudatusedService>,
+            this,
             "ADSaadrmuudatused",
-            Uri("http://mixerlivebal.webdb.maaamet.ee/xtee-proxy"),
-            null,
-            ResizeArray<_>(),
             header,
             [| muudetudAlates; muudetudPaevad; logId; maxarv; pSyndmused; sSyndmused; objekt; seosed; aadressKomp; aadressJarglased |])
         |> unbox<DefinedTypes.ADSaadrmuudatusedResponse>
