@@ -162,16 +162,6 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
     let serializeMessage (context: SerializerContext) (content: Stream) =
         serializeMultipartMessage context (fun s -> writeContent s content)
 
-    let writeIdHeader value ns req (writer: XmlWriter) =
-        if req |> Array.exists ((=) "id") || value |> String.IsNullOrEmpty |> not then
-            writer.WriteStartElement("id", ns)
-            if methodMap.Request.IsEncoded then
-                writer.WriteStartAttribute("type", XmlNamespace.Xsi)
-                writer.WriteQualifiedName("string", XmlNamespace.Xsd)
-                writer.WriteEndAttribute()
-            writer.WriteValue(if String.IsNullOrWhiteSpace(value) then XRoadHelper.getUUID() else value)
-            writer.WriteEndElement()
-
     let writeStringHeader req ns (writer: XmlWriter) value name =
         if req |> Array.exists ((=) name) || value |> String.IsNullOrEmpty |> not then
             writer.WriteStartElement(name, ns)
@@ -273,7 +263,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
                 | None -> ()
             writer.WriteEndElement()
 
-    let writeXRoadHeader (header: AbstractXRoadHeader) (writer: XmlWriter) =
+    let writeXRoadHeader (id: string) (header: AbstractXRoadHeader) (writer: XmlWriter) =
         methodMap.RequiredHeaders.Keys |> Seq.iter (fun ns -> writer |> addNamespace ns)
         let headerNamespace = protocolNamespace methodMap.Protocol
         let requiredHeaders = match methodMap.RequiredHeaders.TryGetValue(headerNamespace) with true, xs -> xs | _ -> [||]
@@ -284,7 +274,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
             writeStringHeader' header.Andmekogu "andmekogu"
             writeStringHeader' header.Isikukood "isikukood"
             writeStringHeader' header.Ametnik "ametnik"
-            writer |> writeIdHeader header.Id headerNamespace requiredHeaders
+            writeStringHeader' id "id"
             writeStringHeader' (getServiceName header.Andmekogu) "nimi"
             writeStringHeader' header.Toimik "toimik"
             writeStringHeader' header.Allasutus "allasutus"
@@ -301,7 +291,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
             writeStringHeader' header.Consumer "consumer"
             writeStringHeader' header.Producer "producer"
             writeStringHeader' header.UserId "userId"
-            writer |> writeIdHeader header.Id headerNamespace requiredHeaders
+            writeStringHeader' id "id"
             writeStringHeader' (getServiceName header.Producer) "service"
             writeStringHeader' header.Issue "issue"
             writeStringHeader' header.Unit "unit"
@@ -319,7 +309,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
                 writer.WriteAttributeString("xmlns", "id", XmlNamespace.Xmlns, XmlNamespace.XRoad40Id)
             writer |> writeClientHeader header.Client requiredHeaders
             writer |> writeServiceHeader header.Producer requiredHeaders
-            writer |> writeIdHeader header.Id headerNamespace requiredHeaders
+            writeStringHeader' id "id"
             writeStringHeader' header.UserId "userId"
             writeStringHeader' header.Issue "issue"
             writeStringHeader' header.ProtocolVersion "protocolVersion"
@@ -328,7 +318,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
 
     let stream = new MemoryStream() :> Stream
 
-    member __.CreateMessage(header, args) =
+    member __.CreateMessage(requestId, header, args) =
         use content = new MemoryStream()
         use sw = new StreamWriter(content)
         let context = SerializerContext(IsMultipart = methodMap.Request.IsMultipart)
@@ -343,7 +333,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
             writer.WriteAttributeString("xmlns", "xsd", XmlNamespace.Xmlns, XmlNamespace.Xsd)
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
-        writer |> writeXRoadHeader header
+        writer |> writeXRoadHeader requestId header
         writer.WriteEndElement()
         writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
         methodMap.Serializer.Invoke(writer, args, context)
@@ -374,12 +364,13 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
 type public XRoadUtil =
     static member MakeServiceCall(endpoint: AbstractEndpointDeclaration, methodName: string, header: AbstractXRoadHeader, args: obj[]) =
         let serviceMethod = endpoint.GetType().GetMethod(methodName)
-        let serviceMethodMap = getMethodMap serviceMethod 
+        let serviceMethodMap = getMethodMap serviceMethod
         use request = new XRoadRequest(endpoint.Uri, serviceMethodMap, endpoint.AcceptedServerCertificate, endpoint.AuthenticationCertificates)
-        request.CreateMessage(header, args)
-        endpoint.TriggerRequestReady(RequestReadyEventArgs(request))
+        let requestId = if String.IsNullOrWhiteSpace(header.Id) then XRoadHelper.getUUID() else header.Id
+        request.CreateMessage(requestId, header, args)
+        endpoint.TriggerRequestReady(RequestReadyEventArgs(request, header, requestId, serviceMethodMap.ServiceCode, serviceMethodMap.ServiceVersion |> MyOption.defaultValue ""))
         request.SendMessage()
         use response = request.GetResponse(serviceMethodMap)
         let result = response.RetrieveMessage()
-        endpoint.TriggerResponseReady(ResponseReadyEventArgs(response))
+        endpoint.TriggerResponseReady(ResponseReadyEventArgs(response, header, requestId, serviceMethodMap.ServiceCode, serviceMethodMap.ServiceVersion |> MyOption.defaultValue ""))
         result

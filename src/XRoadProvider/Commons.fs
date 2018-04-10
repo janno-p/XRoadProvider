@@ -151,6 +151,8 @@ type public ContentEncoding =
 
 [<AbstractClass; AllowNullLiteral>]
 type public AbstractXRoadHeader() =
+    /// Unique identifier for this message. The recommended form of message ID is UUID.
+    member val Id = "" with get, set
     /// Unresolved header elements.
     member val Unresolved = List<XElement>() with get, set
 
@@ -186,8 +188,6 @@ type public XRoadRpcHeader() =
     member val Isikukood = "" with get, set
     /// Teenuse kasutaja Eesti isikukood (ei ole kasutusel alates versioonist 5.0).
     member val Ametnik = "" with get, set
-    /// Teenuse väljakutse nonss (unikaalne identifikaator).
-    member val Id = "" with get, set
     /// Teenuse väljakutsega seonduva toimiku number (mittekohustuslik).
     member val Toimik = "" with get, set
     /// Asutuse registrikood, mille nimel teenust kasutatakse (kasutusel juriidilise isiku portaalis).
@@ -240,8 +240,6 @@ type public XRoadDocHeader() =
     member val Producer = "" with get, set
     /// ID code of the person invoking the service, preceded by a two-letter country code. For example: EE37702026518.
     member val UserId = "" with get, set
-    /// Service invocation nonce (unique identifier).
-    member val Id = "" with get, set
     /// Name of file or document related to the service invocation.
     member val Issue = "" with get, set
     /// Registration code of the institution or its unit on whose behalf the service is used (applied in the legal entity portal).
@@ -326,8 +324,6 @@ type public XRoadHeader() =
     member val Producer = XRoadMemberIdentifier() with get, set
     /// Identifies the central service that is invoked by the request.
     member val CentralService = XRoadCentralServiceIdentifier() with get, set
-    /// Unique identifier for this message. The recommended form of message ID is UUID.
-    member val Id = "" with get, set
     /// User whose action initiated the request. The user ID should be prefixed with two-letter ISO country code (e.g., EE12345678901).
     member val UserId = "" with get, set
     /// For responses, this field contains a Base64 encoded hash of the request SOAP message.
@@ -818,13 +814,21 @@ type IXRoadRequest =
 type IXRoadResponse =
     abstract Save: Stream -> unit
 
-type RequestReadyEventArgs(request: IXRoadRequest) =
+type RequestReadyEventArgs(request: IXRoadRequest, header: AbstractXRoadHeader, requestId: string, serviceCode: string, serviceVersion: string) =
     inherit EventArgs()
-    member this.Request = request
+    member val Request = request with get
+    member val RequestId = requestId with get
+    member val ServiceCode = serviceCode with get 
+    member val ServiceVersion = serviceVersion with get
+    member val Header = header with get
 
-type ResponseReadyEventArgs(response: IXRoadResponse) =
+type ResponseReadyEventArgs(response: IXRoadResponse, header: AbstractXRoadHeader, requestId: string, serviceCode: string, serviceVersion: string) =
     inherit EventArgs()
-    member this.Response = response
+    member val Response = response with get
+    member val RequestId = requestId with get
+    member val ServiceCode = serviceCode with get 
+    member val ServiceVersion = serviceVersion with get
+    member val Header = header with get
 
 type RequestReadyEventHandler = delegate of obj * RequestReadyEventArgs -> unit
 type ResponseReadyEventHandler = delegate of obj * ResponseReadyEventArgs -> unit
