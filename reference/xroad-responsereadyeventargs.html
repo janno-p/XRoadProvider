@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8"/>
-    <title>IChoiceOf5<'a, 'b, 'c, 'd, 'e> - XRoadProvider</title>
+    <title>ResponseReadyEventArgs - XRoadProvider</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta name="description" content=""/>
     <meta name="author" content="Janno Põldma"/>
@@ -35,12 +35,39 @@
 
 
 
-<h1>IChoiceOf5<'a, 'b, 'c, 'd, 'e></h1>
+<h1>ResponseReadyEventArgs</h1>
 <p>
-  <span>Namespace: XRoad.Choices</span><br />
+  <span>Namespace: XRoad</span><br />
 </p>
 <div class="xmldoc">
 </div>
+  <h3>Constructors</h3>
+  <table class="table table-bordered member-list">
+    <thead>
+      <tr><td>Constructor</td><td>Description</td></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="member-name">
+
+          <code onmouseout="hideTip(event, '2268', 2268)" onmouseover="showTip(event, '2268', 2268)">
+            new(...)
+          </code>
+          <div class="tip" id="2268">
+            <strong>Signature:</strong> (response:IXRoadResponse * header:AbstractXRoadHeader * requestId:string * serviceCode:string * serviceVersion:string) -&gt; ResponseReadyEventArgs<br />
+                      </div>
+        </td>
+        <td class="xmldoc">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Commons.fs#L825-825" class="github-link">
+              <img src="../content/img/github.png" class="normal" />
+              <img src="../content/img/github-blue.png" class="hover" />
+            </a>
+          
+              <p>CompiledName: <code>.ctor</code></p>
+        </td>
+      </tr>
+    </tbody>
+  </table>
   <h3>Instance members</h3>
   <table class="table table-bordered member-list">
     <thead>
@@ -50,96 +77,96 @@
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2403', 2403)" onmouseover="showTip(event, '2403', 2403)">
-            TryGetOption1(value)
+          <code onmouseout="hideTip(event, '2269', 2269)" onmouseover="showTip(event, '2269', 2269)">
+            Header
           </code>
-          <div class="tip" id="2403">
-            <strong>Signature:</strong> value:byref&lt;&#39;a&gt; -&gt; bool<br />
-              <strong>Modifiers:</strong> abstract<br />
+          <div class="tip" id="2269">
+            <strong>Signature:</strong> AbstractXRoadHeader<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L24-24" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Commons.fs#L831-831" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
+              <p>CompiledName: <code>get_Header</code></p>
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2404', 2404)" onmouseover="showTip(event, '2404', 2404)">
-            TryGetOption2(value)
+          <code onmouseout="hideTip(event, '2270', 2270)" onmouseover="showTip(event, '2270', 2270)">
+            RequestId
           </code>
-          <div class="tip" id="2404">
-            <strong>Signature:</strong> value:byref&lt;&#39;b&gt; -&gt; bool<br />
-              <strong>Modifiers:</strong> abstract<br />
+          <div class="tip" id="2270">
+            <strong>Signature:</strong> string<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L25-25" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Commons.fs#L828-828" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
+              <p>CompiledName: <code>get_RequestId</code></p>
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2405', 2405)" onmouseover="showTip(event, '2405', 2405)">
-            TryGetOption3(value)
+          <code onmouseout="hideTip(event, '2271', 2271)" onmouseover="showTip(event, '2271', 2271)">
+            Response
           </code>
-          <div class="tip" id="2405">
-            <strong>Signature:</strong> value:byref&lt;&#39;c&gt; -&gt; bool<br />
-              <strong>Modifiers:</strong> abstract<br />
+          <div class="tip" id="2271">
+            <strong>Signature:</strong> IXRoadResponse<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L26-26" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Commons.fs#L827-827" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
+              <p>CompiledName: <code>get_Response</code></p>
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2406', 2406)" onmouseover="showTip(event, '2406', 2406)">
-            TryGetOption4(value)
+          <code onmouseout="hideTip(event, '2272', 2272)" onmouseover="showTip(event, '2272', 2272)">
+            ServiceCode
           </code>
-          <div class="tip" id="2406">
-            <strong>Signature:</strong> value:byref&lt;&#39;d&gt; -&gt; bool<br />
-              <strong>Modifiers:</strong> abstract<br />
+          <div class="tip" id="2272">
+            <strong>Signature:</strong> string<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L27-27" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Commons.fs#L829-829" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
+              <p>CompiledName: <code>get_ServiceCode</code></p>
         </td>
       </tr>
       <tr>
         <td class="member-name">
 
-          <code onmouseout="hideTip(event, '2407', 2407)" onmouseover="showTip(event, '2407', 2407)">
-            TryGetOption5(value)
+          <code onmouseout="hideTip(event, '2273', 2273)" onmouseover="showTip(event, '2273', 2273)">
+            ServiceVersion
           </code>
-          <div class="tip" id="2407">
-            <strong>Signature:</strong> value:byref&lt;&#39;e&gt; -&gt; bool<br />
-              <strong>Modifiers:</strong> abstract<br />
+          <div class="tip" id="2273">
+            <strong>Signature:</strong> string<br />
                       </div>
         </td>
         <td class="xmldoc">
-            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Choices.fs#L28-28" class="github-link">
+            <a href="http://github.com/janno-p/XRoadProvider/tree/master/src/XRoadProvider/Commons.fs#L830-830" class="github-link">
               <img src="../content/img/github.png" class="normal" />
               <img src="../content/img/github-blue.png" class="hover" />
             </a>
           
+              <p>CompiledName: <code>get_ServiceVersion</code></p>
         </td>
       </tr>
     </tbody>
