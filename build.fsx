@@ -26,7 +26,6 @@ let authors = [ "Janno Põldma" ]
 
 let gitHome = "https://github.com/" + GitOwner
 let gitName = ProjectName
-let gitRaw = environVarOrDefault "gitRaw" ("https://raw.github.com/" + GitOwner)
 
 let projectPath = __SOURCE_DIRECTORY__ </> "src" </> ProjectName
 let testProjectPath = __SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests"
@@ -136,7 +135,7 @@ Target.create "CleanDocs" (fun _ ->
 )
 
 Target.create "Serve" (fun _ ->
-    DocFx (fun p -> { p with Serve = true; ToolPath = docfxToolPath })
+    DocFx (fun p -> { p with Serve = true; ToolPath = docfxToolPath; Timeout = TimeSpan.MaxValue })
 )
 
 Target.Description "Generate the documentation"
