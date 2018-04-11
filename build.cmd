@@ -15,11 +15,6 @@ if errorlevel 1 (
   )
 )
 
-IF NOT EXIST build.fsx (
-  .paket\paket.exe update
-  packages\FAKE\tools\FAKE.exe init.fsx
-)
-
 del .fake\*_warnings.txt
 
-packages\FAKE\tools\FAKE.exe build.fsx %* encoding=utf-8
+packages\FAKE\tools\FAKE.exe --removeLegacyFakeWarning build.fsx %* encoding=utf-8

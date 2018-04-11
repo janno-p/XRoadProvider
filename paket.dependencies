@@ -1,11 +1,10 @@
-source https://nuget.org/api/v2
+source https://api.nuget.org/v3/index.json
 framework: net461
 
-nuget FAKE
-nuget FSharp.Formatting
-nuget NETStandard.Library.NETFramework
+nuget FAKE rc
 nuget NuGet.CommandLine
-nuget SourceLink.Fake
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
 github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
+
+http https://github.com/dotnet/docfx/releases/download/v2.34/docfx.zip

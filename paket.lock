@@ -1,25 +1,15 @@
 RESTRICTION: == net461
 NUGET
-  remote: https://www.nuget.org/api/v2
-    FAKE (4.64.11)
-    FSharp.Compiler.Service (2.0.0.6)
-    FSharp.Formatting (2.14.4)
-      FSharp.Compiler.Service (2.0.0.6)
-      FSharpVSPowerTools.Core (>= 2.3 < 2.4)
-    FSharpVSPowerTools.Core (2.3)
-      FSharp.Compiler.Service (>= 2.0.0.3)
-    Microsoft.NETCore.Platforms (2.0.1)
-    NETStandard.Library (2.0.1)
-      Microsoft.NETCore.Platforms (>= 1.1)
-    NETStandard.Library.NETFramework (2.0.0-preview2-25405-01)
-      Microsoft.NETCore.Platforms (>= 2.0.0-preview2-25405-01)
-      NETStandard.Library (>= 2.0.0-preview2-25401-01)
-    NuGet.CommandLine (4.5.1)
+  remote: https://api.nuget.org/v3/index.json
+    FAKE (5.0.0-rc004)
+    NuGet.CommandLine (4.6.2)
     Octokit (0.29)
-    SourceLink.Fake (1.1)
 GITHUB
   remote: fsharp/FAKE
-    modules/Octokit/Octokit.fsx (96f1594fd50ced6c1aa45d7cf74fb6c067d08ac1)
+    modules/Octokit/Octokit.fsx (b011a602d0b690fb80a30e5b97df53523d6c4b23)
       Octokit (>= 0.20)
   remote: fsprojects/FSharp.TypeProviders.SDK
     src/ProvidedTypes.fs (f0c4a6300db313eb2616c4f792cd6ae68c255e56)
+HTTP
+  remote: https://github.com
+    docfx.zip (/dotnet/docfx/releases/download/v2.34/docfx.zip)
