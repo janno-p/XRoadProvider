@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title> </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content=" ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+
+<h4 id="104---10042018">1.0.4 - 10.04.2018</h4>
+<ul>
+<li>Remove Common.Logging dependency since not used any more.</li>
+<li>Provide serialization/deserialization events instead of logging (that can be used for logging).</li>
+</ul>
+<h4 id="103---23032018">1.0.3 - 23.03.2018</h4>
+<ul>
+<li>Fix invalid generated type of merged array content.</li>
+</ul>
+<h4 id="102---21032018">1.0.2 - 21.03.2018</h4>
+<ul>
+<li>Parse type schemas which provide only imported schemas, but no types on their own.</li>
+<li>Common interfaces for Choice types with 1-8 alternative options.</li>
+</ul>
+<h4 id="101---13032018">1.0.1 - 13.03.2018</h4>
+<ul>
+<li>Netstandard doesn&#39;t work..</li>
+<li>Downgrade FSharp.Core version</li>
+</ul>
+<h4 id="100---13032018">1.0.0 - 13.03.2018</h4>
+<ul>
+<li>Use F# 3.1 for .NET 4.0 framework version.</li>
+<li>Add operation filter static parameter to producer provider.</li>
+<li>Netstandard 2.0 support.</li>
+</ul>
+<h4 id="100-alpha018---14122017">1.0.0-alpha018 - 14.12.2017</h4>
+<ul>
+<li>Experimental .NET 4.0 support added.</li>
+</ul>
+<h4 id="100-alpha017---12122017">1.0.0-alpha017 - 12.12.2017</h4>
+<ul>
+<li>Fix <code>Content-Type</code> header in MTOM requests.</li>
+</ul>
+<h4 id="100-alpha016---08122017">1.0.0-alpha016 - 08.12.2017</h4>
+<ul>
+<li>Support X-Road security server authentication certificates.</li>
+<li>Remove <code>ProducerName</code> property from v6 producer description, since it doesn&#39;t exist.</li>
+<li>Rename <code>ProducerUri</code> property to <code>Uri</code> in port types.</li>
+<li>Overloaded constructors for port types.</li>
+<li>Change <code>Uri</code> to read-only (assignment in overloaded constructor).</li>
+</ul>
+<h4 id="100-alpha015---07122017">1.0.0-alpha015 - 07.12.2017</h4>
+<ul>
+<li>Can handle self-signed certificates.</li>
+</ul>
+<h4 id="100-alpha014---06122017">1.0.0-alpha014 - 06.12.2017</h4>
+<ul>
+<li>Certificate fixes.</li>
+</ul>
+<h4 id="100-alpha013---06122017">1.0.0-alpha013 - 06.12.2017</h4>
+<ul>
+<li>Fix deserialization of merged array content.</li>
+<li>Fix serialization of merged array content.</li>
+<li>Add https support for security server provider.</li>
+<li>Add https support for generated producer provider service calls.</li>
+</ul>
+<h4 id="100-alpha012---04122017">1.0.0-alpha012 - 04.12.2017</h4>
+<ul>
+<li>Clean property names of symbols which are not allowed in identifier.</li>
+<li>Fix serialization of binary content without explicit ID.</li>
+<li>Ignore missing content attachments.</li>
+</ul>
+<h4 id="100-alpha011---01122017">1.0.0-alpha011 - 01.12.2017</h4>
+<ul>
+<li>Handle xop binary content type elements.</li>
+<li>Fix multipart message deserialization.</li>
+</ul>
+<h4 id="100-alpha010---30112017">1.0.0-alpha010 - 30.11.2017</h4>
+<ul>
+<li>Fix deserialization of empty elements.</li>
+<li>Add constant <code>__TargetNamespace__</code> to <code>DefinedTypes</code> type collections which holds corresponding namespace in which these types are defined.</li>
+</ul>
+<h4 id="100-alpha009---30112017">1.0.0-alpha009 - 30.11.2017</h4>
+<ul>
+<li>Fix object reference exception in X-Road v6 security server provider.</li>
+<li>Add predefined identifiers for security server, member and subsystem identifiers.</li>
+<li>Add bootstrapper script to minimize scripting rituals.</li>
+<li>Update project site index.</li>
+</ul>
+<h4 id="100-alpha008---29112017">1.0.0-alpha008 - 29.11.2017</h4>
+<ul>
+<li>Repackage</li>
+</ul>
+<h4 id="100-alpha007---29112017">1.0.0-alpha007 - 29.11.2017</h4>
+<ul>
+<li>Repackage</li>
+</ul>
+<h4 id="100-alpha006---29112017">1.0.0-alpha006 - 29.11.2017</h4>
+<ul>
+<li>Repackage</li>
+</ul>
+<h4 id="100-alpha005---28112017">1.0.0-alpha005 - 28.11.2017</h4>
+<ul>
+<li>Custom serialization for better type support.</li>
+<li>X-Road message protocol version 4.0 support.</li>
+</ul>
+<h4 id="004-alpha---august-19-2015">0.0.4-alpha - August 19 2015</h4>
+<ul>
+<li>Improved handling of binary content.</li>
+<li>Added default request uri to security server provider.</li>
+<li>Fix #13: Mono too can handle binary content.</li>
+<li>Add support for included schemas.</li>
+<li>Fix relative Uri-s for imported schemas.</li>
+</ul>
+<h4 id="003-alpha---june-15-2015">0.0.3-alpha - June 15 2015</h4>
+<ul>
+<li>Restore MIT license.</li>
+<li>Improve documentation on home page.</li>
+<li>Automatically add framework assembly dependencies (System.Xml).</li>
+<li>Add partial support for unallowed binding styles Document/Encoded and RPC/Literal.</li>
+<li>Populate documentation tooltips from data extracted from service description.</li>
+<li>Fix deserialization bug when attachment marker gets splitted.</li>
+<li>Fix order of elements in sequence particle.</li>
+<li>Coding tooltips for types, methods and properties.</li>
+</ul>
+<h4 id="002-alpha---june-2-2015">0.0.2-alpha - June 2 2015</h4>
+<ul>
+<li>Fix unnecessary dependency for NuGet package.</li>
+</ul>
+<h4 id="001-alpha---may-15-2015">0.0.1-alpha - May 15 2015</h4>
+<ul>
+<li>Initial prerelease of XRoadProvider.</li>
+<li>Basic support for rpc/encoded style (X-Road protocol 2.0) producer definitions.</li>
+<li>Basic support for document/literal style (X-Road protocol 3.1) producer definitions.</li>
+<li>Support for binary content transferred with MIME/multipart containers.</li>
+<li>Handle non-technical faults that are not defined in producer definition with configuration option <code>undescribedFaults</code>.</li>
+</ul>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/janno-p/XRoadProvider/blob/master/docs/articles/release-notes.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

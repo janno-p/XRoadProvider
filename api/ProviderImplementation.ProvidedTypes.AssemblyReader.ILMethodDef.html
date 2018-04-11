@@ -1,0 +1,1000 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class ILMethodDef (rec)
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class ILMethodDef (rec)
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef" class="text-break">Class ILMethodDef (rec)
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">ILMethodDef (rec)</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.html">ProviderImplementation.ProvidedTypes.AssemblyReader</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[&lt;NoComparison; NoEquality&gt;]
+record ILMethodDef
+    val Token: int32
+    val Name: string
+    val CallingConv: ILCallingConv
+    val Parameters: ILParameters
+    val Return: ILReturn
+    val Body: ILMethodBody option
+    val ImplAttributes: MethodImplAttributes
+    val IsEntryPoint: bool
+    val Attributes: MethodAttributes
+    val GenericParams: ILGenericParameterDefs
+    val CustomAttrs: ILCustomAttrs</code></pre>
+  </div>
+  <h3 id="fields">Fields
+  </h3>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_Attributes" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.Attributes">val Attributes: MethodAttributes</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val Attributes: MethodAttributes</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodAttributes</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_Body" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.Body">val Body: ILMethodBody option</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val Body: ILMethodBody option</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodBody.html">ILMethodBody</a> <span class="xref">option</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_CallingConv" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.CallingConv">val CallingConv: ILCallingConv</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val CallingConv: ILCallingConv</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingConv.html">ILCallingConv</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_CustomAttrs" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.CustomAttrs">val CustomAttrs: ILCustomAttrs</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val CustomAttrs: ILCustomAttrs</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttrs.html">ILCustomAttrs</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_GenericParams" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.GenericParams">val GenericParams: ILGenericParameterDefs</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val GenericParams: ILGenericParameterDefs</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDefs.html">ILGenericParameterDefs</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_ImplAttributes" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.ImplAttributes">val ImplAttributes: MethodImplAttributes</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val ImplAttributes: MethodImplAttributes</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodImplAttributes</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsEntryPoint" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsEntryPoint">val IsEntryPoint: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val IsEntryPoint: bool</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_Name" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.Name">val Name: string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val Name: string</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_Parameters" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.Parameters">val Parameters: ILParameters</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val Parameters: ILParameters</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameters.html">ILParameters</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_Return" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.Return">val Return: ILReturn</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val Return: ILReturn</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILReturn.html">ILReturn</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_Token" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.Token">val Token: int32</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val Token: int32</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int32</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_Access_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.Access*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_Access_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.Access(unit)">property Access: ILMemberAccess</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property Access: ILMemberAccess with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMemberAccess.html">ILMemberAccess</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_CallingSignature_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.CallingSignature*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_CallingSignature_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.CallingSignature(unit)">property CallingSignature: ILCallingSignature</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property CallingSignature: ILCallingSignature with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingSignature.html">ILCallingSignature</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsAbstract_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsAbstract*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsAbstract_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsAbstract(unit)">property IsAbstract: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsAbstract: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsCheckAccessOnOverride_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsCheckAccessOnOverride*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsCheckAccessOnOverride_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsCheckAccessOnOverride(unit)">property IsCheckAccessOnOverride: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsCheckAccessOnOverride: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsClassInitializer_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsClassInitializer*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsClassInitializer_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsClassInitializer(unit)">property IsClassInitializer: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsClassInitializer: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsConstructor_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsConstructor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsConstructor_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsConstructor(unit)">property IsConstructor: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsConstructor: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsFinal_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsFinal*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsFinal_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsFinal(unit)">property IsFinal: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsFinal: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsForwardRef_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsForwardRef*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsForwardRef_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsForwardRef(unit)">property IsForwardRef: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsForwardRef: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsHideBySig_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsHideBySig*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsHideBySig_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsHideBySig(unit)">property IsHideBySig: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsHideBySig: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsInternalCall_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsInternalCall*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsInternalCall_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsInternalCall(unit)">property IsInternalCall: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsInternalCall: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsManaged_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsManaged*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsManaged_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsManaged(unit)">property IsManaged: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsManaged: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsMustRun_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsMustRun*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsMustRun_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsMustRun(unit)">property IsMustRun: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsMustRun: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsNewSlot_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsNewSlot*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsNewSlot_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsNewSlot(unit)">property IsNewSlot: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsNewSlot: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsNoInline_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsNoInline*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsNoInline_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsNoInline(unit)">property IsNoInline: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsNoInline: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsPreserveSig_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsPreserveSig*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsPreserveSig_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsPreserveSig(unit)">property IsPreserveSig: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsPreserveSig: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsRTSpecialName_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsRTSpecialName*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsRTSpecialName_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsRTSpecialName(unit)">property IsRTSpecialName: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsRTSpecialName: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsSpecialName_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsSpecialName*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsSpecialName_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsSpecialName(unit)">property IsSpecialName: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsSpecialName: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsStatic_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsStatic*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsStatic_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsStatic(unit)">property IsStatic: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsStatic: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsSynchronized_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsSynchronized*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsSynchronized_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsSynchronized(unit)">property IsSynchronized: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsSynchronized: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsVirtual_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsVirtual*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_IsVirtual_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.IsVirtual(unit)">property IsVirtual: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsVirtual: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_ParameterTypes_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.ParameterTypes*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_ParameterTypes_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.ParameterTypes(unit)">property ParameterTypes: ILType []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property ParameterTypes: ILType [] with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_ComputeIsStatic_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.ComputeIsStatic*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_ComputeIsStatic_System_Reflection_MethodAttributes_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.ComputeIsStatic(System.Reflection.MethodAttributes)">static member ComputeIsStatic: MethodAttributes -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">static member ComputeIsStatic: attrs:MethodAttributes -&gt; bool</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodAttributes</span></td>
+        <td><span class="parametername">attrs</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_System_Object_ToString_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.System.Object.ToString*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodDef_System_Object_ToString_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.System.Object.ToString(unit)">override member ToString: unit -&gt; string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member ToString: unit -&gt; string</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Object.ToString: unit -&gt; string</span></div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

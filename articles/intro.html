@@ -1,0 +1,252 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Introduction </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Introduction ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="introduction">Introduction</h1>
+
+<p>XRoadProvider library is a collection of type providers that make easier the integration process for
+data exchange layer X-Road. Currently three different type providers are implemented:</p>
+<ul>
+<li><p><code>XRoadProducer</code> is generated type provider which offers type signatures for types and method call
+functionality for operations defined in producers service description.</p>
+</li>
+<li><p><code>XRoadServer</code> is erased type provider that discovers available producer names from specified
+security server and offers their details inside development environment (legacy version that supports
+older X-Road security servers).</p>
+</li>
+<li><p><code>XRoadServer6</code> is erased type provider that discovers available producer names from specified
+security server and offers their details inside development environment (for X-Road security server
+version 6).</p>
+</li>
+</ul>
+<p>XRoadProvider library can be <a href="https://nuget.org/packages/XRoadProvider">installed from NuGet</a>:</p>
+<div class="tabGroup" id="tabgroup_5PEFIiQtHk">
+<ul role="tablist">
+<li role="presentation">
+<a href="#tabpanel_5PEFIiQtHk_package-manager" role="tab" aria-controls="tabpanel_5PEFIiQtHk_package-manager" data-tab="package-manager" tabindex="0" aria-selected="true">Package Manager</a>
+</li>
+<li role="presentation">
+<a href="#tabpanel_5PEFIiQtHk_nuget" role="tab" aria-controls="tabpanel_5PEFIiQtHk_nuget" data-tab="nuget" tabindex="-1">.NET CLI</a>
+</li>
+<li role="presentation">
+<a href="#tabpanel_5PEFIiQtHk_paket" role="tab" aria-controls="tabpanel_5PEFIiQtHk_paket" data-tab="paket" tabindex="-1">Paket CLI</a>
+</li>
+</ul>
+<section id="tabpanel_5PEFIiQtHk_package-manager" role="tabpanel" data-tab="package-manager">
+<pre><code class="lang-powershell">PM&gt; Install-Package XRoadProvider
+</code></pre></section>
+<section id="tabpanel_5PEFIiQtHk_nuget" role="tabpanel" data-tab="nuget" aria-hidden="true" hidden="hidden">
+<pre><code class="lang-DOS">&gt; dotnet add package XRoadProvider
+</code></pre></section>
+<section id="tabpanel_5PEFIiQtHk_paket" role="tabpanel" data-tab="paket" aria-hidden="true" hidden="hidden">
+<pre><code class="lang-DOS">&gt; paket add XRoadProvider
+</code></pre></section>
+</div>
+<h2 id="example">Example</h2>
+<p>This example demonstrates the use of the XRoadProvider:</p>
+<pre><code class="lang-fsharp">// Reference the type provider assembly.
+#load &quot;packages/XRoadProvider/net461/XRoadProvider.fsx&quot;
+
+open XRoad
+open XRoad.Providers
+
+type Xrd6 = XRoadProducer&lt;&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml&quot;&gt;
+
+// Initialize service interface which provides access to operation methods.
+let myport = Xrd6.producerPortService.getRandomPortSoap11(&quot;http://localhost:8001/&quot;)
+
+// Assign X-Road header values.
+let hdr = XRoadHeader()
+hdr.Client &lt;- XRoadMemberIdentifier(&quot;ee-dev&quot;, &quot;GOV&quot;, &quot;000000000&quot;, &quot;sys&quot;)
+hdr.Producer &lt;- XRoadMemberIdentifier(&quot;ee-dev&quot;, &quot;GOV&quot;, &quot;00000000&quot;, &quot;sys&quot;)
+hdr.ProtocolVersion &lt;- &quot;4.0&quot;
+hdr.UserId &lt;- &quot;30101010007&quot;
+
+// Initialize request parameters.
+let request = Xrd6.DefinedTypes.ProducerXRoadEu.getRandom_requestType()
+request.seed &lt;- (System.Guid.NewGuid()).ToString()
+
+// Execute service request against specified adapter.
+let response = myport.getRandom(hdr, request)
+
+// Display results to console.
+printfn &quot;getRandom response: %s&quot; response.response.content
+</code></pre><p>As an alternative to asking service descriptions from security server, it&#39;s also possible to
+exclude security server from development process by using local WSDL definitions instead.</p>
+<h2 id="mimemultipart-attachment-support">MIME/Multipart attachment support</h2>
+<p>X-Road method calls may require MIME/multipart message format in case of binary content. For
+that purpose type provider defines special type <code>BinaryContent</code> which handles attachments according
+to X-Road specification.</p>
+<p>Usage example of <code>BinaryContent</code> type:</p>
+<pre><code class="lang-fsharp">type Aktorstest = XRoadProducer&lt;&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/AktorstestService.wsdl.xml&quot;&gt;
+
+let service = Aktorstest.aktorstestService.Test()
+
+let request2 = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM_requestType()
+request2.filemtom &lt;- BinaryContent.Create([| 0uy; 1uy; 2uy; 3uy |])
+request2.fileName &lt;- &quot;file.bin&quot;
+
+let docHdr = XRoadDocHeader()
+docHdr.UserName &lt;- &quot;toomas.dumpty&quot;
+
+let result = service.fileUploadMTOM(docHdr, request2)
+
+printfn &quot;%s&quot; result.response.faultCode.BaseValue
+printfn &quot;%s&quot; result.response.faultString.BaseValue
+</code></pre><h2 id="type-provider-for-producer-discovery">Type provider for producer discovery</h2>
+<p>XRoadProvider package includes separate type provider to retrieve producer information from security
+server. Resulting type contains details about all producers available and their WSDL URIs which may
+be used as parameter to <code>XRoadProducer</code> provider to initialize service interfaces.</p>
+<p>Example use of <code>XRoadServer</code> type provider:</p>
+<pre><code class="lang-fsharp">open XRoadProvider
+
+// Acquire list of producer from security server.
+let [&lt;Literal&gt;] securityServerUrl = &quot;http://your-security-server-here/&quot;
+
+type SecurityServer = XRoadServer6&lt;securityServerUrl, &quot;ee-dev&quot;, &quot;COM&quot;, &quot;12345678&quot;, &quot;generic-consumer&quot;&gt;
+type AdsConfig = SecurityServer.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
+type Ads = XRoadProducer&lt;AdsConfig.``SERVICE:ADSaadrmuudatused``&gt;
+
+let adsService = Ads.xroadeuService.xroadeuServicePort(securityServerUrl)
+
+let adsHeader =
+    XRoadHeader(
+        Client = SecurityServer.Identifier,
+        Producer = AdsConfig.Identifier,
+        ProtocolVersion = &quot;4.0&quot;
+    )
+
+let adsResponse =
+    adsService.ADSaadrmuudatused(
+        adsHeader,
+        muudetudAlates = some(NodaTime.LocalDate(2017, 11, 28))
+    )
+
+adsResponse.fault.MatchSome(fun f -&gt; failwithf &quot;Invalid service response. %s: %s&quot; f.faultCode f.faultString)
+
+let muudatused = adsResponse.muudatused.ValueOr([||])
+printfn &quot;Got %d changes in response message.&quot; muudatused.Length
+</code></pre><h2 id="samples--documentation">Samples &amp; documentation</h2>
+<p>The library comes with comprehensible documentation. 
+It can include tutorials automatically generated from <code>*.fsx</code> files in <a href="https://github.com/janno-p/XRoadProvider/tree/master/docs/articles">the articles folder</a>. 
+The API reference is automatically generated from Markdown comments in the library implementation.</p>
+<ul>
+<li><p><a href="tutorial.md">Tutorial</a> contains a further explanation of this sample library.</p>
+</li>
+<li><p><a href="../api/index.html">API Reference</a> contains automatically generated documentation for all types, modules
+and functions in the library. This includes additional brief samples on using most of the
+functions.</p>
+</li>
+</ul>
+<h2 id="contributing-and-copyright">Contributing and copyright</h2>
+<p>The project is hosted on <a href="https://github.com/janno-p/XRoadProvider">GitHub</a> where you can <a href="https://github.com/janno-p/XRoadProvider/issues">report issues</a>, fork 
+the project and submit pull requests. If you&#39;re adding a new public API, please also 
+consider adding <a href="https://github.com/janno-p/XRoadProvider/tree/master/docs/articles">samples</a> that can be turned into a documentation. You might
+also want to read the <a href="https://github.com/janno-p/XRoadProvider/blob/master/README.md">library design notes</a> to understand how it works.</p>
+<p>The library is available under Public Domain license, which allows modification and 
+redistribution for both commercial and non-commercial purposes. For more information see the 
+<a href="license.html">License file</a> file. </p>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/janno-p/XRoadProvider/blob/master/docs/articles/intro.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

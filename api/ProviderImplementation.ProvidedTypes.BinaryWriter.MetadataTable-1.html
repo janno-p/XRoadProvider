@@ -1,0 +1,631 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class BinaryWriter.MetadataTable&lt;'T&gt; (rec)
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class BinaryWriter.MetadataTable&lt;'T&gt; (rec)
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1" class="text-break">Class BinaryWriter.MetadataTable&lt;'T&gt; (rec)
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">BinaryWriter.MetadataTable&lt;'T&gt; (rec)</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.html">ProviderImplementation.ProvidedTypes</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[&lt;NoEquality; NoComparison&gt;]
+record BinaryWriter.MetadataTable&lt;'T&gt;
+    val name: string
+    val dict: Dictionary&lt;'T,int&gt;
+    val rows: ResizeArray&lt;'T&gt;</code></pre>
+  </div>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'T</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="fields">Fields
+  </h3>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_dict" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.dict">val dict: Dictionary&lt;'T,int&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val dict: Dictionary&lt;'T,int&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;&#39;T,<span class="xref">int</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_name" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.name">val name: string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val name: string</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_rows" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.rows">val rows: ResizeArray&lt;'T&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val rows: ResizeArray&lt;'T&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">ResizeArray</span>&lt;&#39;T&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_Count_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.Count*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_Count_unit_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.Count(unit)">property Count: int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property Count: int with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_Entries_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.Entries*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_Entries_unit_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.Entries(unit)">property Entries: 'T list</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property Entries: 'T list with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T <span class="xref">list</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_EntriesAsArray_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.EntriesAsArray*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_EntriesAsArray_unit_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.EntriesAsArray(unit)">property EntriesAsArray: 'T []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property EntriesAsArray: 'T [] with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_AddSharedEntry_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.AddSharedEntry*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_AddSharedEntry__T_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.AddSharedEntry('T)">member AddSharedEntry: 'T -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member AddSharedEntry: x:'T -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T</td>
+        <td><span class="parametername">x</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_AddUniqueEntry_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.AddUniqueEntry*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_AddUniqueEntry_string_____T____string_____T_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.AddUniqueEntry(string -&gt; 'T -&gt; string -&gt; 'T)">member AddUniqueEntry: string -&gt; 'T -&gt; string -&gt; 'T -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member AddUniqueEntry: nm:string -&gt; geterr:'T -&gt; string -&gt; x:'T -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">nm</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;T -&gt; <span class="xref">string</span></td>
+        <td><span class="parametername">geterr</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;T</td>
+        <td><span class="parametername">x</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_AddUnsharedEntry_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.AddUnsharedEntry*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_AddUnsharedEntry__T_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.AddUnsharedEntry('T)">member AddUnsharedEntry: 'T -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member AddUnsharedEntry: x:'T -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T</td>
+        <td><span class="parametername">x</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_FindOrAddSharedEntry_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.FindOrAddSharedEntry*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_FindOrAddSharedEntry__T_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.FindOrAddSharedEntry('T)">member FindOrAddSharedEntry: 'T -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member FindOrAddSharedEntry: x:'T -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T</td>
+        <td><span class="parametername">x</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_GetTableEntry_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.GetTableEntry*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_GetTableEntry__T_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.GetTableEntry('T)">member GetTableEntry: 'T -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member GetTableEntry: x:'T -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T</td>
+        <td><span class="parametername">x</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_GetTableKeys_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.GetTableKeys*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_GetTableKeys_unit_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.GetTableKeys(unit)">member GetTableKeys: unit -&gt; 'T []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member GetTableKeys: unit -&gt; 'T []</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_New_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.New*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_New_string___System_Collections_Generic_IEqualityComparer___91172__" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.New(string * System.Collections.Generic.IEqualityComparer&lt;'?91172&gt;)">static member New: string * IEqualityComparer&lt;'?91172&gt; -&gt; MetadataTable&lt;'?91172&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">static member New: nm:string * hashEq:IEqualityComparer&lt;'?91172&gt; -&gt; MetadataTable&lt;'?91172&gt;</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">nm</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.IEqualityComparer</span>&lt;&#39;?91172&gt;</td>
+        <td><span class="parametername">hashEq</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;&#39;?91172&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_SetRowsOfTable_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.SetRowsOfTable*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_SetRowsOfTable__T____" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.SetRowsOfTable('T [])">member SetRowsOfTable: 'T [] -&gt; unit</h4>
+  <div class="markdown level1 summary"><p> This is only used in one special place - see further below. </p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member SetRowsOfTable: t:'T [] -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T []</td>
+        <td><span class="parametername">t</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,330 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class CodeGenerator
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class CodeGenerator
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.CodeGenerator">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_CodeGenerator" data-uid="ProviderImplementation.ProvidedTypes.CodeGenerator" class="text-break">Class CodeGenerator
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">CodeGenerator</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.html">ProviderImplementation.ProvidedTypes</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_CodeGenerator_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">type CodeGenerator (assemblyMainModule:ILModuleBuilder, genUniqueTypeName:unit -&gt; string, implicitCtorArgsAsFields:ILFieldBuilder list, convTypeToTgt:Type -&gt; Type, transType:Type -&gt; ILType, transFieldSpec:FieldInfo -&gt; ILFieldSpec, transMeth:MethodInfo -&gt; ILMethodSpec, transMethRef:MethodInfo -&gt; ILMethodRef, transCtorSpec:ConstructorInfo -&gt; ILMethodSpec, ilg:ILGenerator, localsMap:Dictionary&lt;Var,ILLocalBuilder&gt;, parameterVars:Var [])</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ILModuleBuilder.html">ILModuleBuilder</a></td>
+        <td><span class="parametername">assemblyMainModule</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">unit</span> -&gt; <span class="xref">string</span></td>
+        <td><span class="parametername">genUniqueTypeName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ILFieldBuilder.html">ILFieldBuilder</a> <span class="xref">list</span></td>
+        <td><span class="parametername">implicitCtorArgsAsFields</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> -&gt; <span class="xref">System.Type</span></td>
+        <td><span class="parametername">convTypeToTgt</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername">transType</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.FieldInfo</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldSpec.html">ILFieldSpec</a></td>
+        <td><span class="parametername">transFieldSpec</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodInfo</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec.html">ILMethodSpec</a></td>
+        <td><span class="parametername">transMeth</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodInfo</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodRef.html">ILMethodRef</a></td>
+        <td><span class="parametername">transMethRef</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.ConstructorInfo</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec.html">ILMethodSpec</a></td>
+        <td><span class="parametername">transCtorSpec</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ILGenerator.html">ILGenerator</a></td>
+        <td><span class="parametername">ilg</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<span class="xref">FSharp.Quotations.Var</span>,<a class="xref" href="ProviderImplementation.ProvidedTypes.ILLocalBuilder.html">ILLocalBuilder</a>&gt;</td>
+        <td><span class="parametername">localsMap</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">FSharp.Quotations.Var</span> []</td>
+        <td><span class="parametername">parameterVars</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="constructors">Constructors
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_CodeGenerator__ctor_" data-uid="ProviderImplementation.ProvidedTypes.CodeGenerator.#ctor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_CodeGenerator__ctor_ProviderImplementation_ProvidedTypes_ILModuleBuilder___unit____string___ProviderImplementation_ProvidedTypes_ILFieldBuilder_list___System_Type____System_Type___System_Type____ProviderImplementation_ProvidedTypes_AssemblyReader_ILType___System_Reflection_FieldInfo____ProviderImplementation_ProvidedTypes_AssemblyReader_ILFieldSpec___System_Reflection_MethodInfo____ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodSpec___System_Reflection_MethodInfo____ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodRef___System_Reflection_ConstructorInfo____ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodSpec___ProviderImplementation_ProvidedTypes_ILGenerator___System_Collections_Generic_Dictionary_FSharp_Quotations_Var_ProviderImplementation_ProvidedTypes_ILLocalBuilder____FSharp_Quotations_Var____" data-uid="ProviderImplementation.ProvidedTypes.CodeGenerator.#ctor(ProviderImplementation.ProvidedTypes.ILModuleBuilder * unit -&gt; string * ProviderImplementation.ProvidedTypes.ILFieldBuilder list * System.Type -&gt; System.Type * System.Type -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILType * System.Reflection.FieldInfo -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldSpec * System.Reflection.MethodInfo -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec * System.Reflection.MethodInfo -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodRef * System.Reflection.ConstructorInfo -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec * ProviderImplementation.ProvidedTypes.ILGenerator * System.Collections.Generic.Dictionary&lt;FSharp.Quotations.Var,ProviderImplementation.ProvidedTypes.ILLocalBuilder&gt; * FSharp.Quotations.Var [])">new: ILModuleBuilder * unit -&gt; string * ILFieldBuilder list * Type -&gt; Type * Type -&gt; ILType * FieldInfo -&gt; ILFieldSpec * MethodInfo -&gt; ILMethodSpec * MethodInfo -&gt; ILMethodRef * ConstructorInfo -&gt; ILMethodSpec * ILGenerator * Dictionary&lt;Var,ILLocalBuilder&gt; * Var [] -&gt; CodeGenerator</h4>
+  <div class="markdown level1 summary"><p>Implicit constructor.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">new: assemblyMainModule:ILModuleBuilder * genUniqueTypeName:unit -&gt; string * implicitCtorArgsAsFields:ILFieldBuilder list * convTypeToTgt:Type -&gt; Type * transType:Type -&gt; ILType * transFieldSpec:FieldInfo -&gt; ILFieldSpec * transMeth:MethodInfo -&gt; ILMethodSpec * transMethRef:MethodInfo -&gt; ILMethodRef * transCtorSpec:ConstructorInfo -&gt; ILMethodSpec * ilg:ILGenerator * localsMap:Dictionary&lt;Var,ILLocalBuilder&gt; * parameterVars:Var [] -&gt; CodeGenerator</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ILModuleBuilder.html">ILModuleBuilder</a></td>
+        <td><span class="parametername">assemblyMainModule</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">unit</span> -&gt; <span class="xref">string</span></td>
+        <td><span class="parametername">genUniqueTypeName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ILFieldBuilder.html">ILFieldBuilder</a> <span class="xref">list</span></td>
+        <td><span class="parametername">implicitCtorArgsAsFields</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> -&gt; <span class="xref">System.Type</span></td>
+        <td><span class="parametername">convTypeToTgt</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername">transType</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.FieldInfo</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldSpec.html">ILFieldSpec</a></td>
+        <td><span class="parametername">transFieldSpec</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodInfo</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec.html">ILMethodSpec</a></td>
+        <td><span class="parametername">transMeth</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodInfo</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodRef.html">ILMethodRef</a></td>
+        <td><span class="parametername">transMethRef</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.ConstructorInfo</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec.html">ILMethodSpec</a></td>
+        <td><span class="parametername">transCtorSpec</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ILGenerator.html">ILGenerator</a></td>
+        <td><span class="parametername">ilg</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<span class="xref">FSharp.Quotations.Var</span>,<a class="xref" href="ProviderImplementation.ProvidedTypes.ILLocalBuilder.html">ILLocalBuilder</a>&gt;</td>
+        <td><span class="parametername">localsMap</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">FSharp.Quotations.Var</span> []</td>
+        <td><span class="parametername">parameterVars</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.CodeGenerator.html">CodeGenerator</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_CodeGenerator_EmitExpr_" data-uid="ProviderImplementation.ProvidedTypes.CodeGenerator.EmitExpr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_CodeGenerator_EmitExpr_ProviderImplementation_ProvidedTypes_ExpectedStackState___FSharp_Quotations_Expr_" data-uid="ProviderImplementation.ProvidedTypes.CodeGenerator.EmitExpr(ProviderImplementation.ProvidedTypes.ExpectedStackState * FSharp.Quotations.Expr)">member EmitExpr: ExpectedStackState * Expr -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member EmitExpr: expectedState:ExpectedStackState * expr:Expr -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ExpectedStackState.html">ExpectedStackState</a></td>
+        <td><span class="parametername">expectedState</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">FSharp.Quotations.Expr</span></td>
+        <td><span class="parametername">expr</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

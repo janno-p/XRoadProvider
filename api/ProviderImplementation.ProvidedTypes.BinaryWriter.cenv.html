@@ -1,0 +1,908 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class BinaryWriter.cenv (rec)
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class BinaryWriter.cenv (rec)
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv" class="text-break">Class BinaryWriter.cenv (rec)
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">BinaryWriter.cenv (rec)</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.html">ProviderImplementation.ProvidedTypes</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[&lt;NoEquality; NoComparison&gt;]
+record BinaryWriter.cenv
+    val ilg: ILGlobals
+    val emitTailcalls: bool
+    val deterministic: bool
+    val showTimes: bool
+    val desiredMetadataVersion: Version
+    val requiredDataFixups: ResizeArray&lt;int32 * int * bool&gt;
+    val requiredStringFixups: ResizeArray&lt;int32 * int * int []&gt;
+    val codeChunks: ByteBuffer
+    val nextCodeAddr: int32
+    val moduleGuid: byte []
+    val generatePdb: bool
+    val data: ByteBuffer
+    val resources: ByteBuffer
+    val entrypoint: bool * int option
+    val trefCache: Dictionary&lt;ILTypeRef,int&gt;
+    val tables: MetadataTable []
+    val AssemblyRefs: MetadataTable&lt;SharedRow&gt;
+    val fieldDefs: MetadataTable&lt;FieldDefKey&gt;
+    val methodDefIdxsByKey: MetadataTable&lt;MethodDefKey&gt;
+    val methodDefIdxs: Dictionary&lt;ILMethodDef,int&gt;
+    val propertyDefs: MetadataTable&lt;PropertyTableKey&gt;
+    val eventDefs: MetadataTable&lt;EventTableKey&gt;
+    val typeDefs: MetadataTable&lt;TypeDefTableKey&gt;
+    val guids: MetadataTable&lt;byte []&gt;
+    val blobs: MetadataTable&lt;byte []&gt;
+    val strings: MetadataTable&lt;string&gt;
+    val userStrings: MetadataTable&lt;string&gt;</code></pre>
+  </div>
+  <h3 id="fields">Fields
+  </h3>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_AssemblyRefs" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.AssemblyRefs">val AssemblyRefs: MetadataTable&lt;SharedRow&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val AssemblyRefs: MetadataTable&lt;SharedRow&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.SharedRow.html">SharedRow</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_blobs" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.blobs">val blobs: MetadataTable&lt;byte []&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val blobs: MetadataTable&lt;byte []&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<span class="xref">byte</span> []&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_codeChunks" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.codeChunks">val codeChunks: ByteBuffer</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val codeChunks: ByteBuffer</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer.html">ByteBuffer</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_data" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.data">val data: ByteBuffer</h4>
+  <div class="markdown level1 summary"><p> Raw data, to go into the data section </p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val data: ByteBuffer</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer.html">ByteBuffer</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_desiredMetadataVersion" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.desiredMetadataVersion">val desiredMetadataVersion: Version</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val desiredMetadataVersion: Version</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Version</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_deterministic" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.deterministic">val deterministic: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val deterministic: bool</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_emitTailcalls" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.emitTailcalls">val emitTailcalls: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitTailcalls: bool</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_entrypoint" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.entrypoint">val entrypoint: bool * int option</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val entrypoint: bool * int option</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span> * <span class="xref">int</span> <span class="xref">option</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_eventDefs" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.eventDefs">val eventDefs: MetadataTable&lt;EventTableKey&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val eventDefs: MetadataTable&lt;EventTableKey&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.EventTableKey.html">EventTableKey</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_fieldDefs" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.fieldDefs">val fieldDefs: MetadataTable&lt;FieldDefKey&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val fieldDefs: MetadataTable&lt;FieldDefKey&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.FieldDefKey.html">FieldDefKey</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_generatePdb" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.generatePdb">val generatePdb: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val generatePdb: bool</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_guids" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.guids">val guids: MetadataTable&lt;byte []&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val guids: MetadataTable&lt;byte []&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<span class="xref">byte</span> []&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_ilg" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.ilg">val ilg: ILGlobals</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val ilg: ILGlobals</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals.html">ILGlobals</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_methodDefIdxs" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.methodDefIdxs">val methodDefIdxs: Dictionary&lt;ILMethodDef,int&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val methodDefIdxs: Dictionary&lt;ILMethodDef,int&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.html">ILMethodDef</a>,<span class="xref">int</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_methodDefIdxsByKey" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.methodDefIdxsByKey">val methodDefIdxsByKey: MetadataTable&lt;MethodDefKey&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val methodDefIdxsByKey: MetadataTable&lt;MethodDefKey&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MethodDefKey.html">MethodDefKey</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_moduleGuid" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.moduleGuid">val moduleGuid: byte []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val moduleGuid: byte []</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">byte</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_nextCodeAddr" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.nextCodeAddr">val nextCodeAddr: int32</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val nextCodeAddr: int32</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int32</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_propertyDefs" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.propertyDefs">val propertyDefs: MetadataTable&lt;PropertyTableKey&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val propertyDefs: MetadataTable&lt;PropertyTableKey&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.PropertyTableKey.html">PropertyTableKey</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_requiredDataFixups" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.requiredDataFixups">val requiredDataFixups: ResizeArray&lt;int32 * int * bool&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val requiredDataFixups: ResizeArray&lt;int32 * int * bool&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">ResizeArray</span>&lt;<span class="xref">int32</span> * <span class="xref">int</span> * <span class="xref">bool</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_requiredStringFixups" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.requiredStringFixups">val requiredStringFixups: ResizeArray&lt;int32 * int * int []&gt;</h4>
+  <div class="markdown level1 summary"><p> References to strings in codestreams: offset of code and a (fixup-location , string token) list) </p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val requiredStringFixups: ResizeArray&lt;int32 * int * int []&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">ResizeArray</span>&lt;<span class="xref">int32</span> * <span class="xref">int</span> * <span class="xref">int</span> []&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_resources" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.resources">val resources: ByteBuffer</h4>
+  <div class="markdown level1 summary"><p> Raw resource data, to go into the data section </p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val resources: ByteBuffer</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer.html">ByteBuffer</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_showTimes" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.showTimes">val showTimes: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val showTimes: bool</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_strings" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.strings">val strings: MetadataTable&lt;string&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val strings: MetadataTable&lt;string&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<span class="xref">string</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_tables" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.tables">val tables: MetadataTable []</h4>
+  <div class="markdown level1 summary"><p> The following are all used to generate unique items in the output </p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val tables: MetadataTable []</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable.html">MetadataTable</a> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_trefCache" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.trefCache">val trefCache: Dictionary&lt;ILTypeRef,int&gt;</h4>
+  <div class="markdown level1 summary"><p> Caches</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val trefCache: Dictionary&lt;ILTypeRef,int&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeRef.html">ILTypeRef</a>,<span class="xref">int</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_typeDefs" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.typeDefs">val typeDefs: MetadataTable&lt;TypeDefTableKey&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val typeDefs: MetadataTable&lt;TypeDefTableKey&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.TypeDefTableKey.html">TypeDefTableKey</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_userStrings" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.userStrings">val userStrings: MetadataTable&lt;string&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val userStrings: MetadataTable&lt;string&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html">MetadataTable</a>&lt;<span class="xref">string</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_AddCode_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.AddCode*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_AddCode_int32___int___int______byte____" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.AddCode(int32 * int * int [] * byte [])">member AddCode: int32 * int * int [] * byte [] -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member AddCode: int32 * int * int [] * code:byte [] -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int32</span> * <span class="xref">int</span> * <span class="xref">int</span> []</td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">byte</span> []</td>
+        <td><span class="parametername">code</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_GetCode_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.GetCode*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_GetCode_unit_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.GetCode(unit)">member GetCode: unit -&gt; byte []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member GetCode: unit -&gt; byte []</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">byte</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_GetTable_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.GetTable*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_cenv_GetTable_ProviderImplementation_ProvidedTypes_AssemblyReader_ILTableName_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.GetTable(ProviderImplementation.ProvidedTypes.AssemblyReader.ILTableName)">member GetTable: ILTableName -&gt; MetadataTable</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member GetTable: tab:ILTableName -&gt; MetadataTable</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTableName.html">ILTableName</a></td>
+        <td><span class="parametername">tab</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable.html">MetadataTable</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

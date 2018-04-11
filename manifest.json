@@ -1,0 +1,3230 @@
+{
+  "homepages": [],
+  "source_base_path": "C:/Work/XRoadProvider3/docs",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyCompiler.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyCompiler.html",
+          "hash": "rW0hmlB7g1IXYmKHK1suRA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.BlobAsFieldSigIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.BlobAsFieldSigIdx.html",
+          "hash": "aJuFFCHrTwnKkrbnqxXivQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.BlobAsLocalSigIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.BlobAsLocalSigIdx.html",
+          "hash": "659rgA8VbvBitGpMtOrh7A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.BlobAsMethodSigIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.BlobAsMethodSigIdx.html",
+          "hash": "j2S/EKQe2Y16D7etPgTWPg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.BlobAsPropSigIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.BlobAsPropSigIdx.html",
+          "hash": "sm324OSYCCB8j3/Sg2WhbA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.html",
+          "hash": "HqcmWufFPj9oL7SsZusWRQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer.html",
+          "hash": "PSmexBXtjeBZlmk4qRxyQQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteStream.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteStream.html",
+          "hash": "KBeMXng3NsATggSdks4dbw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.Bytes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.Bytes.html",
+          "hash": "WTQchFdcHJx2rJ3YOSa0AQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.html",
+          "hash": "t3nnDURS/9X+aJYmFczIig=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.CustomAttrIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.CustomAttrIdx.html",
+          "hash": "35a8cgCyHlsP58AqnAKedg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.CustomAttributeTypeTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.CustomAttributeTypeTag.html",
+          "hash": "PHetanZ1ld834LXmmvtkXA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.GenericParamsIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.GenericParamsIdx.html",
+          "hash": "OCnLyNNd2lHqmj4roL7W0Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasConstantTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasConstantTag.html",
+          "hash": "/buJ30M+B28PPQlgbhjNFg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasCustomAttributeTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasCustomAttributeTag.html",
+          "hash": "ZTFg/JDnlgYZAP0vRspaJg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasDeclSecurityTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasDeclSecurityTag.html",
+          "hash": "wtCeSnkkVryCkoMWhl78FQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasFieldMarshalTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasFieldMarshalTag.html",
+          "hash": "GE4KkzffYjwOHRtqUtOiJw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasSemanticsTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.HasSemanticsTag.html",
+          "hash": "9NkVH3TzFk19ZkMpfoxLzQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILAlignment.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILAlignment.html",
+          "hash": "+tvb64ECz9MS/znOnlQuaQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArgConvention.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArgConvention.html",
+          "hash": "VgoKtAKdtDr3PwJLXmOaDw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayBound.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayBound.html",
+          "hash": "Ga5L7PMKnXbzPOC+oLqdOA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayBounds.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayBounds.html",
+          "hash": "TVt4gft7g0CuSmv3SdHQVw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayShape.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayShape.html",
+          "hash": "7Q7sxe4y8ojJtfTpcZau/w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayShapeStatics.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayShapeStatics.html",
+          "hash": "4MTgZHy7C2NlGg0jJoc6Kg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILAssemblyManifest.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILAssemblyManifest.html",
+          "hash": "KA1dAGQrTnzFimuguoXQ9A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILAssemblyRef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILAssemblyRef.html",
+          "hash": "uXWc8T89wyqyQrvCrEHliQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILBasicType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILBasicType.html",
+          "hash": "1/4dIP+6FFbyjvoPA0TL8g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILBoxity.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILBoxity.html",
+          "hash": "6NRbbfsez1G6cHJVe6l8mA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingConv.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingConv.html",
+          "hash": "HQ5ceT3+DTgAWEOADFLT5A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingConvStatics.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingConvStatics.html",
+          "hash": "qdpSx7S7eO/YPoyFqz/0Tg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingSignature.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingSignature.html",
+          "hash": "JZVoZppF1hWIZ7IdZa299g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode.html",
+          "hash": "gwq8tSUuMGuispXq4dGE5w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html",
+          "hash": "x8q2hbjxt2xbfHstYhIRSg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILComparisonInstr.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILComparisonInstr.html",
+          "hash": "S3VSYwhnpcMl+aCxkGYNyA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILConst.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILConst.html",
+          "hash": "aIXWhsTPlzEEVsGTPJqCwQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttrNamedArg.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttrNamedArg.html",
+          "hash": "d+0GtYYoC6gYkKxjzMqE/Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttribute.html",
+          "hash": "JC+MgLW+lw4DI6SQUoqpVw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttrs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttrs.html",
+          "hash": "iclBK02rJ3bna5XUfpDLHA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttrsStatics.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttrsStatics.html",
+          "hash": "b4yXwLAvdL6aU/e0RNeW1g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILDefaultPInvokeEncoding.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILDefaultPInvokeEncoding.html",
+          "hash": "soqB2oVO+rdN6oUijevZCw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILEventDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILEventDef.html",
+          "hash": "bJyVSLSkYjW9UQf4v9mdgg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILEventDefs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILEventDefs.html",
+          "hash": "Xijjc/ZIeHdedCvJlfT+Uw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILExceptionClause.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILExceptionClause.html",
+          "hash": "Rsml3JFrUApBrvH0VEgFcQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILExceptionSpec.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILExceptionSpec.html",
+          "hash": "1x5iMjhlGy/koMahcyy0EA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILExportedTypeOrForwarder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILExportedTypeOrForwarder.html",
+          "hash": "Pfq14SsqLEIqblJDIZv8Rg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILExportedTypesAndForwarders.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILExportedTypesAndForwarders.html",
+          "hash": "KAEhV982tTYRsQGb0pPjvg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldDef.html",
+          "hash": "TJTr3F95fr2TnF575HVpoQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldDefs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldDefs.html",
+          "hash": "ve6NwyQsLzxGQnDyfni8sg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldInit.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldInit.html",
+          "hash": "64CNLX6un3iQdB6dbmgT7A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldRef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldRef.html",
+          "hash": "hBTNA06EumNigOcZvj/w/g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldSpec.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldSpec.html",
+          "hash": "zN6WLBbChhZUgAjtnHnW6A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericArgs.html",
+          "hash": "e/MHnYaNF8f3kTo3vapN0g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef.html",
+          "hash": "fOZcxurGk6g1iPbkRvMdEA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDefs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDefs.html",
+          "hash": "sG3SqHfhC8eBR477crK61w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericVariance.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericVariance.html",
+          "hash": "LFU4MocMiLWml3gQeB4yuw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals.html",
+          "hash": "PR6RNeAIfNb+yU4RCZaeEw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk.html",
+          "hash": "Hp2SoBMQ5CcbcI9e9Lfpfg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILInstr.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILInstr.html",
+          "hash": "xQBS6ruyk7biMAUn8kON+w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocal.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocal.html",
+          "hash": "4VWhx9Q4/nV5G3d4MdYI1w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugInfo.html",
+          "hash": "RIoSvjTgR8NtVQ1uJoDnjA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugMapping.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugMapping.html",
+          "hash": "b76YdcfHaiWtDgXvN+hHcw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocals.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocals.html",
+          "hash": "OXFrl40MQPOeXQ5ZHQJk/Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMemberAccess.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMemberAccess.html",
+          "hash": "x4qzf8zwVWXcPJl3AIf9nQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodBody.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodBody.html",
+          "hash": "myvi3OB9sy2W1kU+/ZckiQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDef.html",
+          "hash": "NmA3ipGKDAiVy6bT1E0z6g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDefs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodDefs.html",
+          "hash": "hevXVbNYhevipRJ4EwLzgg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDef.html",
+          "hash": "EAXyi59uo/Ad978nPKuinQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDefs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDefs.html",
+          "hash": "cOkxww2UsQKDhmwy3ET1lg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodRef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodRef.html",
+          "hash": "9NkUEXskzmGdVQ1WiKsmiA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec.html",
+          "hash": "rlzniOr4EUS1sU89tIQXbQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleDef.html",
+          "hash": "/3H5JttLLvrNtPHh4WWXCg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleRef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleRef.html",
+          "hash": "vpYTA3zr0t4KHNZhxiSXLw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILNestedExportedType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILNestedExportedType.html",
+          "hash": "13HNvCrMyK7ecZkBzfpOYQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILNestedExportedTypesAndForwarders.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILNestedExportedTypesAndForwarders.html",
+          "hash": "7SAjP0o2xdC+kG6kAx/jMA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILOverridesSpec.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILOverridesSpec.html",
+          "hash": "nxqnmJbtkyXJOXQOB1z42A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter.html",
+          "hash": "xoDuMCE7+NttFrwpnWVtfA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameters.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameters.html",
+          "hash": "PWF+9OtC4IknZlr7Hq2hAQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILPlatform.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILPlatform.html",
+          "hash": "lfaKuv89gGp/ayrfiMNyWA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILPropertyDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILPropertyDef.html",
+          "hash": "4PyEXdpGvoiWyZqFX5ev3A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILPropertyDefs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILPropertyDefs.html",
+          "hash": "+Q2H6+91+bH35cK+uxXMCA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILReadonly.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILReadonly.html",
+          "hash": "KzYy7T0UDebdM5p/LSLNaA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILResource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILResource.html",
+          "hash": "wBTZlgedP1dfa5rTf0bDJQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILResourceAccess.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILResourceAccess.html",
+          "hash": "IgScRPJYabMQuTeDQynihA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILResourceLocation.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILResourceLocation.html",
+          "hash": "7bM9OBSSv77pl5AqEKq0Zw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILResources.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILResources.html",
+          "hash": "lH+D6hZOI0SRrVV0oGsoAw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILReturn.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILReturn.html",
+          "hash": "z8aMIVAM5SY9pcOqHIp1gw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILRowElementKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILRowElementKind.html",
+          "hash": "3iP4QOMULONEdCbYyN7+LQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILRowKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILRowKind.html",
+          "hash": "CjCQyyCxB+6C6WDfbg2Scw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILScopeRef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILScopeRef.html",
+          "hash": "aGBXTRv4UHmqGgnjHKlcew=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTableName.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTableName.html",
+          "hash": "Jx0+PjN5w5cy2egXDO1+Fw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTableNames.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTableNames.html",
+          "hash": "NMHV71fhxHUBVwe+NUR9og=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTailcall.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTailcall.html",
+          "hash": "HMTht8SOESn2jY5atgen/g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILThisConvention.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILThisConvention.html",
+          "hash": "ZTB0dBBW65+1qSDFJRaTjA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILToken.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILToken.html",
+          "hash": "qeUuYVpUYGviBNVBTIQ4Pg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html",
+          "hash": "gYiS/TJiwyi/HbUK35/QLA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef.html",
+          "hash": "EmxbHUAzZb9cTEDF1PgHZA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefAccess.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefAccess.html",
+          "hash": "WlNVp42/VPGIRRryvaOS5Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefKind.html",
+          "hash": "yuTpkXTMct0Iqei0z3+GDQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefLayout.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefLayout.html",
+          "hash": "JJTuL0ffWc2u8kO++4TUAg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefLayoutInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefLayoutInfo.html",
+          "hash": "zRuXqRpH5c3VJbu3euaETA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefs.html",
+          "hash": "AetuQFjX+4DfUiTvg2o0gA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeInit.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeInit.html",
+          "hash": "PKh/jLZAlrbFQ/WLb2G7OQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeRef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeRef.html",
+          "hash": "ogKGmblht/YLk7lP6ISzwQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeRefScope.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeRefScope.html",
+          "hash": "XMyEHiwZRM8jGLT/m/7Pzw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeSpec.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeSpec.html",
+          "hash": "Gxel5Zm6CToT1KSxhasALw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes.html",
+          "hash": "PmYGF8bni6TQozgE5prcaA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILVarArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILVarArgs.html",
+          "hash": "ovUOHz0noahmgPwL0Z6kDg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILVolatility.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ILVolatility.html",
+          "hash": "3kwl4VtVmAXs3FVy2GWFQA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ImplementationTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ImplementationTag.html",
+          "hash": "5xnOoKtr7wHeWyWSjbkEgw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MemberForwardedTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MemberForwardedTag.html",
+          "hash": "GEUjfTRjK2yxiU5VDdnbCA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MemberRefAsFspecIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MemberRefAsFspecIdx.html",
+          "hash": "5tvFz31mqeME8GUN7QzLMg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MemberRefAsMspecIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MemberRefAsMspecIdx.html",
+          "hash": "Jg5QvnBcS1hPRg1EkvhMJg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MemberRefParentTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MemberRefParentTag.html",
+          "hash": "2ol6bqVnkSbbBxXuNaLw7g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MethodData.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MethodData.html",
+          "hash": "jKbB0eRtzUETNpT1EkjJdg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MethodDefOrRefTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MethodDefOrRefTag.html",
+          "hash": "CC3c76x13LDrO/Zb/j5Vkw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MethodSpecAsMspecIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.MethodSpecAsMspecIdx.html",
+          "hash": "+X0+87+GwYNJqFF8+C0lsQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.PublicKey.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.PublicKey.html",
+          "hash": "duS0aDH12FyWCgOK3ig5gw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue.html",
+          "hash": "f9pu0INL1HJYLZ6WNemRgQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html",
+          "hash": "eMj7Lm84Obd1oYIU0dZCNA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILTypeSigParser.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILTypeSigParser.html",
+          "hash": "VoXTulMY3YlE4akZfmoUhA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html",
+          "hash": "KYJqkmM/hvN1Jn31TNYeYQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ResolutionScopeTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.ResolutionScopeTag.html",
+          "hash": "dKjOu1gTCJyZQ4vRvYL/uw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.SecurityDeclIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.SecurityDeclIdx.html",
+          "hash": "EE46Gv9TPpklsHt/VbmgsQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TaggedIndex-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TaggedIndex-1.html",
+          "hash": "buddDgZriyrxBNvGH/tmYQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TypeDefAsTypIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TypeDefAsTypIdx.html",
+          "hash": "FnjF7nVWIpseKQmJ1CUKAw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TypeDefOrRefOrSpecTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TypeDefOrRefOrSpecTag.html",
+          "hash": "4ZI5T96vCeEqwMLqff82jw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag.html",
+          "hash": "568uESRq+u3MdivciG247Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TypeRefAsTypIdx.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.TypeRefAsTypIdx.html",
+          "hash": "tPwdHXaRoBltRPQpW7J7Sg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Utils.SHA1.SHAStream.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Utils.SHA1.SHAStream.html",
+          "hash": "+OFD/xM/FZ7B//F9PxzxlQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Utils.SHA1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Utils.SHA1.html",
+          "hash": "cwipT67LMrIAjandWXzpQw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Utils.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.Utils.html",
+          "hash": "ltf7xTEwxPd/zkSLubXzOw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.VarArgMethodData.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.VarArgMethodData.html",
+          "hash": "YYGi5rLaJEaiU2ZW7O63JQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.AssemblyReader.html",
+          "hash": "M0BozF2ZZUFjnwoPsib1xg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.BlobIndex.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.BlobIndex.html",
+          "hash": "OTLiR/J7E/AAnTcJqH5D9w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html",
+          "hash": "j+OJnAtJN8i+MSIFNcUJUQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.SEHTree.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.SEHTree.html",
+          "hash": "Xq2endoQv+VurKV55gdffg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html",
+          "hash": "/F0GMGucz5eg4tTECbtXow=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.EventTableKey.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.EventTableKey.html",
+          "hash": "yPR07z/rnns6a+uKqKENrw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind.html",
+          "hash": "/lHP2G34SHZnu9MYeYJ8Zg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseSpec.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseSpec.html",
+          "hash": "G9IglNaR3iZf6w7ATjjC4Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.FieldDefKey.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.FieldDefKey.html",
+          "hash": "a6a9o1KAZQQrDX1fu2jlSw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.GenericRow.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.GenericRow.html",
+          "hash": "BhNBdQG9B7cBG4337gWnzA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.ILTokenMappings.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.ILTokenMappings.html",
+          "hash": "/0CwLcagKCLPm3UR/v39mA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html",
+          "hash": "mVuIJmbe6HM53PUE2OPyEQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.List.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.List.html",
+          "hash": "SqD2WQVsBDPVr1P1v9LmYw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html",
+          "hash": "yAgpX0+HN5cHiFaERLAeuA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable.html",
+          "hash": "EV7nv9K2+WdLrAc9jHS1Xg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.MethodDefKey.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.MethodDefKey.html",
+          "hash": "XAvEgUdKJ9S7iqqnfXb6Lw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.MethodDefNotFound.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.MethodDefNotFound.html",
+          "hash": "45Pklsr/0APrwQlHOQD2eg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.PropertyTableKey.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.PropertyTableKey.html",
+          "hash": "oqeAQe6qHjSTu2up8qCUew=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.RowElement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.RowElement.html",
+          "hash": "QwW+W0zRMdL2peNSBIM2iQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.RowElementTags.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.RowElementTags.html",
+          "hash": "P+8wMBK3UgloH/DXnlgrcw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.SharedRow.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.SharedRow.html",
+          "hash": "mV8Jv22OtbMUWvCxiplmbQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.String.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.String.html",
+          "hash": "xh45sK4eIS2NZ0wext01+w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.StringIndex.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.StringIndex.html",
+          "hash": "WcJW/FjJfVYvnqhsULDM/A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.TypeDefTableKey.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.TypeDefTableKey.html",
+          "hash": "qNLFcsGqCIRGhCl5G2RPuA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.UnsharedRow.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.UnsharedRow.html",
+          "hash": "rS8gk4MJ8bKpxCd9us1rNw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html",
+          "hash": "lMDEeLiYHBhQ+BGmpXJmRg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.options.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.options.html",
+          "hash": "urarjHNo4NuEBoktOpKBdg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.BinaryWriter.html",
+          "hash": "yGQlC5lYCrm7CaC4G3Mcqw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.CodeGenerator.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.CodeGenerator.html",
+          "hash": "hei9Z/buFmu51arvDiluYg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ConstructorSymbol.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ConstructorSymbol.html",
+          "hash": "d/Zmczwrq5xk9NkO5LtFjQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.EventSymbol.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.EventSymbol.html",
+          "hash": "QmdhJcnoIoLiF7neZZpBmg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ExpectedStackState.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ExpectedStackState.html",
+          "hash": "ul9yDHgp1PLRa+gy37/R0Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.FieldSymbol.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.FieldSymbol.html",
+          "hash": "wHMqPdCTQ6zbcrALBfy6BQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILAssemblyBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILAssemblyBuilder.html",
+          "hash": "swHfmlwXsEEgh2lTrQUQfQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILEventBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILEventBuilder.html",
+          "hash": "w7mI6KVo1gImFEOWleSkfg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILFieldBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILFieldBuilder.html",
+          "hash": "HQmRSvuJKCmx49A3f0AM4Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILGenerator.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILGenerator.html",
+          "hash": "MHySRYniGPfQOOnBtGKJYg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILGenericParameterBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILGenericParameterBuilder.html",
+          "hash": "ZTHWUJk0EYx9PEaDd5olSg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILLocalBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILLocalBuilder.html",
+          "hash": "f8KhXvQmPP4pyFiA9IN91g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILMethodBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILMethodBuilder.html",
+          "hash": "6CqlGBWjhTL84Br5zL6VKw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILModuleBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILModuleBuilder.html",
+          "hash": "mvPCxv4XmzW5mXWw6zZdTQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILParameterBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILParameterBuilder.html",
+          "hash": "2szrpTq8xhnbwtuYyrWrTA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILPropertyBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILPropertyBuilder.html",
+          "hash": "uzqKWp8qhb8HVBUFgoHqCg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ILTypeBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ILTypeBuilder.html",
+          "hash": "iv/G8CZHL5Urn/A61m0ChQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.MethodSymbol.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.MethodSymbol.html",
+          "hash": "nNRxS3gNRiNFTewRImydmA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.MethodSymbol2.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.MethodSymbol2.html",
+          "hash": "a/Q+rSQzSRuEh8NV/QYeeQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Misc.CustomAttributesImpl.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Misc.CustomAttributesImpl.html",
+          "hash": "/jcVLvvmdT2NPKbdikT/Dg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Misc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Misc.html",
+          "hash": "XDZrREXnHJ2WbWowSbY2Bg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.PropertySymbol.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.PropertySymbol.html",
+          "hash": "Ygg+WBo4urADDdOjUA0XiA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedAssembly.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedAssembly.html",
+          "hash": "M5+MupN9VY1mM96+WQy0jg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedConstructor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedConstructor.html",
+          "hash": "dfLJ/tvJF/W+fP/3UYcWNA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedEvent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedEvent.html",
+          "hash": "MWsK5cqnPJoJvOkGqp4qGw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedField.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedField.html",
+          "hash": "SB94h2x6EOLeTcPAUobFOw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedMeasureBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedMeasureBuilder.html",
+          "hash": "Y7INu4/R7be1+MVzUiuBtQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedMethod.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedMethod.html",
+          "hash": "CnZLsF1+Ci4Ev6yrVIAiAQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedParameter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedParameter.html",
+          "hash": "WWonJ1nZso06jZMMs5aQtg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedProperty.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedProperty.html",
+          "hash": "gHnNSmPrlDb4UGBSkPZN5A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedStaticParameter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedStaticParameter.html",
+          "hash": "6D1zHanHqdh9DLSRcNuOOw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedSymbolMethod.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedSymbolMethod.html",
+          "hash": "AXz2YWIHwDFmlDyW1QhgtQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypeBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypeBuilder.html",
+          "hash": "DTKhpTPxMOE2b79sQUKgIg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html",
+          "hash": "SVD8rEN0m8vJBWAW9ndgDw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.html",
+          "hash": "8AQvyDaz2c6LhZNDcrmoxA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypeSymbolKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypeSymbolKind.html",
+          "hash": "L+33qI1vOk7SBtbkc8JhRQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypesContext.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html",
+          "hash": "JLAtb4gPw8bh5us8xSvJxA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.QuotationSimplifier.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.QuotationSimplifier.html",
+          "hash": "NQKkcoqTAbWlE4vw3OLwXw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.TargetAssembly.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.TargetAssembly.html",
+          "hash": "VBFWO1B93EKbvmDu2BFJng=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.TargetGenericParam.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.TargetGenericParam.html",
+          "hash": "+AfAx5AQnQBTx+hYrDGQwg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.TargetModule.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.TargetModule.html",
+          "hash": "CsfDWp05CVDqYw8Y57KmGQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.TargetTypeDefinition.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.TargetTypeDefinition.html",
+          "hash": "jUvDV/8kE7AOYgYgSjIXZQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.TypeContainer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.TypeContainer.html",
+          "hash": "yHG/dlDUBJdOnV5dAmcdWA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.html",
+          "hash": "UHuNkbV6EHIFE2Tn5QmE6Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.TypeSymbol.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.TypeSymbol.html",
+          "hash": "xhsOdM87W/X57y4tncmKAA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.TypeSymbolKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.TypeSymbolKind.html",
+          "hash": "G+Q594dKFjr+wTnAa7C9fQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.UncheckedQuotations.Shape.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.UncheckedQuotations.Shape.html",
+          "hash": "NylE0kgc/5UWIUZkahP3IA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.UncheckedQuotations.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.UncheckedQuotations.html",
+          "hash": "fI5vNkudtCE5WL2vOREOqg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.Option.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.Option.html",
+          "hash": "6YhG3GQvW+BVMrYAgHb9Ig=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.StructOption-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.StructOption-1.html",
+          "hash": "UCXoPv5THQYDLaoHS7nFRw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.StructOption.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.StructOption.html",
+          "hash": "tImCpGlfB23WtQ8tINM7/w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.uoption.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.uoption.html",
+          "hash": "aFws02aTWKIGswyRfh+vbw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Utils.html",
+          "hash": "yqZOyI2V4oB2YgE0EDuc8A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Utils2.TxTable-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Utils2.TxTable-1.html",
+          "hash": "S3VJLk70u7IAmoohI4eBPg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.Utils2.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.Utils2.html",
+          "hash": "erb8/qcC9B6RiOwIYftzeA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.XRoadProducerProvider.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.XRoadProducerProvider.html",
+          "hash": "dsiVJg6X6kYFnRGHBWGt3A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.XRoadProviders.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.XRoadProviders.html",
+          "hash": "Yr+NvaxVmmsqiGgyypGL4w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/ProviderImplementation.ProvidedTypes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/ProviderImplementation.ProvidedTypes.html",
+          "hash": "M1NAmrC4Q7N8E4EFbG+Jyw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.AbstractEndpointDeclaration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.AbstractEndpointDeclaration.html",
+          "hash": "Ij3kWO1u1/lkqh6tYX58TA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.AbstractXRoadHeader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.AbstractXRoadHeader.html",
+          "hash": "kFbaMGMPwqLYNjH7FiReIQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.BinaryContent.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.BinaryContent.html",
+          "hash": "XEbJ9MPMAPZrgV/VYgSsiQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.IChoiceOf1-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.IChoiceOf1-1.html",
+          "hash": "e4KyQyKWqRlr8B32CJzfEg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.IChoiceOf2-2.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.IChoiceOf2-2.html",
+          "hash": "qWlkw569OvFJIBoupzc/mA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.IChoiceOf3-3.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.IChoiceOf3-3.html",
+          "hash": "H9kM/dm3KCWMaG0jFkV6Iw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.IChoiceOf4-4.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.IChoiceOf4-4.html",
+          "hash": "62tPtjWekybrEz4l6ACGEw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.IChoiceOf5-5.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.IChoiceOf5-5.html",
+          "hash": "0Cu2Kix2qOYB/vxQMFL3qg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.IChoiceOf6-6.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.IChoiceOf6-6.html",
+          "hash": "VBVbzUMFPSBqW6T9Kyhwhg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.IChoiceOf7-7.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.IChoiceOf7-7.html",
+          "hash": "mVy37F4Gbj1MZeTTPq8+ug=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.IChoiceOf8-8.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.IChoiceOf8-8.html",
+          "hash": "n7EtpT4owwNUB4+p652pVg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Choices.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Choices.html",
+          "hash": "gr8WudkQxDsmsa0GiN11kw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.ContentEncoding.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.ContentEncoding.html",
+          "hash": "II+aAKcNbIZnYb/Z9qH9WA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.IXRoadRequest.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.IXRoadRequest.html",
+          "hash": "KYtQxARV5qatt60mLz6qtQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.IXRoadResponse.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.IXRoadResponse.html",
+          "hash": "Zc+sIdGS7Ik+ME7XNo1t2g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.RequestReadyEventArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.RequestReadyEventArgs.html",
+          "hash": "citBSubeGSDeMa8YJk47FQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.RequestReadyEventHandler.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.RequestReadyEventHandler.html",
+          "hash": "agFBfIdoKzJ/b0QIw7pX7w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.ResponseReadyEventArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.ResponseReadyEventArgs.html",
+          "hash": "zRcPsmDN1fu7IjAWFuuXiw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.ResponseReadyEventHandler.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.ResponseReadyEventHandler.html",
+          "hash": "RU5nFKgZnsF+ukr/1Zb8xg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.LayoutKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.LayoutKind.html",
+          "hash": "estvL5QP8MezWWcbm2y52A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.XRoadCollectionAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.XRoadCollectionAttribute.html",
+          "hash": "SnA56fAmJsjFL8NaX1xXyA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.XRoadElementAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.XRoadElementAttribute.html",
+          "hash": "hPz/9aa3+W+ayKwQ/+o1Gw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.XRoadOperationAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.XRoadOperationAttribute.html",
+          "hash": "pH38LcXY5Stf0M4xspD/nw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.XRoadProtocol.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.XRoadProtocol.html",
+          "hash": "vZBr/3Z3kCUFF6K8GWoxcw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.XRoadRequestAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.XRoadRequestAttribute.html",
+          "hash": "99z2R25IMYrFJHUcGTp88w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.XRoadRequiredHeadersAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.XRoadRequiredHeadersAttribute.html",
+          "hash": "JN6z6QsKE7cSqakZGRkj7Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.XRoadResponseAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.XRoadResponseAttribute.html",
+          "hash": "NdPzg58rkERiqU1EUymFRg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.XRoadTypeAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.XRoadTypeAttribute.html",
+          "hash": "VEANUVrnuxQGXMLux8nx8w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.Serialization.Attributes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.Serialization.Attributes.html",
+          "hash": "2KijTyzxCngp2wg1cVo9VQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.XRoadCentralServiceIdentifier.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.XRoadCentralServiceIdentifier.html",
+          "hash": "GI547V43A0x3WGOh08NiKA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.XRoadDocHeader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.XRoadDocHeader.html",
+          "hash": "GXtYzfIycDBbaZFAwuCk/w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.XRoadHeader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.XRoadHeader.html",
+          "hash": "xN1MAgpJw687q2D+8vjc2g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.XRoadMemberIdentifier.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.XRoadMemberIdentifier.html",
+          "hash": "ESJLMP1kLYO3BXn2Dpr8uQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.XRoadMessageProtocolVersion.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.XRoadMessageProtocolVersion.html",
+          "hash": "150opsjkQG+CIMrD7EoYTw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.XRoadRpcHeader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.XRoadRpcHeader.html",
+          "hash": "YvJwYiozJwOcn+5g68SUxw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.XRoadServiceIdentifier.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.XRoadServiceIdentifier.html",
+          "hash": "wgfxj7mTsIaSJmiwFqxwxQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.XRoadUtil.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.XRoadUtil.html",
+          "hash": "FIIzy32TDhRPtj/bwVKMvw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/XRoad.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/XRoad.html",
+          "hash": "wc7j9o4xyWflbJTAxOYTWg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "api/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "api/index.html",
+          "hash": "w+q4QabIyd1UGs6xoHwnLQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "api/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/toc.html",
+          "hash": "K464w1EZtnjpK4yW/StIKQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "log_codes": [
+        "InvalidFileLink"
+      ],
+      "type": "Conceptual",
+      "source_relative_path": "articles/intro.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/intro.html",
+          "hash": "RrGy4N+UdrLiaUXr2oMtmw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/license.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/license.html",
+          "hash": "TSlIVSjiq5AyAKLkmtkydA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/release-notes.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/release-notes.html",
+          "hash": "lHCrfpcDgq8rFGruQsmoiQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "articles/toc.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/toc.html",
+          "hash": "3Xpqd5Z42KpgMJqpZaV/8Q=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/logo-template.pdn",
+      "output": {
+        "resource": {
+          "relative_path": "images/logo-template.pdn"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/logo.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/logo.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html",
+          "hash": "zGC1MeY5QEFQ6pi3BiKFow=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html",
+          "hash": "17/NgdexYgmzebgOt8wT0w=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    }
+  ],
+  "incremental_info": [
+    {
+      "status": {
+        "can_incremental": true,
+        "incrementalPhase": "build"
+      },
+      "processors": {
+        "ResourceDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        },
+        "ConceptualDocumentProcessor": {
+          "can_incremental": true,
+          "incrementalPhase": "build"
+        },
+        "ManagedReferenceDocumentProcessor": {
+          "can_incremental": true,
+          "incrementalPhase": "build"
+        },
+        "TocDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        }
+      }
+    },
+    {
+      "status": {
+        "can_incremental": true,
+        "details": "Can support incremental post processing.",
+        "incrementalPhase": "postProcessing"
+      },
+      "processors": {}
+    }
+  ],
+  "version_info": {},
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}

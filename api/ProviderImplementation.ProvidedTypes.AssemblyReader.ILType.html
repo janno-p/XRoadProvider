@@ -1,0 +1,622 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class ILType (union)
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class ILType (union)
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType" class="text-break">Class ILType (union)
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">ILType (union)</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.html">ProviderImplementation.ProvidedTypes.AssemblyReader</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[&lt;RequireQualifiedAccess&gt;]
+union ILType
+    | Void
+    | Array of Item1: ILArrayShape * Item2: ILType
+    | Value of ILTypeSpec
+    | Boxed of ILTypeSpec
+    | Ptr of ILType
+    | Byref of ILType
+    | FunctionPointer of ILCallingSignature
+    | Var of int
+    | Modified of Item1: bool * Item2: ILTypeRef * Item3: ILType</code></pre>
+  </div>
+  <h3 id="properties">Properties
+  </h3>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Array" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Array">Array of Item1: ILArrayShape * Item2: ILType</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| Array of Item1: ILArrayShape * Item2: ILType</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILArrayShape.html">ILArrayShape</a></td>
+        <td><span class="parametername">Item1</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername">Item2</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_BasicQualifiedName_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.BasicQualifiedName*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_BasicQualifiedName_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.BasicQualifiedName(unit)">property BasicQualifiedName: string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property BasicQualifiedName: string with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Boxed" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Boxed">Boxed of ILTypeSpec</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| Boxed of ILTypeSpec</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeSpec.html">ILTypeSpec</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Boxity_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Boxity*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Boxity_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Boxity(unit)">property Boxity: ILBoxity</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property Boxity: ILBoxity with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILBoxity.html">ILBoxity</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Byref" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Byref">Byref of ILType</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| Byref of ILType</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_FunctionPointer" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.FunctionPointer">FunctionPointer of ILCallingSignature</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| FunctionPointer of ILCallingSignature</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingSignature.html">ILCallingSignature</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_GenericArgs_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.GenericArgs*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_GenericArgs_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.GenericArgs(unit)">property GenericArgs: ILGenericArgs</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property GenericArgs: ILGenericArgs with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericArgs.html">ILGenericArgs</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_IsNominal_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.IsNominal*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_IsNominal_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.IsNominal(unit)">property IsNominal: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsNominal: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_IsTyvar_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.IsTyvar*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_IsTyvar_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.IsTyvar(unit)">property IsTyvar: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsTyvar: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Modified" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Modified">Modified of Item1: bool * Item2: ILTypeRef * Item3: ILType</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| Modified of Item1: bool * Item2: ILTypeRef * Item3: ILType</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td><span class="parametername">Item1</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeRef.html">ILTypeRef</a></td>
+        <td><span class="parametername">Item2</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername">Item3</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Ptr" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Ptr">Ptr of ILType</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| Ptr of ILType</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_QualifiedName_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.QualifiedName*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_QualifiedName_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.QualifiedName(unit)">property QualifiedName: string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property QualifiedName: string with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_QualifiedNameExtension_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.QualifiedNameExtension*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_QualifiedNameExtension_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.QualifiedNameExtension(unit)">property QualifiedNameExtension: string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property QualifiedNameExtension: string with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_TypeRef_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.TypeRef*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_TypeRef_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.TypeRef(unit)">property TypeRef: ILTypeRef</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property TypeRef: ILTypeRef with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeRef.html">ILTypeRef</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_TypeSpec_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.TypeSpec*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_TypeSpec_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.TypeSpec(unit)">property TypeSpec: ILTypeSpec</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property TypeSpec: ILTypeSpec with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeSpec.html">ILTypeSpec</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Value" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Value">Value of ILTypeSpec</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| Value of ILTypeSpec</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeSpec.html">ILTypeSpec</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Var" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Var">Var of int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| Var of int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_Void" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.Void">Void</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">| Void</code></pre>
+  </div>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_System_Object_ToString_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.System.Object.ToString*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_System_Object_ToString_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.System.Object.ToString(unit)">override member ToString: unit -&gt; string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member ToString: unit -&gt; string</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Object.ToString: unit -&gt; string</span></div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

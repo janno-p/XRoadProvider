@@ -1,0 +1,3041 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class ProvidedTypeSymbol
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class ProvidedTypeSymbol
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol" class="text-break">Class ProvidedTypeSymbol
+  </h1>
+  <div class="markdown level0 summary"><p> Represents an array or other symbolic type involving a provided type as the argument.
+ See the type provider spec for the methods that must be implemented.
+ Note that the type provider specification does not require us to implement pointer-equality for provided types.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">System.Reflection.MemberInfo</span></div>
+    <div class="level2"><span class="xref">System.Type</span></div>
+    <div class="level3"><span class="xref">System.Reflection.TypeInfo</span></div>
+    <div class="level4"><span class="xref">System.Reflection.TypeDelegator</span></div>
+    <div class="level5"><span class="xref">ProvidedTypeSymbol</span></div>
+  </div>
+  <div classs="implements">
+    <h5>Implements</h5>
+    <div><span class="xref">System.Reflection.ICustomAttributeProvider</span></div>
+    <div><span class="xref">System.Reflection.IReflect</span></div>
+    <div><span class="xref">System.Reflection.IReflectableType</span></div>
+    <div><span class="xref">System.Runtime.InteropServices._MemberInfo</span></div>
+    <div><span class="xref">System.Runtime.InteropServices._Type</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">abstract property System.Reflection.MemberInfo.CustomAttributes: System.Collections.Generic.IEnumerable&lt;System.Reflection.CustomAttributeData&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.MemberInfo.DeclaringType: System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.MemberInfo.Equals: obj -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.MemberInfo.GetCustomAttributes: System.Type * bool -&gt; obj []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.MemberInfo.GetCustomAttributes: bool -&gt; obj []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.MemberInfo.GetCustomAttributesData: unit -&gt; System.Collections.Generic.IList&lt;System.Reflection.CustomAttributeData&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.MemberInfo.GetHashCode: unit -&gt; int</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.MemberInfo.IsDefined: System.Type * bool -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.MemberInfo.MemberType: System.Reflection.MemberTypes</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.MemberInfo.MetadataToken: int</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.MemberInfo.Module: System.Reflection.Module</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.MemberInfo.Name: string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.MemberInfo.ReflectedType: System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Reflection.MemberInfo.op_Equality: System.Reflection.MemberInfo * System.Reflection.MemberInfo -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Reflection.MemberInfo.op_Inequality: System.Reflection.MemberInfo * System.Reflection.MemberInfo -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.Assembly: System.Reflection.Assembly</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.AssemblyQualifiedName: string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.BaseType: System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.FullName: string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.GUID: System.Guid</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetConstructors: System.Reflection.BindingFlags -&gt; System.Reflection.ConstructorInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetCustomAttributes: System.Type * bool -&gt; obj []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetCustomAttributes: bool -&gt; obj []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetElementType: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetEvent: string * System.Reflection.BindingFlags -&gt; System.Reflection.EventInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetEvents: System.Reflection.BindingFlags -&gt; System.Reflection.EventInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetEvents: unit -&gt; System.Reflection.EventInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetField: string * System.Reflection.BindingFlags -&gt; System.Reflection.FieldInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetFields: System.Reflection.BindingFlags -&gt; System.Reflection.FieldInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetInterface: string * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetInterfaceMap: System.Type -&gt; System.Reflection.InterfaceMapping</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetInterfaces: unit -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetMember: string * System.Reflection.MemberTypes * System.Reflection.BindingFlags -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetMembers: System.Reflection.BindingFlags -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetMethods: System.Reflection.BindingFlags -&gt; System.Reflection.MethodInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetNestedType: string * System.Reflection.BindingFlags -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetNestedTypes: System.Reflection.BindingFlags -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.GetProperties: System.Reflection.BindingFlags -&gt; System.Reflection.PropertyInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.InvokeMember: string * System.Reflection.BindingFlags * System.Reflection.Binder * obj * obj [] * System.Reflection.ParameterModifier [] * System.Globalization.CultureInfo * string [] -&gt; obj</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.IsAssignableFrom: System.Reflection.TypeInfo -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.IsConstructedGenericType: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeDelegator.IsDefined: System.Type * bool -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.MetadataToken: int</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.Module: System.Reflection.Module</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.Name: string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.Namespace: string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.TypeHandle: System.RuntimeTypeHandle</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeDelegator.UnderlyingSystemType: System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeInfo.AsType: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.DeclaredConstructors: System.Collections.Generic.IEnumerable&lt;System.Reflection.ConstructorInfo&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.DeclaredEvents: System.Collections.Generic.IEnumerable&lt;System.Reflection.EventInfo&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.DeclaredFields: System.Collections.Generic.IEnumerable&lt;System.Reflection.FieldInfo&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.DeclaredMembers: System.Collections.Generic.IEnumerable&lt;System.Reflection.MemberInfo&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.DeclaredMethods: System.Collections.Generic.IEnumerable&lt;System.Reflection.MethodInfo&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.DeclaredNestedTypes: System.Collections.Generic.IEnumerable&lt;System.Reflection.TypeInfo&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.DeclaredProperties: System.Collections.Generic.IEnumerable&lt;System.Reflection.PropertyInfo&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.GenericTypeParameters: System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeInfo.GetDeclaredEvent: string -&gt; System.Reflection.EventInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeInfo.GetDeclaredField: string -&gt; System.Reflection.FieldInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeInfo.GetDeclaredMethod: string -&gt; System.Reflection.MethodInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeInfo.GetDeclaredMethods: string -&gt; System.Collections.Generic.IEnumerable&lt;System.Reflection.MethodInfo&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeInfo.GetDeclaredNestedType: string -&gt; System.Reflection.TypeInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeInfo.GetDeclaredProperty: string -&gt; System.Reflection.PropertyInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Reflection.TypeInfo.ImplementedInterfaces: System.Collections.Generic.IEnumerable&lt;System.Type&gt;</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Reflection.TypeInfo.IsAssignableFrom: System.Reflection.TypeInfo -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.Assembly: System.Reflection.Assembly</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.AssemblyQualifiedName: string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.Attributes: System.Reflection.TypeAttributes</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.BaseType: System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.ContainsGenericParameters: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.DeclaringMethod: System.Reflection.MethodBase</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.DeclaringType: System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static property System.Type.DefaultBinder: System.Reflection.Binder</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.Equals: System.Type -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.Equals: obj -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.FindInterfaces: System.Reflection.TypeFilter * obj -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.FindMembers: System.Reflection.MemberTypes * System.Reflection.BindingFlags * System.Reflection.MemberFilter * obj -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.FullName: string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.GUID: System.Guid</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.GenericParameterAttributes: System.Reflection.GenericParameterAttributes</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.GenericParameterPosition: int</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.GenericTypeArguments: System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetArrayRank: unit -&gt; int</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetConstructor: System.Reflection.BindingFlags * System.Reflection.Binder * System.Reflection.CallingConventions * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.ConstructorInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetConstructor: System.Reflection.BindingFlags * System.Reflection.Binder * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.ConstructorInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetConstructor: System.Type [] -&gt; System.Reflection.ConstructorInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetConstructors: System.Reflection.BindingFlags -&gt; System.Reflection.ConstructorInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetConstructors: unit -&gt; System.Reflection.ConstructorInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetDefaultMembers: unit -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetElementType: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetEnumName: obj -&gt; string</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetEnumNames: unit -&gt; string []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetEnumUnderlyingType: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetEnumValues: unit -&gt; System.Array</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetEvent: string * System.Reflection.BindingFlags -&gt; System.Reflection.EventInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetEvent: string -&gt; System.Reflection.EventInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetEvents: System.Reflection.BindingFlags -&gt; System.Reflection.EventInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetEvents: unit -&gt; System.Reflection.EventInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetField: string * System.Reflection.BindingFlags -&gt; System.Reflection.FieldInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetField: string -&gt; System.Reflection.FieldInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetFields: System.Reflection.BindingFlags -&gt; System.Reflection.FieldInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetFields: unit -&gt; System.Reflection.FieldInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetGenericArguments: unit -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetGenericParameterConstraints: unit -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetGenericTypeDefinition: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetHashCode: unit -&gt; int</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetInterface: string * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetInterface: string -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetInterfaceMap: System.Type -&gt; System.Reflection.InterfaceMapping</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetInterfaces: unit -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMember: string * System.Reflection.BindingFlags -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMember: string * System.Reflection.MemberTypes * System.Reflection.BindingFlags -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMember: string -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMembers: System.Reflection.BindingFlags -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMembers: unit -&gt; System.Reflection.MemberInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMethod: string * System.Reflection.BindingFlags * System.Reflection.Binder * System.Reflection.CallingConventions * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.MethodInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMethod: string * System.Reflection.BindingFlags * System.Reflection.Binder * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.MethodInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMethod: string * System.Reflection.BindingFlags -&gt; System.Reflection.MethodInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMethod: string * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.MethodInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMethod: string * System.Type [] -&gt; System.Reflection.MethodInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMethod: string -&gt; System.Reflection.MethodInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMethods: System.Reflection.BindingFlags -&gt; System.Reflection.MethodInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetMethods: unit -&gt; System.Reflection.MethodInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetNestedType: string * System.Reflection.BindingFlags -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetNestedType: string -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetNestedTypes: System.Reflection.BindingFlags -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetNestedTypes: unit -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperties: System.Reflection.BindingFlags -&gt; System.Reflection.PropertyInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperties: unit -&gt; System.Reflection.PropertyInfo []</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperty: string * System.Reflection.BindingFlags * System.Reflection.Binder * System.Type * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.PropertyInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperty: string * System.Reflection.BindingFlags -&gt; System.Reflection.PropertyInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperty: string * System.Type * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.PropertyInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperty: string * System.Type * System.Type [] -&gt; System.Reflection.PropertyInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperty: string * System.Type [] -&gt; System.Reflection.PropertyInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperty: string * System.Type -&gt; System.Reflection.PropertyInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetProperty: string -&gt; System.Reflection.PropertyInfo</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetType: string * System.Func&lt;System.Reflection.AssemblyName,System.Reflection.Assembly&gt; * System.Func&lt;System.Reflection.Assembly,string,bool,System.Type&gt; * bool * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetType: string * System.Func&lt;System.Reflection.AssemblyName,System.Reflection.Assembly&gt; * System.Func&lt;System.Reflection.Assembly,string,bool,System.Type&gt; * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetType: string * System.Func&lt;System.Reflection.AssemblyName,System.Reflection.Assembly&gt; * System.Func&lt;System.Reflection.Assembly,string,bool,System.Type&gt; -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetType: string * bool * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetType: string * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetType: string -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.GetType: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeArray: obj [] -&gt; System.Type []</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeCode: System.Type -&gt; System.TypeCode</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromCLSID: System.Guid * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromCLSID: System.Guid * string * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromCLSID: System.Guid * string -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromCLSID: System.Guid -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromHandle: System.RuntimeTypeHandle -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromProgID: string * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromProgID: string * string * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromProgID: string * string -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeFromProgID: string -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.GetTypeHandle: obj -&gt; System.RuntimeTypeHandle</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.HasElementType: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.InvokeMember: string * System.Reflection.BindingFlags * System.Reflection.Binder * obj * obj [] * System.Globalization.CultureInfo -&gt; obj</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.InvokeMember: string * System.Reflection.BindingFlags * System.Reflection.Binder * obj * obj [] * System.Reflection.ParameterModifier [] * System.Globalization.CultureInfo * string [] -&gt; obj</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.InvokeMember: string * System.Reflection.BindingFlags * System.Reflection.Binder * obj * obj [] -&gt; obj</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsAbstract: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsAnsiClass: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsArray: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.IsAssignableFrom: System.Type -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsAutoClass: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsAutoLayout: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsByRef: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsCOMObject: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsClass: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsConstructedGenericType: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsContextful: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsEnum: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.IsEnumDefined: obj -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.IsEquivalentTo: System.Type -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsExplicitLayout: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsGenericParameter: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsGenericType: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsGenericTypeDefinition: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsImport: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.IsInstanceOfType: obj -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsInterface: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsLayoutSequential: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsMarshalByRef: bool</span>
+    </div>
+    <div>
+      <span class="xref">property System.Type.IsNested: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsNestedAssembly: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsNestedFamANDAssem: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsNestedFamORAssem: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsNestedFamily: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsNestedPrivate: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsNestedPublic: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsNotPublic: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsPointer: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsPrimitive: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsPublic: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsSealed: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsSecurityCritical: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsSecuritySafeCritical: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsSecurityTransparent: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsSerializable: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsSpecialName: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.IsSubclassOf: System.Type -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsUnicodeClass: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.IsValueType: bool</span>
+    </div>
+    <div>
+      <span class="xref">property System.Type.IsVisible: bool</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.MakeArrayType: int -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.MakeArrayType: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.MakeByRefType: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.MakeGenericType: System.Type [] -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.MakePointerType: unit -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.MemberType: System.Reflection.MemberTypes</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.Module: System.Reflection.Module</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.Namespace: string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.ReflectedType: System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.ReflectionOnlyGetType: string * bool * bool -&gt; System.Type</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.StructLayoutAttribute: System.Runtime.InteropServices.StructLayoutAttribute</span>
+    </div>
+    <div>
+      <span class="xref">abstract member System.Type.ToString: unit -&gt; string</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.TypeHandle: System.RuntimeTypeHandle</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.TypeInitializer: System.Reflection.ConstructorInfo</span>
+    </div>
+    <div>
+      <span class="xref">abstract property System.Type.UnderlyingSystemType: System.Type</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.op_Equality: System.Type * System.Type -&gt; bool</span>
+    </div>
+    <div>
+      <span class="xref">static member System.Type.op_Inequality: System.Type * System.Type -&gt; bool</span>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.html">ProviderImplementation.ProvidedTypes</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">type ProvidedTypeSymbol (kind:ProvidedTypeSymbolKind, typeArgs:Type list)
+    inherit TypeDelegator
+    interface ICustomAttributeProvider
+    interface _MemberInfo
+    interface _Type
+    interface IReflect
+    interface IReflectableType</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbolKind.html">ProvidedTypeSymbolKind</a></td>
+        <td><span class="parametername">kind</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> <span class="xref">list</span></td>
+        <td><span class="parametername">typeArgs</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="constructors">Constructors
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.#ctor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol__ctor_ProviderImplementation_ProvidedTypes_ProvidedTypeSymbolKind___System_Type_list_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.#ctor(ProviderImplementation.ProvidedTypes.ProvidedTypeSymbolKind * System.Type list)">new: ProvidedTypeSymbolKind * Type list -&gt; ProvidedTypeSymbol</h4>
+  <div class="markdown level1 summary"><p>Implicit constructor.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">new: kind:ProvidedTypeSymbolKind * typeArgs:Type list -&gt; ProvidedTypeSymbol</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbolKind.html">ProvidedTypeSymbolKind</a></td>
+        <td><span class="parametername">kind</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> <span class="xref">list</span></td>
+        <td><span class="parametername">typeArgs</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.html">ProvidedTypeSymbol</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_Args_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.Args*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_Args_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.Args(unit)">property Args: Type []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property Args: Type [] with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_IsFSharpTypeAbbreviation_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.IsFSharpTypeAbbreviation*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_IsFSharpTypeAbbreviation_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.IsFSharpTypeAbbreviation(unit)">property IsFSharpTypeAbbreviation: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsFSharpTypeAbbreviation: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_IsFSharpUnitAnnotated_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.IsFSharpUnitAnnotated*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_IsFSharpUnitAnnotated_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.IsFSharpUnitAnnotated(unit)">property IsFSharpUnitAnnotated: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property IsFSharpUnitAnnotated: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_Kind_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.Kind*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_Kind_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.Kind(unit)">property Kind: ProvidedTypeSymbolKind</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property Kind: ProvidedTypeSymbolKind with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbolKind.html">ProvidedTypeSymbolKind</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_DeclaringType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.DeclaringType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_DeclaringType_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.DeclaringType(unit)">override property DeclaringType: Type</h4>
+  <div class="markdown level1 summary"><p> Although not strictly required by the type provider specification, this is required when doing basic operations like FullName on
+ .NET symbolic types made from this type, e.g. when building Nullable&lt;SomeProvidedType[]&gt;.FullName</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property DeclaringType: Type with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Reflection.MemberInfo.DeclaringType: System.Type</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_MemberType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.MemberType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_MemberType_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.MemberType(unit)">override property MemberType: MemberTypes</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property MemberType: MemberTypes with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MemberTypes</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Reflection.MemberInfo.MemberType: System.Reflection.MemberTypes</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_MetadataToken_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.MetadataToken*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_MetadataToken_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.MetadataToken(unit)">override property MetadataToken: int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property MetadataToken: int with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Reflection.MemberInfo.MetadataToken: int</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_Name_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.Name*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_Name_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.Name(unit)">override property Name: string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property Name: string with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Reflection.MemberInfo.Name: string</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_Assembly_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.Assembly*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_Assembly_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.Assembly(unit)">override property Assembly: Assembly</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property Assembly: Assembly with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.Assembly: System.Reflection.Assembly</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_AssemblyQualifiedName_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.AssemblyQualifiedName*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_AssemblyQualifiedName_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.AssemblyQualifiedName(unit)">override property AssemblyQualifiedName: string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property AssemblyQualifiedName: string with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.AssemblyQualifiedName: string</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_BaseType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.BaseType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_BaseType_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.BaseType(unit)">override property BaseType: Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property BaseType: Type with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.BaseType: System.Type</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_FullName_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.FullName*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_FullName_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.FullName(unit)">override property FullName: string</h4>
+  <div class="markdown level1 summary"><p> Substitute types for type variables.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property FullName: string with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.FullName: string</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GUID_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GUID*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GUID_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GUID(unit)">override property GUID: Guid</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property GUID: Guid with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Guid</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.GUID: System.Guid</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsGenericType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsGenericType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsGenericType_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsGenericType(unit)">override property IsGenericType: bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property IsGenericType: bool with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.IsGenericType: bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_Module_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.Module*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_Module_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.Module(unit)">override property Module: Module</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property Module: Module with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Module</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.Module: System.Reflection.Module</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_Namespace_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.Namespace*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_Namespace_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.Namespace(unit)">override property Namespace: string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property Namespace: string with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.Namespace: string</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_UnderlyingSystemType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.UnderlyingSystemType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_UnderlyingSystemType_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.UnderlyingSystemType(unit)">override property UnderlyingSystemType: Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override property UnderlyingSystemType: Type with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract property System.Type.UnderlyingSystemType: System.Type</span></div>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Object_Equals_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Object.Equals*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Object_Equals_obj_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Object.Equals(obj)">override member Equals: obj -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member Equals: other:obj -&gt; bool</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">obj</span></td>
+        <td><span class="parametername">other</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Object.Equals: obj -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Object_GetHashCode_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Object.GetHashCode*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Object_GetHashCode_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Object.GetHashCode(unit)">override member GetHashCode: unit -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetHashCode: unit -&gt; int</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Object.GetHashCode: unit -&gt; int</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Object_ToString_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Object.ToString*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Object_ToString_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Object.ToString(unit)">override member ToString: unit -&gt; string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member ToString: unit -&gt; string</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Object.ToString: unit -&gt; string</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_GetCustomAttributes_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.GetCustomAttributes*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_GetCustomAttributes_bool_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.GetCustomAttributes(bool)">override member GetCustomAttributes: bool -&gt; obj []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetCustomAttributes: _inherit:bool -&gt; obj []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td><span class="parametername">_inherit</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">obj</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Reflection.MemberInfo.GetCustomAttributes: bool -&gt; obj []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_GetCustomAttributes_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.GetCustomAttributes*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_GetCustomAttributes_System_Type___bool_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.GetCustomAttributes(System.Type * bool)">override member GetCustomAttributes: Type * bool -&gt; obj []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetCustomAttributes: _attributeType:Type * _inherit:bool -&gt; obj []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">_attributeType</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td><span class="parametername">_inherit</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">obj</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Reflection.MemberInfo.GetCustomAttributes: System.Type * bool -&gt; obj []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_GetCustomAttributesData_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.GetCustomAttributesData*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_GetCustomAttributesData_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.GetCustomAttributesData(unit)">override member GetCustomAttributesData: unit -&gt; IList&lt;CustomAttributeData&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetCustomAttributesData: unit -&gt; IList&lt;CustomAttributeData&gt;</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.IList</span>&lt;<span class="xref">System.Reflection.CustomAttributeData</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Reflection.MemberInfo.GetCustomAttributesData: unit -&gt; System.Collections.Generic.IList&lt;System.Reflection.CustomAttributeData&gt;</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_IsDefined_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.IsDefined*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Reflection_MemberInfo_IsDefined_System_Type___bool_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Reflection.MemberInfo.IsDefined(System.Type * bool)">override member IsDefined: Type * bool -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsDefined: _attributeType:Type * _inherit:bool -&gt; bool</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">_attributeType</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td><span class="parametername">_inherit</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Reflection.MemberInfo.IsDefined: System.Type * bool -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_Equals_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.Equals*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_Equals_System_Type_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.Equals(System.Type)">override member Equals: Type -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member Equals: otherTy:Type -&gt; bool</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">otherTy</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.Equals: System.Type -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetArrayRank_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetArrayRank*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetArrayRank_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetArrayRank(unit)">override member GetArrayRank: unit -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetArrayRank: unit -&gt; int</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetArrayRank: unit -&gt; int</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetAttributeFlagsImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetAttributeFlagsImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetAttributeFlagsImpl_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetAttributeFlagsImpl(unit)">override member GetAttributeFlagsImpl: unit -&gt; TypeAttributes</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetAttributeFlagsImpl: unit -&gt; TypeAttributes</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.TypeAttributes</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetAttributeFlagsImpl: unit -&gt; System.Reflection.TypeAttributes</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetConstructorImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetConstructorImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetConstructorImpl_System_Reflection_BindingFlags___System_Reflection_Binder___System_Reflection_CallingConventions___System_Type______System_Reflection_ParameterModifier____" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetConstructorImpl(System.Reflection.BindingFlags * System.Reflection.Binder * System.Reflection.CallingConventions * System.Type [] * System.Reflection.ParameterModifier [])">override member GetConstructorImpl: BindingFlags * Binder * CallingConventions * Type [] * ParameterModifier [] -&gt; ConstructorInfo</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetConstructorImpl: _bindingFlags:BindingFlags * _binder:Binder * _callConventions:CallingConventions * _types:Type [] * _modifiers:ParameterModifier [] -&gt; ConstructorInfo</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Binder</span></td>
+        <td><span class="parametername">_binder</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.CallingConventions</span></td>
+        <td><span class="parametername">_callConventions</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> []</td>
+        <td><span class="parametername">_types</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.ParameterModifier</span> []</td>
+        <td><span class="parametername">_modifiers</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.ConstructorInfo</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetConstructorImpl: System.Reflection.BindingFlags * System.Reflection.Binder * System.Reflection.CallingConventions * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.ConstructorInfo</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetConstructors_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetConstructors*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetConstructors_System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetConstructors(System.Reflection.BindingFlags)">override member GetConstructors: BindingFlags -&gt; ConstructorInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetConstructors: _bindingFlags:BindingFlags -&gt; ConstructorInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.ConstructorInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetConstructors: System.Reflection.BindingFlags -&gt; System.Reflection.ConstructorInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetElementType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetElementType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetElementType_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetElementType(unit)">override member GetElementType: unit -&gt; Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetElementType: unit -&gt; Type</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetElementType: unit -&gt; System.Type</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetEvent_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetEvent*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetEvent_string___System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetEvent(string * System.Reflection.BindingFlags)">override member GetEvent: string * BindingFlags -&gt; EventInfo</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetEvent: _name:string * _bindingFlags:BindingFlags -&gt; EventInfo</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">_name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.EventInfo</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetEvent: string * System.Reflection.BindingFlags -&gt; System.Reflection.EventInfo</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetEvents_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetEvents*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetEvents_System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetEvents(System.Reflection.BindingFlags)">override member GetEvents: BindingFlags -&gt; EventInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetEvents: _bindingFlags:BindingFlags -&gt; EventInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.EventInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetEvents: System.Reflection.BindingFlags -&gt; System.Reflection.EventInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetEvents_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetEvents*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetEvents_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetEvents(unit)">override member GetEvents: unit -&gt; EventInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetEvents: unit -&gt; EventInfo []</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.EventInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetEvents: unit -&gt; System.Reflection.EventInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetField_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetField*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetField_string___System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetField(string * System.Reflection.BindingFlags)">override member GetField: string * BindingFlags -&gt; FieldInfo</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetField: _name:string * _bindingFlags:BindingFlags -&gt; FieldInfo</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">_name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.FieldInfo</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetField: string * System.Reflection.BindingFlags -&gt; System.Reflection.FieldInfo</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetFields_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetFields*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetFields_System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetFields(System.Reflection.BindingFlags)">override member GetFields: BindingFlags -&gt; FieldInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetFields: _bindingFlags:BindingFlags -&gt; FieldInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.FieldInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetFields: System.Reflection.BindingFlags -&gt; System.Reflection.FieldInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetGenericArguments_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetGenericArguments*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetGenericArguments_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetGenericArguments(unit)">override member GetGenericArguments: unit -&gt; Type []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetGenericArguments: unit -&gt; Type []</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetGenericArguments: unit -&gt; System.Type []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetGenericTypeDefinition_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetGenericTypeDefinition*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetGenericTypeDefinition_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetGenericTypeDefinition(unit)">override member GetGenericTypeDefinition: unit -&gt; Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetGenericTypeDefinition: unit -&gt; Type</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetGenericTypeDefinition: unit -&gt; System.Type</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetInterface_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetInterface*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetInterface_string___bool_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetInterface(string * bool)">override member GetInterface: string * bool -&gt; Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetInterface: _name:string * _ignoreCase:bool -&gt; Type</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">_name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td><span class="parametername">_ignoreCase</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetInterface: string * bool -&gt; System.Type</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetInterfaces_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetInterfaces*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetInterfaces_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetInterfaces(unit)">override member GetInterfaces: unit -&gt; Type []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetInterfaces: unit -&gt; Type []</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetInterfaces: unit -&gt; System.Type []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetMember_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetMember*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetMember_string___System_Reflection_MemberTypes___System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetMember(string * System.Reflection.MemberTypes * System.Reflection.BindingFlags)">override member GetMember: string * MemberTypes * BindingFlags -&gt; MemberInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetMember: _name:string * _mt:MemberTypes * _bindingFlags:BindingFlags -&gt; MemberInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">_name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.MemberTypes</span></td>
+        <td><span class="parametername">_mt</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MemberInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetMember: string * System.Reflection.MemberTypes * System.Reflection.BindingFlags -&gt; System.Reflection.MemberInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetMembers_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetMembers*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetMembers_System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetMembers(System.Reflection.BindingFlags)">override member GetMembers: BindingFlags -&gt; MemberInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetMembers: _bindingFlags:BindingFlags -&gt; MemberInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MemberInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetMembers: System.Reflection.BindingFlags -&gt; System.Reflection.MemberInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetMethodImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetMethodImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetMethodImpl_string___System_Reflection_BindingFlags___System_Reflection_Binder___System_Reflection_CallingConventions___System_Type______System_Reflection_ParameterModifier____" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetMethodImpl(string * System.Reflection.BindingFlags * System.Reflection.Binder * System.Reflection.CallingConventions * System.Type [] * System.Reflection.ParameterModifier [])">override member GetMethodImpl: string * BindingFlags * Binder * CallingConventions * Type [] * ParameterModifier [] -&gt; MethodInfo</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetMethodImpl: name:string * bindingFlags:BindingFlags * _binderBinder:Binder * _callConvention:CallingConventions * _types:Type [] * _modifiers:ParameterModifier [] -&gt; MethodInfo</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">bindingFlags</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Binder</span></td>
+        <td><span class="parametername">_binderBinder</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.CallingConventions</span></td>
+        <td><span class="parametername">_callConvention</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> []</td>
+        <td><span class="parametername">_types</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.ParameterModifier</span> []</td>
+        <td><span class="parametername">_modifiers</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodInfo</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetMethodImpl: string * System.Reflection.BindingFlags * System.Reflection.Binder * System.Reflection.CallingConventions * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.MethodInfo</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetMethods_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetMethods*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetMethods_System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetMethods(System.Reflection.BindingFlags)">override member GetMethods: BindingFlags -&gt; MethodInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetMethods: _bindingFlags:BindingFlags -&gt; MethodInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetMethods: System.Reflection.BindingFlags -&gt; System.Reflection.MethodInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetNestedType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetNestedType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetNestedType_string___System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetNestedType(string * System.Reflection.BindingFlags)">override member GetNestedType: string * BindingFlags -&gt; Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetNestedType: _name:string * _bindingFlags:BindingFlags -&gt; Type</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">_name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetNestedType: string * System.Reflection.BindingFlags -&gt; System.Type</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetNestedTypes_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetNestedTypes*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetNestedTypes_System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetNestedTypes(System.Reflection.BindingFlags)">override member GetNestedTypes: BindingFlags -&gt; Type []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetNestedTypes: _bindingFlags:BindingFlags -&gt; Type []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetNestedTypes: System.Reflection.BindingFlags -&gt; System.Type []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetProperties_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetProperties*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetProperties_System_Reflection_BindingFlags_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetProperties(System.Reflection.BindingFlags)">override member GetProperties: BindingFlags -&gt; PropertyInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetProperties: _bindingFlags:BindingFlags -&gt; PropertyInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.PropertyInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetProperties: System.Reflection.BindingFlags -&gt; System.Reflection.PropertyInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetPropertyImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetPropertyImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_GetPropertyImpl_string___System_Reflection_BindingFlags___System_Reflection_Binder___System_Type___System_Type______System_Reflection_ParameterModifier____" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.GetPropertyImpl(string * System.Reflection.BindingFlags * System.Reflection.Binder * System.Type * System.Type [] * System.Reflection.ParameterModifier [])">override member GetPropertyImpl: string * BindingFlags * Binder * Type * Type [] * ParameterModifier [] -&gt; PropertyInfo</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetPropertyImpl: _name:string * _bindingFlags:BindingFlags * _binder:Binder * _returnType:Type * _types:Type [] * _modifiers:ParameterModifier [] -&gt; PropertyInfo</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">_name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_bindingFlags</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Binder</span></td>
+        <td><span class="parametername">_binder</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">_returnType</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Type</span> []</td>
+        <td><span class="parametername">_types</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.ParameterModifier</span> []</td>
+        <td><span class="parametername">_modifiers</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.PropertyInfo</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.GetPropertyImpl: string * System.Reflection.BindingFlags * System.Reflection.Binder * System.Type * System.Type [] * System.Reflection.ParameterModifier [] -&gt; System.Reflection.PropertyInfo</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_HasElementTypeImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.HasElementTypeImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_HasElementTypeImpl_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.HasElementTypeImpl(unit)">override member HasElementTypeImpl: unit -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member HasElementTypeImpl: unit -&gt; bool</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.HasElementTypeImpl: unit -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_InvokeMember_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.InvokeMember*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_InvokeMember_string___System_Reflection_BindingFlags___System_Reflection_Binder___obj___obj______System_Reflection_ParameterModifier______System_Globalization_CultureInfo___string____" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.InvokeMember(string * System.Reflection.BindingFlags * System.Reflection.Binder * obj * obj [] * System.Reflection.ParameterModifier [] * System.Globalization.CultureInfo * string [])">override member InvokeMember: string * BindingFlags * Binder * obj * obj [] * ParameterModifier [] * CultureInfo * string [] -&gt; obj</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member InvokeMember: _name:string * _invokeAttr:BindingFlags * _binder:Binder * _target:obj * _args:obj [] * _modifiers:ParameterModifier [] * _culture:CultureInfo * _namedParameters:string [] -&gt; obj</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">_name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.BindingFlags</span></td>
+        <td><span class="parametername">_invokeAttr</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Binder</span></td>
+        <td><span class="parametername">_binder</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">obj</span></td>
+        <td><span class="parametername">_target</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">obj</span> []</td>
+        <td><span class="parametername">_args</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.ParameterModifier</span> []</td>
+        <td><span class="parametername">_modifiers</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Globalization.CultureInfo</span></td>
+        <td><span class="parametername">_culture</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> []</td>
+        <td><span class="parametername">_namedParameters</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">obj</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.InvokeMember: string * System.Reflection.BindingFlags * System.Reflection.Binder * obj * obj [] * System.Reflection.ParameterModifier [] * System.Globalization.CultureInfo * string [] -&gt; obj</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsArrayImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsArrayImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsArrayImpl_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsArrayImpl(unit)">override member IsArrayImpl: unit -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsArrayImpl: unit -&gt; bool</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.IsArrayImpl: unit -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsAssignableFrom_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsAssignableFrom*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsAssignableFrom_System_Type_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsAssignableFrom(System.Type)">override member IsAssignableFrom: Type -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsAssignableFrom: otherTy:Type -&gt; bool</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">otherTy</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.IsAssignableFrom: System.Type -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsByRefImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsByRefImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsByRefImpl_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsByRefImpl(unit)">override member IsByRefImpl: unit -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsByRefImpl: unit -&gt; bool</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.IsByRefImpl: unit -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsCOMObjectImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsCOMObjectImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsCOMObjectImpl_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsCOMObjectImpl(unit)">override member IsCOMObjectImpl: unit -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsCOMObjectImpl: unit -&gt; bool</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.IsCOMObjectImpl: unit -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsPointerImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsPointerImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsPointerImpl_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsPointerImpl(unit)">override member IsPointerImpl: unit -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsPointerImpl: unit -&gt; bool</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.IsPointerImpl: unit -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsPrimitiveImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsPrimitiveImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsPrimitiveImpl_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsPrimitiveImpl(unit)">override member IsPrimitiveImpl: unit -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsPrimitiveImpl: unit -&gt; bool</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.IsPrimitiveImpl: unit -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsSubclassOf_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsSubclassOf*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsSubclassOf_System_Type_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsSubclassOf(System.Type)">override member IsSubclassOf: Type -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsSubclassOf: otherTy:Type -&gt; bool</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">otherTy</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.IsSubclassOf: System.Type -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsValueTypeImpl_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsValueTypeImpl*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_IsValueTypeImpl_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.IsValueTypeImpl(unit)">override member IsValueTypeImpl: unit -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member IsValueTypeImpl: unit -&gt; bool</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.IsValueTypeImpl: unit -&gt; bool</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_MakeArrayType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.MakeArrayType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_MakeArrayType_int_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.MakeArrayType(int)">override member MakeArrayType: int -&gt; Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member MakeArrayType: arg:int -&gt; Type</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">arg</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.MakeArrayType: int -&gt; System.Type</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_MakeArrayType_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.MakeArrayType*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeSymbol_System_Type_MakeArrayType_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeSymbol.System.Type.MakeArrayType(unit)">override member MakeArrayType: unit -&gt; Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member MakeArrayType: unit -&gt; Type</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Type.MakeArrayType: unit -&gt; System.Type</span></div>
+  <h3 id="implements">Implements</h3>
+  <div>
+      <span class="xref">System.Reflection.ICustomAttributeProvider</span>
+  </div>
+  <div>
+      <span class="xref">System.Reflection.IReflect</span>
+  </div>
+  <div>
+      <span class="xref">System.Reflection.IReflectableType</span>
+  </div>
+  <div>
+      <span class="xref">System.Runtime.InteropServices._MemberInfo</span>
+  </div>
+  <div>
+      <span class="xref">System.Runtime.InteropServices._Type</span>
+  </div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

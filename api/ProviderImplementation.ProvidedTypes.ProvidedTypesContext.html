@@ -1,0 +1,869 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class ProvidedTypesContext
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class ProvidedTypesContext
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext" class="text-break">Class ProvidedTypesContext
+  </h1>
+  <div class="markdown level0 summary"><p> Represents the type binding context for the type provider based on the set of assemblies
+ referenced by the compilation.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">ProvidedTypesContext</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.html">ProviderImplementation.ProvidedTypes</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">type ProvidedTypesContext (referencedAssemblyPaths:string list, assemblyReplacementMap:string * string list, sourceAssemblies:Assembly list)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span> <span class="xref">list</span></td>
+        <td><span class="parametername">referencedAssemblyPaths</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <span class="xref">string</span> <span class="xref">list</span></td>
+        <td><span class="parametername">assemblyReplacementMap</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> <span class="xref">list</span></td>
+        <td><span class="parametername">sourceAssemblies</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="constructors">Constructors
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.#ctor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext__ctor_string_list___string___string_list___System_Reflection_Assembly_list_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.#ctor(string list * string * string list * System.Reflection.Assembly list)">new: string list * string * string list * Assembly list -&gt; ProvidedTypesContext</h4>
+  <div class="markdown level1 summary"><p>Implicit constructor.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">new: referencedAssemblyPaths:string list * assemblyReplacementMap:string * string list * sourceAssemblies:Assembly list -&gt; ProvidedTypesContext</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span> <span class="xref">list</span></td>
+        <td><span class="parametername">referencedAssemblyPaths</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <span class="xref">string</span> <span class="xref">list</span></td>
+        <td><span class="parametername">assemblyReplacementMap</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> <span class="xref">list</span></td>
+        <td><span class="parametername">sourceAssemblies</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html">ProvidedTypesContext</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_FSharpCoreAssemblyVersion_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.FSharpCoreAssemblyVersion*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_FSharpCoreAssemblyVersion_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.FSharpCoreAssemblyVersion(unit)">property FSharpCoreAssemblyVersion: Version</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property FSharpCoreAssemblyVersion: Version with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Version</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ILGlobals_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ILGlobals*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ILGlobals_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ILGlobals(unit)">property ILGlobals: ILGlobals</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property ILGlobals: ILGlobals with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals.html">ILGlobals</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ReferencedAssemblyPaths_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ReferencedAssemblyPaths*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ReferencedAssemblyPaths_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ReferencedAssemblyPaths(unit)">property ReferencedAssemblyPaths: string list</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property ReferencedAssemblyPaths: string list with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span> <span class="xref">list</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_AddSourceAssembly_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.AddSourceAssembly*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_AddSourceAssembly_System_Reflection_Assembly_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.AddSourceAssembly(System.Reflection.Assembly)">member AddSourceAssembly: Assembly -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member AddSourceAssembly: asm:Assembly -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td><span class="parametername">asm</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_AddTargetAssembly_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.AddTargetAssembly*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_AddTargetAssembly_System_Reflection_AssemblyName___System_Reflection_Assembly_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.AddTargetAssembly(System.Reflection.AssemblyName * System.Reflection.Assembly)">member AddTargetAssembly: AssemblyName * Assembly -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member AddTargetAssembly: asmName:AssemblyName * asm:Assembly -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.AssemblyName</span></td>
+        <td><span class="parametername">asmName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td><span class="parametername">asm</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceExprToTarget_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceExprToTarget*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceExprToTarget_FSharp_Quotations_Expr_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceExprToTarget(FSharp.Quotations.Expr)">member ConvertSourceExprToTarget: Expr -&gt; Expr</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ConvertSourceExprToTarget: e:Expr -&gt; Expr</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">FSharp.Quotations.Expr</span></td>
+        <td><span class="parametername">e</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">FSharp.Quotations.Expr</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceNamespaceToTarget_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceNamespaceToTarget*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceNamespaceToTarget_IProvidedNamespace_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceNamespaceToTarget(IProvidedNamespace)">member ConvertSourceNamespaceToTarget: IProvidedNamespace -&gt; IProvidedNamespace</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ConvertSourceNamespaceToTarget: ns:IProvidedNamespace -&gt; IProvidedNamespace</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">IProvidedNamespace</span></td>
+        <td><span class="parametername">ns</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">IProvidedNamespace</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceProvidedTypeDefinitionToTarget_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceProvidedTypeDefinitionToTarget*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceProvidedTypeDefinitionToTarget_ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceProvidedTypeDefinitionToTarget(ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition)">member ConvertSourceProvidedTypeDefinitionToTarget: ProvidedTypeDefinition -&gt; ProvidedTypeDefinition</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ConvertSourceProvidedTypeDefinitionToTarget: ptd:ProvidedTypeDefinition -&gt; ProvidedTypeDefinition</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html">ProvidedTypeDefinition</a></td>
+        <td><span class="parametername">ptd</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html">ProvidedTypeDefinition</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceTypeToTarget_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceTypeToTarget*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceTypeToTarget_System_Type_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceTypeToTarget(System.Type)">member ConvertSourceTypeToTarget: Type -&gt; Type</h4>
+  <div class="markdown level1 summary"><p> Gets the equivalent target type</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ConvertSourceTypeToTarget: t:Type -&gt; Type</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">t</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertTargetTypeToSource_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertTargetTypeToSource*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertTargetTypeToSource_System_Type_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertTargetTypeToSource(System.Type)">member ConvertTargetTypeToSource: Type -&gt; Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ConvertTargetTypeToSource: t:Type -&gt; Type</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">t</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_Create_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.Create*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_Create_TypeProviderConfig___string___string_list___System_Reflection_Assembly_list_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.Create(TypeProviderConfig * string * string list * System.Reflection.Assembly list)">static member Create: TypeProviderConfig * string * string list * Assembly list -&gt; ProvidedTypesContext</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">static member Create: config:TypeProviderConfig * assemblyReplacementMap:string * string list * sourceAssemblies:Assembly list -&gt; ProvidedTypesContext</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TypeProviderConfig</span></td>
+        <td><span class="parametername">config</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <span class="xref">string</span> <span class="xref">list</span></td>
+        <td><span class="parametername">assemblyReplacementMap</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> <span class="xref">list</span></td>
+        <td><span class="parametername">sourceAssemblies</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html">ProvidedTypesContext</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_GetSourceAssemblies_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.GetSourceAssemblies*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_GetSourceAssemblies_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.GetSourceAssemblies(unit)">member GetSourceAssemblies: unit -&gt; Assembly []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member GetSourceAssemblies: unit -&gt; Assembly []</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_GetTargetAssemblies_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.GetTargetAssemblies*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_GetTargetAssemblies_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.GetTargetAssemblies(unit)">member GetTargetAssemblies: unit -&gt; Assembly []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member GetTargetAssemblies: unit -&gt; Assembly []</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ReadRelatedAssembly_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ReadRelatedAssembly*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ReadRelatedAssembly_byte____" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ReadRelatedAssembly(byte [])">member ReadRelatedAssembly: byte [] -&gt; Assembly</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ReadRelatedAssembly: bytes:byte [] -&gt; Assembly</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">byte</span> []</td>
+        <td><span class="parametername">bytes</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ReadRelatedAssembly_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ReadRelatedAssembly*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ReadRelatedAssembly_string_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ReadRelatedAssembly(string)">member ReadRelatedAssembly: string -&gt; Assembly</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ReadRelatedAssembly: fileName:string -&gt; Assembly</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">fileName</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_TryBindAssemblyNameToTarget_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.TryBindAssemblyNameToTarget*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_TryBindAssemblyNameToTarget_System_Reflection_AssemblyName_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.TryBindAssemblyNameToTarget(System.Reflection.AssemblyName)">member TryBindAssemblyNameToTarget: AssemblyName -&gt; Choice&lt;Assembly,exn&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member TryBindAssemblyNameToTarget: aref:AssemblyName -&gt; Choice&lt;Assembly,exn&gt;</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.AssemblyName</span></td>
+        <td><span class="parametername">aref</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Choice</span>&lt;<span class="xref">System.Reflection.Assembly</span>,<span class="xref">exn</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_TryBindILAssemblyRefToTgt_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.TryBindILAssemblyRefToTgt*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_TryBindILAssemblyRefToTgt_ProviderImplementation_ProvidedTypes_AssemblyReader_ILAssemblyRef_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.TryBindILAssemblyRefToTgt(ProviderImplementation.ProvidedTypes.AssemblyReader.ILAssemblyRef)">member TryBindILAssemblyRefToTgt: ILAssemblyRef -&gt; Choice&lt;Assembly,exn&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member TryBindILAssemblyRefToTgt: aref:ILAssemblyRef -&gt; Choice&lt;Assembly,exn&gt;</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILAssemblyRef.html">ILAssemblyRef</a></td>
+        <td><span class="parametername">aref</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Choice</span>&lt;<span class="xref">System.Reflection.Assembly</span>,<span class="xref">exn</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_TryBindSimpleAssemblyNameToTarget_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.TryBindSimpleAssemblyNameToTarget*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypesContext_TryBindSimpleAssemblyNameToTarget_string_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.TryBindSimpleAssemblyNameToTarget(string)">member TryBindSimpleAssemblyNameToTarget: string -&gt; Choice&lt;Assembly,exn&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member TryBindSimpleAssemblyNameToTarget: assemblyName:string -&gt; Choice&lt;Assembly,exn&gt;</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">assemblyName</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">Choice</span>&lt;<span class="xref">System.Reflection.Assembly</span>,<span class="xref">exn</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

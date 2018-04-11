@@ -1,0 +1,1056 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class TypeProviderForNamespaces
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class TypeProviderForNamespaces
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces" class="text-break">Class TypeProviderForNamespaces
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">TypeProviderForNamespaces</span></div>
+  </div>
+  <div classs="implements">
+    <h5>Implements</h5>
+    <div><span class="xref">ITypeProvider</span></div>
+    <div><span class="xref">System.IDisposable</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.html">ProviderImplementation.ProvidedTypes</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">type TypeProviderForNamespaces (config:TypeProviderConfig, namespacesAndTypes:string * ProvidedTypeDefinition list list, assemblyReplacementMap:string * string list, sourceAssemblies:Assembly list)
+    interface ITypeProvider
+    interface IDisposable</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TypeProviderConfig</span></td>
+        <td><span class="parametername">config</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html">ProvidedTypeDefinition</a> <span class="xref">list</span> <span class="xref">list</span></td>
+        <td><span class="parametername">namespacesAndTypes</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <span class="xref">string</span> <span class="xref">list</span></td>
+        <td><span class="parametername">assemblyReplacementMap</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> <span class="xref">list</span></td>
+        <td><span class="parametername">sourceAssemblies</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="constructors">Constructors
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces__ctor_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.#ctor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces__ctor_TypeProviderConfig___string___ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_list___System_Reflection_Assembly_list_option___string___string_list_option_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.#ctor(TypeProviderConfig * string * ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition list * System.Reflection.Assembly list option * string * string list option)">new: TypeProviderConfig * string * ProvidedTypeDefinition list * Assembly list option * string * string list option -&gt; TypeProviderForNamespaces</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">new: config:TypeProviderConfig * namespaceName:string * types:ProvidedTypeDefinition list * sourceAssemblies:Assembly list option * assemblyReplacementMap:string * string list option -&gt; TypeProviderForNamespaces</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TypeProviderConfig</span></td>
+        <td><span class="parametername">config</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">namespaceName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html">ProvidedTypeDefinition</a> <span class="xref">list</span></td>
+        <td><span class="parametername">types</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> <span class="xref">list</span> <span class="xref">option</span></td>
+        <td><span class="parametername">sourceAssemblies</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <span class="xref">string</span> <span class="xref">list</span> <span class="xref">option</span></td>
+        <td><span class="parametername">assemblyReplacementMap</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.html">TypeProviderForNamespaces</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces__ctor_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.#ctor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces__ctor_TypeProviderConfig___string___ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_list_list___string___string_list___System_Reflection_Assembly_list_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.#ctor(TypeProviderConfig * string * ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition list list * string * string list * System.Reflection.Assembly list)">new: TypeProviderConfig * string * ProvidedTypeDefinition list list * string * string list * Assembly list -&gt; TypeProviderForNamespaces</h4>
+  <div class="markdown level1 summary"><p>Implicit constructor.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">new: config:TypeProviderConfig * namespacesAndTypes:string * ProvidedTypeDefinition list list * assemblyReplacementMap:string * string list * sourceAssemblies:Assembly list -&gt; TypeProviderForNamespaces</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TypeProviderConfig</span></td>
+        <td><span class="parametername">config</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html">ProvidedTypeDefinition</a> <span class="xref">list</span> <span class="xref">list</span></td>
+        <td><span class="parametername">namespacesAndTypes</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <span class="xref">string</span> <span class="xref">list</span></td>
+        <td><span class="parametername">assemblyReplacementMap</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> <span class="xref">list</span></td>
+        <td><span class="parametername">sourceAssemblies</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.html">TypeProviderForNamespaces</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces__ctor_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.#ctor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces__ctor_TypeProviderConfig___System_Reflection_Assembly_list_option___string___string_list_option_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.#ctor(TypeProviderConfig * System.Reflection.Assembly list option * string * string list option)">new: TypeProviderConfig * Assembly list option * string * string list option -&gt; TypeProviderForNamespaces</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">new: config:TypeProviderConfig * sourceAssemblies:Assembly list option * assemblyReplacementMap:string * string list option -&gt; TypeProviderForNamespaces</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TypeProviderConfig</span></td>
+        <td><span class="parametername">config</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span> <span class="xref">list</span> <span class="xref">option</span></td>
+        <td><span class="parametername">sourceAssemblies</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> * <span class="xref">string</span> <span class="xref">list</span> <span class="xref">option</span></td>
+        <td><span class="parametername">assemblyReplacementMap</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.html">TypeProviderForNamespaces</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Namespaces_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Namespaces*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Namespaces_unit_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Namespaces(unit)">property Namespaces: IProvidedNamespace []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property Namespaces: IProvidedNamespace [] with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">IProvidedNamespace</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_TargetContext_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.TargetContext*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_TargetContext_unit_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.TargetContext(unit)">property TargetContext: ProvidedTypesContext</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property TargetContext: ProvidedTypesContext with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html">ProvidedTypesContext</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_AddNamespace_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.AddNamespace*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_AddNamespace_string___ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_list_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.AddNamespace(string * ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition list)">member AddNamespace: string * ProvidedTypeDefinition list -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member AddNamespace: namespaceName:string * types:ProvidedTypeDefinition list -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">namespaceName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html">ProvidedTypeDefinition</a> <span class="xref">list</span></td>
+        <td><span class="parametername">types</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ApplyStaticArgumentsForMethod_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.ApplyStaticArgumentsForMethod*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ApplyStaticArgumentsForMethod_System_Reflection_MethodBase___string___obj____" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.ApplyStaticArgumentsForMethod(System.Reflection.MethodBase * string * obj [])">member ApplyStaticArgumentsForMethod: MethodBase * string * obj [] -&gt; MethodBase</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ApplyStaticArgumentsForMethod: mb:MethodBase * mangledName:string * objs:obj [] -&gt; MethodBase</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodBase</span></td>
+        <td><span class="parametername">mb</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">mangledName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">obj</span> []</td>
+        <td><span class="parametername">objs</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodBase</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_GetStaticParametersForMethod_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.GetStaticParametersForMethod*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_GetStaticParametersForMethod_System_Reflection_MethodBase_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.GetStaticParametersForMethod(System.Reflection.MethodBase)">member GetStaticParametersForMethod: MethodBase -&gt; ParameterInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member GetStaticParametersForMethod: mb:MethodBase -&gt; ParameterInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodBase</span></td>
+        <td><span class="parametername">mb</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.ParameterInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Invalidate_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Invalidate*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Invalidate_unit_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Invalidate(unit)">member Invalidate: unit -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member Invalidate: unit -&gt; unit</code></pre>
+  </div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ResolveAssembly_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.ResolveAssembly*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ResolveAssembly_System_ResolveEventArgs_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.ResolveAssembly(System.ResolveEventArgs)">default member ResolveAssembly: ResolveEventArgs -&gt; Assembly</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">default member ResolveAssembly: args:ResolveEventArgs -&gt; Assembly</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ResolveEventArgs</span></td>
+        <td><span class="parametername">args</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><a class="xref" href="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.html#ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ResolveAssembly_System_ResolveEventArgs_">abstract member TypeProviderForNamespaces.ResolveAssembly: ResolveEventArgs -&gt; Assembly</a></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_RegisterGeneratedTargetAssembly_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.RegisterGeneratedTargetAssembly*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_RegisterGeneratedTargetAssembly_string_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.RegisterGeneratedTargetAssembly(string)">member RegisterGeneratedTargetAssembly: string -&gt; Assembly</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member RegisterGeneratedTargetAssembly: fileName:string -&gt; Assembly</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">fileName</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_RegisterProbingFolder_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.RegisterProbingFolder*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_RegisterProbingFolder_string_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.RegisterProbingFolder(string)">member RegisterProbingFolder: string -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member RegisterProbingFolder: folder:string -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">folder</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_RegisterRuntimeAssemblyLocationAsProbingFolder_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.RegisterRuntimeAssemblyLocationAsProbingFolder*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_RegisterRuntimeAssemblyLocationAsProbingFolder_TypeProviderConfig_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.RegisterRuntimeAssemblyLocationAsProbingFolder(TypeProviderConfig)">member RegisterRuntimeAssemblyLocationAsProbingFolder: TypeProviderConfig -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member RegisterRuntimeAssemblyLocationAsProbingFolder: config:TypeProviderConfig -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">TypeProviderConfig</span></td>
+        <td><span class="parametername">config</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ResolveAssembly_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.ResolveAssembly*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_ResolveAssembly_System_ResolveEventArgs_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.ResolveAssembly(System.ResolveEventArgs)">abstract member ResolveAssembly: ResolveEventArgs -&gt; Assembly</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">abstract member ResolveAssembly: args:ResolveEventArgs -&gt; Assembly</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.ResolveEventArgs</span></td>
+        <td><span class="parametername">args</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="events">Events
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Disposing_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Disposing*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Disposing_unit_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Disposing(unit)">event Disposing: IEvent&lt;EventHandler,EventArgs&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[&lt;CLIEvent&gt;]
+event Disposing: EventHandler</code></pre>
+  </div>
+  <h5 class="eventType">Event Type</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.EventHandler</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="eii">Explicit Interface Implementations
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_add_Invalidate_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.add_Invalidate*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_add_Invalidate_System_EventHandler_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.add_Invalidate(System.EventHandler)">interface ITypeProvider with member add_Invalidate: EventHandler -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">interface ITypeProvider with member add_Invalidate: EventHandler -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.EventHandler</span></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_ApplyStaticArguments_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.ApplyStaticArguments*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_ApplyStaticArguments_System_Type___string______obj____" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.ApplyStaticArguments(System.Type * string [] * obj [])">interface ITypeProvider with member ApplyStaticArguments: Type * string [] * obj [] -&gt; Type</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">interface ITypeProvider with member ApplyStaticArguments: ty:Type * typePathAfterArguments:string [] * objs:obj [] -&gt; Type</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">ty</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span> []</td>
+        <td><span class="parametername">typePathAfterArguments</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">obj</span> []</td>
+        <td><span class="parametername">objs</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member Microsoft.FSharp.Core.CompilerServices.ITypeProvider.ApplyStaticArguments: System.Type * string [] * obj [] -&gt; System.Type</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_GetGeneratedAssemblyContents_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetGeneratedAssemblyContents*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_GetGeneratedAssemblyContents_System_Reflection_Assembly_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetGeneratedAssemblyContents(System.Reflection.Assembly)">interface ITypeProvider with member GetGeneratedAssemblyContents: Assembly -&gt; byte []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">interface ITypeProvider with member GetGeneratedAssemblyContents: assembly:Assembly -&gt; byte []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.Assembly</span></td>
+        <td><span class="parametername">assembly</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">byte</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetGeneratedAssemblyContents: System.Reflection.Assembly -&gt; byte []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_GetInvokerExpression_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetInvokerExpression*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_GetInvokerExpression_System_Reflection_MethodBase___FSharp_Quotations_Expr____" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetInvokerExpression(System.Reflection.MethodBase * FSharp.Quotations.Expr [])">interface ITypeProvider with member GetInvokerExpression: MethodBase * Expr [] -&gt; Expr</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">interface ITypeProvider with member GetInvokerExpression: methodBaseT:MethodBase * parametersT:Expr [] -&gt; Expr</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.MethodBase</span></td>
+        <td><span class="parametername">methodBaseT</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">FSharp.Quotations.Expr</span> []</td>
+        <td><span class="parametername">parametersT</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">FSharp.Quotations.Expr</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetInvokerExpression: System.Reflection.MethodBase * FSharp.Quotations.Expr [] -&gt; FSharp.Quotations.Expr</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_GetNamespaces_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetNamespaces*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_GetNamespaces_unit_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetNamespaces(unit)">interface ITypeProvider with member GetNamespaces: unit -&gt; IProvidedNamespace []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">interface ITypeProvider with member GetNamespaces: unit -&gt; IProvidedNamespace []</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">IProvidedNamespace</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetNamespaces: unit -&gt; IProvidedNamespace []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_GetStaticParameters_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetStaticParameters*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_GetStaticParameters_System_Type_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetStaticParameters(System.Type)">interface ITypeProvider with member GetStaticParameters: Type -&gt; ParameterInfo []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">interface ITypeProvider with member GetStaticParameters: ty:Type -&gt; ParameterInfo []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Type</span></td>
+        <td><span class="parametername">ty</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.ParameterInfo</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member Microsoft.FSharp.Core.CompilerServices.ITypeProvider.GetStaticParameters: System.Type -&gt; System.Reflection.ParameterInfo []</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_Invalidate_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.Invalidate*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_Invalidate_unit_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.Invalidate(unit)">interface ITypeProvider with event Invalidate: unit -&gt; IEvent&lt;EventHandler,EventArgs&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[&lt;CLIEvent&gt;]
+interface ITypeProvider with event Invalidate: EventHandler</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.EventHandler</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_remove_Invalidate_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.remove_Invalidate*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_Microsoft_FSharp_Core_CompilerServices_ITypeProvider_remove_Invalidate_System_EventHandler_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.Microsoft.FSharp.Core.CompilerServices.ITypeProvider.remove_Invalidate(System.EventHandler)">interface ITypeProvider with member remove_Invalidate: EventHandler -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">interface ITypeProvider with member remove_Invalidate: EventHandler -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.EventHandler</span></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_System_IDisposable_Dispose_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.System.IDisposable.Dispose*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_TypeProviderForNamespaces_System_IDisposable_Dispose_unit_" data-uid="ProviderImplementation.ProvidedTypes.TypeProviderForNamespaces.System.IDisposable.Dispose(unit)">interface IDisposable with member Dispose: unit -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">interface IDisposable with member Dispose: unit -&gt; unit</code></pre>
+  </div>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.IDisposable.Dispose: unit -&gt; unit</span></div>
+  <h3 id="implements">Implements</h3>
+  <div>
+      <span class="xref">ITypeProvider</span>
+  </div>
+  <div>
+      <span class="xref">System.IDisposable</span>
+  </div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

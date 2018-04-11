@@ -1,0 +1,1444 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class BinaryWriter.Codebuf (mod)
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class BinaryWriter.Codebuf (mod)
+   ">
+    <meta name="generator" content="docfx 2.34.0.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf">
+  
+  
+  <h1 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf" class="text-break">Class BinaryWriter.Codebuf (mod)
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">BinaryWriter.Codebuf (mod)</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.html">ProviderImplementation.ProvidedTypes</a></h6>
+  <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
+  <h5 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">module BinaryWriter.Codebuf</code></pre>
+  </div>
+  <h3 id="fields">Fields
+  </h3>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_encodingsForNoArgInstrs__" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.encodingsForNoArgInstrs()">val encodingsForNoArgInstrs</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val encodingsForNoArgInstrs: Dictionary&lt;ILInstr,int&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILInstr.html">ILInstr</a>,<span class="xref">int</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_applyBrFixups_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.applyBrFixups*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_applyBrFixups_byte_______int___int___int___int___ProviderImplementation_ProvidedTypes_BinaryWriter_ExceptionClauseKind_______int_____91212_______System_Collections_Generic_Dictionary_ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_int_____int___int_option___int___ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_list____" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.applyBrFixups(byte [] -&gt; int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind [] -&gt; int * '?91212 [] -&gt; System.Collections.Generic.Dictionary&lt;ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel,int&gt; -&gt; int * int option * int * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel list [])">val applyBrFixups: byte [] -&gt; int * int * int * int * ExceptionClauseKind [] -&gt; int * '?91212 [] -&gt; Dictionary&lt;ILCodeLabel,int&gt; -&gt; int * int option * int * ILCodeLabel list [] -&gt; byte [] * int * '?91212 [] * int * int * int * int * ExceptionClauseKind []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val applyBrFixups: origCode:byte [] -&gt; origExnClauses:int * int * int * int * ExceptionClauseKind [] -&gt; origReqdStringFixups:int * '?91212 [] -&gt; origAvailBrFixups:Dictionary&lt;ILCodeLabel,int&gt; -&gt; origReqdBrFixups:int * int option * int * ILCodeLabel list [] -&gt; byte [] * int * '?91212 [] * int * int * int * int * ExceptionClauseKind []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">byte</span> []</td>
+        <td><span class="parametername">origCode</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span> * <span class="xref">int</span> * <span class="xref">int</span> * <span class="xref">int</span> * <a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind.html">ExceptionClauseKind</a> []</td>
+        <td><span class="parametername">origExnClauses</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span> * &#39;?91212 []</td>
+        <td><span class="parametername">origReqdStringFixups</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a>,<span class="xref">int</span>&gt;</td>
+        <td><span class="parametername">origAvailBrFixups</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span> * <span class="xref">int</span> <span class="xref">option</span> * <span class="xref">int</span> * <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a> <span class="xref">list</span> []</td>
+        <td><span class="parametername">origReqdBrFixups</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">byte</span> [] * <span class="xref">int</span> * &#39;?91212 [] * <span class="xref">int</span> * <span class="xref">int</span> * <span class="xref">int</span> * <span class="xref">int</span> * <a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind.html">ExceptionClauseKind</a> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_binaryChop_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.binaryChop*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_binaryChop__T____int_____T____" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.binaryChop('T -&gt; int -&gt; 'T [])">val binaryChop: 'T -&gt; int -&gt; 'T [] -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val binaryChop: p:'T -&gt; int -&gt; arr:'T [] -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T -&gt; <span class="xref">int</span></td>
+        <td><span class="parametername">p</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;T []</td>
+        <td><span class="parametername">arr</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'T</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitAlignment_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitAlignment*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitAlignment_ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_AssemblyReader_ILAlignment_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitAlignment(ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILAlignment)">val emitAlignment: CodeBuffer -&gt; ILAlignment -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitAlignment: codebuf:CodeBuffer -&gt; tl:ILAlignment -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILAlignment.html">ILAlignment</a></td>
+        <td><span class="parametername">tl</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitCode_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitCode*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitCode_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______91219____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCode_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitCode(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; '?91219 -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode)">val emitCode: cenv -&gt; '?91219 -&gt; CodeBuffer -&gt; ILTypeWriterEnv -&gt; ILCode -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitCode: cenv:cenv -&gt; localSigs:'?91219 -&gt; codebuf:CodeBuffer -&gt; env:ILTypeWriterEnv -&gt; code:ILCode -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;?91219</td>
+        <td><span class="parametername">localSigs</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode.html">ILCode</a></td>
+        <td><span class="parametername">code</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitConstrained_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitConstrained*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitConstrained_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitConstrained(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILType)">val emitConstrained: cenv -&gt; CodeBuffer -&gt; ILTypeWriterEnv -&gt; ILType -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitConstrained: cenv:cenv -&gt; codebuf:CodeBuffer -&gt; env:ILTypeWriterEnv -&gt; ty:ILType -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername">ty</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitExceptionHandlerTree_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitExceptionHandlerTree*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitExceptionHandlerTree_ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_SEHTree_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitExceptionHandlerTree(ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.SEHTree)">val emitExceptionHandlerTree: CodeBuffer -&gt; SEHTree -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitExceptionHandlerTree: codebuf:CodeBuffer -&gt; SEHTree -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.SEHTree.html">SEHTree</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitFieldSpecInstr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitFieldSpecInstr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitFieldSpecInstr_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILFieldSpec_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitFieldSpecInstr(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; int -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldSpec)">val emitFieldSpecInstr: cenv -&gt; CodeBuffer -&gt; ILTypeWriterEnv -&gt; int -&gt; ILFieldSpec -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitFieldSpecInstr: cenv:cenv -&gt; codebuf:CodeBuffer -&gt; env:ILTypeWriterEnv -&gt; i:int -&gt; fspec:ILFieldSpec -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILFieldSpec.html">ILFieldSpec</a></td>
+        <td><span class="parametername">fspec</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitInstr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitInstr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitInstr_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____ProviderImplementation_ProvidedTypes_AssemblyReader_ILInstr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitInstr(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILInstr)">val emitInstr: cenv -&gt; CodeBuffer -&gt; ILTypeWriterEnv -&gt; ILInstr -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitInstr: cenv:cenv -&gt; codebuf:CodeBuffer -&gt; env:ILTypeWriterEnv -&gt; instr:ILInstr -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILInstr.html">ILInstr</a></td>
+        <td><span class="parametername">instr</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitInstrCode_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitInstrCode*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitInstrCode_ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____int_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitInstrCode(ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; int)">val emitInstrCode: CodeBuffer -&gt; int -&gt; unit</h4>
+  <div class="markdown level1 summary"><p> Emit the code for an instruction</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitInstrCode: codebuf:CodeBuffer -&gt; i:int -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitMethodSpecInfoInstr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitMethodSpecInfoInstr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitMethodSpecInfoInstr_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____int____string___ProviderImplementation_ProvidedTypes_AssemblyReader_ILType___ProviderImplementation_ProvidedTypes_AssemblyReader_ILCallingConv___ProviderImplementation_ProvidedTypes_AssemblyReader_ILTypes___ProviderImplementation_ProvidedTypes_AssemblyReader_ILType___ProviderImplementation_ProvidedTypes_AssemblyReader_ILTypes_option___ProviderImplementation_ProvidedTypes_AssemblyReader_ILGenericArgs_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitMethodSpecInfoInstr(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; int -&gt; string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILType * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingConv * ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes * ProviderImplementation.ProvidedTypes.AssemblyReader.ILType * ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes option * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericArgs)">val emitMethodSpecInfoInstr: cenv -&gt; CodeBuffer -&gt; ILTypeWriterEnv -&gt; int -&gt; string * ILType * ILCallingConv * ILTypes * ILType * ILTypes option * ILGenericArgs -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitMethodSpecInfoInstr: cenv:cenv -&gt; codebuf:CodeBuffer -&gt; env:ILTypeWriterEnv -&gt; i:int -&gt; string * ILType * ILCallingConv * ILTypes * ILType * ILTypes option * ILGenericArgs -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCallingConv.html">ILCallingConv</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes.html">ILTypes</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes.html">ILTypes</a> <span class="xref">option</span></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericArgs.html">ILGenericArgs</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitMethodSpecInstr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitMethodSpecInstr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitMethodSpecInstr_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodSpec___ProviderImplementation_ProvidedTypes_AssemblyReader_ILTypes_option_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitMethodSpecInstr(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; int -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec * ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes option)">val emitMethodSpecInstr: cenv -&gt; CodeBuffer -&gt; ILTypeWriterEnv -&gt; int -&gt; ILMethodSpec * ILTypes option -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitMethodSpecInstr: cenv:cenv -&gt; codebuf:CodeBuffer -&gt; env:ILTypeWriterEnv -&gt; i:int -&gt; ILMethodSpec * ILTypes option -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodSpec.html">ILMethodSpec</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes.html">ILTypes</a> <span class="xref">option</span></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitShortInt32Instr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitShortInt32Instr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitShortInt32Instr_ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____int___int____int_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitShortInt32Instr(ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; int * int -&gt; int)">val emitShortInt32Instr: CodeBuffer -&gt; int * int -&gt; int -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitShortInt32Instr: codebuf:CodeBuffer -&gt; i_short:int * i:int -&gt; x:int -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i_short</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">x</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitShortUInt16Instr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitShortUInt16Instr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitShortUInt16Instr_ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____int___int____uint16_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitShortUInt16Instr(ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; int * int -&gt; uint16)">val emitShortUInt16Instr: CodeBuffer -&gt; int * int -&gt; uint16 -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitShortUInt16Instr: codebuf:CodeBuffer -&gt; i_short:int * i:int -&gt; x:uint16 -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i_short</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">uint16</span></td>
+        <td><span class="parametername">x</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitTailness_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitTailness*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitTailness_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_AssemblyReader_ILTailcall_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitTailness(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILTailcall)">val emitTailness: cenv -&gt; CodeBuffer -&gt; ILTailcall -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitTailness: cenv:cenv -&gt; codebuf:CodeBuffer -&gt; tl:ILTailcall -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTailcall.html">ILTailcall</a></td>
+        <td><span class="parametername">tl</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_EmitTopCode_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.EmitTopCode*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_EmitTopCode_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______91220____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv______91221____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCode_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.EmitTopCode(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; '?91220 -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; '?91221 -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode)">val EmitTopCode: cenv -&gt; '?91220 -&gt; ILTypeWriterEnv -&gt; '?91221 -&gt; ILCode -&gt; int * int [] * int * int * int * int * ExceptionClauseKind [] * byte []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val EmitTopCode: cenv:cenv -&gt; localSigs:'?91220 -&gt; env:ILTypeWriterEnv -&gt; nm:'?91221 -&gt; code:ILCode -&gt; int * int [] * int * int * int * int * ExceptionClauseKind [] * byte []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;?91220</td>
+        <td><span class="parametername">localSigs</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;?91221</td>
+        <td><span class="parametername">nm</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode.html">ILCode</a></td>
+        <td><span class="parametername">code</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span> * <span class="xref">int</span> [] * <span class="xref">int</span> * <span class="xref">int</span> * <span class="xref">int</span> * <span class="xref">int</span> * <a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind.html">ExceptionClauseKind</a> [] * <span class="xref">byte</span> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitTypeInstr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitTypeInstr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitTypeInstr_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitTypeInstr(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; int -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILType)">val emitTypeInstr: cenv -&gt; CodeBuffer -&gt; ILTypeWriterEnv -&gt; int -&gt; ILType -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitTypeInstr: cenv:cenv -&gt; codebuf:CodeBuffer -&gt; env:ILTypeWriterEnv -&gt; i:int -&gt; ty:ILType -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">i</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILType.html">ILType</a></td>
+        <td><span class="parametername">ty</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitVolatility_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitVolatility*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitVolatility_ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_AssemblyReader_ILVolatility_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitVolatility(ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILVolatility)">val emitVolatility: CodeBuffer -&gt; ILVolatility -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val emitVolatility: codebuf:CodeBuffer -&gt; tl:ILVolatility -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html">CodeBuffer</a></td>
+        <td><span class="parametername">codebuf</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILVolatility.html">ILVolatility</a></td>
+        <td><span class="parametername">tl</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_encodingsOfNoArgInstr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.encodingsOfNoArgInstr*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_encodingsOfNoArgInstr_ProviderImplementation_ProvidedTypes_AssemblyReader_ILInstr_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.encodingsOfNoArgInstr(ProviderImplementation.ProvidedTypes.AssemblyReader.ILInstr)">val encodingsOfNoArgInstr: ILInstr -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val encodingsOfNoArgInstr: si:ILInstr -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILInstr.html">ILInstr</a></td>
+        <td><span class="parametername">si</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_findRoots_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.findRoots*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_findRoots___91218______91218____bool______91218____" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.findRoots('?91218 -&gt; '?91218 -&gt; bool -&gt; '?91218 [])">val findRoots: '?91218 -&gt; '?91218 -&gt; bool -&gt; '?91218 [] -&gt; '?91218 * '?91218 [] []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val findRoots: contains:'?91218 -&gt; '?91218 -&gt; bool -&gt; vs:'?91218 [] -&gt; '?91218 * '?91218 [] []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;?91218 -&gt; &#39;?91218 -&gt; <span class="xref">bool</span></td>
+        <td><span class="parametername">contains</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;?91218 []</td>
+        <td><span class="parametername">vs</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;?91218 * &#39;?91218 [] []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_labelRangeInsideLabelRange_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.labelRangeInsideLabelRange*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_labelRangeInsideLabelRange_System_Collections_Generic_Dictionary_ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_int_____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel___ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel___ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.labelRangeInsideLabelRange(System.Collections.Generic.Dictionary&lt;ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel,int&gt; -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel)">val labelRangeInsideLabelRange: Dictionary&lt;ILCodeLabel,int&gt; -&gt; ILCodeLabel * ILCodeLabel -&gt; ILCodeLabel * ILCodeLabel -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val labelRangeInsideLabelRange: lab2pc:Dictionary&lt;ILCodeLabel,int&gt; -&gt; ILCodeLabel * ILCodeLabel -&gt; ILCodeLabel * ILCodeLabel -&gt; bool</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a>,<span class="xref">int</span>&gt;</td>
+        <td><span class="parametername">lab2pc</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_labelsToRange_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.labelsToRange*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_labelsToRange_System_Collections_Generic_Dictionary_ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_int_____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel___ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.labelsToRange(System.Collections.Generic.Dictionary&lt;ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel,int&gt; -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel)">val labelsToRange: Dictionary&lt;ILCodeLabel,int&gt; -&gt; ILCodeLabel * ILCodeLabel -&gt; int * int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val labelsToRange: lab2pc:Dictionary&lt;ILCodeLabel,int&gt; -&gt; ILCodeLabel * ILCodeLabel -&gt; int * int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a>,<span class="xref">int</span>&gt;</td>
+        <td><span class="parametername">lab2pc</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span> * <span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_lranges_of_clause_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.lranges_of_clause*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_lranges_of_clause_ProviderImplementation_ProvidedTypes_AssemblyReader_ILExceptionClause_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.lranges_of_clause(ProviderImplementation.ProvidedTypes.AssemblyReader.ILExceptionClause)">val lranges_of_clause: ILExceptionClause -&gt; ILCodeLabel * ILCodeLabel list</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val lranges_of_clause: cl:ILExceptionClause -&gt; ILCodeLabel * ILCodeLabel list</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILExceptionClause.html">ILExceptionClause</a></td>
+        <td><span class="parametername">cl</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a> * <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a> <span class="xref">list</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_makeSEHTree_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.makeSEHTree*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_makeSEHTree_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____int_______System_Collections_Generic_Dictionary_ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_int_____ProviderImplementation_ProvidedTypes_AssemblyReader_ILExceptionSpec____" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.makeSEHTree(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -&gt; ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -&gt; int [] -&gt; System.Collections.Generic.Dictionary&lt;ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel,int&gt; -&gt; ProviderImplementation.ProvidedTypes.AssemblyReader.ILExceptionSpec [])">val makeSEHTree: cenv -&gt; ILTypeWriterEnv -&gt; int [] -&gt; Dictionary&lt;ILCodeLabel,int&gt; -&gt; ILExceptionSpec [] -&gt; SEHTree []</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val makeSEHTree: cenv:cenv -&gt; env:ILTypeWriterEnv -&gt; pc2pos:int [] -&gt; lab2pc:Dictionary&lt;ILCodeLabel,int&gt; -&gt; exs:ILExceptionSpec [] -&gt; SEHTree []</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.cenv.html">cenv</a></td>
+        <td><span class="parametername">cenv</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv.html">ILTypeWriterEnv</a></td>
+        <td><span class="parametername">env</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span> []</td>
+        <td><span class="parametername">pc2pos</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.Dictionary</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel.html">ILCodeLabel</a>,<span class="xref">int</span>&gt;</td>
+        <td><span class="parametername">lab2pc</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILExceptionSpec.html">ILExceptionSpec</a> []</td>
+        <td><span class="parametername">exs</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.SEHTree.html">SEHTree</a> []</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_mapFold_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.mapFold*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_mapFold___91215______91216______91217_____91215______91215______91216____" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.mapFold('?91215 -&gt; '?91216 -&gt; '?91217 * '?91215 -&gt; '?91215 -&gt; '?91216 [])">val mapFold: '?91215 -&gt; '?91216 -&gt; '?91217 * '?91215 -&gt; '?91215 -&gt; '?91216 [] -&gt; '?91217 [] * '?91215</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val mapFold: f:'?91215 -&gt; '?91216 -&gt; '?91217 * '?91215 -&gt; acc:'?91215 -&gt; array:'?91216 [] -&gt; '?91217 [] * '?91215</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;?91215 -&gt; &#39;?91216 -&gt; &#39;?91217 * &#39;?91215</td>
+        <td><span class="parametername">f</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;?91215</td>
+        <td><span class="parametername">acc</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>&#39;?91216 []</td>
+        <td><span class="parametername">array</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;?91217 [] * &#39;?91215</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="parametername">'?</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_rangeInsideRange_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.rangeInsideRange*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_rangeInsideRange_int___int____int___int_" data-uid="ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.rangeInsideRange(int * int -&gt; int * int)">val rangeInsideRange: int * int -&gt; int * int -&gt; bool</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val rangeInsideRange: start_pc1:int * end_pc1:int -&gt; start_pc2:int * end_pc2:int -&gt; bool</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">start_pc1</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">end_pc1</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">start_pc2</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">end_pc2</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            
+            <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>
