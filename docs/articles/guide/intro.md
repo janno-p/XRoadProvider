@@ -140,33 +140,3 @@ adsResponse.fault.MatchSome(fun f -> failwithf "Invalid service response. %s: %s
 let muudatused = adsResponse.muudatused.ValueOr([||])
 printfn "Got %d changes in response message." muudatused.Length
 ```
-
-
-## Samples & documentation ##
-
-The library comes with comprehensible documentation. 
-It can include tutorials automatically generated from `*.fsx` files in [the articles folder][articles]. 
-The API reference is automatically generated from Markdown comments in the library implementation.
-
- * [Tutorial](tutorial.md) contains a further explanation of this sample library.
-
- * [API Reference](../api/index.md) contains automatically generated documentation for all types, modules
-   and functions in the library. This includes additional brief samples on using most of the
-   functions.
- 
-
-## Contributing and copyright ##
-
-The project is hosted on [GitHub][gh] where you can [report issues][issues], fork 
-the project and submit pull requests. If you're adding a new public API, please also 
-consider adding [samples][articles] that can be turned into a documentation. You might
-also want to read the [library design notes][readme] to understand how it works.
-
-The library is available under Public Domain license, which allows modification and 
-redistribution for both commercial and non-commercial purposes. For more information see the 
-[License file](license.md) file. 
-
-  [articles]: https://github.com/janno-p/XRoadProvider/tree/master/docs/articles
-  [gh]: https://github.com/janno-p/XRoadProvider
-  [issues]: https://github.com/janno-p/XRoadProvider/issues
-  [readme]: https://github.com/janno-p/XRoadProvider/blob/master/README.md
