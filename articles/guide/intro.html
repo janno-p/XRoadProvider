@@ -107,91 +107,67 @@ version 6).</p>
 <pre><code class="lang-DOS">&gt; paket add XRoadProvider
 </code></pre></section>
 </div>
-<h2 id="example">Example</h2>
-<p>This example demonstrates the use of the XRoadProvider:</p>
-<pre><code class="lang-fsharp">// Reference the type provider assembly.
-#load &quot;packages/XRoadProvider/net461/XRoadProvider.fsx&quot;
-
-open XRoad
+<h2 id="about-type-providers">About Type Providers</h2>
+<p>Since type providers are language specific feature of F# programming language,
+they can only be defined and set up in F# projects or scripts. Fortunately, it
+takes minimal effort to set things up and ready to be imported into other dependant
+projects that might already be in different .NET platform language, like C#.</p>
+<p>A general definition for type providers is, that they work as F# compiler plugins,
+which transform some source of outside information that is presented in well
+defined form (like WSDL definition) to code that can be used by compiler for
+two primary purposes. First, compiler uses that information to provide metadata
+that can be used as intellisense in IDE-s and editors to provide signatures of
+types, methods, etc.; provide code complete information and more features that
+are common part of modern software development tools. Secondly, it uses that
+same information to compile that metadata into assembly which can be used as
+regular dependency that was interpreted from source information and written into
+code by some unknown developer.</p>
+<p>Using this feature of F# language, this package interprets two sources of
+information to produce easier X-Road service development experience to software
+developers:</p>
+<ul>
+<li><p>Using web service producer defined WSDL definition as source information it
+provides service interfaces and client logic to execute these operations over
+X-Road infrastucture. For that purpose the package defines
+<a href="xroad-producer-provider.html">XRoadProducer Type Provider</a>.</p>
+</li>
+<li><p>Using X-Road security server meta services as source information it provides
+IDE experience for convenient browsing and exploration of services and producers
+that are available on X-Road platform. Read about <a href="xroad-server-provider.html">XRoadServer6 Type Provider</a> for more details and examples.</p>
+</li>
+</ul>
+<h2 id="using-the-package">Using the package</h2>
+<p>F# language has two options to write executable code. You can create regular
+.NET assembly project (library, executable) compile it and the run it. Another,
+more lightweight, but as powerful option is to write F# script file and execute
+it in F# interactive.</p>
+<h3 id="creating-net-project">Creating .NET project</h3>
+<p>To use this package in regular MSBuild project, create new F# project (library
+or executable, depending on needs). Then add reference to <code>XRoadProvider</code>
+<a href="https://www.nuget.org/packages/XRoadProvider/">NuGet package</a>.</p>
+<p>After adding a new source code file (with <code>.fs</code> file extension) or using the
+default <code>Library1.fs</code> file, replace the existing contents with following
+statement which imports the namespace that defines type provider types (<code>open</code>
+basically corresponds to <code>using</code> statement in C#).</p>
+<pre><code class="lang-fsharp">open XRoad.Providers
+</code></pre><p>Next step would be using particular type providers, which is described in
+previously referred guides.</p>
+<h3 id="writing-f-script">Writing F# script</h3>
+<p>Inside Visual Studio create new F# script file (it has <code>.fsx</code> extension). Unzip
+this packages files in some known location for referencing from script. Replace
+contents of the script with following statements:</p>
+<pre><code class="lang-fsharp">#load &quot;/path/to/known/location/of/package/lib/net461/XRoadProvider.fsx&quot;
 open XRoad.Providers
-
-type Xrd6 = XRoadProducer&lt;&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml&quot;&gt;
-
-// Initialize service interface which provides access to operation methods.
-let myport = Xrd6.producerPortService.getRandomPortSoap11(&quot;http://localhost:8001/&quot;)
-
-// Assign X-Road header values.
-let hdr = XRoadHeader()
-hdr.Client &lt;- XRoadMemberIdentifier(&quot;ee-dev&quot;, &quot;GOV&quot;, &quot;000000000&quot;, &quot;sys&quot;)
-hdr.Producer &lt;- XRoadMemberIdentifier(&quot;ee-dev&quot;, &quot;GOV&quot;, &quot;00000000&quot;, &quot;sys&quot;)
-hdr.ProtocolVersion &lt;- &quot;4.0&quot;
-hdr.UserId &lt;- &quot;30101010007&quot;
-
-// Initialize request parameters.
-let request = Xrd6.DefinedTypes.ProducerXRoadEu.getRandom_requestType()
-request.seed &lt;- (System.Guid.NewGuid()).ToString()
-
-// Execute service request against specified adapter.
-let response = myport.getRandom(hdr, request)
-
-// Display results to console.
-printfn &quot;getRandom response: %s&quot; response.response.content
-</code></pre><p>As an alternative to asking service descriptions from security server, it&#39;s also possible to
-exclude security server from development process by using local WSDL definitions instead.</p>
-<h2 id="mimemultipart-attachment-support">MIME/Multipart attachment support</h2>
-<p>X-Road method calls may require MIME/multipart message format in case of binary content. For
-that purpose type provider defines special type <code>BinaryContent</code> which handles attachments according
-to X-Road specification.</p>
-<p>Usage example of <code>BinaryContent</code> type:</p>
-<pre><code class="lang-fsharp">type Aktorstest = XRoadProducer&lt;&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/AktorstestService.wsdl.xml&quot;&gt;
-
-let service = Aktorstest.aktorstestService.Test()
-
-let request2 = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM_requestType()
-request2.filemtom &lt;- BinaryContent.Create([| 0uy; 1uy; 2uy; 3uy |])
-request2.fileName &lt;- &quot;file.bin&quot;
-
-let docHdr = XRoadDocHeader()
-docHdr.UserName &lt;- &quot;toomas.dumpty&quot;
-
-let result = service.fileUploadMTOM(docHdr, request2)
-
-printfn &quot;%s&quot; result.response.faultCode.BaseValue
-printfn &quot;%s&quot; result.response.faultString.BaseValue
-</code></pre><h2 id="type-provider-for-producer-discovery">Type provider for producer discovery</h2>
-<p>XRoadProvider package includes separate type provider to retrieve producer information from security
-server. Resulting type contains details about all producers available and their WSDL URIs which may
-be used as parameter to <code>XRoadProducer</code> provider to initialize service interfaces.</p>
-<p>Example use of <code>XRoadServer</code> type provider:</p>
-<pre><code class="lang-fsharp">open XRoadProvider
-
-// Acquire list of producer from security server.
-let [&lt;Literal&gt;] securityServerUrl = &quot;http://your-security-server-here/&quot;
-
-type SecurityServer = XRoadServer6&lt;securityServerUrl, &quot;ee-dev&quot;, &quot;COM&quot;, &quot;12345678&quot;, &quot;generic-consumer&quot;&gt;
-type AdsConfig = SecurityServer.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
-type Ads = XRoadProducer&lt;AdsConfig.``SERVICE:ADSaadrmuudatused``&gt;
-
-let adsService = Ads.xroadeuService.xroadeuServicePort(securityServerUrl)
-
-let adsHeader =
-    XRoadHeader(
-        Client = SecurityServer.Identifier,
-        Producer = AdsConfig.Identifier,
-        ProtocolVersion = &quot;4.0&quot;
-    )
-
-let adsResponse =
-    adsService.ADSaadrmuudatused(
-        adsHeader,
-        muudetudAlates = some(NodaTime.LocalDate(2017, 11, 28))
-    )
-
-adsResponse.fault.MatchSome(fun f -&gt; failwithf &quot;Invalid service response. %s: %s&quot; f.faultCode f.faultString)
-
-let muudatused = adsResponse.muudatused.ValueOr([||])
-printfn &quot;Got %d changes in response message.&quot; muudatused.Length
-</code></pre></article>
+</code></pre><p>The first line imports bootstrapper script which adds neccessary dependencies
+of the package, and second line, again, opens the namespace which has type
+provider definitions.</p>
+<p>As with .NET project approach, next step is to continue with other guides to
+try out type providers. After completing the script, you can run it in F#
+interactive which basically means you can try out X-Road services in real time
+using the script you just wrote and modifying it as needed. This allows to try
+out X-Road services in minutes, without the need to build complex client
+application beforehand.</p>
+</article>
           </div>
           
           <div class="hidden-sm col-md-2" role="complementary">

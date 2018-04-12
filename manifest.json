@@ -3069,7 +3069,7 @@
       "output": {
         ".html": {
           "relative_path": "api/index.html",
-          "hash": "w+q4QabIyd1UGs6xoHwnLQ=="
+          "hash": "RgLQK8rrc/fJXXS2w/nzXA=="
         }
       },
       "is_incremental": true,
@@ -3093,7 +3093,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/guide/index.html",
-          "hash": "NDPCyhlucKOWiWzXCw+Cjg=="
+          "hash": "UoRAATjqJvoptmCPe69zew=="
         }
       },
       "is_incremental": true,
@@ -3105,7 +3105,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/guide/intro.html",
-          "hash": "CduFQVHNcwlVrdg8iXVQjQ=="
+          "hash": "OVFF9oFr7kaRtgT/3bIAtw=="
         }
       },
       "is_incremental": true,
@@ -3113,11 +3113,35 @@
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "articles/index.md",
+      "source_relative_path": "articles/guide/xroad-producer-provider.md",
       "output": {
         ".html": {
-          "relative_path": "articles/index.html",
-          "hash": "NmD6/wAmTMsutFKBX72ktg=="
+          "relative_path": "articles/guide/xroad-producer-provider.html",
+          "hash": "O9p1JxSH9liJR4r/IuzCyQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guide/xroad-provider-in-csharp.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guide/xroad-provider-in-csharp.html",
+          "hash": "nGx1uC16/pb8gcUhjKp/cw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guide/xroad-server-provider.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guide/xroad-server-provider.html",
+          "hash": "lgJR4hlqRz+YefP1ICOeIQ=="
         }
       },
       "is_incremental": true,
@@ -3153,7 +3177,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/toc.html",
-          "hash": "+J+8aoQJBycP4an70POlXQ=="
+          "hash": "gDms+cmttleUkFYH8U9c/w=="
         }
       },
       "is_incremental": false,
@@ -3199,7 +3223,7 @@
       "output": {
         ".html": {
           "relative_path": "toc.html",
-          "hash": "tvNodqmt4kPATKo1dpyQyA=="
+          "hash": "3/aCw6R94sYNMtY0XLX+qQ=="
         }
       },
       "is_incremental": false,
@@ -3218,17 +3242,17 @@
           "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         },
+        "TocDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        },
         "ConceptualDocumentProcessor": {
           "can_incremental": true,
           "incrementalPhase": "build"
         },
         "ManagedReferenceDocumentProcessor": {
           "can_incremental": true,
-          "incrementalPhase": "build"
-        },
-        "TocDocumentProcessor": {
-          "can_incremental": false,
-          "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         }
       }

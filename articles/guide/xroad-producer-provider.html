@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Developer Guide </title>
+    <title>XRoadProducer Type Provider </title>
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="Developer Guide ">
+    <meta name="title" content="XRoadProducer Type Provider ">
     <meta name="generator" content="docfx 2.34.0.0">
     
     <link rel="shortcut icon" href="../../favicon.ico">
@@ -67,29 +67,60 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="developer-guide">Developer Guide</h1>
+<h1 id="xroadproducer-type-provider">XRoadProducer Type Provider</h1>
 
-<p>This section demonstrates usage of type providers which this package offers and
-introduces some ideas how to use them in real world applications.</p>
-<ul>
-<li><p><a href="intro.html">Introduction</a></p>
-<p>  Getting started with X-Road type providers.</p>
-</li>
-<li><p><a href="xroad-producer-provider.html">XRoadProducer Type Provider</a></p>
-<p>  Introduces XRoadProducer type provider which can be used to generate service
-  interfaces that support communication with X-Road web services.</p>
-</li>
-<li><p><a href="xroad-server-provider.html">XRoadServer6 Type Provider</a></p>
-<p>  Introduces XRoadServer6 type provider which allows to browse and explore
-  available producers and services on X-Road platform.</p>
-</li>
-<li><p><a href="xroad-provider-in-csharp.html">Using X-Road Providers in C# Project</a></p>
-<p>  How to use XRoadProducer functionality from C# project and some practices
-  which help to comply with F# type provider peculiarities in dependant
-  projects.</p>
-</li>
-</ul>
-</article>
+<h2 id="example">Example</h2>
+<p>This example demonstrates the use of the XRoadProvider:</p>
+<pre><code class="lang-fsharp">// Reference the type provider assembly.
+#load &quot;packages/XRoadProvider/net461/XRoadProvider.fsx&quot;
+
+open XRoad
+open XRoad.Providers
+
+type Xrd6 = XRoadProducer&lt;&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml&quot;&gt;
+
+// Initialize service interface which provides access to operation methods.
+let myport = Xrd6.producerPortService.getRandomPortSoap11(&quot;http://localhost:8001/&quot;)
+
+// Assign X-Road header values.
+let hdr = XRoadHeader()
+hdr.Client &lt;- XRoadMemberIdentifier(&quot;ee-dev&quot;, &quot;GOV&quot;, &quot;000000000&quot;, &quot;sys&quot;)
+hdr.Producer &lt;- XRoadMemberIdentifier(&quot;ee-dev&quot;, &quot;GOV&quot;, &quot;00000000&quot;, &quot;sys&quot;)
+hdr.ProtocolVersion &lt;- &quot;4.0&quot;
+hdr.UserId &lt;- &quot;30101010007&quot;
+
+// Initialize request parameters.
+let request = Xrd6.DefinedTypes.ProducerXRoadEu.getRandom_requestType()
+request.seed &lt;- (System.Guid.NewGuid()).ToString()
+
+// Execute service request against specified adapter.
+let response = myport.getRandom(hdr, request)
+
+// Display results to console.
+printfn &quot;getRandom response: %s&quot; response.response.content
+</code></pre><p>As an alternative to asking service descriptions from security server, it&#39;s also possible to
+exclude security server from development process by using local WSDL definitions instead.</p>
+<h2 id="mimemultipart-attachment-support">MIME/Multipart attachment support</h2>
+<p>X-Road method calls may require MIME/multipart message format in case of binary content. For
+that purpose type provider defines special type <code>BinaryContent</code> which handles attachments according
+to X-Road specification.</p>
+<p>Usage example of <code>BinaryContent</code> type:</p>
+<pre><code class="lang-fsharp">type Aktorstest = XRoadProducer&lt;&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/AktorstestService.wsdl.xml&quot;&gt;
+
+let service = Aktorstest.aktorstestService.Test()
+
+let request2 = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM_requestType()
+request2.filemtom &lt;- BinaryContent.Create([| 0uy; 1uy; 2uy; 3uy |])
+request2.fileName &lt;- &quot;file.bin&quot;
+
+let docHdr = XRoadDocHeader()
+docHdr.UserName &lt;- &quot;toomas.dumpty&quot;
+
+let result = service.fileUploadMTOM(docHdr, request2)
+
+printfn &quot;%s&quot; result.response.faultCode.BaseValue
+printfn &quot;%s&quot; result.response.faultString.BaseValue
+</code></pre></article>
           </div>
           
           <div class="hidden-sm col-md-2" role="complementary">
@@ -97,7 +128,7 @@ introduces some ideas how to use them in real world applications.</p>
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/janno-p/XRoadProvider/blob/master/docs/articles/guide/index.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/janno-p/XRoadProvider/blob/master/docs/articles/guide/xroad-producer-provider.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>

@@ -5,17 +5,17 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>XRoadProvider Public API </title>
+    <title>XRoadServer6 Type Provider </title>
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="XRoadProvider Public API ">
+    <meta name="title" content="XRoadServer6 Type Provider ">
     <meta name="generator" content="docfx 2.34.0.0">
     
-    <link rel="shortcut icon" href="../favicon.ico">
-    <link rel="stylesheet" href="../styles/docfx.vendor.css">
-    <link rel="stylesheet" href="../styles/docfx.css">
-    <link rel="stylesheet" href="../styles/main.css">
-    <meta property="docfx:navrel" content="../toc.html">
-    <meta property="docfx:tocrel" content="toc.html">
+    <link rel="shortcut icon" href="../../favicon.ico">
+    <link rel="stylesheet" href="../../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../../styles/docfx.css">
+    <link rel="stylesheet" href="../../styles/main.css">
+    <meta property="docfx:navrel" content="../../toc.html">
+    <meta property="docfx:tocrel" content="../toc.html">
     
     
     
@@ -34,8 +34,8 @@
                 <span class="icon-bar"></span>
               </button>
               
-              <a class="navbar-brand" href="../index.html">
-                <img id="logo" class="svg" src="../logo.svg" alt="">
+              <a class="navbar-brand" href="../../index.html">
+                <img id="logo" class="svg" src="../../logo.svg" alt="">
               </a>
             </div>
             <div class="collapse navbar-collapse" id="navbar">
@@ -67,11 +67,42 @@
         <div class="article row grid-right">
           <div class="col-md-10">
             <article class="content wrap" id="_content" data-uid="">
-<h1 id="xroadprovider-public-api">XRoadProvider Public API</h1>
+<h1 id="xroadserver6-type-provider">XRoadServer6 Type Provider</h1>
 
-<p>Browse available API Reference using the left side menu, to find out details
-about XRoadProvider package.</p>
-</article>
+<h2 id="type-provider-for-producer-discovery">Type provider for producer discovery</h2>
+<p>XRoadProvider package includes separate type provider to retrieve producer information from security
+server. Resulting type contains details about all producers available and their WSDL URIs which may
+be used as parameter to <code>XRoadProducer</code> provider to initialize service interfaces.</p>
+<p>Example use of <code>XRoadServer</code> type provider:</p>
+<pre><code class="lang-fsharp">open XRoadProvider
+
+// Acquire list of producer from security server.
+let [&lt;Literal&gt;] securityServerUrl = &quot;http://your-security-server-here/&quot;
+
+type SecurityServer = XRoadServer6&lt;securityServerUrl, &quot;ee-dev&quot;, &quot;COM&quot;, &quot;12345678&quot;, &quot;generic-consumer&quot;&gt;
+type AdsConfig = SecurityServer.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
+type Ads = XRoadProducer&lt;AdsConfig.``SERVICE:ADSaadrmuudatused``&gt;
+
+let adsService = Ads.xroadeuService.xroadeuServicePort(securityServerUrl)
+
+let adsHeader =
+    XRoadHeader(
+        Client = SecurityServer.Identifier,
+        Producer = AdsConfig.Identifier,
+        ProtocolVersion = &quot;4.0&quot;
+    )
+
+let adsResponse =
+    adsService.ADSaadrmuudatused(
+        adsHeader,
+        muudetudAlates = some(NodaTime.LocalDate(2017, 11, 28))
+    )
+
+adsResponse.fault.MatchSome(fun f -&gt; failwithf &quot;Invalid service response. %s: %s&quot; f.faultCode f.faultString)
+
+let muudatused = adsResponse.muudatused.ValueOr([||])
+printfn &quot;Got %d changes in response message.&quot; muudatused.Length
+</code></pre></article>
           </div>
           
           <div class="hidden-sm col-md-2" role="complementary">
@@ -79,7 +110,7 @@ about XRoadProvider package.</p>
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/janno-p/XRoadProvider/blob/master/docs/api/index.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com/janno-p/XRoadProvider/blob/master/docs/articles/guide/xroad-server-provider.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>
@@ -105,8 +136,8 @@ about XRoadProvider package.</p>
       </footer>
     </div>
     
-    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
-    <script type="text/javascript" src="../styles/docfx.js"></script>
-    <script type="text/javascript" src="../styles/main.js"></script>
+    <script type="text/javascript" src="../../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../../styles/docfx.js"></script>
+    <script type="text/javascript" src="../../styles/main.js"></script>
   </body>
 </html>
