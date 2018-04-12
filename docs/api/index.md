@@ -1,2 +1,4 @@
-# PLACEHOLDER
-TODO: Add .NET projects to the *src* folder and run `docfx` to generate **REAL** *API Documentation*!
+# XRoadProvider Public API #
+
+Browse available API Reference using the left side menu, to find out details
+about XRoadProvider package.

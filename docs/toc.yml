@@ -1,6 +1,6 @@
 - name: XRoadProvider
   href: articles/
-  homepage: articles/index.md
+  homepage: articles/guide/index.md
 - name: Api Documentation
   href: api/
   homepage: api/index.md
