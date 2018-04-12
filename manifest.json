@@ -1,6 +1,6 @@
 {
   "homepages": [],
-  "source_base_path": "C:/Work/XRoadProvider3/docs",
+  "source_base_path": "E:/Work/XRoadProvider/docs",
   "xrefmap": "xrefmap.yml",
   "files": [
     {
@@ -3088,15 +3088,36 @@
       "version": ""
     },
     {
-      "log_codes": [
-        "InvalidFileLink"
-      ],
       "type": "Conceptual",
-      "source_relative_path": "articles/intro.md",
+      "source_relative_path": "articles/guide/index.md",
       "output": {
         ".html": {
-          "relative_path": "articles/intro.html",
-          "hash": "RrGy4N+UdrLiaUXr2oMtmw=="
+          "relative_path": "articles/guide/index.html",
+          "hash": "NDPCyhlucKOWiWzXCw+Cjg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guide/intro.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guide/intro.html",
+          "hash": "CduFQVHNcwlVrdg8iXVQjQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/index.html",
+          "hash": "NmD6/wAmTMsutFKBX72ktg=="
         }
       },
       "is_incremental": true,
@@ -3132,7 +3153,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/toc.html",
-          "hash": "3Xpqd5Z42KpgMJqpZaV/8Q=="
+          "hash": "+J+8aoQJBycP4an70POlXQ=="
         }
       },
       "is_incremental": false,
@@ -3166,7 +3187,7 @@
       "output": {
         ".html": {
           "relative_path": "index.html",
-          "hash": "zGC1MeY5QEFQ6pi3BiKFow=="
+          "hash": "Y1MeknWqYDs2/B2jEX617g=="
         }
       },
       "is_incremental": true,
@@ -3178,7 +3199,7 @@
       "output": {
         ".html": {
           "relative_path": "toc.html",
-          "hash": "17/NgdexYgmzebgOt8wT0w=="
+          "hash": "tvNodqmt4kPATKo1dpyQyA=="
         }
       },
       "is_incremental": false,
