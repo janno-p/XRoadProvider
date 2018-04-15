@@ -10,6 +10,7 @@ WSDL definition, in the background the code is actually compiled into real assem
 which works as usual in .NET platform. So there is no runtime performance hit in
 regards to resulting output of the type provider.
 
+
 ## XRoadProducer Type Provider in Action ##
 
 Here is a small animation visualizing type provider usage in code editor or IDE with
@@ -18,19 +19,55 @@ etc.).
 
 ![XRoadProducer](../../images/XRoadProducer.gif)
 
-## Example ##
 
-This example demonstrates the use of the XRoadProvider:
+## Configuring XRoadProducer ##
+
+Primary functionality of `XRoadProducer` type provider is executed with the following line:
 
 ```fsharp
-// Reference the type provider assembly.
-#load "packages/XRoadProvider/net461/XRoadProvider.fsx"
+type Xrd6 = XRoadProducer<"E:/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml">
+```
 
-open XRoad
-open XRoad.Providers
+This line executes `XRoadProducer` type provider which interprets given service description document
+(WSDL) and returns new type which wraps required types from the schema which enable communication
+with web service that follows the same WSDL. The resulting root type is saved into current namespace
+with given alias (`Xrd6` in current sample fragment).
 
-type Xrd6 = XRoadProducer<"/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml">
+The type provider takes its parameters between angle brackets `'<'` and `'>'` and for `XRoadProducer`
+type provider there are following configuration options available:
 
+| Parameter name | Type | Required | Default value | Description |
+|----------------|------|----------|---------------|-------------|
+| `Uri` | `String` | Yes | - | WSDL document location (either local file or network resource). |
+| `LanguageCode` | `String` | No | `"et"` | Specify language code that is extracted as documentation tooltips. |
+| `Filter` | `String` | No | `""` | Comma separated list of operations which should be included in definitions. By default, all operations are included. |
+
+It should be noted, that type provider parameters can only be compile time constant values and literals
+which means you cannot "calculate" the parameters. You can hold parameter values in literal values
+using `LiteralAttribute` attribute:
+
+```fsharp
+let [<Literal>] WsdlLocation = "http://someurl/and.wsdl"
+```
+
+For local files, it is sometimes convenient to provide relative locations, which can be achieved by using
+special F# compiler predefined variable `__SOURCE_DIRECTORY__` which represents path of the directory
+containing current script or source file:
+
+```fsharp
+let [<Literal>] WsdlLocation = __SOURCE_DIRECTORY__ + "/file.wsdl"
+```
+
+Using predefined values as type provider arguments:
+
+```fsharp
+type Xrd6 = XRoadProducer<WsdlLocation>
+```
+
+
+## Example ##
+
+```fsharp
 // Initialize service interface which provides access to operation methods.
 let myport = Xrd6.producerPortService.getRandomPortSoap11("http://localhost:8001/")
 
