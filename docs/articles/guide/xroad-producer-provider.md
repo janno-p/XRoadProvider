@@ -65,57 +65,50 @@ type Xrd6 = XRoadProducer<WsdlLocation>
 ```
 
 
-## Example ##
+## Structure of Returned Types ##
 
-```fsharp
-// Initialize service interface which provides access to operation methods.
-let myport = Xrd6.producerPortService.getRandomPortSoap11("http://localhost:8001/")
+The `XRoadProducer` type provider generates one root type which holds all needed types
+by the WSDL definition. The types are divided into two categories with their own
+subtypes under the root type:
 
-// Assign X-Road header values.
-let hdr = XRoadHeader()
-hdr.Client <- XRoadMemberIdentifier("ee-dev", "GOV", "000000000", "sys")
-hdr.Producer <- XRoadMemberIdentifier("ee-dev", "GOV", "00000000", "sys")
-hdr.ProtocolVersion <- "4.0"
-hdr.UserId <- "30101010007"
+1. `DefinedTypes` holds types from WSDL `types` section grouped by the namespace
+   they are defined in. These types are usually parameters of the services and types
+   referenced by other types defined by Xml Schema standard. Each namespace type holds
+   special `__TargetNamespace__` value which is literal value of the containing namespace.
 
-// Initialize request parameters.
-let request = Xrd6.DefinedTypes.ProducerXRoadEu.getRandom_requestType()
-request.seed <- (System.Guid.NewGuid()).ToString()
+2. Root type defines subtype for every `service` definition in WSDL document which
+   themselves have subtypes for every `portType` binding that service definition.
+   The `portType` binding type implements [AbstractEndpointDeclaration](xref:XRoad.AbstractEndpointDeclaration)
+   which enables basic communication, that is described for that binding and also
+   provides methods for each individual operation that is available for that binding.
 
-// Execute service request against specified adapter.
-let response = myport.getRandom(hdr, request)
-
-// Display results to console.
-printfn "getRandom response: %s" response.response.content
-```
-
-As an alternative to asking service descriptions from security server, it's also possible to
-exclude security server from development process by using local WSDL definitions instead.
+   Each type extending [AbstractEndpointDeclaration](xref:XRoad.AbstractEndpointDeclaration)
+   inherits configuration options for providing target service or security server
+   url which serves X-Road requests; certificate parameters for trusting self-signed
+   service certificates or providing client authentication certificates; and
+   request/response event handlers to support message logging or for further message
+   analysis.
 
 
-## MIME/Multipart attachment support ##
+## Third Party Dependencies ##
 
-X-Road method calls may require MIME/multipart message format in case of binary content. For
-that purpose type provider defines special type `BinaryContent` which handles attachments according
-to X-Road specification.
+To expose better structure of WSDL definitions, the type provider library introduces
+some dependencies to outcoming types:
 
-Usage example of `BinaryContent` type:
+* [Optional](https://www.nuget.org/packages/Optional/)
+  Single value elements which have `minOccurs="0"` attribute defined in their definition
+  are wrapped into `Option` type which expresses whether the value was provided in
+  Xml message or not. `Option.Some<T>(...)` value specifies that Xml message contained
+  the value which is wrapped into `Option` type. `Option.None<T>()` value represents
+  missing Xml tag.
 
-```fsharp
-type Aktorstest = XRoadProducer<"/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/AktorstestService.wsdl.xml">
+  When service description relies heavily on optional elements, the resulting types
+  will contain a lot of optional properties, which makes their usage somewhat bloated.
+  It is recommended to collect most of repeating logic into extension methods to
+  simplify usage of optional values.
 
-let service = Aktorstest.aktorstestService.Test()
-
-let request2 = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM_requestType()
-request2.filemtom <- BinaryContent.Create([| 0uy; 1uy; 2uy; 3uy |])
-request2.fileName <- "file.bin"
-
-let docHdr = XRoadDocHeader()
-docHdr.UserName <- "toomas.dumpty"
-
-let result = service.fileUploadMTOM(docHdr, request2)
-
-printfn "%s" result.response.faultCode.BaseValue
-printfn "%s" result.response.faultString.BaseValue
-```
-
+* [NodaTime](https://www.nuget.org/packages/NodaTime/)
+  Since .NET framework default date/time type `System.DateTime` does not differentiate
+  between date and dateTime types, the type provider package uses `NodaTime` package
+  to represent date/time related types. Conversion options between NodaTime and System
+  `DateTime` types can be studied from `NodaTime` documentation.
