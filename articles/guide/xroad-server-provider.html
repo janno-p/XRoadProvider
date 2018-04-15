@@ -69,40 +69,126 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="xroadserver6-type-provider">XRoadServer6 Type Provider</h1>
 
-<h2 id="type-provider-for-producer-discovery">Type provider for producer discovery</h2>
-<p>XRoadProvider package includes separate type provider to retrieve producer information from security
-server. Resulting type contains details about all producers available and their WSDL URIs which may
-be used as parameter to <code>XRoadProducer</code> provider to initialize service interfaces.</p>
-<p>Example use of <code>XRoadServer</code> type provider:</p>
-<pre><code class="lang-fsharp">open XRoadProvider
+<p><code>XRoadServer6</code> type provider implements supporting functionality for easier X-Road
+service discovery and exploration on X-Road v6 security server. There is also
+similar type provider for previous version of X-Road security server, but with
+adaption of newer security server, the older one is becoming obsolete so that
+branch is not first maintainment priority. This article continues with newer
+type provider.</p>
+<h2 id="xroadserver6-type-provider-in-action">XRoadServer6 Type Provider in Action</h2>
+<p>Sample session of using XRoadServer6 type provider for service discovery:</p>
+<p><img src="../../images/XRoadServer6.gif" alt="XRoadServer6"></p>
+<h2 id="configuring-xroadserver6-type-provider">Configuring XRoadServer6 Type Provider</h2>
+<p>Generally <code>XRoadServer6</code> type provider is initialized with following line:</p>
+<pre><code class="lang-fsharp">type Browse = XRoadServer6&lt;&quot;http://server-uri&quot;, &quot;ee-dev&quot;, &quot;GOV&quot;, &quot;71111111&quot;, &quot;generic-consumer&quot;&gt;
+</code></pre><p>The parameters used in initialization of the type provider are described in the
+following table:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter name</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SecurityServerUri</code></td>
+<td><code>String</code></td>
+<td>Yes</td>
+<td>-</td>
+<td>X-Road security server uri which is used to connect to that X-Road instance.</td>
+</tr>
+<tr>
+<td><code>XRoadInstance</code></td>
+<td><code>String</code></td>
+<td>Yes</td>
+<td>-</td>
+<td>Code identifying the instance of X-Road system.</td>
+</tr>
+<tr>
+<td><code>MemberClass</code></td>
+<td><code>String</code></td>
+<td>Yes</td>
+<td>-</td>
+<td>Member class that is used in client identifier in X-Road request.</td>
+</tr>
+<tr>
+<td><code>MemberCode</code></td>
+<td><code>String</code></td>
+<td>Yes</td>
+<td>-</td>
+<td>Member code that is used in client identifier in X-Road requests.</td>
+</tr>
+<tr>
+<td><code>SubsystemCode</code></td>
+<td><code>String</code></td>
+<td>No</td>
+<td><code>&quot;&quot;</code></td>
+<td>Subsystem code that is used in client identifier in X-Road requests.</td>
+</tr>
+<tr>
+<td><code>ForceRefresh</code></td>
+<td><code>Boolean</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>When <code>true</code>, forces type provider to refresh data from security server.</td>
+</tr>
+</tbody>
+</table>
+<p>The first five parameters handle identification, so and are required by security
+server to enable usage of metaservices on which the type provider relies.</p>
+<p>Last parameter is of technical kind and for lazy users who do not want to restart
+their IDE for WSDL reloading (by default resulting types are cached and retrieved
+from cache, but this parameter forces type provider to resolve service description
+again even if there is a cached version available).</p>
+<h2 id="returned-type-structure">Returned Type Structure</h2>
+<p>The return type of <code>XRoadServer6</code> type provider is layed out according to hierarchical structure of X-Road
+members. Root type has three members:</p>
+<ul>
+<li><code>Identifier</code>: Instance of <a class="xref" href="../../api/XRoad.XRoadMemberIdentifier.html">XRoadMemberIdentifier</a> type which is initialized
+to the parameters used for type provider construction.</li>
+<li><code>CentralServices</code>: List of available central services on current X-Road instance.</li>
+<li><code>Producers</code>: List of registered producers on current X-Road instance.</li>
+</ul>
+<p>The <code>Producers</code> subtype categorizes known X-Road producers by their member class value (for example <code>COM</code>
+identifies commercial producers, <code>GOV</code> goverment producers, etc.).</p>
+<p>Under each member class category all the member are listed by their name. Each member contains its
+subsystems and services which are accompanied by their identifiers. Service value is literal string
+which contains WSDL uri of the service.</p>
+<h2 id="interaction-with-xroadproducer-type-provider">Interaction with XRoadProducer Type Provider</h2>
+<p>The properties provided by <code>XRoadServer6</code> type provider have suitable type which allows to use them
+with <code>XRoadProducer</code> type provider to initialize service interfaces for the services.</p>
+<pre><code class="lang-fsharp">#load &quot;C:/Work/XRoadProvider3/bin/net461/XRoadProvider.fsx&quot;
 
-// Acquire list of producer from security server.
-let [&lt;Literal&gt;] securityServerUrl = &quot;http://your-security-server-here/&quot;
+open XRoad
+open XRoad.Providers
+open System
 
-type SecurityServer = XRoadServer6&lt;securityServerUrl, &quot;ee-dev&quot;, &quot;COM&quot;, &quot;12345678&quot;, &quot;generic-consumer&quot;&gt;
-type AdsConfig = SecurityServer.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
-type Ads = XRoadProducer&lt;AdsConfig.``SERVICE:ADSaadrmuudatused``&gt;
+type Browse = XRoadServer6&lt;&quot;http://xtee-ts-arendus-v5-5.just.ee&quot;, &quot;ee-dev&quot;, &quot;GOV&quot;, &quot;70000310&quot;, &quot;generic-consumer&quot;&gt;
+type Ads = Browse.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
+type AdsAadrJarglased = XRoadProducer&lt;Ads.``SERVICE:ADSaadrjarglased``&gt;
 
-let adsService = Ads.xroadeuService.xroadeuServicePort(securityServerUrl)
+let header = XRoadHeader()
+header.Client &lt;- Browse.Identifier
+header.Producer &lt;- Ads.Identifier
+header.ProtocolVersion &lt;- &quot;4.0&quot;
 
-let adsHeader =
-    XRoadHeader(
-        Client = SecurityServer.Identifier,
-        Producer = AdsConfig.Identifier,
-        ProtocolVersion = &quot;4.0&quot;
-    )
+let request = AdsAadrJarglased.DefinedTypes.WwwMaaametEe
 
-let adsResponse =
-    adsService.ADSaadrmuudatused(
-        adsHeader,
-        muudetudAlates = some(NodaTime.LocalDate(2017, 11, 28))
-    )
-
-adsResponse.fault.MatchSome(fun f -&gt; failwithf &quot;Invalid service response. %s: %s&quot; f.faultCode f.faultString)
-
-let muudatused = adsResponse.muudatused.ValueOr([||])
-printfn &quot;Got %d changes in response message.&quot; muudatused.Length
-</code></pre></article>
+let port = AdsAadrJarglased.xroadeuService.xroadeuServicePort(Uri(&quot;http://xtee-ts-arendus-v5-5.just.ee&quot;))
+let response = port.ADSaadrjarglased(header, adrId=10I)
+printfn &quot;Result: %A&quot; response // =&gt; Result: &lt;null&gt;
+</code></pre><p>In this sample we are using output of <code>XRoadServer6</code> type provider to pass <code>ADSaadrjarglased</code> service
+WSDL uri to <code>XRoadProducer</code> type provider. Also, we are using the identifier which was defined to
+browse the security server, as our <code>Client</code> identifier in X-Road header part. For producer identifier
+we can use <code>Ads.Identifier</code> that was also provided by <code>XRoadServer6</code> type provider.</p>
+<p>So by having access to working security server and knowing only our own identifier values, it was possible to
+make a service request to another X-Road service provider with all the information retrieved from
+security server itself (with a little help from type provider).</p>
+</article>
           </div>
           
           <div class="hidden-sm col-md-2" role="complementary">

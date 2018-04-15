@@ -69,58 +69,118 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="xroadproducer-type-provider">XRoadProducer Type Provider</h1>
 
-<h2 id="example">Example</h2>
-<p>This example demonstrates the use of the XRoadProvider:</p>
-<pre><code class="lang-fsharp">// Reference the type provider assembly.
-#load &quot;packages/XRoadProvider/net461/XRoadProvider.fsx&quot;
-
-open XRoad
-open XRoad.Providers
-
-type Xrd6 = XRoadProducer&lt;&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml&quot;&gt;
-
-// Initialize service interface which provides access to operation methods.
-let myport = Xrd6.producerPortService.getRandomPortSoap11(&quot;http://localhost:8001/&quot;)
-
-// Assign X-Road header values.
-let hdr = XRoadHeader()
-hdr.Client &lt;- XRoadMemberIdentifier(&quot;ee-dev&quot;, &quot;GOV&quot;, &quot;000000000&quot;, &quot;sys&quot;)
-hdr.Producer &lt;- XRoadMemberIdentifier(&quot;ee-dev&quot;, &quot;GOV&quot;, &quot;00000000&quot;, &quot;sys&quot;)
-hdr.ProtocolVersion &lt;- &quot;4.0&quot;
-hdr.UserId &lt;- &quot;30101010007&quot;
-
-// Initialize request parameters.
-let request = Xrd6.DefinedTypes.ProducerXRoadEu.getRandom_requestType()
-request.seed &lt;- (System.Guid.NewGuid()).ToString()
-
-// Execute service request against specified adapter.
-let response = myport.getRandom(hdr, request)
-
-// Display results to console.
-printfn &quot;getRandom response: %s&quot; response.response.content
-</code></pre><p>As an alternative to asking service descriptions from security server, it&#39;s also possible to
-exclude security server from development process by using local WSDL definitions instead.</p>
-<h2 id="mimemultipart-attachment-support">MIME/Multipart attachment support</h2>
-<p>X-Road method calls may require MIME/multipart message format in case of binary content. For
-that purpose type provider defines special type <code>BinaryContent</code> which handles attachments according
-to X-Road specification.</p>
-<p>Usage example of <code>BinaryContent</code> type:</p>
-<pre><code class="lang-fsharp">type Aktorstest = XRoadProducer&lt;&quot;/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/AktorstestService.wsdl.xml&quot;&gt;
-
-let service = Aktorstest.aktorstestService.Test()
-
-let request2 = Aktorstest.DefinedTypes.aktorstest.fileUploadMTOM_requestType()
-request2.filemtom &lt;- BinaryContent.Create([| 0uy; 1uy; 2uy; 3uy |])
-request2.fileName &lt;- &quot;file.bin&quot;
-
-let docHdr = XRoadDocHeader()
-docHdr.UserName &lt;- &quot;toomas.dumpty&quot;
-
-let result = service.fileUploadMTOM(docHdr, request2)
-
-printfn &quot;%s&quot; result.response.faultCode.BaseValue
-printfn &quot;%s&quot; result.response.faultString.BaseValue
-</code></pre></article>
+<p><code>XRoadProducer</code> is the main working horse of the package. It takes X-Road web service WSDL
+specification as input and returns a type which wraps all the types defined in the <code>types</code>
+part of WSDL document and also service client types which implement <code>binding</code> part of
+the WSDL document to provide service types for calling X-Road services over the network.</p>
+<p>Although it looks like very dynamic code in IDE with all the code completion based on
+WSDL definition, in the background the code is actually compiled into real assembly
+which works as usual in .NET platform. So there is no runtime performance hit in
+regards to resulting output of the type provider.</p>
+<h2 id="xroadproducer-type-provider-in-action">XRoadProducer Type Provider in Action</h2>
+<p>Here is a small animation visualizing type provider usage in code editor or IDE with
+proper F# language support (Visual Studio, Visual Studio Code with Ionide extension,
+etc.).</p>
+<p><img src="../../images/XRoadProducer.gif" alt="XRoadProducer"></p>
+<h2 id="configuring-xroadproducer">Configuring XRoadProducer</h2>
+<p>Primary functionality of <code>XRoadProducer</code> type provider is executed with the following line:</p>
+<pre><code class="lang-fsharp">type Xrd6 = XRoadProducer&lt;&quot;E:/Work/XRoadProvider/tests/XRoadProvider.Tests/Wsdl/XRoadV6.wsdl.xml&quot;&gt;
+</code></pre><p>This line executes <code>XRoadProducer</code> type provider which interprets given service description document
+(WSDL) and returns new type which wraps required types from the schema which enable communication
+with web service that follows the same WSDL. The resulting root type is saved into current namespace
+with given alias (<code>Xrd6</code> in current sample fragment).</p>
+<p>The type provider takes its parameters between angle brackets <code>&#39;&lt;&#39;</code> and <code>&#39;&gt;&#39;</code> and for <code>XRoadProducer</code>
+type provider there are following configuration options available:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter name</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Uri</code></td>
+<td><code>String</code></td>
+<td>Yes</td>
+<td>-</td>
+<td>WSDL document location (either local file or network resource).</td>
+</tr>
+<tr>
+<td><code>LanguageCode</code></td>
+<td><code>String</code></td>
+<td>No</td>
+<td><code>&quot;et&quot;</code></td>
+<td>Specify language code that is extracted as documentation tooltips.</td>
+</tr>
+<tr>
+<td><code>Filter</code></td>
+<td><code>String</code></td>
+<td>No</td>
+<td><code>&quot;&quot;</code></td>
+<td>Comma separated list of operations which should be included in definitions. By default, all operations are included.</td>
+</tr>
+</tbody>
+</table>
+<p>It should be noted, that type provider parameters can only be compile time constant values and literals
+which means you cannot &quot;calculate&quot; the parameters. You can hold parameter values in literal values
+using <code>LiteralAttribute</code> attribute:</p>
+<pre><code class="lang-fsharp">let [&lt;Literal&gt;] WsdlLocation = &quot;http://someurl/and.wsdl&quot;
+</code></pre><p>For local files, it is sometimes convenient to provide relative locations, which can be achieved by using
+special F# compiler predefined variable <code>__SOURCE_DIRECTORY__</code> which represents path of the directory
+containing current script or source file:</p>
+<pre><code class="lang-fsharp">let [&lt;Literal&gt;] WsdlLocation = __SOURCE_DIRECTORY__ + &quot;/file.wsdl&quot;
+</code></pre><p>Using predefined values as type provider arguments:</p>
+<pre><code class="lang-fsharp">type Xrd6 = XRoadProducer&lt;WsdlLocation&gt;
+</code></pre><h2 id="structure-of-returned-types">Structure of Returned Types</h2>
+<p>The <code>XRoadProducer</code> type provider generates one root type which holds all needed types
+by the WSDL definition. The types are divided into two categories with their own
+subtypes under the root type:</p>
+<ol>
+<li><p><code>DefinedTypes</code> holds types from WSDL <code>types</code> section grouped by the namespace
+they are defined in. These types are usually parameters of the services and types
+referenced by other types defined by Xml Schema standard. Each namespace type holds
+special <code>__TargetNamespace__</code> value which is literal value of the containing namespace.</p>
+</li>
+<li><p>Root type defines subtype for every <code>service</code> definition in WSDL document which
+themselves have subtypes for every <code>portType</code> binding that service definition.
+The <code>portType</code> binding type implements <a class="xref" href="../../api/XRoad.AbstractEndpointDeclaration.html">AbstractEndpointDeclaration</a>
+which enables basic communication, that is described for that binding and also
+provides methods for each individual operation that is available for that binding.</p>
+<p>Each type extending <a class="xref" href="../../api/XRoad.AbstractEndpointDeclaration.html">AbstractEndpointDeclaration</a>
+inherits configuration options for providing target service or security server
+url which serves X-Road requests; certificate parameters for trusting self-signed
+service certificates or providing client authentication certificates; and
+request/response event handlers to support message logging or for further message
+analysis.</p>
+</li>
+</ol>
+<h2 id="third-party-dependencies">Third Party Dependencies</h2>
+<p>To expose better structure of WSDL definitions, the type provider library introduces
+some dependencies to outcoming types:</p>
+<ul>
+<li><p><a href="https://www.nuget.org/packages/Optional/">Optional</a>
+Single value elements which have <code>minOccurs=&quot;0&quot;</code> attribute defined in their definition
+are wrapped into <code>Option</code> type which expresses whether the value was provided in
+Xml message or not. <code>Option.Some&lt;T&gt;(...)</code> value specifies that Xml message contained
+the value which is wrapped into <code>Option</code> type. <code>Option.None&lt;T&gt;()</code> value represents
+missing Xml tag.</p>
+<p>When service description relies heavily on optional elements, the resulting types
+will contain a lot of optional properties, which makes their usage somewhat bloated.
+It is recommended to collect most of repeating logic into extension methods to
+simplify usage of optional values.</p>
+</li>
+<li><p><a href="https://www.nuget.org/packages/NodaTime/">NodaTime</a>
+Since .NET framework default date/time type <code>System.DateTime</code> does not differentiate
+between date and dateTime types, the type provider package uses <code>NodaTime</code> package
+to represent date/time related types. Conversion options between NodaTime and System
+<code>DateTime</code> types can be studied from <code>NodaTime</code> documentation.</p>
+</li>
+</ul>
+</article>
           </div>
           
           <div class="hidden-sm col-md-2" role="complementary">

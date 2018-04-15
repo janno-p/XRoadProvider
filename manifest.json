@@ -1,6 +1,6 @@
 {
   "homepages": [],
-  "source_base_path": "E:/Work/XRoadProvider/docs",
+  "source_base_path": "C:/Work/XRoadProvider3/docs",
   "xrefmap": "xrefmap.yml",
   "files": [
     {
@@ -3117,7 +3117,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/guide/xroad-producer-provider.html",
-          "hash": "O9p1JxSH9liJR4r/IuzCyQ=="
+          "hash": "xRPOE2qawxnwZ/m1OUwasg=="
         }
       },
       "is_incremental": true,
@@ -3129,7 +3129,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/guide/xroad-provider-in-csharp.html",
-          "hash": "nGx1uC16/pb8gcUhjKp/cw=="
+          "hash": "ih6s/kOheXqITKye4pZvXQ=="
         }
       },
       "is_incremental": true,
@@ -3141,7 +3141,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/guide/xroad-server-provider.html",
-          "hash": "lgJR4hlqRz+YefP1ICOeIQ=="
+          "hash": "GUID9DWcl71VTRAwnFduNQ=="
         }
       },
       "is_incremental": true,
@@ -3178,6 +3178,28 @@
         ".html": {
           "relative_path": "articles/toc.html",
           "hash": "gDms+cmttleUkFYH8U9c/w=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/XRoadProducer.gif",
+      "output": {
+        "resource": {
+          "relative_path": "images/XRoadProducer.gif"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/XRoadServer6.gif",
+      "output": {
+        "resource": {
+          "relative_path": "images/XRoadServer6.gif"
         }
       },
       "is_incremental": false,
@@ -3237,11 +3259,6 @@
         "incrementalPhase": "build"
       },
       "processors": {
-        "ResourceDocumentProcessor": {
-          "can_incremental": false,
-          "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
-          "incrementalPhase": "build"
-        },
         "TocDocumentProcessor": {
           "can_incremental": false,
           "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
@@ -3253,6 +3270,11 @@
         },
         "ManagedReferenceDocumentProcessor": {
           "can_incremental": true,
+          "incrementalPhase": "build"
+        },
+        "ResourceDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         }
       }
