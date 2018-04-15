@@ -49,7 +49,7 @@ again even if there is a cached version available).
 The return type of `XRoadServer6` type provider is layed out according to hierarchical structure of X-Road
 members. Root type has three members:
 
-* `Identifier`: Instance of [XRoadMemberIdentifier](XRoad.XRoadMemberIdentifier) type which is initialized
+* `Identifier`: Instance of [XRoadMemberIdentifier](xref:XRoad.XRoadMemberIdentifier) type which is initialized
   to the parameters used for type provider construction.
 * `CentralServices`: List of available central services on current X-Road instance.
 * `Producers`: List of registered producers on current X-Road instance.
