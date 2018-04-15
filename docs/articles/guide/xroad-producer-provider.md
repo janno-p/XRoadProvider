@@ -1,5 +1,14 @@
 # XRoadProducer Type Provider #
 
+`XRoadProducer` is the main working horse of the package. It takes X-Road web service WSDL
+specification as input and returns a type which wraps all the types defined in the `types`
+part of WSDL document and also service client types which implement `binding` part of
+the WSDL document to provide service types for calling X-Road services over the network.
+
+## XRoadProducer Type Provider in Action ##
+
+![XRoadProducer](../../images/XRoadProducer.gif)
+
 ## Example ##
 
 This example demonstrates the use of the XRoadProvider:
