@@ -5,7 +5,16 @@ specification as input and returns a type which wraps all the types defined in t
 part of WSDL document and also service client types which implement `binding` part of
 the WSDL document to provide service types for calling X-Road services over the network.
 
+Although it looks like very dynamic code in IDE with all the code completion based on
+WSDL definition, in the background the code is actually compiled into real assembly
+which works as usual in .NET platform. So there is no runtime performance hit in
+regards to resulting output of the type provider.
+
 ## XRoadProducer Type Provider in Action ##
+
+Here is a small animation visualizing type provider usage in code editor or IDE with
+proper F# language support (Visual Studio, Visual Studio Code with Ionide extension,
+etc.).
 
 ![XRoadProducer](../../images/XRoadProducer.gif)
 
