@@ -46,6 +46,55 @@ again even if there is a cached version available).
 
 ## Returned Type Structure ##
 
+The return type of `XRoadServer6` type provider is layed out according to hierarchical structure of X-Road
+members. Root type has three members:
+
+* `Identifier`: Instance of [XRoadMemberIdentifier](XRoad.XRoadMemberIdentifier) type which is initialized
+  to the parameters used for type provider construction.
+* `CentralServices`: List of available central services on current X-Road instance.
+* `Producers`: List of registered producers on current X-Road instance.
+
+The `Producers` subtype categorizes known X-Road producers by their member class value (for example `COM`
+identifies commercial producers, `GOV` goverment producers, etc.).
+
+Under each member class category all the member are listed by their name. Each member contains its
+subsystems and services which are accompanied by their identifiers. Service value is literal string
+which contains WSDL uri of the service.
+
 
 ## Interaction with XRoadProducer Type Provider ##
 
+The properties provided by `XRoadServer6` type provider have suitable type which allows to use them
+with `XRoadProducer` type provider to initialize service interfaces for the services.
+
+```fsharp
+#load "C:/Work/XRoadProvider3/bin/net461/XRoadProvider.fsx"
+
+open XRoad
+open XRoad.Providers
+open System
+
+type Browse = XRoadServer6<"http://xtee-ts-arendus-v5-5.just.ee", "ee-dev", "GOV", "70000310", "generic-consumer">
+type Ads = Browse.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
+type AdsAadrJarglased = XRoadProducer<Ads.``SERVICE:ADSaadrjarglased``>
+
+let header = XRoadHeader()
+header.Client <- Browse.Identifier
+header.Producer <- Ads.Identifier
+header.ProtocolVersion <- "4.0"
+
+let request = AdsAadrJarglased.DefinedTypes.WwwMaaametEe
+
+let port = AdsAadrJarglased.xroadeuService.xroadeuServicePort(Uri("http://xtee-ts-arendus-v5-5.just.ee"))
+let response = port.ADSaadrjarglased(header, adrId=10I)
+printfn "Result: %A" response // => Result: <null>
+```
+
+In this sample we are using output of `XRoadServer6` type provider to pass `ADSaadrjarglased` service
+WSDL uri to `XRoadProducer` type provider. Also, we are using the identifier which was defined to
+browse the security server, as our `Client` identifier in X-Road header part. For producer identifier
+we can use `Ads.Identifier` that was also provided by `XRoadServer6` type provider.
+
+So by having access to working security server and knowing only our own identifier values, it was possible to
+make a service request to another X-Road service provider with all the information retrieved from
+security server itself (with a little help from type provider).
