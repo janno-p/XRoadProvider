@@ -1,42 +1,51 @@
 # XRoadServer6 Type Provider #
 
+`XRoadServer6` type provider implements supporting functionality for easier X-Road
+service discovery and exploration on X-Road v6 security server. There is also
+similar type provider for previous version of X-Road security server, but with
+adaption of newer security server, the older one is becoming obsolete so that
+branch is not first maintainment priority. This article continues with newer
+type provider.
 
 
-## Type provider for producer discovery ##
+## XRoadServer6 Type Provider in Action ##
 
-XRoadProvider package includes separate type provider to retrieve producer information from security
-server. Resulting type contains details about all producers available and their WSDL URIs which may
-be used as parameter to `XRoadProducer` provider to initialize service interfaces.
+Sample session of using XRoadServer6 type provider for service discovery:
 
-Example use of `XRoadServer` type provider:
+![XRoadServer6](../../images/XRoadServer6.gif)
+
+
+## Configuring XRoadServer6 Type Provider ##
+
+Generally `XRoadServer6` type provider is initialized with following line:
 
 ```fsharp
-open XRoadProvider
-
-// Acquire list of producer from security server.
-let [<Literal>] securityServerUrl = "http://your-security-server-here/"
-
-type SecurityServer = XRoadServer6<securityServerUrl, "ee-dev", "COM", "12345678", "generic-consumer">
-type AdsConfig = SecurityServer.Producers.GOV.``Maa-amet (70003098)``.``SUBSYSTEM:ads``
-type Ads = XRoadProducer<AdsConfig.``SERVICE:ADSaadrmuudatused``>
-
-let adsService = Ads.xroadeuService.xroadeuServicePort(securityServerUrl)
-
-let adsHeader =
-    XRoadHeader(
-        Client = SecurityServer.Identifier,
-        Producer = AdsConfig.Identifier,
-        ProtocolVersion = "4.0"
-    )
-
-let adsResponse =
-    adsService.ADSaadrmuudatused(
-        adsHeader,
-        muudetudAlates = some(NodaTime.LocalDate(2017, 11, 28))
-    )
-
-adsResponse.fault.MatchSome(fun f -> failwithf "Invalid service response. %s: %s" f.faultCode f.faultString)
-
-let muudatused = adsResponse.muudatused.ValueOr([||])
-printfn "Got %d changes in response message." muudatused.Length
+type Browse = XRoadServer6<"http://server-uri", "ee-dev", "GOV", "71111111", "generic-consumer">
 ```
+
+The parameters used in initialization of the type provider are described in the
+following table:
+
+| Parameter name | Type | Required | Default value | Description |
+|----------------|------|----------|---------------|-------------|
+| `SecurityServerUri` | `String` | Yes | - | X-Road security server uri which is used to connect to that X-Road instance. |
+| `XRoadInstance` | `String` | Yes | - | Code identifying the instance of X-Road system. |
+| `MemberClass` | `String` | Yes | - | Member class that is used in client identifier in X-Road request. |
+| `MemberCode` | `String` | Yes | - | Member code that is used in client identifier in X-Road requests. |
+| `SubsystemCode` | `String` | No | `""` | Subsystem code that is used in client identifier in X-Road requests. |
+| `ForceRefresh` | `Boolean` | No | `false` | When `true`, forces type provider to refresh data from security server. |
+
+The first five parameters handle identification, so and are required by security
+server to enable usage of metaservices on which the type provider relies.
+
+Last parameter is of technical kind and for lazy users who do not want to restart
+their IDE for WSDL reloading (by default resulting types are cached and retrieved
+from cache, but this parameter forces type provider to resolve service description
+again even if there is a cached version available).
+
+
+## Returned Type Structure ##
+
+
+## Interaction with XRoadProducer Type Provider ##
+
