@@ -190,7 +190,9 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                                 try
                                     let service: SecurityServerV6.Service = { Provider = provider; ServiceCode = "listMethods"; ServiceVersion = None }
                                     SecurityServerV6.downloadMethodsList securityServerUri client service
-                                    |> List.map (fun x -> ProvidedField.Literal((sprintf "SERVICE:%s" x.ServiceCode), typeof<string>, Uri(securityServerUri, x.WsdlPath).ToString()) :> MemberInfo)
+                                    |> List.map (fun x ->
+                                        let versionSuffix = x.ServiceVersion |> Option.fold (fun _ x -> sprintf "/%s" x) ""
+                                        ProvidedField.Literal((sprintf "SERVICE:%s%s" x.ServiceCode versionSuffix), typeof<string>, Uri(securityServerUri, x.WsdlPath).ToString()) :> MemberInfo)
                                 with e -> [noteProperty (e.ToString())]
                             let memberTy = ProvidedTypeDefinition(sprintf "%s (%s)" memberItem.Name memberItem.Code, Some baseTy, HideObjectMethods = true)
                             memberTy.AddXmlDoc(memberItem.Name)
