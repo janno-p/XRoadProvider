@@ -144,6 +144,7 @@ Target.create "GenerateDocs" (fun _ ->
 )
 
 Target.create "ReleaseDocs" (fun _ ->
+    Shell.CleanDirs [ tempDocsDir ]
     Git.Repository.cloneSingleBranch "" (gitHome + "/" + gitName + ".git") "gh-pages" tempDocsDir
     DocFx (fun p -> { p with ToolPath = docfxToolPath })
     Git.Staging.stageAll tempDocsDir

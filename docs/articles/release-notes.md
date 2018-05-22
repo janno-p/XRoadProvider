@@ -1,3 +1,7 @@
+#### 1.0.5 - 22.05.2018
+
+* Add service version to service identifier (no more random version selection when multiple are available).
+
 #### 1.0.4 - 10.04.2018
 
 * Remove Common.Logging dependency since not used any more.
