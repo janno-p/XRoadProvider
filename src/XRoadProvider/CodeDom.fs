@@ -1,6 +1,6 @@
 ﻿module internal XRoad.CodeDom
 
-#if !NET40
+#if NET461
 open Microsoft.CodeAnalysis.CSharp
 #endif
 

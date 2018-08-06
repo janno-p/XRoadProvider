@@ -191,4 +191,4 @@ docs/content/release-notes.md
 .fake
 .idea
 
-src/XRoadProvider/XRoadProvider.xml
+src/XRoadProvider*/XRoadProvider.xml

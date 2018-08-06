@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\NetFx.props" />
+  <PropertyGroup>
+    <AssemblyName>XRoadProvider</AssemblyName>
+    <RootNamespace>XRoad</RootNamespace>
+    <TargetFramework>net461</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);2003</NoWarn>
+    <DocumentationFile>$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
+      <Link>paket-files/ProvidedTypes.fs</Link>
+    </Compile>
+    <Compile Include="..\XRoadProvider\AssemblyInfo.fs" />
+    <Compile Include="..\XRoadProvider\AssemblyInfo.Build.fs" />
+    <Compile Include="..\XRoadProvider\Attributes.fs" />
+    <Compile Include="..\XRoadProvider\Choices.fs" />
+    <Compile Include="..\XRoadProvider\Commons.fs" />
+    <Compile Include="..\XRoadProvider\Http.fs" />
+    <Compile Include="..\XRoadProvider\XmlExtensions.fs" />
+    <Compile Include="..\XRoadProvider\EmitterDsl.fs" />
+    <Compile Include="..\XRoadProvider\Emitter.fs" />
+    <Compile Include="..\XRoadProvider\Serialization.fs" />
+    <Compile Include="..\XRoadProvider\ServiceDescription.fs" />
+    <Compile Include="..\XRoadProvider\TypeSchema.fs" />
+    <Compile Include="..\XRoadProvider\CodeDom.fs" />
+    <Compile Include="..\XRoadProvider\TypeBuilderContext.fs" />
+    <Compile Include="..\XRoadProvider\CodeDomGenerator.fs" />
+    <Compile Include="..\XRoadProvider\ProducerDefinition.fs" />
+    <Compile Include="..\XRoadProvider\SecurityServer.fs" />
+    <Compile Include="..\XRoadProvider\XRoadProvidedTypes.fsi" />
+    <Compile Include="..\XRoadProvider\XRoadProvidedTypes.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="paket.references" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>

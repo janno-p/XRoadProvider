@@ -1,4 +1,5 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2003
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -16,14 +17,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "content", "content", "{8E6D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{BF60BC93-E09B-4E5F-9D85-95A519479D54}"
 	ProjectSection(SolutionItems) = preProject
+		.travis.yml = .travis.yml
+		appveyor.yml = appveyor.yml
 		build.fsx = build.fsx
+		paket.dependencies = paket.dependencies
+		paket.lock = paket.lock
 		README.md = README.md
 		RELEASE_NOTES.md = RELEASE_NOTES.md
 		XRoadProvider.nuspec = XRoadProvider.nuspec
-		paket.dependencies = paket.dependencies
-		paket.lock = paket.lock
-		appveyor.yml = appveyor.yml
-		.travis.yml = .travis.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{ED8079DD-2B06-4030-9F0F-DC548F98E1C4}"
@@ -31,11 +32,15 @@ EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "XRoadProvider.Tests", "tests\XRoadProvider.Tests\XRoadProvider.Tests.fsproj", "{DB296652-AC19-4D33-8C1A-4D2BDBC7D790}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C732A12F-3E0E-4AA4-A890-85113EDA1867}"
-ProjectSection(SolutionItems) = preProject
-	src\NetFx.props = src\NetFx.props
-EndProjectSection
+	ProjectSection(SolutionItems) = preProject
+		src\NetFx.props = src\NetFx.props
+	EndProjectSection
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "XRoadProvider", "src\XRoadProvider\XRoadProvider.fsproj", "{81CCE6F4-2576-4C9B-83E5-1CEB9A119A8D}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "XRoadProvider.net40", "src\XRoadProvider.net40\XRoadProvider.net40.fsproj", "{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "XRoadProvider.net461", "src\XRoadProvider.net461\XRoadProvider.net461.fsproj", "{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -70,6 +75,30 @@ Global
 		{81CCE6F4-2576-4C9B-83E5-1CEB9A119A8D}.Release|x64.Build.0 = Release|Any CPU
 		{81CCE6F4-2576-4C9B-83E5-1CEB9A119A8D}.Release|x86.ActiveCfg = Release|Any CPU
 		{81CCE6F4-2576-4C9B-83E5-1CEB9A119A8D}.Release|x86.Build.0 = Release|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Debug|x64.Build.0 = Debug|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Debug|x86.Build.0 = Debug|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Release|x64.ActiveCfg = Release|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Release|x64.Build.0 = Release|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Release|x86.ActiveCfg = Release|Any CPU
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0}.Release|x86.Build.0 = Release|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Debug|x64.Build.0 = Debug|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Debug|x86.Build.0 = Debug|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Release|x64.ActiveCfg = Release|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Release|x64.Build.0 = Release|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Release|x86.ActiveCfg = Release|Any CPU
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -77,6 +106,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{DB296652-AC19-4D33-8C1A-4D2BDBC7D790} = {ED8079DD-2B06-4030-9F0F-DC548F98E1C4}
 		{81CCE6F4-2576-4C9B-83E5-1CEB9A119A8D} = {C732A12F-3E0E-4AA4-A890-85113EDA1867}
+		{F87EDBC1-C2D1-475E-B835-D580DB44C6B0} = {C732A12F-3E0E-4AA4-A890-85113EDA1867}
+		{21C634BE-2054-4CD0-A041-0DCDA0ACDE76} = {C732A12F-3E0E-4AA4-A890-85113EDA1867}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {545BAB62-97B0-4AB4-9903-E28748FAE3E3}
