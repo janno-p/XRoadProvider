@@ -1,2 +1,3 @@
 ﻿group Netstandard
 FSharp.Core
+NodaTime

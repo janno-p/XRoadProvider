@@ -12,13 +12,15 @@ open System.Security.Cryptography.X509Certificates
 open System.Xml
 open XRoad.Serialization.Attributes
 open TypeSchema
-open Wsdl
 
 #else
 
 open ProviderImplementation.ProvidedTypes
+open XRoad
 
 #endif
+
+open Wsdl
 
 #if NET40 || NET461
 
@@ -228,8 +230,16 @@ module ServiceBuilder =
 #else
 
 let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, operationFilter) =
+    let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
+    let context = TypeBuilderContext.FromSchema(asm, ns, schema, languageCode)
+
+    let serviceTypesTy =
+        ProvidedTypeDefinition("DefinedTypes", Some typeof<obj>, isErased = false)
+
     let targetClass =
-        ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, isErased = false)
+        let t = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, isErased = false)
+        t.AddMember(serviceTypesTy)
+        t
 
     asm.AddTypes([targetClass])
 

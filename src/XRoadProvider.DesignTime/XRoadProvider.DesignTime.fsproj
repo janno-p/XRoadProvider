@@ -12,7 +12,13 @@
     </Compile>
     <Compile Include="..\Common\AssemblyInfo.fs" />
     <Compile Include="..\Common\Helpers.fs" />
+    <Compile Include="..\Common\Attributes.fs" />
+    <Compile Include="..\Common\Commons.fs" />
     <Compile Include="..\Common\Http.fs" />
+    <Compile Include="..\Common\ServiceDescription.fs" />
+    <Compile Include="..\Common\TypeSchema.fs" />
+    <Compile Include="CodeDom.fs" />
+    <Compile Include="..\Common\TypeBuilderContext.fs" />
     <Compile Include="..\Common\ProducerDefinition.fs" />
     <Compile Include="..\Common\SecurityServer.fs" />
     <Compile Include="..\Common\XRoadProvidedTypes.fsi" />

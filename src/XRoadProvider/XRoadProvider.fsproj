@@ -1,4 +1,5 @@
-﻿<Project>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="..\NetFx.props" />
   <PropertyGroup>
@@ -21,17 +22,12 @@
     <Compile Include="..\Common\AssemblyInfo.fs" />
     <Compile Include="AssemblyInfo.Build.fs" />
     <Compile Include="..\Common\Helpers.fs" />
-    <!--<Compile Include="..\Common\Attributes.fs" />-->
+    <Compile Include="..\Common\Attributes.fs" />
     <!--<Compile Include="..\Common\Choices.fs" />-->
-    <!--<Compile Include="..\Common\Commons.fs" />-->
     <!--<Compile Include="..\Common\XmlExtensions.fs" />-->
     <!--<Compile Include="..\Common\EmitterDsl.fs" />-->
     <!--<Compile Include="..\Common\Emitter.fs" />-->
     <!--<Compile Include="..\Common\Serialization.fs" />-->
-    <!--<Compile Include="..\Common\ServiceDescription.fs" />-->
-    <!--<Compile Include="..\Common\TypeSchema.fs" />-->
-    <!--<Compile Include="..\Common\CodeDom.fs" />-->
-    <!--<Compile Include="..\Common\TypeBuilderContext.fs" />-->
     <!--<Compile Include="..\Common\CodeDomGenerator.fs" />-->
   </ItemGroup>
   <ItemGroup>
@@ -42,8 +38,8 @@
   <ItemGroup>
     <None Include="paket.references" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
   <Target Name="AfterBuild">
     <Copy SourceFiles="..\XRoadProvider.DesignTime\bin\$(Configuration)\netstandard2.0\XRoadProvider.DesignTime.dll" DestinationFolder="$(OutputPath)\typeproviders\fsharp41\netstandard2.0" />
   </Target>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
