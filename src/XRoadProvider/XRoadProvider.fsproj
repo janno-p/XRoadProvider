@@ -21,28 +21,28 @@
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
        <Link>paket-files/ProvidedTypes.fs</Link>
     </Compile>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="AssemblyInfo.Build.fs" />
-    <Compile Include="Attributes.fs" />
-    <Compile Include="Choices.fs" />
-    <Compile Include="Commons.fs" />
-    <Compile Include="Http.fs" />
-    <Compile Include="XmlExtensions.fs" />
-    <Compile Include="EmitterDsl.fs" />
-    <Compile Include="Emitter.fs" />
-    <Compile Include="Serialization.fs" />
-    <Compile Include="ServiceDescription.fs" />
-    <Compile Include="TypeSchema.fs" />
-    <Compile Include="CodeDom.fs" />
-    <Compile Include="TypeBuilderContext.fs" />
-    <Compile Include="CodeDomGenerator.fs" />
-    <Compile Include="ProducerDefinition.fs" />
-    <Compile Include="SecurityServer.fs" />
-    <Compile Include="XRoadProvidedTypes.fsi" />
-    <Compile Include="XRoadProvidedTypes.fs" />
+    <Compile Include="..\Common\AssemblyInfo.fs" />
+    <Compile Include="..\Common\AssemblyInfo.Build.fs" />
+    <Compile Include="..\Common\Attributes.fs" />
+    <Compile Include="..\Common\Choices.fs" />
+    <Compile Include="..\Common\Commons.fs" />
+    <Compile Include="..\Common\Http.fs" />
+    <Compile Include="..\Common\XmlExtensions.fs" />
+    <Compile Include="..\Common\EmitterDsl.fs" />
+    <Compile Include="..\Common\Emitter.fs" />
+    <Compile Include="..\Common\Serialization.fs" />
+    <Compile Include="..\Common\ServiceDescription.fs" />
+    <Compile Include="..\Common\TypeSchema.fs" />
+    <Compile Include="..\Common\CodeDom.fs" />
+    <Compile Include="..\Common\TypeBuilderContext.fs" />
+    <Compile Include="..\Common\CodeDomGenerator.fs" />
+    <Compile Include="..\Common\ProducerDefinition.fs" />
+    <Compile Include="..\Common\SecurityServer.fs" />
+    <Compile Include="..\Common\XRoadProvidedTypes.fsi" />
+    <Compile Include="..\Common\XRoadProvidedTypes.fs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="XRoadProvider.fsx">
+    <None Include="..\Common\XRoadProvider.fsx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

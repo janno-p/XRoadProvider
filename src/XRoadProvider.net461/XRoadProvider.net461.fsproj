@@ -13,25 +13,30 @@
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
       <Link>paket-files/ProvidedTypes.fs</Link>
     </Compile>
-    <Compile Include="..\XRoadProvider\AssemblyInfo.fs" />
-    <Compile Include="..\XRoadProvider\AssemblyInfo.Build.fs" />
-    <Compile Include="..\XRoadProvider\Attributes.fs" />
-    <Compile Include="..\XRoadProvider\Choices.fs" />
-    <Compile Include="..\XRoadProvider\Commons.fs" />
-    <Compile Include="..\XRoadProvider\Http.fs" />
-    <Compile Include="..\XRoadProvider\XmlExtensions.fs" />
-    <Compile Include="..\XRoadProvider\EmitterDsl.fs" />
-    <Compile Include="..\XRoadProvider\Emitter.fs" />
-    <Compile Include="..\XRoadProvider\Serialization.fs" />
-    <Compile Include="..\XRoadProvider\ServiceDescription.fs" />
-    <Compile Include="..\XRoadProvider\TypeSchema.fs" />
-    <Compile Include="..\XRoadProvider\CodeDom.fs" />
-    <Compile Include="..\XRoadProvider\TypeBuilderContext.fs" />
-    <Compile Include="..\XRoadProvider\CodeDomGenerator.fs" />
-    <Compile Include="..\XRoadProvider\ProducerDefinition.fs" />
-    <Compile Include="..\XRoadProvider\SecurityServer.fs" />
-    <Compile Include="..\XRoadProvider\XRoadProvidedTypes.fsi" />
-    <Compile Include="..\XRoadProvider\XRoadProvidedTypes.fs" />
+    <Compile Include="..\Common\AssemblyInfo.fs" />
+    <Compile Include="..\Common\AssemblyInfo.Build.fs" />
+    <Compile Include="..\Common\Attributes.fs" />
+    <Compile Include="..\Common\Choices.fs" />
+    <Compile Include="..\Common\Commons.fs" />
+    <Compile Include="..\Common\Http.fs" />
+    <Compile Include="..\Common\XmlExtensions.fs" />
+    <Compile Include="..\Common\EmitterDsl.fs" />
+    <Compile Include="..\Common\Emitter.fs" />
+    <Compile Include="..\Common\Serialization.fs" />
+    <Compile Include="..\Common\ServiceDescription.fs" />
+    <Compile Include="..\Common\TypeSchema.fs" />
+    <Compile Include="..\Common\CodeDom.fs" />
+    <Compile Include="..\Common\TypeBuilderContext.fs" />
+    <Compile Include="..\Common\CodeDomGenerator.fs" />
+    <Compile Include="..\Common\ProducerDefinition.fs" />
+    <Compile Include="..\Common\SecurityServer.fs" />
+    <Compile Include="..\Common\XRoadProvidedTypes.fsi" />
+    <Compile Include="..\Common\XRoadProvidedTypes.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Common\XRoadProvider.fsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="paket.references" />
