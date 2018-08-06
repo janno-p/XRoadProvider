@@ -1,15 +1,15 @@
 RESTRICTION: == net461
 NUGET
   remote: https://api.nuget.org/v3/index.json
-    FAKE (5.0.0-rc004)
-    NuGet.CommandLine (4.6.2)
-    Octokit (0.29)
+    FAKE (5.3)
+    NuGet.CommandLine (4.7)
+    Octokit (0.31)
 GITHUB
   remote: fsharp/FAKE
-    modules/Octokit/Octokit.fsx (b011a602d0b690fb80a30e5b97df53523d6c4b23)
+    modules/Octokit/Octokit.fsx (46ffffbad0a51ce5f353e9cd37e1a786acb0f758)
       Octokit (>= 0.20)
   remote: fsprojects/FSharp.TypeProviders.SDK
-    src/ProvidedTypes.fs (f0c4a6300db313eb2616c4f792cd6ae68c255e56)
+    src/ProvidedTypes.fs (d50b7556cc57c403cd53bd1116027450d60c72db)
 HTTP
   remote: https://github.com
     docfx.zip (/dotnet/docfx/releases/download/v2.34/docfx.zip)
