@@ -1193,7 +1193,7 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
                         Element = element
                         ItemTypeMap = itemTypeMap
                         ItemElement = itemElement
-                        ItemSimpleTypeName = XRoadHelper.getSystemTypeName elementType.FullName
+                        ItemSimpleTypeName = XRoadTypeHelper.getSystemTypeName elementType.FullName
                         Wrapper = wrapper
                         GetMethod = getMethod
                         SetMethod = setMethod
@@ -1202,7 +1202,7 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
                 let propertyTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else propertyType) |> tmf
                 let element = if propertyTypeMap.Layout <> Some(LayoutKind.Choice) then element else None
                 Individual { TypeMap = propertyTypeMap
-                             SimpleTypeName = XRoadHelper.getSystemTypeName (propertyType.FullName)
+                             SimpleTypeName = XRoadTypeHelper.getSystemTypeName (propertyType.FullName)
                              Element = element
                              Wrapper = wrapper
                              GetMethod = getMethod

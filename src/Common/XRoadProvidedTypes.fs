@@ -8,6 +8,7 @@ open System.IO
 open System.Reflection
 open XRoad
 
+#if NET40 || NET461
 /// Generated type providers for X-Road infrastructure.
 /// Currently only one type provider is available, which builds service interface for certain producer.
 [<TypeProvider>]
@@ -93,13 +94,14 @@ type XRoadProducerProvider() as this =
 
         /// No types have to be resolved.
         override __.ResolveTypeName(_) = null
+#endif
 
 /// Erased type providers for X-Road infrastructure.
 /// Currently only one type provider is available, which acquires list of all producers from
 /// security server.
 [<TypeProvider>]
 type XRoadProviders(config: TypeProviderConfig) as this =
-    inherit TypeProviderForNamespaces(config)
+    inherit TypeProviderForNamespaces(config, assemblyReplacementMap = [("XRoadProvider.DesignTime", "XRoadProvider")])
 
     let theAssembly = typeof<XRoadProviders>.Assembly
     let namespaceName = "XRoad.Providers"

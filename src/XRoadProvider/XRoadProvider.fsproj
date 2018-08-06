@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="..\NetFx.props" />
   <PropertyGroup>
     <AssemblyName>XRoadProvider</AssemblyName>
@@ -9,37 +9,31 @@
     <NoWarn>$(NoWarn);2003</NoWarn>
     <DocumentationFile>XRoadProvider.xml</DocumentationFile>
   </PropertyGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <!--
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.7.0" />
     <PackageReference Include="System.CodeDom" Version="4.4.0" />
     <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="4.3.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
   </ItemGroup>
   -->
   <ItemGroup>
-    <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
-       <Link>paket-files/ProvidedTypes.fs</Link>
-    </Compile>
     <Compile Include="..\Common\AssemblyInfo.fs" />
-    <Compile Include="..\Common\AssemblyInfo.Build.fs" />
-    <Compile Include="..\Common\Attributes.fs" />
-    <Compile Include="..\Common\Choices.fs" />
-    <Compile Include="..\Common\Commons.fs" />
-    <Compile Include="..\Common\Http.fs" />
-    <Compile Include="..\Common\XmlExtensions.fs" />
-    <Compile Include="..\Common\EmitterDsl.fs" />
-    <Compile Include="..\Common\Emitter.fs" />
-    <Compile Include="..\Common\Serialization.fs" />
-    <Compile Include="..\Common\ServiceDescription.fs" />
-    <Compile Include="..\Common\TypeSchema.fs" />
-    <Compile Include="..\Common\CodeDom.fs" />
-    <Compile Include="..\Common\TypeBuilderContext.fs" />
-    <Compile Include="..\Common\CodeDomGenerator.fs" />
-    <Compile Include="..\Common\ProducerDefinition.fs" />
-    <Compile Include="..\Common\SecurityServer.fs" />
-    <Compile Include="..\Common\XRoadProvidedTypes.fsi" />
-    <Compile Include="..\Common\XRoadProvidedTypes.fs" />
+    <Compile Include="AssemblyInfo.Build.fs" />
+    <Compile Include="..\Common\Helpers.fs" />
+    <!--<Compile Include="..\Common\Attributes.fs" />-->
+    <!--<Compile Include="..\Common\Choices.fs" />-->
+    <!--<Compile Include="..\Common\Commons.fs" />-->
+    <!--<Compile Include="..\Common\XmlExtensions.fs" />-->
+    <!--<Compile Include="..\Common\EmitterDsl.fs" />-->
+    <!--<Compile Include="..\Common\Emitter.fs" />-->
+    <!--<Compile Include="..\Common\Serialization.fs" />-->
+    <!--<Compile Include="..\Common\ServiceDescription.fs" />-->
+    <!--<Compile Include="..\Common\TypeSchema.fs" />-->
+    <!--<Compile Include="..\Common\CodeDom.fs" />-->
+    <!--<Compile Include="..\Common\TypeBuilderContext.fs" />-->
+    <!--<Compile Include="..\Common\CodeDomGenerator.fs" />-->
+    <!--<Compile Include="..\Common\ProducerDefinition.fs" />-->
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Common\XRoadProvider.fsx">
@@ -50,4 +44,7 @@
     <None Include="paket.references" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="..\XRoadProvider.DesignTime\bin\$(Configuration)\netstandard2.0\XRoadProvider.DesignTime.dll" DestinationFolder="$(OutputPath)\typeproviders\fsharp41\netstandard2.0" />
+  </Target>
 </Project>

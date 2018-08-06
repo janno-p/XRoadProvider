@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\NetFx.props" />
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <DefineConstants>NO_GENERATIVE</DefineConstants>
+    <DefineConstants>IS_DESIGNTIME</DefineConstants>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
+      <Link>paket-files/ProvidedTypes.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\AssemblyInfo.fs" />
+    <Compile Include="..\Common\Helpers.fs" />
+    <Compile Include="..\Common\Http.fs" />
+    <Compile Include="..\Common\SecurityServer.fs" />
+    <Compile Include="..\Common\XRoadProvidedTypes.fsi" />
+    <Compile Include="..\Common\XRoadProvidedTypes.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="paket.references" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>

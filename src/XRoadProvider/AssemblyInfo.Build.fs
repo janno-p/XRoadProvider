@@ -1,15 +1,15 @@
 ﻿namespace System
 
-#if DEBUG
+#if !DEBUG
 open System.Runtime.CompilerServices
 #else
 open Microsoft.FSharp.Core.CompilerServices
 #endif
 
-#if DEBUG
+#if !DEBUG
 [<assembly: InternalsVisibleTo("XRoadProvider.Tests")>]
 #else
-[<assembly: TypeProviderAssembly>]
+[<assembly: TypeProviderAssembly("XRoadProvider.DesignTime.dll")>]
 #endif
 
 do ()

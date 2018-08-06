@@ -14,7 +14,8 @@
       <Link>paket-files/ProvidedTypes.fs</Link>
     </Compile>
     <Compile Include="..\Common\AssemblyInfo.fs" />
-    <Compile Include="..\Common\AssemblyInfo.Build.fs" />
+    <Compile Include="AssemblyInfo.Build.fs" />
+    <Compile Include="..\Common\Helpers.fs" />
     <Compile Include="..\Common\Attributes.fs" />
     <Compile Include="..\Common\Choices.fs" />
     <Compile Include="..\Common\Commons.fs" />

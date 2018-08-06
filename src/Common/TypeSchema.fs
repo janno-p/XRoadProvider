@@ -15,15 +15,15 @@ let readBoundsValue name node =
 
 /// General function for reading typed values from attributes with unqualified name.
 let readValue fparse name defValue node =
-    match node |> attr (xname name) with
+    match node |> attr (X.lname name) with
     | Some(v) -> fparse(v)
     | _ -> defValue
 
 /// Read minOccurs value from current element, use default value 1 if attribute is missing.
-let readMinOccurs: XElement -> uint32 = readBoundsValue (xname "minOccurs")
+let readMinOccurs: XElement -> uint32 = readBoundsValue (X.lname "minOccurs")
 
 /// Read maxOccurs value from current element, use default value 1 if attribute is missing.
-let readMaxOccurs: XElement -> uint32 = readBoundsValue (xname "maxOccurs")
+let readMaxOccurs: XElement -> uint32 = readBoundsValue (X.lname "maxOccurs")
 
 /// Read boolean value from attribute.
 let readBoolean name node = readValue Boolean.Parse name false node
@@ -52,7 +52,7 @@ type AttributeUse =
     | Required
     with
         static member FromNode(node) =
-            match node |> attrOrDefault (xname "use") "optional" with
+            match node |> attrOrDefault (X.lname "use") "optional" with
             | "optional" -> Optional
             | "prohibited" -> Prohibited
             | "required" -> Required
@@ -240,9 +240,9 @@ type SchemaNode =
         other.AttributeGroups |> Seq.iter this.AttributeGroups.Add
     /// Initializes empty SchemaNode from given `schema` node.
     static member FromNode(node) =
-        { QualifiedAttributes = node |> isQualified (xname "attributeFormDefault")
-          QualifiedElements = node |> isQualified (xname "elementFormDefault")
-          TargetNamespace = node |> attrOrDefault (xname "targetNamespace") "" |> xns
+        { QualifiedAttributes = node |> isQualified (X.lname "attributeFormDefault")
+          QualifiedElements = node |> isQualified (X.lname "elementFormDefault")
+          TargetNamespace = node |> attrOrDefault (X.lname "targetNamespace") "" |> X.ns
           Attributes = Dictionary<_,_>()
           Elements = Dictionary<_,_>()
           Types = Dictionary<_,_>()
@@ -263,10 +263,10 @@ module Parser =
 
     /// Extracts documentation from annotation element definition.
     let private parseAnnotation (parentNode: XElement): Annotation option =
-        match parentNode.Element(xnsname "annotation" XmlNamespace.Xsd) with
+        match parentNode.Element(X.name "annotation" XmlNamespace.Xsd) with
         | null -> None
         | node ->
-            match node.Elements(xnsname "appinfo" XmlNamespace.Xsd) |> List.ofSeq with
+            match node.Elements(X.name "appinfo" XmlNamespace.Xsd) |> List.ofSeq with
             | [] -> None
             | elements -> Some({ AppInfo = elements })
 
@@ -397,26 +397,26 @@ module Parser =
     and private parseAttribute (node: XElement): AttributeSpec =
         // Handle SOAP-encoded array definition to get array dimensions.
         let arrayType =
-            match node |> attr (xnsname "arrayType" XmlNamespace.Wsdl) with
+            match node |> attr (X.name "arrayType" XmlNamespace.Wsdl) with
             | Some value ->
                 let ns, name = match value.Split(':') with
                                    | [| local |] -> node.GetDefaultNamespace().NamespaceName, local
                                    | [| prefix; local |] -> node.GetNamespaceOfPrefix(prefix).NamespaceName, local
                                    | _ -> failwithf "Invalid array type: %A" value
                 match System.Text.RegularExpressions.Regex.Match(name, @"^(\w+)(\[\])+$") with
-                | m when m.Success -> Some(xnsname m.Groups.[1].Value ns, m.Groups.[2].Captures.Count)
+                | m when m.Success -> Some(X.name m.Groups.[1].Value ns, m.Groups.[2].Captures.Count)
                 | _ -> failwithf "Invalid array type: %A" value
             | _ -> None
         let attrUse = AttributeUse.FromNode(node)
         // Parse attribute type information.
-        match node |> attr (xname "ref") with
+        match node |> attr (X.lname "ref") with
         | Some refv ->
-            match node |> attr (xname "name") with
+            match node |> attr (X.lname "name") with
             | Some _ -> failwith "Attribute element name and ref attribute cannot be present at the same time."
             | _ -> { Name = None; RefOrType = Reference(parseXName node refv); ArrayType = arrayType; Use = attrUse; Annotation = parseAnnotation(node) }
         | _ ->
-            let name = node |> reqAttr (xname "name")
-            match node |> attr (xname "type") with
+            let name = node |> reqAttr (X.lname "name")
+            match node |> attr (X.lname "type") with
             | Some value -> { Name = Some(name); RefOrType = Explicit(Name(parseXName node value)); ArrayType = arrayType; Use = attrUse; Annotation = parseAnnotation(node) }
             | _ ->
                 node.Elements()
@@ -453,7 +453,7 @@ module Parser =
                 | _ -> node |> notExpectedIn "extension"
                 ) (Begin, { Content = None; Attributes = []; AttributeGroups = [] })
             |> snd
-        { Base = node |> reqAttr (xname "base") |> parseXName node
+        { Base = node |> reqAttr (X.lname "base") |> parseXName node
           Content = parseChildElements() }
 
     /// Extracts complexType-s complexContent-s `restriction` element specification from schema definition.
@@ -480,7 +480,7 @@ module Parser =
                     node |> notExpectedIn "complexContent restriction"
                 ) (Begin, { Content = None; Attributes = []; AttributeGroups = [] })
             |> snd
-        { Base = node |> reqAttr (xname "base") |> parseXName node
+        { Base = node |> reqAttr (X.lname "base") |> parseXName node
           Content = parseChildElements() }
 
     /// Extracts `element` element specification from schema definition.
@@ -501,16 +501,16 @@ module Parser =
                 ) (Begin, None)
             |> (fun (_, spec) -> spec |> MyOption.defaultValue (Definition(EmptyDefinition)))
         let elementSpec = ElementSpec.FromNode(node)
-        match node |> attr (xname "ref") with
+        match node |> attr (X.lname "ref") with
         | Some refv ->
-            match node |> attr (xname "name") with
+            match node |> attr (X.lname "name") with
             | Some _ -> failwith "Attribute element name and ref attribute cannot be present at the same time."
             | _ -> { elementSpec with Definition = Reference(parseXName node refv) }
         | _ ->
             { elementSpec with
                 Annotation = parseAnnotation(node)
-                Name = Some(node |> reqAttr (xname "name"))
-                Definition = match node |> attr (xname "type") with
+                Name = Some(node |> reqAttr (X.lname "name"))
+                Definition = match node |> attr (X.lname "type") with
                              | Some value -> Explicit(Name(parseXName node value))
                              | _ -> Explicit(parseChildElements()) }
 
@@ -546,7 +546,7 @@ module Parser =
             | Xsd "simpleType", (Begin | Annotation) ->
                 TypeSpec, node |> notImplementedIn "simpleType restriction"
             | Xsd "enumeration", (Begin | Annotation | TypeSpec | Content) ->
-                let value = node |> reqAttr(xname "value")
+                let value = node |> reqAttr(X.lname "value")
                 Content, { spec with Content = spec.Content @ [Enumeration(value)] }
             | Xsd "minLength", (Begin | Annotation | TypeSpec | Content) ->
                 Content, { spec with Content = spec.Content @ [MinLength(node |> readInt "value")] }
@@ -559,7 +559,7 @@ module Parser =
             | Xsd "maxExclusive", (Begin | Annotation | TypeSpec | Content) ->
                 Content, { spec with Content = spec.Content @ [MaxExclusive(node |> readDecimal "value") ] }
             | Xsd "pattern", (Begin | Annotation | TypeSpec | Content) ->
-                Content, { spec with Content = spec.Content @ [Pattern(node |> reqAttr(xname "value"))] }
+                Content, { spec with Content = spec.Content @ [Pattern(node |> reqAttr(X.lname "value"))] }
             | (Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace"), (Begin | Annotation | TypeSpec | Content) ->
                 Content, node |> notImplementedIn "simpleType restriction"
             | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | TypeSpec | Content | Attribute) ->
@@ -567,7 +567,7 @@ module Parser =
             | Xsd "anyAttribute", (Begin | Annotation | TypeSpec | Content | Attribute) ->
                 Other, node |> notImplementedIn "simpleType restriction"
             | _ -> node |> notExpectedIn "simpleType restriction"
-            ) (Begin, { Base = node |> reqAttr (xname "base") |> parseXName node
+            ) (Begin, { Base = node |> reqAttr (X.lname "base") |> parseXName node
                         SimpleType = None
                         Content = [] })
         |> snd
@@ -575,13 +575,13 @@ module Parser =
     /// Extracts simpleType-s `union` element specification from schema definition.
     and private parseUnion (node: XElement): UnionSpec =
         { MemberTypeNames =
-            match node |> attr(xname "memberTypes") with
+            match node |> attr(X.lname "memberTypes") with
             | Some(str) ->
                 str.Split(' ')
                 |> Array.map (fun x ->
                     match x.Split(':') with
-                    | [| name |] -> xname name
-                    | [| ns; name |] -> xnsname name <| node.GetNamespaceOfPrefix(ns).NamespaceName
+                    | [| name |] -> X.lname name
+                    | [| ns; name |] -> X.name name <| node.GetNamespaceOfPrefix(ns).NamespaceName
                     | _ -> failwithf "Invalid member type name %s" x)
                 |> List.ofArray
             | None -> []
@@ -622,46 +622,46 @@ module Parser =
             | Xsd "annotation", _ ->
                 state, snode, includes, imports
             | Xsd "include", (Begin | Header) ->
-                let schloc = node |> reqAttr (xname "schemaLocation")
+                let schloc = node |> reqAttr (X.lname "schemaLocation")
                 Header, snode, (schloc :: includes), imports
             | Xsd "import", (Begin | Header) ->
-                let ns = node |> attrOrDefault (xname "namespace") ""
-                let schloc = node |> attr (xname "schemaLocation")
-                Header, snode, includes, ((xns ns, schloc) :: imports)
+                let ns = node |> attrOrDefault (X.lname "namespace") ""
+                let schloc = node |> attr (X.lname "schemaLocation")
+                Header, snode, includes, ((X.ns ns, schloc) :: imports)
             | Xsd "redefine", (Begin | Header) ->
                 node |> notImplementedIn "schema"
             | Xsd "complexType", _ ->
-                let name = node |> reqAttr (xname "name")
+                let name = node |> reqAttr (X.lname "name")
                 let typ = ComplexDefinition(parseComplexType node)
-                snode.Types.Add(xnsname name snode.TargetNamespace.NamespaceName, typ)
+                snode.Types.Add(X.name name snode.TargetNamespace.NamespaceName, typ)
                 TypeSpec, snode, includes, imports
             | Xsd "element", _ ->
                 let element = parseElement node
                 match element.Name with
                 | None -> failwith "`name` attribute is required if the parent element is the schema element"
-                | Some(name) -> snode.Elements.Add(xnsname name snode.TargetNamespace.NamespaceName, element)
+                | Some(name) -> snode.Elements.Add(X.name name snode.TargetNamespace.NamespaceName, element)
                 TypeSpec, snode, includes, imports
             | Xsd "simpleType", _ ->
-                let name = node |> reqAttr (xname "name")
+                let name = node |> reqAttr (X.lname "name")
                 let typ = SimpleDefinition(parseSimpleType node)
-                snode.Types.Add(xnsname name snode.TargetNamespace.NamespaceName, typ)
+                snode.Types.Add(X.name name snode.TargetNamespace.NamespaceName, typ)
                 TypeSpec, snode, includes, imports
             | Xsd "attribute", _ ->
                 let attribute = parseAttribute(node)
-                snode.Attributes.Add(xnsname attribute.Name.Value snode.TargetNamespace.NamespaceName, attribute)
+                snode.Attributes.Add(X.name attribute.Name.Value snode.TargetNamespace.NamespaceName, attribute)
                 TypeSpec, snode, includes, imports
             | Xsd "attributeGroup", _ ->
                 let ag = node |> parseAttributeGroup
-                match node |> attr (xname "name"), node |> attr (xname "ref") with
+                match node |> attr (X.lname "name"), node |> attr (X.lname "ref") with
                 | Some(_), Some(_) ->
                     failwithf "Name and ref attributes cannot both be present (%A)" node.Name.LocalName
                 | Some(name), None ->
-                    snode.AttributeGroups.Add(xnsname name snode.TargetNamespace.NamespaceName, Definition(ag))
+                    snode.AttributeGroups.Add(X.name name snode.TargetNamespace.NamespaceName, Definition(ag))
                 | None, Some(ref) ->
                     let name =
                         match ref.Split(':') with
-                        | [| nm |] -> xnsname nm snode.TargetNamespace.NamespaceName
-                        | [| pr; nm |] -> xnsname nm (node.GetNamespaceOfPrefix(pr).NamespaceName)
+                        | [| nm |] -> X.name nm snode.TargetNamespace.NamespaceName
+                        | [| pr; nm |] -> X.name nm (node.GetNamespaceOfPrefix(pr).NamespaceName)
                         | _ -> failwith "wrong ref"
                     snode.AttributeGroups.Add(name, Definition(ag))
                 | _ ->
@@ -692,7 +692,7 @@ module Parser =
                 | _ ->
                     let path = (uri |> MyOption.defaultValue ns.NamespaceName) |> fixUri schemaUri
                     let schemaNode =
-                        XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
+                        XDocument.Load(path.ToString()).Element(X.name "schema" XmlNamespace.Xsd)
                         |> findSchemaNode path schemaLookup documentSchemas
                     if schemaNode.TargetNamespace <> ns then
                         failwithf "Imported type schema targetNamespace `%s` does not match with expected namespace value `%s` on import element." schemaNode.TargetNamespace.NamespaceName ns.NamespaceName)
@@ -705,7 +705,7 @@ module Parser =
                 let path =
                     uri |> fixUri schemaUri
                 let schemaNode =
-                    XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
+                    XDocument.Load(path.ToString()).Element(X.name "schema" XmlNamespace.Xsd)
                     |> findSchemaNode path schemaLookup documentSchemas
                 if schemaNode.TargetNamespace <> targetNamespace then
                     failwith "Included type schema should define same target namespace as the schema including it.")
@@ -724,16 +724,16 @@ module Parser =
         | true, schema -> schema
 
     let private getDocumentSchemas (typesNode: XElement) =
-        typesNode.Elements(xnsname "schema" XmlNamespace.Xsd)
+        typesNode.Elements(X.name "schema" XmlNamespace.Xsd)
         |> Seq.map (fun schemaNode ->
-            match schemaNode.Attribute(xname "targetNamespace") with
+            match schemaNode.Attribute(X.lname "targetNamespace") with
             | null -> (None, schemaNode)
             | attr -> (Some(attr.Value), schemaNode))
         |> Seq.toList
 
     /// Parses all type schemas defined and referenced in current WSDL document.
     let parseSchema path (definitions: XElement) =
-        match definitions.Element(xnsname "types" XmlNamespace.Wsdl) with
+        match definitions.Element(X.name "types" XmlNamespace.Wsdl) with
         | null -> Map.empty
         | typesNode ->
             let schemaLookup = Dictionary<_,_>()

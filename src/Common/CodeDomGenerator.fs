@@ -87,7 +87,7 @@ module TypeBuilder =
             annotation.AppInfo
             |> List.collect (fun e -> e.Elements(titleElementName context.MessageProtocol) |> List.ofSeq)
             |> List.fold (fun doc el ->
-                let lang = el |> attrOrDefault (xnsname "lang" XmlNamespace.Xml) "et"
+                let lang = el |> attrOrDefault (X.name "lang" XmlNamespace.Xml) "et"
                 (lang, el.Value)::doc) []
             |> List.tryFind (fst >> ((=) context.LanguageCode))
             |> Option.map snd)

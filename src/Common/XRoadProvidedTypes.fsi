@@ -2,6 +2,7 @@
 namespace ProviderImplementation.ProvidedTypes
 
 
+#if NET40 || NET461
 /// Generated type provider for X-Road infrastructure.
 /// Builds service interface for certain producer.
 type XRoadProducerProvider =
@@ -10,6 +11,7 @@ type XRoadProducerProvider =
 
     /// Initializes new type provider instance.
     new: unit -> XRoadProducerProvider
+#endif
 
 
 /// Erased type provider for acquiring X-Road producers from security server.

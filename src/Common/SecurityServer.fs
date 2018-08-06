@@ -7,7 +7,6 @@ open System.IO
 open System.Text
 open System.Xml
 open System.Xml.Linq
-open Wsdl
 
 module internal SecurityServer =
     /// Represents single producer information acquired from security server.
@@ -42,19 +41,19 @@ module internal SecurityServer =
             uri |> Http.post stream
 
         // Locate response message main part in XDocument object.
-        let envelope = doc.Elements(xnsname "Envelope" XmlNamespace.SoapEnv) |> Seq.exactlyOne
-        let body = envelope.Elements(xnsname "Body" XmlNamespace.SoapEnv) |> Seq.exactlyOne
-        let message = body.Elements(xnsname "listProducersResponse" XmlNamespace.XRoad31Ee) |> Seq.exactlyOne
-        let response = message.Elements(xname "response")
+        let envelope = doc.Elements(X.name "Envelope" XmlNamespace.SoapEnv) |> Seq.exactlyOne
+        let body = envelope.Elements(X.name "Body" XmlNamespace.SoapEnv) |> Seq.exactlyOne
+        let message = body.Elements(X.name "listProducersResponse" XmlNamespace.XRoad31Ee) |> Seq.exactlyOne
+        let response = message.Elements(X.lname "response")
 
         // Parse all producer elements from XDocument object
-        response.Elements(xname "item")
+        response.Elements(X.lname "item")
         |> Seq.map (fun item ->
             let oneValue es = es |> Seq.map (fun (e: XElement) -> e.Value) |> Seq.exactlyOne
-            let name = oneValue(item.Elements(xname "name"))
+            let name = oneValue(item.Elements(X.lname "name"))
             { Name = name
               WsdlUri = sprintf "http://%s/cgi-bin/uriproxy?producer=%s" serverIP name
-              Description = oneValue(item.Elements(xname "description")) })
+              Description = oneValue(item.Elements(X.lname "description")) })
         |> List.ofSeq
 
 
@@ -129,24 +128,24 @@ module internal SecurityServerV6 =
     let downloadProducerList uri instance refresh =
         // Read xml document from file and navigate to root element.
         let doc = Uri(uri, sprintf "listClients?xRoadInstance=%s" instance) |> getFile refresh
-        let root = doc.Element(xnsname "clientList" XmlNamespace.XRoad40)
+        let root = doc.Element(X.name "clientList" XmlNamespace.XRoad40)
         // Data structures to support recomposition to records.
         let subsystems = Dictionary<string * string, ISet<string>>()
         let members = Dictionary<string, ISet<string * string>>()
         // Collect data about members and subsystems.
-        root.Elements(xnsname "member" XmlNamespace.XRoad40)
+        root.Elements(X.name "member" XmlNamespace.XRoad40)
         |> Seq.iter (fun element ->
-            let id = element.Element(xnsname "id" XmlNamespace.XRoad40)
-            let memberClass = id.Element(xnsname "memberClass" XmlNamespace.XRoad40Id).Value
-            let memberCode = id.Element(xnsname "memberCode" XmlNamespace.XRoad40Id).Value
-            match id.Attribute(xnsname "objectType" XmlNamespace.XRoad40Id).Value with
+            let id = element.Element(X.name "id" XmlNamespace.XRoad40)
+            let memberClass = id.Element(X.name "memberClass" XmlNamespace.XRoad40Id).Value
+            let memberCode = id.Element(X.name "memberCode" XmlNamespace.XRoad40Id).Value
+            match id.Attribute(X.name "objectType" XmlNamespace.XRoad40Id).Value with
             | "MEMBER" ->
-                let name = element.Element(xnsname "name" XmlNamespace.XRoad40).Value
+                let name = element.Element(X.name "name" XmlNamespace.XRoad40).Value
                 match members.TryGetValue(memberClass) with
                 | true, lst -> lst.Add(name, memberCode) |> ignore
                 | false, _ -> members.Add(memberClass, new SortedSet<_>([name, memberCode]))
             | "SUBSYSTEM" ->
-                let subsystemCode = id.Element(xnsname "subsystemCode" XmlNamespace.XRoad40Id).Value
+                let subsystemCode = id.Element(X.name "subsystemCode" XmlNamespace.XRoad40Id).Value
                 match subsystems.TryGetValue((memberClass, memberCode)) with
                 | true, lst -> lst.Add(subsystemCode) |> ignore
                 | false, _ -> subsystems.Add((memberClass, memberCode), new SortedSet<_>([subsystemCode]))
@@ -171,10 +170,10 @@ module internal SecurityServerV6 =
     let downloadCentralServiceList uri instance refresh =
         // Read xml document from file and navigate to root element.
         let doc = Uri(uri, sprintf "listCentralServices?xRoadInstance=%s" instance) |> getFile refresh
-        let root = doc.Element(xnsname "centralServiceList" XmlNamespace.XRoad40)
+        let root = doc.Element(X.name "centralServiceList" XmlNamespace.XRoad40)
         // Collect data about available central services.
-        root.Elements(xnsname "centralService" XmlNamespace.XRoad40)
-        |> Seq.map (fun element -> element.Element(xnsname "serviceCode" XmlNamespace.XRoad40Id).Value)
+        root.Elements(X.name "centralService" XmlNamespace.XRoad40)
+        |> Seq.map (fun element -> element.Element(X.name "serviceCode" XmlNamespace.XRoad40Id).Value)
         |> Seq.sortBy (id)
         |> Seq.toList
 
@@ -217,19 +216,19 @@ module internal SecurityServerV6 =
             writer.WriteEndDocument()
             writer.Flush()
             uri |> Http.post stream
-        let envelope = doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
-        let body = envelope.Element(xnsname "Body" XmlNamespace.SoapEnv)
-        let fault = body.Element(xnsname "Fault" XmlNamespace.SoapEnv)
+        let envelope = doc.Element(X.name "Envelope" XmlNamespace.SoapEnv)
+        let body = envelope.Element(X.name "Body" XmlNamespace.SoapEnv)
+        let fault = body.Element(X.name "Fault" XmlNamespace.SoapEnv)
         if not (isNull fault) then
-            let code = fault.Element(xname "faultcode") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
-            let text = fault.Element(xname "faultstring") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
+            let code = fault.Element(X.lname "faultcode") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
+            let text = fault.Element(X.lname "faultstring") |> Option.ofObj |> Option.fold (fun _ x -> x.Value) ""
             failwithf "Opration resulted with error: FaultCode: %s; FaultString: %s" code text
-        body.Element(xnsname "listMethodsResponse" XmlNamespace.XRoad40).Elements(xnsname "service" XmlNamespace.XRoad40)
+        body.Element(X.name "listMethodsResponse" XmlNamespace.XRoad40).Elements(X.name "service" XmlNamespace.XRoad40)
         |> Seq.map (fun service ->
-            { XRoadInstance = service.Element(xnsname "xRoadInstance" XmlNamespace.XRoad40Id).Value
-              MemberClass = service.Element(xnsname "memberClass" XmlNamespace.XRoad40Id).Value
-              MemberCode = service.Element(xnsname "memberCode" XmlNamespace.XRoad40Id).Value
-              SubsystemCode = service.Element(xnsname "subsystemCode" XmlNamespace.XRoad40Id) |> Option.ofObj |> Option.map (fun x -> x.Value)
-              ServiceCode = service.Element(xnsname "serviceCode" XmlNamespace.XRoad40Id).Value
-              ServiceVersion = service.Element(xnsname "serviceVersion" XmlNamespace.XRoad40Id) |> Option.ofObj |> Option.map (fun x -> x.Value) })
+            { XRoadInstance = service.Element(X.name "xRoadInstance" XmlNamespace.XRoad40Id).Value
+              MemberClass = service.Element(X.name "memberClass" XmlNamespace.XRoad40Id).Value
+              MemberCode = service.Element(X.name "memberCode" XmlNamespace.XRoad40Id).Value
+              SubsystemCode = service.Element(X.name "subsystemCode" XmlNamespace.XRoad40Id) |> Option.ofObj |> Option.map (fun x -> x.Value)
+              ServiceCode = service.Element(X.name "serviceCode" XmlNamespace.XRoad40Id).Value
+              ServiceVersion = service.Element(X.name "serviceVersion" XmlNamespace.XRoad40Id) |> Option.ofObj |> Option.map (fun x -> x.Value) })
         |> Seq.toList
