@@ -1,5 +1,7 @@
 ﻿module internal XRoad.ProducerDefinition
 
+#if NET40 || NET461
+
 open CodeDom
 open CodeDomGenerator
 open System
@@ -11,6 +13,14 @@ open System.Xml
 open XRoad.Serialization.Attributes
 open TypeSchema
 open Wsdl
+
+#else
+
+open ProviderImplementation.ProvidedTypes
+
+#endif
+
+#if NET40 || NET461
 
 /// Functions and types to handle building methods for services and operation bindings.
 module ServiceBuilder =
@@ -215,6 +225,20 @@ module ServiceBuilder =
         | _ -> ()
         additionalMembers |> Seq.toList
 
+#else
+
+let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, operationFilter) =
+    let targetClass =
+        ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, isErased = false)
+
+    asm.AddTypes([targetClass])
+
+    targetClass
+
+#endif
+
+#if NET40 || NET461
+
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
 let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
@@ -325,3 +349,5 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
     // Compile the assembly and return to type provider.
     let assembly = Compiler.buildAssembly(codeNamespace)
     assembly.GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)
+
+#endif

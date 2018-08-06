@@ -13,6 +13,7 @@
     <Compile Include="..\Common\AssemblyInfo.fs" />
     <Compile Include="..\Common\Helpers.fs" />
     <Compile Include="..\Common\Http.fs" />
+    <Compile Include="..\Common\ProducerDefinition.fs" />
     <Compile Include="..\Common\SecurityServer.fs" />
     <Compile Include="..\Common\XRoadProvidedTypes.fsi" />
     <Compile Include="..\Common\XRoadProvidedTypes.fs" />

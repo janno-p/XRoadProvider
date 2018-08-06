@@ -33,7 +33,6 @@
     <!--<Compile Include="..\Common\CodeDom.fs" />-->
     <!--<Compile Include="..\Common\TypeBuilderContext.fs" />-->
     <!--<Compile Include="..\Common\CodeDomGenerator.fs" />-->
-    <!--<Compile Include="..\Common\ProducerDefinition.fs" />-->
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Common\XRoadProvider.fsx">

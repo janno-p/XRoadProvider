@@ -8,25 +8,42 @@ open System.IO
 open System.Reflection
 open XRoad
 
-#if NET40 || NET461
 /// Generated type providers for X-Road infrastructure.
 /// Currently only one type provider is available, which builds service interface for certain producer.
 [<TypeProvider>]
+#if NET40 || NET461
 type XRoadProducerProvider() as this =
     let invalidation = Event<_,_>()
 
-    let namespaceName = "XRoad.Providers"
-    let theAssembly = this.GetType().Assembly
+    let ns = "XRoad.Providers"
+    let asm = this.GetType().Assembly
 
     // Already generated assemblies
     let typeCache = ConcurrentDictionary<_,Type>()
+#else
+type XRoadProducerProvider(config: TypeProviderConfig) as this =
+    inherit TypeProviderForNamespaces (config, assemblyReplacementMap = [("XRoadProvider.DesignTime", "XRoadProvider")])
+
+    let ns = "XRoad.Providers"
+    let asm = Assembly.GetExecutingAssembly()
+
+    do assert (typeof<XRoad.BinaryContent>.Assembly.GetName().Name = asm.GetName().Name)
+
+    // Already generated assemblies
+    let typeCache = ConcurrentDictionary<_,ProvidedTypeDefinition>()
+#endif
 
     // Available parameters to use for configuring type provider instance
     let staticParameters =
         [ ProvidedStaticParameter("Uri", typeof<string>), "WSDL document location (either local file or network resource)."
           ProvidedStaticParameter("LanguageCode", typeof<string>, "et"), "Specify language code that is extracted as documentation tooltips. Default value is estonian (et)."
           ProvidedStaticParameter("Filter", typeof<string>, ""), "Comma separated list of operations which should be included in definitions. By default, all operations are included." ]
-        |> List.map (fun (parameter, doc) -> parameter.AddXmlDoc(doc); parameter :> ParameterInfo)
+        |> List.map (fun (parameter, doc) -> parameter.AddXmlDoc(doc); parameter)
+
+#if NET40 || NET461
+    let staticParameters =
+        staticParameters
+        |> List.map (fun p -> p :> ParameterInfo)
         |> List.toArray
 
     interface ITypeProvider with
@@ -85,15 +102,38 @@ type XRoadProducerProvider() as this =
 
         /// Type provider contains exactly one abstract type which allows access to type provider functionality.
         override __.GetTypes() =
-            let producerType = ProvidedTypeDefinition(theAssembly, namespaceName, "XRoadProducer", Some(typeof<obj>), IsErased=false)
+            let producerType = ProvidedTypeDefinition(asm, ns, "XRoadProducer", Some(typeof<obj>), IsErased=false)
             producerType.AddXmlDoc("Type provider for generating service interfaces and data types for specific X-Road producer.")
             [| producerType |]
 
         /// Use default namespace for type provider namespace.
-        override __.NamespaceName with get() = namespaceName
+        override __.NamespaceName with get() = ns
 
         /// No types have to be resolved.
         override __.ResolveTypeName(_) = null
+#else
+    let createType typeName (uri, languageCode, filter: string) =
+        let asm = ProvidedAssembly()
+
+        // Same parameter set should have same output, so caching is reasonable.
+        let key = (typeName, uri, languageCode, filter)
+        match typeCache.TryGetValue(key) with
+        | false, _ ->
+            let operationFilter =
+                match filter with
+                | null -> []
+                | value -> value.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun x -> x.Trim()) |> List.ofArray
+            typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType (asm, ns, typeName) (uri, languageCode, operationFilter)))
+        | true, typ -> typ
+
+    let producerType =
+        let t = ProvidedTypeDefinition(asm, ns, "XRoadProducer", Some typeof<obj>, isErased = false)
+        t.AddXmlDoc("Type provider for generating service interfaces and data types for specific X-Road producer.")
+        t.DefineStaticParameters(staticParameters, fun typeName args -> createType typeName (unbox<string> args.[0], unbox<string> args.[1], unbox<string> args.[2]))
+        t
+
+    do
+        this.AddNamespace(ns, [producerType])
 #endif
 
 /// Erased type providers for X-Road infrastructure.
