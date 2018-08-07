@@ -1,9 +1,5 @@
 ﻿module internal XRoad.CodeDom
 
-#if NET461
-open Microsoft.CodeAnalysis.CSharp
-#endif
-
 open Microsoft.CSharp
 open Microsoft.FSharp.Core.CompilerServices
 open System

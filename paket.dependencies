@@ -16,18 +16,9 @@ nuget FSharp.Core 3.1.2.5
 nuget NodaTime 1.4.2
 nuget Optional
 
-group Net461
-source https://api.nuget.org/v3/index.json
-framework: net461
-
-nuget FSharp.Core
-nuget Microsoft.CodeAnalysis.CSharp
-nuget NodaTime
-nuget Optional
-
 group Netstandard
 source https://api.nuget.org/v3/index.json
-framework: netstandard20
+framework: net461,netstandard20
 
 nuget FSharp.Core
 nuget NodaTime

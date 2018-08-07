@@ -5,7 +5,7 @@ namespace ProviderImplementation.ProvidedTypes
 /// Generated type provider for X-Road infrastructure.
 /// Builds service interface for certain producer.
 type XRoadProducerProvider =
-#if NET40 || NET461
+#if NET40
     interface Microsoft.FSharp.Core.CompilerServices.ITypeProvider
     interface Microsoft.FSharp.Core.CompilerServices.IProvidedNamespace
 

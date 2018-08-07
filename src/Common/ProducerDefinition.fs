@@ -1,10 +1,11 @@
 ﻿module internal XRoad.ProducerDefinition
 
-#if NET40 || NET461
+open System
+
+#if NET40
 
 open CodeDom
 open CodeDomGenerator
-open System
 open System.CodeDom
 open System.Collections.Generic
 open System.Reflection
@@ -15,6 +16,7 @@ open TypeSchema
 
 #else
 
+open FSharp.Quotations
 open ProviderImplementation.ProvidedTypes
 open XRoad
 
@@ -22,7 +24,7 @@ open XRoad
 
 open Wsdl
 
-#if NET40 || NET461
+#if NET40
 
 /// Functions and types to handle building methods for services and operation bindings.
 module ServiceBuilder =
@@ -231,7 +233,7 @@ module ServiceBuilder =
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-#if NET40 || NET461
+#if NET40
 let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
 #else
 let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, operationFilter) =
@@ -244,7 +246,7 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
 
     // Create base type which holds types generated from all provided schema-s.
     let serviceTypesTy =
-#if NET40 || NET461
+#if NET40
         Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
 #else
         ProvidedTypeDefinition("DefinedTypes", Some typeof<obj>, isErased = false)
@@ -258,7 +260,7 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
         |> Seq.map (fun kvp -> SchemaType(kvp.Key))
         |> Seq.iter (context.GetOrCreateType >> ignore))
 
-#if NET40 || NET461
+#if NET40
     // Build all global types for each type schema definition.
     schema.TypeSchemas
     |> Map.toSeq
@@ -273,7 +275,7 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
 
     // Main class that wraps all provided functionality and types.
     let targetClass =
-#if NET40 || NET461
+#if NET40
         Cls.create typeNamePath.[typeNamePath.Length - 1]
         |> Cls.setAttr TypeAttributes.Public
         |> Cls.asStatic
@@ -284,79 +286,147 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
         t
 #endif
 
-#if NET40 || NET461
     // Create methods for all operation bindings.
     schema.Services
     |> List.iter (fun service ->
-        let serviceTy = Cls.create service.Name |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
+        let serviceTy = 
+#if NET40
+            Cls.create service.Name |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
+#else
+            ProvidedTypeDefinition(service.Name, Some typeof<obj>, isErased = false)
+#endif
+
         service.Ports
         |> List.iter (fun port ->
-            let ctor =
-                if Uri.IsWellFormedUriString(port.Uri, UriKind.Absolute) then
-                    Ctor.create()
-                    |> Ctor.setAttr MemberAttributes.Public
-                    |> Ctor.addChainedArg (Expr.inst<Uri> [!^ port.Uri])
-                    |> Some
-                else None
-
-            let ctor2 =
-                Ctor.create()
-                |> Ctor.setAttr MemberAttributes.Public
-                |> Ctor.addParam<string> "uri"
-                |> Ctor.addChainedArg (Expr.inst<Uri> [!+ "uri"])
-            
-            let ctor3 =
-                Ctor.create()
-                |> Ctor.setAttr MemberAttributes.Public
-                |> Ctor.addParam<Uri> "uri"
-                |> Ctor.addBaseArg (!+ "uri")
-
             let portTy =
+#if NET40
                 Cls.create port.Name
                 |> Cls.implements typeRef<AbstractEndpointDeclaration>
                 |> Cls.setAttr TypeAttributes.Public
-                |> iif ctor.IsSome (Cls.addMember ctor.Value)
-                |> Cls.addMember ctor2
-                |> Cls.addMember ctor3
                 |> Code.comment port.Documentation
+#else
+                let t = ProvidedTypeDefinition(port.Name, Some typeof<AbstractEndpointDeclaration>, isErased = false)
+                port.Documentation |> Option.iter t.AddXmlDoc
+                t
+#endif
+
+#if NET40
+            let createCtors (initField: (CodeExpression * string) option) = [
+#else
+            let createCtors (initField: (ProvidedField * string) option) = [
+#endif
+
+                let baseCtor = typeof<AbstractEndpointDeclaration>.GetConstructor([| typeof<Uri> |])
+
+                if Uri.IsWellFormedUriString(port.Uri, UriKind.Absolute) then
+#if NET40
+                    yield
+                        Ctor.create()
+                        |> Ctor.setAttr MemberAttributes.Public
+                        |> Ctor.addChainedArg (Expr.inst<Uri> [!^ port.Uri])
+#else
+                    let c = ProvidedConstructor([], invokeCode = (fun args -> match initField with Some(f, v) -> Expr.FieldSet(Expr.Coerce(args.[0], portTy), f, Expr.Value(v)) | None -> <@@ () @@>))
+                    c.BaseConstructorCall <- fun args -> (baseCtor, [ args.[0]; Expr.NewObject(typeof<Uri>.GetConstructor([| typeof<string> |]), [ Expr.Value(port.Uri) ]) ])
+                    yield c
+#endif
+
+#if NET40
+                yield
+                    Ctor.create()
+                    |> Ctor.setAttr MemberAttributes.Public
+                    |> Ctor.addParam<string> "uri"
+                    |> Ctor.addChainedArg (Expr.inst<Uri> [!+ "uri"])
+#else
+                let c2 = ProvidedConstructor([ProvidedParameter("uri", typeof<string>)], invokeCode = (fun args -> match initField with Some(f, v) -> Expr.FieldSet(Expr.Coerce(args.[0], portTy), f, Expr.Value(v)) | None -> <@@ () @@>))
+                c2.BaseConstructorCall <- fun args -> (baseCtor, [ args.[0]; Expr.NewObject(typeof<Uri>.GetConstructor([| typeof<string> |]), [ args.[1] ]) ])
+                yield c2
+#endif
+
+#if NET40
+                yield
+                    Ctor.create()
+                    |> Ctor.setAttr MemberAttributes.Public
+                    |> Ctor.addParam<Uri> "uri"
+                    |> Ctor.addBaseArg (!+ "uri")
+                    // Add default producer name value if message protocol defines it in service description.
+                    |> iif initField.IsSome (fun c -> c |> Ctor.addStmt (Stmt.assign (fst initField.Value) (!^ (snd initField.Value))))
+#else
+                let c3 = ProvidedConstructor([ProvidedParameter("uri", typeof<Uri>)], invokeCode = (fun args -> match initField with Some(f, v) -> Expr.FieldSet(Expr.Coerce(args.[0], portTy), f, Expr.Value(v)) | None -> <@@ () @@>))
+                c3.BaseConstructorCall <- fun args -> (baseCtor, args)
+                yield c3
+#endif
+            ]
+
+#if NET40
             serviceTy |> Cls.addMember portTy |> ignore
+#else
+            serviceTy.AddMember(portTy)
+#endif
 
             // Create property and backing field for producer name.
             // By default service port xrd/xtee:address extension producer value is used, but user can override that value.
-            port.MessageProtocol.ProducerName
-            |> Option.iter (fun producerName ->
+            match port.MessageProtocol.ProducerName with
+            | Some(producerName) ->
+#if NET40
                 let producerField = CodeMemberField(typeof<string>, "producerName")
                 let producerFieldRef = Expr.this @=> producerField.Name
                 let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
                 producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
                 producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
                 producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
+#else
+                let producerField = ProvidedField("producerName", typeof<string>)
+                let producerProperty =
+                    ProvidedProperty(
+                        "ProducerName",
+                        typeof<string>,
+                        getterCode = (fun args -> Expr.FieldGet(Expr.Coerce(args.[0], portTy), producerField)),
+                        setterCode = (fun args -> Expr.FieldSet(Expr.Coerce(args.[0], portTy), producerField, args.[1]))
+                    )
+#endif
 
-                // Add default producer name value if message protocol defines it in service description.
-                ctor3
-                |> Ctor.addStmt (Stmt.assign producerFieldRef (!^ producerName))
-                |> ignore
-
+#if NET40
                 portTy
                 |> Cls.addMember producerField
                 |> Cls.addMember producerProperty
-                |> ignore)
+                |> Cls.addMembers (createCtors (Some(producerFieldRef, producerName)) |> List.map (fun x -> upcast x))
+                |> ignore
+#else
+                portTy.AddMember(producerField)
+                portTy.AddMember(producerProperty)
+                portTy.AddMembers(createCtors (Some(producerField, producerName)))
+#endif
+            | None ->
+#if NET40
+                portTy |> Cls.addMembers (createCtors None |> List.map (fun x -> upcast x)) |> ignore
+#else
+                portTy.AddMembers(createCtors None)
+#endif
 
             port.Methods
-            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore))
-        targetClass |> Cls.addMember serviceTy |> ignore
-        )
+#if NET40
+            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore)
+#else
+            |> List.iter (id >> ignore) // (fun op -> portTy.AddMembers(ServiceBuilder.build context service.Namespace op))
 #endif
+        )
+
+#if NET40
+        targetClass |> Cls.addMember serviceTy |> ignore
+#else
+        targetClass.AddMember(serviceTy)
+#endif
+        )
 
     // Create types for all type namespaces.
     context.CachedNamespaces
-#if NET40 || NET461
+#if NET40
     |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
 #else
     |> Seq.iter (fun kvp -> serviceTypesTy.AddMember(kvp.Value))
 #endif
 
-#if NET40 || NET461
+#if NET40
     // Initialize default namespace to hold main type.
     let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))
     codeNamespace.Types.Add(targetClass) |> ignore

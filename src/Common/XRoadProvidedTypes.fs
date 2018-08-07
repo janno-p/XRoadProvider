@@ -11,7 +11,7 @@ open XRoad
 /// Generated type providers for X-Road infrastructure.
 /// Currently only one type provider is available, which builds service interface for certain producer.
 [<TypeProvider>]
-#if NET40 || NET461
+#if NET40
 type XRoadProducerProvider() as this =
     let invalidation = Event<_,_>()
 
@@ -40,7 +40,7 @@ type XRoadProducerProvider(config: TypeProviderConfig) as this =
           ProvidedStaticParameter("Filter", typeof<string>, ""), "Comma separated list of operations which should be included in definitions. By default, all operations are included." ]
         |> List.map (fun (parameter, doc) -> parameter.AddXmlDoc(doc); parameter)
 
-#if NET40 || NET461
+#if NET40
     let staticParameters =
         staticParameters
         |> List.map (fun p -> p :> ParameterInfo)

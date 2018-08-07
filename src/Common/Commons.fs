@@ -3,7 +3,6 @@
 open System
 open System.Collections.Generic
 open System.IO
-open System.Security.Cryptography.X509Certificates
 open System.Xml
 open System.Xml.Linq
 open XRoad
@@ -391,48 +390,3 @@ module internal Wsdl =
         { Name: string
           Ports: ServicePort list
           Namespace: XNamespace }
-
-[<Interface>]
-type IXRoadRequest =
-    abstract Save: Stream -> unit
-
-[<Interface>]
-type IXRoadResponse =
-    abstract Save: Stream -> unit
-
-type RequestReadyEventArgs(request: IXRoadRequest, header: AbstractXRoadHeader, requestId: string, serviceCode: string, serviceVersion: string) =
-    inherit EventArgs()
-    member val Request = request with get
-    member val RequestId = requestId with get
-    member val ServiceCode = serviceCode with get 
-    member val ServiceVersion = serviceVersion with get
-    member val Header = header with get
-
-type ResponseReadyEventArgs(response: IXRoadResponse, header: AbstractXRoadHeader, requestId: string, serviceCode: string, serviceVersion: string) =
-    inherit EventArgs()
-    member val Response = response with get
-    member val RequestId = requestId with get
-    member val ServiceCode = serviceCode with get 
-    member val ServiceVersion = serviceVersion with get
-    member val Header = header with get
-
-type RequestReadyEventHandler = delegate of obj * RequestReadyEventArgs -> unit
-type ResponseReadyEventHandler = delegate of obj * ResponseReadyEventArgs -> unit
-
-[<AbstractClass>]
-type AbstractEndpointDeclaration (uri: Uri) =
-    let requestEvent = Event<RequestReadyEventHandler, RequestReadyEventArgs>()
-    let responseEvent = Event<ResponseReadyEventHandler, ResponseReadyEventArgs>()
-
-    member val AcceptedServerCertificate = Unchecked.defaultof<X509Certificate> with get, set
-    member val AuthenticationCertificates = new ResizeArray<X509Certificate>() with get
-    member val Uri = uri with get
-
-    [<CLIEvent>]
-    member this.RequestReady = requestEvent.Publish
-
-    [<CLIEvent>]
-    member this.ResponseReady = responseEvent.Publish
-
-    member internal this.TriggerRequestReady args = requestEvent.Trigger(this, args)
-    member internal this.TriggerResponseReady args = responseEvent.Trigger(this, args)

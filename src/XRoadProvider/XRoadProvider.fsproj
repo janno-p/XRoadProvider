@@ -5,10 +5,10 @@
   <PropertyGroup>
     <AssemblyName>XRoadProvider</AssemblyName>
     <RootNamespace>XRoad</RootNamespace>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);2003</NoWarn>
-    <DocumentationFile>XRoadProvider.xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <!--
@@ -39,7 +39,9 @@
     <None Include="paket.references" />
   </ItemGroup>
   <Target Name="AfterBuild">
+    <Copy SourceFiles="..\XRoadProvider.DesignTime\bin\$(Configuration)\net461\XRoadProvider.DesignTime.dll" DestinationFolder="$(OutputPath)\typeproviders\fsharp41\net461" />
     <Copy SourceFiles="..\XRoadProvider.DesignTime\bin\$(Configuration)\netstandard2.0\XRoadProvider.DesignTime.dll" DestinationFolder="$(OutputPath)\typeproviders\fsharp41\netstandard2.0" />
+    <Copy SourceFiles="..\XRoadProvider.DesignTime\bin\$(Configuration)\net461\XRoadProvider.DesignTime.dll" DestinationFolder="$(OutputPath)" Condition="'$(TargetFramework)' == 'net461'" />
   </Target>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
