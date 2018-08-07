@@ -226,32 +226,16 @@ module ServiceBuilder =
 //            m
         | _ -> ()
         additionalMembers |> Seq.toList
-
-#else
-
-let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, operationFilter) =
-    let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
-    let context = TypeBuilderContext.FromSchema(asm, ns, schema, languageCode)
-
-    let serviceTypesTy =
-        ProvidedTypeDefinition("DefinedTypes", Some typeof<obj>, isErased = false)
-
-    let targetClass =
-        let t = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, isErased = false)
-        t.AddMember(serviceTypesTy)
-        t
-
-    asm.AddTypes([targetClass])
-
-    targetClass
-
 #endif
 
-#if NET40 || NET461
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
+#if NET40 || NET461
 let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
+#else
+let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, operationFilter) =
+#endif
     // Load schema details from specified file or network location.
     let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
 
@@ -259,7 +243,12 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
     let context = TypeBuilderContext.FromSchema(schema, languageCode)
 
     // Create base type which holds types generated from all provided schema-s.
-    let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
+    let serviceTypesTy =
+#if NET40 || NET461
+        Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
+#else
+        ProvidedTypeDefinition("DefinedTypes", Some typeof<obj>, isErased = false)
+#endif
 
     // Create stubs for each type before building them, because of circular dependencies.
     schema.TypeSchemas
@@ -269,6 +258,7 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
         |> Seq.map (fun kvp -> SchemaType(kvp.Key))
         |> Seq.iter (context.GetOrCreateType >> ignore))
 
+#if NET40 || NET461
     // Build all global types for each type schema definition.
     schema.TypeSchemas
     |> Map.toSeq
@@ -279,14 +269,22 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
         | CollectionType(_, _, None) -> None
         | rtyp -> Some(rtyp, x.Value))
     |> Seq.iter (fun (rtyp, def) -> TypeBuilder.build context rtyp def)
+#endif
 
     // Main class that wraps all provided functionality and types.
     let targetClass =
+#if NET40 || NET461
         Cls.create typeNamePath.[typeNamePath.Length - 1]
         |> Cls.setAttr TypeAttributes.Public
         |> Cls.asStatic
         |> Cls.addMember serviceTypesTy
+#else
+        let t = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, isErased = false)
+        t.AddMember(serviceTypesTy)
+        t
+#endif
 
+#if NET40 || NET461
     // Create methods for all operation bindings.
     schema.Services
     |> List.iter (fun service ->
@@ -348,10 +346,17 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
             |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore))
         targetClass |> Cls.addMember serviceTy |> ignore
         )
+#endif
 
     // Create types for all type namespaces.
-    context.CachedNamespaces |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
+    context.CachedNamespaces
+#if NET40 || NET461
+    |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
+#else
+    |> Seq.iter (fun kvp -> serviceTypesTy.AddMember(kvp.Value))
+#endif
 
+#if NET40 || NET461
     // Initialize default namespace to hold main type.
     let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))
     codeNamespace.Types.Add(targetClass) |> ignore
@@ -359,5 +364,8 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
     // Compile the assembly and return to type provider.
     let assembly = Compiler.buildAssembly(codeNamespace)
     assembly.GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)
+#else
+    asm.AddTypes([targetClass])
 
+    targetClass
 #endif

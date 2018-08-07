@@ -104,8 +104,6 @@ type internal TypeBuilderContext =
       CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
 #else
       CachedNamespaces: Dictionary<XNamespace,ProvidedTypeDefinition>
-      Assembly: ProvidedAssembly
-      RootNamespace: string
 #endif
       /// Schema level attribute definition lookup.
       Attributes: Map<string,AttributeSpec>
@@ -147,7 +145,7 @@ type internal TypeBuilderContext =
                 |> Fld.addTo typ
                 |> ignore
 #else
-                let typ = ProvidedTypeDefinition(this.Assembly, this.RootNamespace, producerName, Some typeof<obj>, isErased = false)
+                let typ = ProvidedTypeDefinition(producerName, Some typeof<obj>, isErased = false)
                 typ.AddMember(ProvidedField.Literal("__TargetNamespace__", typeof<string>, nsname.NamespaceName))
 #endif
                 this.CachedNamespaces.Add(nsname, typ)
@@ -210,7 +208,7 @@ type internal TypeBuilderContext =
                         let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                         nstyp |> Cls.addMember typ |> ignore
 #else
-                        let typ = ProvidedTypeDefinition(this.Assembly, this.RootNamespace, name.XName.LocalName + suffix, Some typeof<obj>, isErased = false)
+                        let typ = ProvidedTypeDefinition(name.XName.LocalName + suffix, Some typeof<obj>, isErased = false)
                         typ.AddCustomAttribute(Attributes.xrdAnonymousType LayoutKind.Sequence)
                         nstyp.AddMember(typ)
 #endif
@@ -224,7 +222,7 @@ type internal TypeBuilderContext =
                     let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
                     nstyp |> Cls.addMember typ |> ignore
 #else
-                    let typ = ProvidedTypeDefinition(this.Assembly, this.RootNamespace, name.XName.LocalName, Some typeof<obj>, isErased = false)
+                    let typ = ProvidedTypeDefinition(name.XName.LocalName, Some typeof<obj>, isErased = false)
                     typ.AddCustomAttribute(attr)
                     nstyp.AddMember(typ)
 #endif
@@ -290,7 +288,7 @@ type internal TypeBuilderContext =
 #if NET40 || NET461
         static member FromSchema(schema, languageCode) =
 #else
-        static member FromSchema(assembly, rootNamespace, schema, languageCode) =
+        static member FromSchema(schema, languageCode) =
 #endif
             // Validates that schema contains single operation style, as required by X-Road specification.
             let messageProtocol =
@@ -303,11 +301,6 @@ type internal TypeBuilderContext =
             // Initialize type builder context.
             { CachedNamespaces = Dictionary<_,_>()
               CachedTypes = Dictionary<_,_>()
-#if NET40 || NET461
-#else
-              Assembly = assembly
-              RootNamespace = rootNamespace
-#endif
               Attributes =
                   schema.TypeSchemas
                   |> Map.toSeq
