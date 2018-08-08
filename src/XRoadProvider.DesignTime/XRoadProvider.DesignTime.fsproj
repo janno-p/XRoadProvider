@@ -10,7 +10,7 @@
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
       <Link>paket-files/ProvidedTypes.fs</Link>
     </Compile>
-    <Compile Include="..\XRoadProvider\AssemblyInfo.fs" />
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="AssemblyInfo.Build.fs" />
     <Compile Include="..\XRoadProvider\Attributes.fs" />
     <Compile Include="..\XRoadProvider\Helpers.fs" />

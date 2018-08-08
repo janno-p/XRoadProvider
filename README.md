@@ -10,6 +10,14 @@ A library containing collection of F# type providers to support easier integrati
 [![Mono build status](https://img.shields.io/travis/janno-p/XRoadProvider/master.svg?label=Mono%20build)](https://travis-ci.org/janno-p/XRoadProvider/)  
 [![Windows build status](https://img.shields.io/appveyor/ci/janno-p/xroadprovider/master.svg?label=Windows%20build)](https://ci.appveyor.com/project/janno-p/xroadprovider)  
 
+## Prerequisites
+
+* FAKE dotnet sdk global tool
+
+```sh
+dotnet tool install fake-cli -g
+```
+
 ## Documentation
 
 Documentation and samples can be found at the [XRoadProvider home page](http://janno-p.github.com/XRoadProvider/).
