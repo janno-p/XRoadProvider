@@ -484,16 +484,28 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: ProvidedTyp
     owner.AddMember(p)
     p
 
-(*
-let addContentProperty (name: string, ty: RuntimeType, useXop) (owner: CodeTypeDeclaration) =
+let addContentProperty (name: string, ty: RuntimeType, useXop, predefinedValues) (owner: ProvidedTypeDefinition) =
     let name = name.GetValidPropertyName()
-    Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
-    |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-    |> Fld.describe (Attributes.xrdElement None None None false true useXop)
-    |> Fld.addTo owner
-    |> ignore
-    Ctor.create()
-    |> Ctor.addParamRef (ty.AsCodeTypeReference()) "value"
-    |> Ctor.addStmt (Stmt.assign (Expr.this @=> name) (!+ "value"))
-    |> Ctor.addTo owner
-*)
+    let systemType = ty |> runtimeTypeToSystemType false
+    let f = ProvidedField(name + "__backing", systemType)
+    let p =
+        ProvidedProperty(
+            name,
+            systemType,
+            getterCode = (fun args -> Expr.FieldGet(Expr.Coerce(args.[0], owner), f))
+        )
+    p.AddCustomAttribute(Attributes.xrdElement None None None false true useXop)
+    owner.AddMember(f)
+    owner.AddMember(p)
+    let ctor =
+        let attr = if predefinedValues then MethodAttributes.Private else MethodAttributes.Public
+        ProvidedConstructor(
+            false,
+            attr ||| MethodAttributes.RTSpecialName,
+            [| ProvidedParameter("value", systemType) |],
+            (fun args -> Expr.FieldSet(Expr.Coerce(args.[0], owner), f, args.[1])),
+            None,
+            false,
+            K [| |]
+        )
+    owner.AddMember(ctor)

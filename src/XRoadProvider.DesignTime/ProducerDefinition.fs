@@ -15,51 +15,8 @@ module ServiceBuilder =
     open XRoad.Serialization.Attributes
     open System.Text
 
-    /// Creates return type for the operation.
-    /// To support returning multiple output parameters, they are wrapped into tuples accordingly:
-    /// Single parameter responses return that single parameter.
-    /// Multiple parameter responses are wrapped into tuples, since C# provides tuples upto 8 arguments,
-    /// some composition is required when more output parameters are present.
-//    let private makeReturnType isMultipart (types: (string * RuntimeType) list) =
-//        let rec getReturnTypeTuple (tuple: (string * RuntimeType) list, types) =
-//            match types with
-//            | [] -> let typ = CodeTypeReference("System.Tuple", tuple |> List.map (fun (_,typ) -> typ.AsCodeTypeReference()) |> Array.ofList)
-//                    (typ, Expr.instOf typ (tuple |> List.map (fun (varName,_) -> !+ varName)))
-//            | x::xs when tuple.Length < 7 -> getReturnTypeTuple(x :: tuple, xs)
-//            | x::xs -> let inner = getReturnTypeTuple([x], xs)
-//                       let typ = CodeTypeReference("System.Tuple", ((tuple |> List.map (fun (_,typ) -> typ.AsCodeTypeReference())) @ [fst inner]) |> Array.ofList)
-//                       (typ, Expr.instOf typ ((tuple |> List.map (fun (varName,_) -> !+ varName)) @ [snd inner]))
-//        let types =
-//            if isMultipart
-//            then ("reader.Context.Attachments", PrimitiveType(typeof<IDictionary<string,Stream>>))::types
-//            else types
-//        match types with
-//        | [] -> (CodeTypeReference(typeof<Void>), Expr.empty)
-//        | [(varName, typ)] -> (typ.AsCodeTypeReference(), !+ varName)
-//        | many -> getReturnTypeTuple([], many)
-
     let instQN (nm: string) (ns: string) =
         Expr.NewObject(typeof<XmlQualifiedName>.GetConstructor([| typeof<string>; typeof<string> |]), [ Expr.Value(nm); Expr.Value(ns) ])
-
-//    let buildOperationOutput (context: TypeBuilderContext) (operation: ServicePortMethod) protocol (_: List<CodeTypeMember>) m =
-//        let x () =
-//            let resultClass = Cls.create(sprintf "%sOutput" operation.Name) |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed) |> Cls.describe Attributes.xrdRoot
-//            m |> Meth.addStmt (Stmt.declVarWith<XRoad.XRoadResponseOptions> "@__respOpt" (Expr.inst<XRoad.XRoadResponseOptions> [!^ operation.OutputParameters.IsEncoded; !^ operation.OutputParameters.IsMultipart; Expr.typeRefOf<XRoad.XRoadProtocol> @=> protocol.ToString(); Expr.typeOf (CodeTypeReference(resultClass.Name)) ])) |> ignore
-//        let addParameter (parameter: Parameter) nm ns =
-//            let runtimeType = context.GetRuntimeType(match parameter.Type with Some(typeName) -> SchemaType(typeName) | None -> SchemaElement(parameter.Name))
-//            let prop = resultClass |> addProperty (parameter.Name.LocalName, runtimeType, false)
-//            let attr = Attributes.xrdElement (nm, ns, false)
-//            prop |> Prop.describe (match nm, ns with None, None -> attr |> Attr.addNamedArg "MergeContent" (!^ true) | _ -> attr) |> ignore
-//        match parameters with
-//        | [] ->
-//            m |> Meth.addStmt (Stmt.ret Expr.empty)
-//        | [(name, typ)] ->
-//            m |> Meth.returnsOf (typ.AsCodeTypeReference())
-//              |> Meth.addStmt (Stmt.ret ((Expr.cast (CodeTypeReference(resultClass.Name)) ((!+ "@__r") @=> "Body")) @=> name.LocalName))
-//        | _ ->
-//            m |> Meth.returns<obj>
-//              |> Meth.addStmt (Stmt.ret Expr.nil)
-//        | _ -> m
 
     /// Build content for each individual service call method.
     let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): MemberInfo list =
@@ -249,7 +206,6 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
         |> Seq.map (fun kvp -> SchemaType(kvp.Key))
         |> Seq.iter (context.GetOrCreateType >> ignore))
 
-    (*
     // Build all global types for each type schema definition.
     schema.TypeSchemas
     |> Map.toSeq
@@ -260,7 +216,6 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
         | CollectionType(_, _, None) -> None
         | rtyp -> Some(rtyp, x.Value))
     |> Seq.iter (fun (rtyp, def) -> TypeBuilder.build context rtyp def)
-    *)
 
     // Main class that wraps all provided functionality and types.
     let targetClass =

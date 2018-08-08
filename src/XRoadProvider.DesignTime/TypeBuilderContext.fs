@@ -193,7 +193,7 @@ type internal TypeBuilderContext =
                         let suffix = itemName.ToClassName()
                         let typ = ProvidedTypeDefinition(name.XName.LocalName + suffix, Some typeof<obj>, isErased = false)
                         typ.AddCustomAttribute(Attributes.xrdAnonymousType LayoutKind.Sequence)
-                        typ.AddMember(ProvidedConstructor([], fun _ -> <@@ () @@>))
+                        //typ.AddMember(ProvidedConstructor([], fun _ -> <@@ () @@>))
                         nstyp.AddMember(typ)
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
                 | _ ->
@@ -203,7 +203,7 @@ type internal TypeBuilderContext =
                         | SchemaType(_) -> Attributes.xrdType name.XName LayoutKind.Sequence
                     let typ = ProvidedTypeDefinition(name.XName.LocalName, Some typeof<obj>, isErased = false)
                     typ.AddCustomAttribute(attr)
-                    typ.AddMember(ProvidedConstructor([], fun _ -> <@@ () @@>))
+                    //typ.AddMember(ProvidedConstructor([], fun _ -> <@@ () @@>))
                     nstyp.AddMember(typ)
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
 

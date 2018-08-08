@@ -3,6 +3,7 @@
 open CodeDom
 open ProviderImplementation.ProvidedTypes
 open System
+open System.Reflection
 open System.Xml.Linq
 open TypeSchema
 open Wsdl
@@ -55,7 +56,12 @@ module internal TypeBuilder =
             failwith "Array should match to CollectionType."
         | None, _ ->
             [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.UseXop ]
+    *)
+    
+    let private addTypeProperties (definitions, subTypes) ownerTy =
+        ()
 
+    (*
     /// Build property declarations from property definitions and add them to owner type.
     let private addTypeProperties (definitions, subTypes) ownerTy =
         let addTypePropertiesFromDefinition definition =
@@ -79,6 +85,7 @@ module internal TypeBuilder =
     let private buildAnyProperty () =
         let prop = PropertyDefinition.Create("AnyElements", false, None, false)
         { prop with Type = PrimitiveType(typeof<XElement[]>); IsAny = true }
+    *)
 
     let private annotationToText (context: TypeBuilderContext) (annotation: Annotation option) =
         annotation
@@ -90,13 +97,15 @@ module internal TypeBuilder =
                 (lang, el.Value)::doc) []
             |> List.tryFind (fst >> ((=) context.LanguageCode))
             |> Option.map snd)
-    *)
 
     let nameGenerator name =
         let num = ref 0
         (fun () ->
             num := !num + 1
             sprintf "%s%d" name !num)
+
+    let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
+        []
 
     (*
     let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
@@ -116,7 +125,12 @@ module internal TypeBuilder =
 
     let getChoiceInterface len =
         if len > 0 && len < 9 then Some(CodeTypeReference(sprintf "XRoad.Choices.IChoiceOf%d" len)) else None
-
+    *)
+    
+    let private collectComplexTypeContentProperties choiceNameGen seqNameGen context (spec: ComplexTypeContentSpec) =
+        [], []
+    
+    (*
     /// Collects property definitions from every content element of complexType.
     let rec private collectComplexTypeContentProperties choiceNameGen seqNameGen context (spec: ComplexTypeContentSpec) =
         // Attribute definitions
@@ -340,12 +354,8 @@ module internal TypeBuilder =
         |> (fun (a, b) -> a, b |> List.collect id)
     *)
 
-    let build (context: TypeBuilderContext) runtimeType schemaType =
-        ()
-
-    (*
     /// Populate generated type declaration with properties specified in type schema definition.
-    and build (context: TypeBuilderContext) runtimeType schemaType =
+    let build (context: TypeBuilderContext) runtimeType schemaType =
         // Extract type declaration from runtime type definition.
         let providedTy =
             match runtimeType with
@@ -357,17 +367,14 @@ module internal TypeBuilder =
         // Parse schema definition and add all properties that are defined.
         match schemaType with
         | SimpleDefinition(SimpleTypeSpec.Restriction(spec, annotation)) ->
-            providedTy |> Code.comment (annotationToText context annotation) |> ignore
+            annotationToText context annotation |> Option.iter providedTy.AddXmlDoc
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | ContentType
             | PrimitiveType(_) as rtyp ->
                 let values = spec.Content |> buildEnumerationConstants runtimeType rtyp
-                values |> List.iter (providedTy.Members.Add >> ignore)
-                providedTy
-                |> addContentProperty("BaseValue", rtyp, false)
-                |> iif (values |> List.isEmpty) (fun x -> x |> Ctor.setAttr (MemberAttributes.Public))
-                |> ignore
-                Ctor.create() |> providedTy.Members.Add |> ignore
+                values |> List.iter providedTy.AddMember
+                providedTy |> addContentProperty("BaseValue", rtyp, false, values |> List.isEmpty |> not)
+                providedTy.AddMember(ProvidedConstructor(false, MethodAttributes.Private ||| MethodAttributes.RTSpecialName, [| |], (fun _ -> <@@ () @@>), None, false, K [| |]))
             | _ -> failwith "Simple types should not restrict complex types."
         | SimpleDefinition(ListDef) ->
             failwith "Not implemented: list in simpleType."
@@ -376,10 +383,9 @@ module internal TypeBuilder =
         | ComplexDefinition(spec) ->
             // Abstract types will have only protected constructor.
             if spec.IsAbstract then
-                providedTy |> Cls.addAttr TypeAttributes.Abstract
-                           |> Cls.addMember (Ctor.create() |> Ctor.setAttr MemberAttributes.Family)
-                           |> Code.comment (annotationToText context spec.Annotation)
-                           |> ignore
+                providedTy.SetAttributes(providedTy.AttributesRaw ||| TypeAttributes.Abstract)
+                providedTy.AddMember(ProvidedConstructor([], invokeCode = (fun _ -> <@@ () @@>)))
+                annotationToText context spec.Annotation |> Option.iter providedTy.AddXmlDoc
             // Handle complex type content and add properties for attributes and elements.
             let specContent =
                 match spec.Content with
@@ -387,7 +393,8 @@ module internal TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
-                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe (Attributes.xrdElement None None None false true false) |> ignore
+                        let baseValueProp = providedTy |> addProperty("BaseValue", rtyp, false)
+                        baseValueProp.AddCustomAttribute(Attributes.xrdElement None None None false true false)
                         Some(spec.Content)
                     | _ ->
                         failwith "ComplexType-s simpleContent should not extend complex types."
@@ -395,7 +402,8 @@ module internal TypeBuilder =
                     failwith "Not implemented: restriction in complexType-s simpleContent."
                 | ComplexContent(Extension(spec)) ->
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
-                    | ProvidedType(_) as baseTy -> providedTy |> Cls.setParent (baseTy.AsCodeTypeReference()) |> ignore
+                    | ProvidedType(_) as baseTy ->
+                        providedTy.SetBaseType(baseTy |> runtimeTypeToSystemType false)
                     | _ -> failwithf "Only complex types can be inherited! (%A)" spec.Base
                     Some(spec.Content)
                 | ComplexContent(Restriction(_)) ->
@@ -407,7 +415,6 @@ module internal TypeBuilder =
             specContent
             |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGen seqNameGen context content)) ()
         | EmptyDefinition -> ()
-    *)
 
     let removeFaultDescription (definition: SchemaTypeDefinition) =
         let isFault content =
