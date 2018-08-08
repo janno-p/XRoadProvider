@@ -1,7 +1,7 @@
 ﻿#r "paket: groupref Build //"
 #load "./.fake/build.fsx/intellisense.fsx"
 
-#load "paket-files/fsharp/FAKE/modules/Octokit/Octokit.fsx"
+#load "paket-files/build/fsharp/FAKE/modules/Octokit/Octokit.fsx"
 
 open Fake.Core
 open Fake.Core.TargetOperators
@@ -32,7 +32,7 @@ let testAssemblies = __SOURCE_DIRECTORY__ </> "tests" </> "**" </> "bin" </> "De
 
 let release = ReleaseNotes.load "RELEASE_NOTES.md"
 
-let docfxToolPath = __SOURCE_DIRECTORY__ </> "paket-files" </> "github.com" </> "docfx.exe"
+let docfxToolPath = __SOURCE_DIRECTORY__ </> "paket-files" </> "build" </> "github.com" </> "docfx.exe"
 let tempDocsDir = "temp" </> "gh-pages"
 
 Target.description "Generate assembly info files with the right version & up-to-date information"
