@@ -28,7 +28,6 @@ let gitName = ProjectName
 
 let projectPath = __SOURCE_DIRECTORY__ </> "src" </> ProjectName
 let testProjectPath = __SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests"
-let testAssemblies = __SOURCE_DIRECTORY__ </> "tests" </> "**" </> "bin" </> "Debug" </> "**" </> "*Tests*.exe"
 
 let release = ReleaseNotes.load "RELEASE_NOTES.md"
 
@@ -91,7 +90,7 @@ Target.create "Build" (fun _ ->
 
 Target.description "Run the unit tests using test runner"
 Target.create "RunTests" (fun _ ->
-    Expecto.run id (!! testAssemblies)
+    DotNet.test id (testProjectPath </> "XRoadProvider.Tests.fsproj")
 )
 
 Target.description "Build a NuGet package"
