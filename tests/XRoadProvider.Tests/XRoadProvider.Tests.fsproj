@@ -3,23 +3,23 @@
   <Import Project="..\..\src\NetFx.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net40;net461</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
-    <AppConfig>App.net40.config</AppConfig>
+    <TargetFrameworks>net461;netcoreapp2.1</TargetFrameworks>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\XRoadProvider\XRoadProvider.fsproj" />
+    <ProjectReference Include="..\..\src\XRoadProvider.DesignTime\XRoadProvider.DesignTime.fsproj" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'netcoreapp2.0' ">
-    <PackageReference Include="Expecto" Version="6.0.0" />
-    <PackageReference Include="FSharp.Core" Version="4.2.3" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.1" />
-    <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.4.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
-    <PackageReference Include="Expecto" Version="4.1.1" />
-    <PackageReference Include="FSharp.Core" Version="3.1.2.5" />
+  <ItemGroup>
+    <None Include="Wsdl\AktorstestService.wsdl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Wsdl\Maakataster.wsdl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Wsdl\XRoadV6.wsdl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Util.fs" />
@@ -30,13 +30,9 @@
     <Compile Include="XRoadDocLiteralWrappedV5Test.fs" />
     <Compile Include="XmlSchemaTest.fs" />
     <Compile Include="Program.fs" />
-    <None Include="Wsdl\AktorstestService.wsdl.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Wsdl\Maakataster.wsdl.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <Content Include="Wsdl\XRoadV6.wsdl.xml" />
-    <Content Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="paket.references" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

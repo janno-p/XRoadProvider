@@ -1,10 +1,13 @@
 source https://api.nuget.org/v3/index.json
 
+nuget Expecto
 nuget FAKE
 nuget FSharp.Core
+nuget Microsoft.NET.Test.Sdk
 nuget NodaTime
 nuget NuGet.CommandLine
 nuget Optional
+nuget YoloDev.Expecto.TestSdk
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
 github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
