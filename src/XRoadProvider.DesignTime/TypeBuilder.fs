@@ -1,16 +1,14 @@
-﻿module internal XRoad.CodeDomGenerator
+﻿namespace XRoad
 
 open CodeDom
+open ProviderImplementation.ProvidedTypes
 open System
-open System.CodeDom
-open System.Reflection
 open System.Xml.Linq
 open TypeSchema
 open Wsdl
-open XRoad.Serialization.Attributes
 
 /// Functions and types to handle type building process.
-module TypeBuilder =
+module internal TypeBuilder =
     /// Describes single property for type declaration.
     type PropertyDefinition =
         { /// Name of the property.
@@ -46,6 +44,7 @@ module TypeBuilder =
               Documentation = doc
               UseXop = useXop }
 
+    (*
     let private getAttributesForProperty idx elementName (prop: PropertyDefinition) =
         match prop.IsWrappedArray, prop.Type with
         | Some(hasWrapper), CollectionType(_,itemName,_) ->
@@ -91,6 +90,7 @@ module TypeBuilder =
                 (lang, el.Value)::doc) []
             |> List.tryFind (fst >> ((=) context.LanguageCode))
             |> Option.map snd)
+    *)
 
     let nameGenerator name =
         let num = ref 0
@@ -98,6 +98,7 @@ module TypeBuilder =
             num := !num + 1
             sprintf "%s%d" name !num)
 
+    (*
     let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
         let valueExpr (value: string) =
             match itemType with
@@ -220,7 +221,12 @@ module TypeBuilder =
     /// Create property definitions for sequence element specification.
     and private collectSequenceProperties _ _ _ : PropertyDefinition list =
         []
+    *)
 
+    let collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition * ProvidedTypeDefinition list =
+        PropertyDefinition.Create("tere", false, None, false), []
+
+    (*
     /// Create property definitions for choice element specification.
     and collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition * CodeTypeDeclaration list =
         let idField = Fld.create<int> "__id"
@@ -332,7 +338,12 @@ module TypeBuilder =
             | Sequence(_) -> failwith "Not implemented: sequence in sequence.")
         |> List.unzip
         |> (fun (a, b) -> a, b |> List.collect id)
+    *)
 
+    let build (context: TypeBuilderContext) runtimeType schemaType =
+        ()
+
+    (*
     /// Populate generated type declaration with properties specified in type schema definition.
     and build (context: TypeBuilderContext) runtimeType schemaType =
         // Extract type declaration from runtime type definition.
@@ -396,6 +407,7 @@ module TypeBuilder =
             specContent
             |> Option.fold (fun _ content -> providedTy |> addTypeProperties (collectComplexTypeContentProperties choiceNameGen seqNameGen context content)) ()
         | EmptyDefinition -> ()
+    *)
 
     let removeFaultDescription (definition: SchemaTypeDefinition) =
         let isFault content =

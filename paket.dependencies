@@ -1,25 +1,12 @@
 source https://api.nuget.org/v3/index.json
 
 nuget FAKE
+nuget FSharp.Core
+nuget NodaTime
 nuget NuGet.CommandLine
+nuget Optional
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
 github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
 
 http https://github.com/dotnet/docfx/releases/download/v2.34/docfx.zip
-
-group Net40
-source https://api.nuget.org/v3/index.json
-framework: net40
-
-nuget FSharp.Core 3.1.2.5
-nuget NodaTime 1.4.2
-nuget Optional
-
-group Netstandard
-source https://api.nuget.org/v3/index.json
-framework: net461,netstandard20
-
-nuget FSharp.Core
-nuget NodaTime
-nuget Optional

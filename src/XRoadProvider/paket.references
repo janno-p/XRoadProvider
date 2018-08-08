@@ -1,4 +1,3 @@
-﻿group Netstandard
-FSharp.Core
+﻿FSharp.Core
 NodaTime
 Optional

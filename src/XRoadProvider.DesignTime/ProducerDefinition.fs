@@ -1,33 +1,20 @@
 ﻿module internal XRoad.ProducerDefinition
 
 open System
-
-#if NET40
-
-open CodeDom
-open CodeDomGenerator
-open System.CodeDom
-open System.Collections.Generic
 open System.Reflection
-open System.Security.Cryptography.X509Certificates
-open System.Xml
-open XRoad.Serialization.Attributes
-open TypeSchema
-
-#else
-
 open FSharp.Quotations
 open ProviderImplementation.ProvidedTypes
 open XRoad
-
-#endif
-
+open CodeDom
 open Wsdl
-
-#if NET40
 
 /// Functions and types to handle building methods for services and operation bindings.
 module ServiceBuilder =
+    open System.Xml
+    open TypeSchema
+    open XRoad.Serialization.Attributes
+    open System.Text
+
     /// Creates return type for the operation.
     /// To support returning multiple output parameters, they are wrapped into tuples accordingly:
     /// Single parameter responses return that single parameter.
@@ -51,7 +38,8 @@ module ServiceBuilder =
 //        | [(varName, typ)] -> (typ.AsCodeTypeReference(), !+ varName)
 //        | many -> getReturnTypeTuple([], many)
 
-    let instQN (nm: string) (ns: string) = Expr.inst<XmlQualifiedName> [!^ nm; !^ ns]
+    let instQN (nm: string) (ns: string) =
+        Expr.NewObject(typeof<XmlQualifiedName>.GetConstructor([| typeof<string>; typeof<string> |]), [ Expr.Value(nm); Expr.Value(ns) ])
 
 //    let buildOperationOutput (context: TypeBuilderContext) (operation: ServicePortMethod) protocol (_: List<CodeTypeMember>) m =
 //        let x () =
@@ -74,26 +62,21 @@ module ServiceBuilder =
 //        | _ -> m
 
     /// Build content for each individual service call method.
-    let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): CodeTypeMember list =
-        let additionalMembers = ResizeArray<CodeTypeMember>()
+    let build (context: TypeBuilderContext) tns (operation: ServicePortMethod): MemberInfo list =
+        let parameters = ResizeArray<ProvidedParameter>()
 
+        match context.MessageProtocol with
+        | Version20(_) ->
+            parameters.Add(ProvidedParameter("header", typeof<XRoadRpcHeader>))
+        | Version30(_) | Version31Ee(_) | Version31Eu(_) ->
+            parameters.Add(ProvidedParameter("header", typeof<XRoadDocHeader>))
+        | Version40(_) ->
+            parameters.Add(ProvidedParameter("header", typeof<XRoadHeader>))
+
+        let additionalMembers = ResizeArray<MemberInfo>()
         let protocol = context.MessageProtocol.EnumValue
-        let m =
-            Meth.create operation.Name
-            |> Meth.describe (Attributes.xrdOperation operation.Name operation.Version protocol context.MessageProtocol)
-            |> Meth.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-            |> Code.comment operation.Documentation
-            |> Meth.describe (Attributes.xrdRequiredHeaders context.MessageProtocol.HeaderNamespace operation.InputParameters.RequiredHeaders)
-        additionalMembers.Add(m)
-
-        m |>
-            match context.MessageProtocol with
-            | Version20(_) -> Meth.addParam<XRoadRpcHeader> "header"
-            | Version30(_) | Version31Ee(_) | Version31Eu(_) -> Meth.addParam<XRoadDocHeader> "header"
-            | Version40(_) -> Meth.addParam<XRoadHeader> "header"
-        |> ignore
-
-        let argumentExpressions = ResizeArray<_>()
+        let attributes = ResizeArray<CustomAttributeData>()
+        let paramDoc = System.Collections.Generic.Dictionary<string,string>()
 
         let addDocLiteralWrappedParameters (spec: ElementSpec) =
             let choiceNameGen = TypeBuilder.nameGenerator (sprintf "%sChoiceArg" operation.Name)
@@ -110,29 +93,30 @@ module ServiceBuilder =
                         let runtimeType =
                             match schemaType with
                             | Definition(definition) ->
-                                let subTy = Cls.create (sprintf "%s_%sType" operation.Name name) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+                                let subTy = ProvidedTypeDefinition(sprintf "%s_%sType" operation.Name name, Some typeof<obj>, isErased = false)
+                                subTy.AddCustomAttribute(Attributes.xrdAnonymousType LayoutKind.Sequence)
                                 let ns = context.GetOrCreateNamespace(tns)
-                                ns.Members.Add(subTy) |> ignore
+                                ns.AddMember(subTy)
                                 let runtimeType = ProvidedType(subTy, providedTypeFullName ns.Name subTy.Name)
                                 TypeBuilder.build context runtimeType definition
                                 runtimeType
                             | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
                         let p =
                             let isOptional = dspec.MinOccurs = 0u
-                            Param.create (runtimeType.AsCodeTypeReference(optional=isOptional)) name
-                            |> Param.describe (Attributes.xrdElement None None None false false dspec.ExpectedContentTypes.IsSome)
-                            |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
-                        m |> Meth.addParamExpr p |> ignore
-                        argumentExpressions.Add(!+ name)
+                            let par = ProvidedParameter(name, runtimeType |> runtimeTypeToSystemType isOptional)
+                            par.AddCustomAttribute(Attributes.xrdElement None None None false false dspec.ExpectedContentTypes.IsSome)
+                            if isOptional then par.AddCustomAttribute(Attributes.Optional)
+                            par
+                        parameters.Add(p)
                     | Choice(particleSpec) ->
                         let def, addedTypes = TypeBuilder.collectChoiceProperties choiceNameGen context particleSpec
                         let p =
                             let argName = argNameGen()
-                            Param.create (def.Type.AsCodeTypeReference(optional=def.IsOptional)) argName
-                            //|> Code.comment (def.Documentation)
-                            |> Param.describe (Attributes.xrdElement None None None def.IsNillable false false)
-                        m |> Meth.addParamExpr p |> ignore
-                        argumentExpressions.Add(!+ p.Name)
+                            let par = ProvidedParameter(argName, def.Type |> runtimeTypeToSystemType def.IsOptional)
+                            par.AddCustomAttribute(Attributes.xrdElement None None None def.IsNillable false false)
+                            if def.Documentation.IsSome then paramDoc.Add(argName, def.Documentation.Value)
+                            par
+                        parameters.Add(p)
                         additionalMembers.AddRange(addedTypes |> Seq.cast<_>)
                     | _ -> failwithf "%A" value)
             | _ -> failwithf "Input wrapper element must be defined as complex type that is a sequence of elements (erroneous XML Schema entity `%s`)." (spec.Name |> MyOption.defaultValue "<unknown>")
@@ -143,7 +127,7 @@ module ServiceBuilder =
 //        | DocLiteralBody(content) ->
 //            addParameter content.Parameters.Head None None
         | DocLiteralWrapped(name, content) ->
-            m |> Meth.describe (Attributes.xrdRequest name.LocalName name.NamespaceName false content.HasMultipartContent) |> ignore
+            attributes.Add(Attributes.xrdRequest name.LocalName name.NamespaceName false content.HasMultipartContent)
             name |> context.GetElementSpec |> addDocLiteralWrappedParameters
 //        | DocLiteral(wrapper) ->
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(p.Name.NamespaceName)))
@@ -157,6 +141,9 @@ module ServiceBuilder =
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
         | _ -> ()
 
+        let mutable returnType = None
+        let mutable invokeCode = None
+
         // buildOperationOutput context operation protocol result |> ignore
         match operation.OutputParameters with
         | DocLiteralWrapped(name, content) ->
@@ -166,43 +153,35 @@ module ServiceBuilder =
                 | CollectionType(_, itemName, _) ->
                     let elementSpec = name |> context.GetElementSpec
                     let resultClass =
-                        Cls.create (sprintf "%sResult" operation.Name)
-                        |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
-                        |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
-                    resultClass
-                    |> addProperty("response", elementType, false)
-                    |> Prop.describe(Attributes.xrdElement None None None false true elementSpec.ExpectedContentTypes.IsSome)
-                    |> Prop.describe(Attributes.xrdCollection None (Some(itemName)) None false false)
-                    |> ignore
-                    Some(resultClass)
+                        let t = ProvidedTypeDefinition(sprintf "%sResult" operation.Name, Some typeof<obj>, isErased = false)
+                        t.SetAttributes(TypeAttributes.Class ||| TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
+                        t.AddCustomAttribute(Attributes.xrdAnonymousType LayoutKind.Sequence)
+                        t
+                    let responseProp = resultClass |> addProperty("response", elementType, false)
+                    responseProp.AddCustomAttribute(Attributes.xrdElement None None None false true elementSpec.ExpectedContentTypes.IsSome)
+                    responseProp.AddCustomAttribute(Attributes.xrdCollection None (Some(itemName)) None false false)
+                    Some(resultClass, responseProp)
                 | _ -> None
-            m
-            |> Meth.returnsOf (elementType.AsCodeTypeReference())
-            |> ignore
+            returnType <- Some (elementType |> runtimeTypeToSystemType false)
             match resultClass with
-            | Some(cls) ->
-                let ctr = CodeTypeReference(cls.Name)
-                m
-                |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent (Some ctr))
-                |> Meth.addStmt
-                    (Stmt.declVarOf ctr "__result"
-                        (Expr.cast
-                            ctr
-                            ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
-                                @% [Expr.this; !^ operation.Name; !+ "header"; Arr.create (argumentExpressions |> Seq.toList)])))
-                |> Meth.addStmt (Stmt.ret ((!+ "__result") @=> "response"))
-                |> ignore
+            | Some(cls, responseProp) ->
+                attributes.Add(Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent (Some cls))
+                invokeCode <-
+                    (fun args ->
+                        let varResult = Var("__result", cls)
+                        Expr.Let(
+                            varResult,
+                            Expr.Coerce(Expr.Value(null)(*Expr.Call(typeof<XRoad.XRoadUtil>.GetMethod("MakeServiceCall"), [ (* args.[0]; Expr.Value(operation.Name); args.[1]; new[] { args.[2..] } *) ])*), cls),
+                            Expr.PropertyGet(Expr.Var(varResult), responseProp)
+                        )
+                    ) |> Some
                 additionalMembers.Add(cls)
             | None ->
-                m
-                |> Meth.describe (Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent None)
-                |> Meth.addStmt
-                    (Stmt.ret
-                        (Expr.cast
-                            (elementType.AsCodeTypeReference())
-                            ((Expr.typeRefOf<XRoad.XRoadUtil> @-> "MakeServiceCall")
-                                @% [Expr.this; !^ operation.Name; !+ "header"; Arr.create (argumentExpressions |> Seq.toList)])))
-                |> ignore
+                attributes.Add(Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent None)
+                invokeCode <-
+                    (fun args ->
+                        Expr.Coerce(Expr.Value(null)(*Expr.Call(typeof<XRoad.XRoadUtil>.GetMethod("MakeServiceCall"), [ (* args.[0]; Expr.Value(operation.Name); args.[1]; new[] { args.[2..] } *) ])*), returnType.Value)
+                    ) |> Some
 //        | DocEncoded(encodingNamespace, wrapper) ->
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
 //            m
@@ -227,17 +206,31 @@ module ServiceBuilder =
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) None)
 //            m
         | _ -> ()
-        additionalMembers |> Seq.toList
-#endif
 
+        assert returnType.IsSome
+        assert invokeCode.IsSome
+
+        let doc =
+            let db = StringBuilder()
+            operation.Documentation |> Option.iter (db.AppendLine >> ignore)
+            paramDoc |> Seq.iter (fun kvp -> db.AppendLine(sprintf "<param>%s</param> %s" kvp.Key kvp.Value) |> ignore)
+            db.ToString()
+
+        let meth =
+            let m = ProvidedMethod(operation.Name, parameters |> Seq.toList, returnType.Value, invokeCode = invokeCode.Value)
+            m.AddCustomAttribute(Attributes.xrdOperation operation.Name operation.Version protocol context.MessageProtocol)
+            m.AddCustomAttribute(Attributes.xrdRequiredHeaders context.MessageProtocol.HeaderNamespace operation.InputParameters.RequiredHeaders)
+            attributes |> Seq.iter m.AddCustomAttribute
+            if String.IsNullOrEmpty(doc) |> not then m.AddXmlDoc(doc)
+            m
+
+        additionalMembers.Add(meth)
+
+        additionalMembers |> Seq.toList
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-#if NET40
-let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
-#else
 let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, operationFilter) =
-#endif
     // Load schema details from specified file or network location.
     let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
 
@@ -246,11 +239,7 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
 
     // Create base type which holds types generated from all provided schema-s.
     let serviceTypesTy =
-#if NET40
-        Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
-#else
         ProvidedTypeDefinition("DefinedTypes", Some typeof<obj>, isErased = false)
-#endif
 
     // Create stubs for each type before building them, because of circular dependencies.
     schema.TypeSchemas
@@ -260,7 +249,7 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
         |> Seq.map (fun kvp -> SchemaType(kvp.Key))
         |> Seq.iter (context.GetOrCreateType >> ignore))
 
-#if NET40
+    (*
     // Build all global types for each type schema definition.
     schema.TypeSchemas
     |> Map.toSeq
@@ -271,110 +260,50 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
         | CollectionType(_, _, None) -> None
         | rtyp -> Some(rtyp, x.Value))
     |> Seq.iter (fun (rtyp, def) -> TypeBuilder.build context rtyp def)
-#endif
+    *)
 
     // Main class that wraps all provided functionality and types.
     let targetClass =
-#if NET40
-        Cls.create typeNamePath.[typeNamePath.Length - 1]
-        |> Cls.setAttr TypeAttributes.Public
-        |> Cls.asStatic
-        |> Cls.addMember serviceTypesTy
-#else
         let t = ProvidedTypeDefinition(asm, ns, typeName, Some typeof<obj>, isErased = false)
         t.AddMember(serviceTypesTy)
         t
-#endif
 
     // Create methods for all operation bindings.
     schema.Services
     |> List.iter (fun service ->
         let serviceTy = 
-#if NET40
-            Cls.create service.Name |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
-#else
             ProvidedTypeDefinition(service.Name, Some typeof<obj>, isErased = false)
-#endif
 
         service.Ports
         |> List.iter (fun port ->
             let portTy =
-#if NET40
-                Cls.create port.Name
-                |> Cls.implements typeRef<AbstractEndpointDeclaration>
-                |> Cls.setAttr TypeAttributes.Public
-                |> Code.comment port.Documentation
-#else
                 let t = ProvidedTypeDefinition(port.Name, Some typeof<AbstractEndpointDeclaration>, isErased = false)
                 port.Documentation |> Option.iter t.AddXmlDoc
                 t
-#endif
 
-#if NET40
-            let createCtors (initField: (CodeExpression * string) option) = [
-#else
             let createCtors (initField: (ProvidedField * string) option) = [
-#endif
-
                 let baseCtor = typeof<AbstractEndpointDeclaration>.GetConstructor([| typeof<Uri> |])
 
                 if Uri.IsWellFormedUriString(port.Uri, UriKind.Absolute) then
-#if NET40
-                    yield
-                        Ctor.create()
-                        |> Ctor.setAttr MemberAttributes.Public
-                        |> Ctor.addChainedArg (Expr.inst<Uri> [!^ port.Uri])
-#else
                     let c = ProvidedConstructor([], invokeCode = (fun args -> match initField with Some(f, v) -> Expr.FieldSet(Expr.Coerce(args.[0], portTy), f, Expr.Value(v)) | None -> <@@ () @@>))
                     c.BaseConstructorCall <- fun args -> (baseCtor, [ args.[0]; Expr.NewObject(typeof<Uri>.GetConstructor([| typeof<string> |]), [ Expr.Value(port.Uri) ]) ])
                     yield c
-#endif
 
-#if NET40
-                yield
-                    Ctor.create()
-                    |> Ctor.setAttr MemberAttributes.Public
-                    |> Ctor.addParam<string> "uri"
-                    |> Ctor.addChainedArg (Expr.inst<Uri> [!+ "uri"])
-#else
                 let c2 = ProvidedConstructor([ProvidedParameter("uri", typeof<string>)], invokeCode = (fun args -> match initField with Some(f, v) -> Expr.FieldSet(Expr.Coerce(args.[0], portTy), f, Expr.Value(v)) | None -> <@@ () @@>))
                 c2.BaseConstructorCall <- fun args -> (baseCtor, [ args.[0]; Expr.NewObject(typeof<Uri>.GetConstructor([| typeof<string> |]), [ args.[1] ]) ])
                 yield c2
-#endif
 
-#if NET40
-                yield
-                    Ctor.create()
-                    |> Ctor.setAttr MemberAttributes.Public
-                    |> Ctor.addParam<Uri> "uri"
-                    |> Ctor.addBaseArg (!+ "uri")
-                    // Add default producer name value if message protocol defines it in service description.
-                    |> iif initField.IsSome (fun c -> c |> Ctor.addStmt (Stmt.assign (fst initField.Value) (!^ (snd initField.Value))))
-#else
                 let c3 = ProvidedConstructor([ProvidedParameter("uri", typeof<Uri>)], invokeCode = (fun args -> match initField with Some(f, v) -> Expr.FieldSet(Expr.Coerce(args.[0], portTy), f, Expr.Value(v)) | None -> <@@ () @@>))
                 c3.BaseConstructorCall <- fun args -> (baseCtor, args)
                 yield c3
-#endif
             ]
 
-#if NET40
-            serviceTy |> Cls.addMember portTy |> ignore
-#else
             serviceTy.AddMember(portTy)
-#endif
 
             // Create property and backing field for producer name.
             // By default service port xrd/xtee:address extension producer value is used, but user can override that value.
             match port.MessageProtocol.ProducerName with
             | Some(producerName) ->
-#if NET40
-                let producerField = CodeMemberField(typeof<string>, "producerName")
-                let producerFieldRef = Expr.this @=> producerField.Name
-                let producerProperty = CodeMemberProperty(Name="ProducerName", Type=CodeTypeReference(typeof<string>))
-                producerProperty.Attributes <- MemberAttributes.Public ||| MemberAttributes.Final
-                producerProperty.GetStatements.Add(Stmt.ret producerFieldRef) |> ignore
-                producerProperty.SetStatements.Add(Stmt.assign producerFieldRef (CodePropertySetValueReferenceExpression())) |> ignore
-#else
                 let producerField = ProvidedField("producerName", typeof<string>)
                 let producerProperty =
                     ProvidedProperty(
@@ -383,59 +312,24 @@ let makeProducerType (asm: ProvidedAssembly, ns, typeName) (uri, languageCode, o
                         getterCode = (fun args -> Expr.FieldGet(Expr.Coerce(args.[0], portTy), producerField)),
                         setterCode = (fun args -> Expr.FieldSet(Expr.Coerce(args.[0], portTy), producerField, args.[1]))
                     )
-#endif
 
-#if NET40
-                portTy
-                |> Cls.addMember producerField
-                |> Cls.addMember producerProperty
-                |> Cls.addMembers (createCtors (Some(producerFieldRef, producerName)) |> List.map (fun x -> upcast x))
-                |> ignore
-#else
                 portTy.AddMember(producerField)
                 portTy.AddMember(producerProperty)
                 portTy.AddMembers(createCtors (Some(producerField, producerName)))
-#endif
             | None ->
-#if NET40
-                portTy |> Cls.addMembers (createCtors None |> List.map (fun x -> upcast x)) |> ignore
-#else
                 portTy.AddMembers(createCtors None)
-#endif
 
             port.Methods
-#if NET40
-            |> List.iter (fun op -> portTy |> Cls.addMembers (ServiceBuilder.build context service.Namespace op) |> ignore)
-#else
-            |> List.iter (id >> ignore) // (fun op -> portTy.AddMembers(ServiceBuilder.build context service.Namespace op))
-#endif
+            |> List.iter (fun op -> portTy.AddMembers(ServiceBuilder.build context service.Namespace op))
         )
 
-#if NET40
-        targetClass |> Cls.addMember serviceTy |> ignore
-#else
         targetClass.AddMember(serviceTy)
-#endif
         )
 
     // Create types for all type namespaces.
     context.CachedNamespaces
-#if NET40
-    |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
-#else
     |> Seq.iter (fun kvp -> serviceTypesTy.AddMember(kvp.Value))
-#endif
 
-#if NET40
-    // Initialize default namespace to hold main type.
-    let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))
-    codeNamespace.Types.Add(targetClass) |> ignore
-
-    // Compile the assembly and return to type provider.
-    let assembly = Compiler.buildAssembly(codeNamespace)
-    assembly.GetType(sprintf "%s.%s" codeNamespace.Name targetClass.Name)
-#else
     asm.AddTypes([targetClass])
 
     targetClass
-#endif

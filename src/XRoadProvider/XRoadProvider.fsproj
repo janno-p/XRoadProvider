@@ -19,19 +19,18 @@
   </ItemGroup>
   -->
   <ItemGroup>
-    <Compile Include="..\Common\AssemblyInfo.fs" />
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="AssemblyInfo.Build.fs" />
-    <Compile Include="..\Common\Helpers.fs" />
-    <Compile Include="..\Common\Attributes.fs" />
-    <!--<Compile Include="..\Common\Choices.fs" />-->
-    <!--<Compile Include="..\Common\XmlExtensions.fs" />-->
-    <!--<Compile Include="..\Common\EmitterDsl.fs" />-->
-    <!--<Compile Include="..\Common\Emitter.fs" />-->
-    <!--<Compile Include="..\Common\Serialization.fs" />-->
-    <!--<Compile Include="..\Common\CodeDomGenerator.fs" />-->
+    <Compile Include="Attributes.fs" />
+    <Compile Include="Helpers.fs" />
+    <Compile Include="Choices.fs" />
+    <Compile Include="XmlExtensions.fs" />
+    <Compile Include="EmitterDsl.fs" />
+    <Compile Include="Emitter.fs" />
+    <Compile Include="Serialization.fs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Common\XRoadProvider.fsx">
+    <None Include="XRoadProvider.fsx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -99,12 +99,8 @@ type internal ProducerDescription =
 type internal TypeBuilderContext =
     { /// Provided types generated from type schema definitions.
       CachedTypes: Dictionary<SchemaName,RuntimeType>
-#if NET40
       /// Provided types generated to group types from same namespace.
-      CachedNamespaces: Dictionary<XNamespace,CodeTypeDeclaration>
-#else
       CachedNamespaces: Dictionary<XNamespace,ProvidedTypeDefinition>
-#endif
       /// Schema level attribute definition lookup.
       Attributes: Map<string,AttributeSpec>
       /// Schema level element definition lookup.
@@ -137,17 +133,8 @@ type internal TypeBuilderContext =
                     | XmlNamespace.XRoad20 -> "xtee"
                     | XmlNamespace.XRoad31Ee -> "xroad"
                     | ns -> ns.ToClassName()
-#if NET40
-                let typ = Cls.create(producerName) |> Cls.addAttr TypeAttributes.Public
-                Fld.create<string> "__TargetNamespace__"
-                |> Fld.init (!^ nsname.NamespaceName)
-                |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Const)
-                |> Fld.addTo typ
-                |> ignore
-#else
                 let typ = ProvidedTypeDefinition(producerName, Some typeof<obj>, isErased = false)
                 typ.AddMember(ProvidedField.Literal("__TargetNamespace__", typeof<string>, nsname.NamespaceName))
-#endif
                 this.CachedNamespaces.Add(nsname, typ)
                 typ
             | true, typ -> typ
@@ -204,30 +191,20 @@ type internal TypeBuilderContext =
                     | dspec, Definition(def) ->
                         let itemName = dspec.Name |> Option.get
                         let suffix = itemName.ToClassName()
-#if NET40
-                        let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
-                        nstyp |> Cls.addMember typ |> ignore
-#else
                         let typ = ProvidedTypeDefinition(name.XName.LocalName + suffix, Some typeof<obj>, isErased = false)
                         typ.AddCustomAttribute(Attributes.xrdAnonymousType LayoutKind.Sequence)
                         typ.AddMember(ProvidedConstructor([], fun _ -> <@@ () @@>))
                         nstyp.AddMember(typ)
-#endif
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
                 | _ ->
                     let attr =
                         match name with
                         | SchemaElement(_) -> Attributes.xrdAnonymousType LayoutKind.Sequence
                         | SchemaType(_) -> Attributes.xrdType name.XName LayoutKind.Sequence
-#if NET40
-                    let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
-                    nstyp |> Cls.addMember typ |> ignore
-#else
                     let typ = ProvidedTypeDefinition(name.XName.LocalName, Some typeof<obj>, isErased = false)
                     typ.AddCustomAttribute(attr)
                     typ.AddMember(ProvidedConstructor([], fun _ -> <@@ () @@>))
                     nstyp.AddMember(typ)
-#endif
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
 
         /// Finds element specification from schema-level element lookup.
@@ -287,11 +264,7 @@ type internal TypeBuilderContext =
             findElementDefinition(spec)
 
         /// Initializes new context object from given schema definition.
-#if NET40
         static member FromSchema(schema, languageCode) =
-#else
-        static member FromSchema(schema, languageCode) =
-#endif
             // Validates that schema contains single operation style, as required by X-Road specification.
             let messageProtocol =
                 let reduceStyle s1 s2 =

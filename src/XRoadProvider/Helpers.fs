@@ -4,7 +4,13 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Security.Cryptography.X509Certificates
+open System.Xml
 open System.Xml.Linq
+open XRoad.Serialization.Attributes
+
+module internal MyOption =
+    let defaultValue d o = o |> Option.fold (fun _ x -> x) d
+    let defaultWith f o = match o with Some(o) -> o | None -> f()
 
 [<RequireQualifiedAccess>]
 module internal X =
@@ -65,15 +71,6 @@ type public BinaryContent internal (contentID: string, content: ContentType) =
     static member Create(contentID, file) = BinaryContent(contentID, FileStorage(file))
     static member Create(data) = BinaryContent("", Data(data))
     static member Create(contentID, data) = BinaryContent(contentID, Data(data))
-
-#if NET40
-[<AutoOpen>]
-module internal Extensions =
-    let isNull = function null -> true | _ -> false
-
-module internal Option =
-    let ofObj = function null -> None | x -> Some(x)
-#endif
 
 module internal MultipartMessage =
     open System.Net
@@ -464,3 +461,123 @@ type AbstractEndpointDeclaration (uri: Uri) =
 
     member internal this.TriggerRequestReady args = requestEvent.Trigger(this, args)
     member internal this.TriggerResponseReady args = responseEvent.Trigger(this, args)
+
+type XRoadMessageProtocolVersion =
+    | Version20 of string
+    | Version30 of string
+    | Version31Ee of string
+    | Version31Eu of string
+    | Version40
+    with
+        member this.ProducerName =
+            match this with
+            | Version20(s) | Version30(s) | Version31Ee(s) | Version31Eu(s) -> Some(s)
+            | Version40 -> None
+        member this.EnumValue =
+            match this with
+            | Version20(_) -> XRoadProtocol.Version20
+            | Version30(_) -> XRoadProtocol.Version30
+            | Version31Ee(_) -> XRoadProtocol.Version31Ee
+            | Version31Eu(_) -> XRoadProtocol.Version31Eu
+            | Version40(_) -> XRoadProtocol.Version40
+        member this.HeaderNamespace =
+            match this with
+            | Version20(_) -> XmlNamespace.XRoad20
+            | Version30(_) -> XmlNamespace.XRoad30
+            | Version31Ee(_) -> XmlNamespace.XRoad31Ee
+            | Version31Eu(_) -> XmlNamespace.XRoad31Eu
+            | Version40(_) -> XmlNamespace.XRoad40
+
+[<AutoOpen>]
+module private XRoadProtocolExtensions =
+    let protocolPrefix = function
+        | XRoadProtocol.Version20 -> "xtee"
+        | XRoadProtocol.Version30
+        | XRoadProtocol.Version31Ee
+        | XRoadProtocol.Version31Eu
+        | XRoadProtocol.Version40 -> "xrd"
+        | x -> failwithf "Invalid XRoadProtocol value `%A`" x
+
+    let protocolNamespace = function
+        | XRoadProtocol.Version20 -> XmlNamespace.XRoad20
+        | XRoadProtocol.Version30 -> XmlNamespace.XRoad30
+        | XRoadProtocol.Version31Ee -> XmlNamespace.XRoad31Ee
+        | XRoadProtocol.Version31Eu -> XmlNamespace.XRoad31Eu
+        | XRoadProtocol.Version40 -> XmlNamespace.XRoad40
+        | x -> failwithf "Invalid XRoadProtocol value `%A`" x
+
+    let private messageProtocolNamespace = function
+        | Version20(_) -> XmlNamespace.XRoad20
+        | Version30(_) -> XmlNamespace.XRoad30
+        | Version31Ee(_) -> XmlNamespace.XRoad31Ee
+        | Version31Eu(_) -> XmlNamespace.XRoad31Eu
+        | Version40 -> XmlNamespace.XRoad40
+
+    let private messageProtocolElementName name mpv = XName.Get(name, messageProtocolNamespace mpv)
+
+    let titleElementName = messageProtocolElementName "title"
+    let versionElementName = messageProtocolElementName "version"
+
+    let private rpcHeaders = ["asutus"; "andmekogu"; "isikukood"; "ametnik"; "id"; "nimi"; "toimik"; "allasutus"; "amet"; "ametniknimi"; "asynkroonne"; "autentija"; "makstud"; "salastada"; "salastada_sertifikaadiga"; "salastatud"; "salastatud_sertifikaadiga"]
+    let private docLegacyHeaders = ["consumer"; "producer"; "userId"; "id"; "service"; "issue"; "unit"; "position"; "userName"; "async"; "authenticator"; "paid"; "encrypt"; "encryptCert"; "encrypted"; "encryptedCert"]
+    let private docHeaders = ["client"; "service"; "centralService"; "id"; "userId"; "requestHash"; "issue"; "protocolVersion"]
+
+    let private isHeaderOf ns hdrs (xn: XName) = if xn.NamespaceName = ns then hdrs |> List.exists ((=) xn.LocalName) else false
+
+    let isMessageProtocolHeaderFunc = function
+        | Version20(_) -> isHeaderOf XmlNamespace.XRoad20 rpcHeaders
+        | Version30(_) -> isHeaderOf XmlNamespace.XRoad30 docLegacyHeaders
+        | Version31Ee(_) -> isHeaderOf XmlNamespace.XRoad31Ee docLegacyHeaders
+        | Version31Eu(_) -> isHeaderOf XmlNamespace.XRoad31Eu docLegacyHeaders
+        | Version40(_) -> isHeaderOf XmlNamespace.XRoad40 docHeaders
+
+module internal XRoadTypeHelper =
+    let getSystemTypeName = function
+        | "NodaTime.LocalDate" -> Some(XmlQualifiedName("date", XmlNamespace.Xsd))
+        | "NodaTime.LocalDateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
+        | "System.String" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
+        | "System.Boolean" -> Some(XmlQualifiedName("boolean", XmlNamespace.Xsd))
+        | "System.Decimal" -> Some(XmlQualifiedName("decimal", XmlNamespace.Xsd))
+        | "System.Double" -> Some(XmlQualifiedName("double", XmlNamespace.Xsd))
+        | "System.Float" -> Some(XmlQualifiedName("float", XmlNamespace.Xsd))
+        | "System.Int32" -> Some(XmlQualifiedName("int", XmlNamespace.Xsd))
+        | "System.Numerics.BigInteger" -> Some(XmlQualifiedName("integer", XmlNamespace.Xsd))
+        | "System.Int64" -> Some(XmlQualifiedName("long", XmlNamespace.Xsd))
+        | _ -> None
+
+[<AllowNullLiteral>]
+type internal SerializerContext() =
+    let attachments = Dictionary<string, BinaryContent>()
+    member val IsMtomMessage = false with get, set
+    member val IsMultipart = false with get, set
+    member val Attachments = attachments with get
+    member this.AddAttachment(contentID, content, useXop) =
+        if useXop then this.IsMtomMessage <- true
+        attachments.Add(contentID, content)
+    member __.GetAttachment(href: string) =
+        if href.StartsWith("cid:") then
+            let contentID = href.Substring(4)
+            match attachments.TryGetValue(contentID) with
+            | true, value -> value
+            | _ -> null;
+        else failwithf "Invalid multipart content reference: `%s`." href
+
+type internal DeserializerDelegate = delegate of XmlReader * SerializerContext -> obj
+type internal SerializerDelegate = delegate of XmlWriter * obj * SerializerContext -> unit
+type internal OperationSerializerDelegate = delegate of XmlWriter * obj[] * SerializerContext -> unit
+
+type internal MethodPartMap =
+    { IsEncoded: bool
+      IsMultipart: bool
+      Accessor: XmlQualifiedName option }
+
+type internal MethodMap =
+    { Deserializer: DeserializerDelegate
+      Serializer: OperationSerializerDelegate
+      Protocol: XRoadProtocol
+      Request: MethodPartMap
+      Response: MethodPartMap
+      ServiceCode: string
+      ServiceVersion: string option
+      Namespaces: string list
+      RequiredHeaders: IDictionary<string, string[]> }
