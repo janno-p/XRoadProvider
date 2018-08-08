@@ -167,11 +167,11 @@ module ServiceBuilder =
             | Some(cls, responseProp) ->
                 attributes.Add(Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent (Some cls))
                 invokeCode <-
-                    (fun args ->
+                    (fun (args: Expr list) ->
                         let varResult = Var("__result", cls)
                         Expr.Let(
                             varResult,
-                            Expr.Coerce(Expr.Value(null)(*Expr.Call(typeof<XRoad.XRoadUtil>.GetMethod("MakeServiceCall"), [ (* args.[0]; Expr.Value(operation.Name); args.[1]; new[] { args.[2..] } *) ])*), cls),
+                            Expr.Coerce(Expr.Call(typeof<XRoad.XRoadUtil>.GetMethod("MakeServiceCall"), [ Expr.Coerce(args.[0], typeof<AbstractEndpointDeclaration>); Expr.Value(operation.Name); Expr.Coerce(args.[1], typeof<AbstractXRoadHeader>); Expr.NewArray(typeof<obj>, args |> List.skip 2 |> List.map (fun u -> Expr.Coerce(u, typeof<obj>))) ]), cls),
                             Expr.PropertyGet(Expr.Var(varResult), responseProp)
                         )
                     ) |> Some
@@ -179,8 +179,8 @@ module ServiceBuilder =
             | None ->
                 attributes.Add(Attributes.xrdResponse name.LocalName name.NamespaceName false content.HasMultipartContent None)
                 invokeCode <-
-                    (fun args ->
-                        Expr.Coerce(Expr.Value(null)(*Expr.Call(typeof<XRoad.XRoadUtil>.GetMethod("MakeServiceCall"), [ (* args.[0]; Expr.Value(operation.Name); args.[1]; new[] { args.[2..] } *) ])*), returnType.Value)
+                    (fun (args: Expr list) ->
+                        Expr.Coerce(Expr.Call(typeof<XRoad.XRoadUtil>.GetMethod("MakeServiceCall"), [ Expr.Coerce(args.[0], typeof<AbstractEndpointDeclaration>); Expr.Value(operation.Name); Expr.Coerce(args.[1], typeof<AbstractXRoadHeader>); Expr.NewArray(typeof<obj>, args |> List.skip 2 |> List.map (fun u -> Expr.Coerce(u, typeof<obj>))) ]), returnType.Value)
                     ) |> Some
 //        | DocEncoded(encodingNamespace, wrapper) ->
 //            wrapper.Parameters |> List.iter (fun p -> addParameter p (Some(p.Name.LocalName)) (Some(encodingNamespace.NamespaceName)))
