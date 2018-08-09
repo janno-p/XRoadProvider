@@ -509,3 +509,4 @@ let addContentProperty (name: string, ty: RuntimeType, useXop, predefinedValues)
             K [| |]
         )
     owner.AddMember(ctor)
+    ctor

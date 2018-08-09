@@ -1,6 +1,7 @@
 ﻿namespace XRoad
 
 open CodeDom
+open FSharp.Quotations
 open ProviderImplementation.ProvidedTypes
 open System
 open System.Reflection
@@ -104,25 +105,37 @@ module internal TypeBuilder =
             num := !num + 1
             sprintf "%s%d" name !num)
 
-    let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
-        []
+    let private buildEnumerationType (spec: SimpleTypeRestrictionSpec, itemType) (providedTy: ProvidedTypeDefinition) =
+        let initCtor = providedTy |> addContentProperty("BaseValue", itemType, false, spec.Content |> List.isEmpty |> not)
+
+        let valueExpr (value: string) =
+            let v =
+                match itemType with 
+                | PrimitiveType(t) when t = typeof<int32> -> Expr.Value(Convert.ToInt32(value))
+                | _ -> Expr.Value(value)
+            Expr.NewObject(initCtor, [v])
+
+        let staticCtorExpr =
+            spec.Content
+            |> List.map (fun x ->
+                match x with 
+                | Enumeration(value) ->
+                    let nm = value.GetValidPropertyName()
+                    let f = ProvidedField(false, nm + "__backing", FieldAttributes.Private ||| FieldAttributes.Static, providedTy, null, K [| |])
+                    let p = ProvidedProperty(nm, providedTy, getterCode = (fun _ -> Expr.FieldGet(f)), isStatic = true)
+                    providedTy.AddMember(f)
+                    providedTy.AddMember(p)
+                    //Expr.FieldSet(f, Expr.Coerce(Expr.NewObject(initCtor, [Expr.Value("test")]), providedTy))//valueExpr value)
+                    Expr.FieldSet(f, valueExpr value)
+                | _ -> failwithf "Enumeration types restriction content is not implemented: %s" (x.GetType().Name)
+            )
+            |> List.reduce (fun a b -> Expr.Sequential(a, b))
+
+        providedTy.AddMember(ProvidedConstructor([], (fun _ -> staticCtorExpr), IsTypeInitializer = true))
+
+        providedTy.AddMember(ProvidedConstructor(false, MethodAttributes.Private ||| MethodAttributes.RTSpecialName, [| |], (fun _ -> <@@ () @@>), None, false, K [| |]))
 
     (*
-    let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
-        let valueExpr (value: string) =
-            match itemType with
-            | PrimitiveType(t) when t = typeof<int32> -> !^ (Convert.ToInt32(value))
-            | _ -> !^ value
-        content
-        |> List.choose (fun x ->
-            match x with
-            | Enumeration(value) ->
-                Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.GetValidPropertyName())
-                |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Static)
-                |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [valueExpr value])
-                |> Some
-            | _ -> None)
-
     let getChoiceInterface len =
         if len > 0 && len < 9 then Some(CodeTypeReference(sprintf "XRoad.Choices.IChoiceOf%d" len)) else None
     *)
@@ -370,11 +383,7 @@ module internal TypeBuilder =
             annotationToText context annotation |> Option.iter providedTy.AddXmlDoc
             match context.GetRuntimeType(SchemaType(spec.Base)) with
             | ContentType
-            | PrimitiveType(_) as rtyp ->
-                let values = spec.Content |> buildEnumerationConstants runtimeType rtyp
-                values |> List.iter providedTy.AddMember
-                providedTy |> addContentProperty("BaseValue", rtyp, false, values |> List.isEmpty |> not)
-                providedTy.AddMember(ProvidedConstructor(false, MethodAttributes.Private ||| MethodAttributes.RTSpecialName, [| |], (fun _ -> <@@ () @@>), None, false, K [| |]))
+            | PrimitiveType(_) as rtyp -> providedTy |> buildEnumerationType (spec, rtyp)
             | _ -> failwith "Simple types should not restrict complex types."
         | SimpleDefinition(ListDef) ->
             failwith "Not implemented: list in simpleType."

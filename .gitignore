@@ -182,6 +182,7 @@ release.cmd
 release.sh
 localpackages/
 paket-files
+!/paket-files/fsprojects/FSharp.TypeProviders.SDK/src/ProvidedTypes.fs
 *.orig
 #.paket/paket.exe
 docs/content/license.md
