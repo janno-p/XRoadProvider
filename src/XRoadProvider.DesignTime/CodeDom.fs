@@ -65,10 +65,6 @@ module Attributes =
     open System.Xml.Serialization
     open XRoad.Serialization.Attributes
 
-    (*
-    let private addUnqualifiedForm a = a |> Attr.addNamedArg "Form" (Expr.enumValue<XmlSchemaForm> "Unqualified")
-    *)
-
     let DebuggerBrowsable =
         { new CustomAttributeData() with
             member __.Constructor = typeof<DebuggerBrowsableAttribute>.GetConstructor([| typeof<DebuggerBrowsableState> |])
@@ -76,11 +72,26 @@ module Attributes =
             member __.NamedArguments = upcast [| |]
         }
 
-    (*
-    let XmlAttribute = Attr.create<XmlAttributeAttribute> |> addUnqualifiedForm
-    let XmlIgnore = Attr.create<XmlIgnoreAttribute>
-    let XmlAnyElement = Attr.create<XmlAnyElementAttribute>
-    *)
+    let XmlAttribute =
+        { new CustomAttributeData() with 
+            member __.Constructor = typeof<XmlAttributeAttribute>.GetConstructor([| |])
+            member __.ConstructorArguments = upcast [| |]
+            member __.NamedArguments = upcast [| CustomAttributeNamedArgument(typeof<XmlAttributeAttribute>.GetProperty("Form"), XmlSchemaForm.Unqualified) |]
+        }
+
+    let XmlIgnore =
+        { new CustomAttributeData() with
+            member __.Constructor = typeof<XmlIgnoreAttribute>.GetConstructor([| |])
+            member __.ConstructorArguments = upcast [| |]
+            member __.NamedArguments = upcast [| |]
+        }
+
+    let XmlAnyElement =
+        { new CustomAttributeData() with 
+            member __.Constructor = typeof<XmlAnyElementAttribute>.GetConstructor([| |])
+            member __.ConstructorArguments = upcast [| |]
+            member __.NamedArguments = upcast [| |]
+        }
 
     let Optional =
         { new CustomAttributeData() with

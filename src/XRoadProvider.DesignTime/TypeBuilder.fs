@@ -8,6 +8,8 @@ open System.Reflection
 open System.Xml.Linq
 open TypeSchema
 open Wsdl
+open XRoad.Choices
+open XRoad.Serialization.Attributes
 
 /// Functions and types to handle type building process.
 module internal TypeBuilder =
@@ -46,7 +48,6 @@ module internal TypeBuilder =
               Documentation = doc
               UseXop = useXop }
 
-    (*
     let private getAttributesForProperty idx elementName (prop: PropertyDefinition) =
         match prop.IsWrappedArray, prop.Type with
         | Some(hasWrapper), CollectionType(_,itemName,_) ->
@@ -57,36 +58,30 @@ module internal TypeBuilder =
             failwith "Array should match to CollectionType."
         | None, _ ->
             [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.UseXop ]
-    *)
-    
-    let private addTypeProperties (definitions, subTypes) ownerTy =
-        ()
 
-    (*
     /// Build property declarations from property definitions and add them to owner type.
     let private addTypeProperties (definitions, subTypes) ownerTy =
         let addTypePropertiesFromDefinition definition =
             // Most of the conditions handle XmlSerializer specific attributes.
             let prop = ownerTy |> addProperty(definition.Name, definition.Type, definition.IsOptional)
-                               |> Code.comment (definition.Documentation)
+            definition.Documentation |> Option.iter prop.AddXmlDoc
             let elementName = if prop.Name <> definition.Name then Some(definition.Name) else None
             if definition.IsIgnored then
-                prop |> Prop.describe Attributes.XmlIgnore |> ignore
+                prop.AddCustomAttribute(Attributes.XmlIgnore)
             elif definition.IsAny then
-                prop |> Prop.describe Attributes.XmlAnyElement |> ignore
+                prop.AddCustomAttribute(Attributes.XmlAnyElement)
             elif definition.IsAttribute then
-                prop |> Prop.describe Attributes.XmlAttribute |> ignore
+                prop.AddCustomAttribute(Attributes.XmlAttribute)
             else
-                definition |> getAttributesForProperty None elementName |> List.iter (fun attr -> prop |> Prop.describe attr |> ignore) 
+                definition |> getAttributesForProperty None elementName |> List.iter prop.AddCustomAttribute 
         definitions |> List.iter (addTypePropertiesFromDefinition)
         // Add extra types to owner type declaration.
-        ownerTy.Members.AddRange(subTypes |> Seq.cast<_> |> Seq.toArray)
+        ownerTy.AddMembers(subTypes)
 
     /// Create definition of property that accepts any element not defined in schema.
     let private buildAnyProperty () =
         let prop = PropertyDefinition.Create("AnyElements", false, None, false)
         { prop with Type = PrimitiveType(typeof<XElement[]>); IsAny = true }
-    *)
 
     let private annotationToText (context: TypeBuilderContext) (annotation: Annotation option) =
         annotation
@@ -125,29 +120,32 @@ module internal TypeBuilder =
                     let p = ProvidedProperty(nm, providedTy, getterCode = (fun _ -> Expr.FieldGet(f)), isStatic = true)
                     providedTy.AddMember(f)
                     providedTy.AddMember(p)
-                    //Expr.FieldSet(f, Expr.Coerce(Expr.NewObject(initCtor, [Expr.Value("test")]), providedTy))//valueExpr value)
                     Expr.FieldSet(f, valueExpr value)
                 | _ -> failwithf "Enumeration types restriction content is not implemented: %s" (x.GetType().Name)
             )
             |> List.reduce (fun a b -> Expr.Sequential(a, b))
 
         providedTy.AddMember(ProvidedConstructor([], (fun _ -> staticCtorExpr), IsTypeInitializer = true))
-
         providedTy.AddMember(ProvidedConstructor(false, MethodAttributes.Private ||| MethodAttributes.RTSpecialName, [| |], (fun _ -> <@@ () @@>), None, false, K [| |]))
 
-    (*
     let getChoiceInterface len =
-        if len > 0 && len < 9 then Some(CodeTypeReference(sprintf "XRoad.Choices.IChoiceOf%d" len)) else None
-    *)
-    
-    let private collectComplexTypeContentProperties choiceNameGen seqNameGen context (spec: ComplexTypeContentSpec) =
-        [], []
-    
-    (*
+        match len with 
+        | 1 -> Some(typedefof<IChoiceOf1<_>>)
+        | 2 -> Some(typedefof<IChoiceOf2<_,_>>)
+        | 3 -> Some(typedefof<IChoiceOf3<_,_,_>>)
+        | 4 -> Some(typedefof<IChoiceOf4<_,_,_,_>>)
+        | 5 -> Some(typedefof<IChoiceOf5<_,_,_,_,_>>)
+        | 6 -> Some(typedefof<IChoiceOf6<_,_,_,_,_,_>>)
+        | 7 -> Some(typedefof<IChoiceOf7<_,_,_,_,_,_,_>>)
+        | 8 -> Some(typedefof<IChoiceOf8<_,_,_,_,_,_,_,_>>)
+        | _ -> None
+
     /// Collects property definitions from every content element of complexType.
     let rec private collectComplexTypeContentProperties choiceNameGen seqNameGen context (spec: ComplexTypeContentSpec) =
         // Attribute definitions
-        let attributeProperties, attrTypes = spec.Attributes |> List.fold (fun (xs, ys) n -> let x, y = n |> buildAttributeProperty context in x::xs, y |> List.append ys) ([], [])
+        let attributeProperties, attrTypes =
+            spec.Attributes 
+            |> List.fold (fun (xs, ys) n -> let x, y = n |> buildAttributeProperty context in x::xs, y |> List.append ys) ([], [])
         // Element definitions
         let elementProperties, elemTypes =
             match spec.Content with
@@ -176,13 +174,13 @@ module internal TypeBuilder =
         (List.concat [attributeProperties; elementProperties], List.concat [attrTypes; elemTypes])
 
     /// Create single property definition for given element-s schema specification.
-    and private buildElementProperty (context: TypeBuilderContext) (spec: ElementSpec) : PropertyDefinition * CodeTypeDeclaration list =
+    and private buildElementProperty (context: TypeBuilderContext) (spec: ElementSpec) : PropertyDefinition * ProvidedTypeDefinition list =
         let dspec, schemaType = context.DereferenceElementSpec(spec)
         let name = dspec.Name |> Option.get
         buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (spec.MinOccurs = 0u) context (annotationToText context spec.Annotation) spec.ExpectedContentTypes.IsSome
 
     /// Create single property definition for given attribute-s schema specification.
-    and private buildAttributeProperty (context: TypeBuilderContext) (spec: AttributeSpec) : PropertyDefinition * CodeTypeDeclaration list =
+    and private buildAttributeProperty (context: TypeBuilderContext) (spec: AttributeSpec) : PropertyDefinition * ProvidedTypeDefinition list =
         let name, typeDefinition = context.GetAttributeDefinition(spec)
         // Resolve schema type for attribute:
         let schemaType =
@@ -194,7 +192,7 @@ module internal TypeBuilder =
         { prop with IsAttribute = true }, types
 
     /// Build default property definition from provided schema information.
-    and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context doc useXop : PropertyDefinition * CodeTypeDeclaration list =
+    and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context doc useXop : PropertyDefinition * ProvidedTypeDefinition list =
         match schemaType with
         | Definition(ArrayContent itemSpec) ->
             match context.DereferenceElementSpec(itemSpec) with
@@ -208,7 +206,8 @@ module internal TypeBuilder =
             | dspec, Definition(def) ->
                 let itemName = dspec.Name |> Option.get
                 let suffix = itemName.ToClassName()
-                let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+                let typ = ProvidedTypeDefinition(name + suffix, Some typeof<obj>, isErased = false)
+                typ.AddCustomAttribute(Attributes.xrdAnonymousType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
                 ({ PropertyDefinition.Create(name, isOptional, doc, useXop) with
@@ -217,7 +216,8 @@ module internal TypeBuilder =
                     IsItemNillable = Some(itemSpec.IsNillable)
                     IsWrappedArray = Some(true) }, [typ])
         | Definition(def) ->
-            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+            let subTy = ProvidedTypeDefinition(name + "Type", Some typeof<obj>, isErased = false)
+            subTy.AddCustomAttribute(Attributes.xrdAnonymousType LayoutKind.Sequence)
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then
@@ -248,9 +248,8 @@ module internal TypeBuilder =
     /// Create property definitions for sequence element specification.
     and private collectSequenceProperties _ _ _ : PropertyDefinition list =
         []
-    *)
 
-    let collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition * ProvidedTypeDefinition list =
+    and collectChoiceProperties choiceNameGenerator context spec : PropertyDefinition * ProvidedTypeDefinition list =
         PropertyDefinition.Create("tere", false, None, false), []
 
     (*
@@ -368,7 +367,7 @@ module internal TypeBuilder =
     *)
 
     /// Populate generated type declaration with properties specified in type schema definition.
-    let build (context: TypeBuilderContext) runtimeType schemaType =
+    and build (context: TypeBuilderContext) runtimeType schemaType =
         // Extract type declaration from runtime type definition.
         let providedTy =
             match runtimeType with
@@ -391,9 +390,9 @@ module internal TypeBuilder =
             failwith "Not implemented: union in simpleType."
         | ComplexDefinition(spec) ->
             // Abstract types will have only protected constructor.
+            providedTy.AddMember(ProvidedConstructor([], invokeCode = (fun _ -> <@@ () @@>)))
             if spec.IsAbstract then
                 providedTy.SetAttributes(providedTy.AttributesRaw ||| TypeAttributes.Abstract)
-                providedTy.AddMember(ProvidedConstructor([], invokeCode = (fun _ -> <@@ () @@>)))
                 annotationToText context spec.Annotation |> Option.iter providedTy.AddXmlDoc
             // Handle complex type content and add properties for attributes and elements.
             let specContent =
