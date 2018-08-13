@@ -5,7 +5,7 @@ branches:
     - master
 init:
   - git config --global core.autocrlf true
-  - $APPVEYOR_BUILD_FOLDER/.paket/paket.exe restore
+  - cmd: .\.paket\paket.exe restore
   - dotnet tool install fake-cli -g
 build: off
 test_script:
