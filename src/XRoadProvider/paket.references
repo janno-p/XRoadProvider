@@ -1,0 +1,5 @@
+FSharp.Core
+Microsoft.CodeAnalysis.CSharp
+NodaTime
+Optional
+File: ProvidedTypes.fs

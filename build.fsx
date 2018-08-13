@@ -31,8 +31,7 @@ let gitHome = "https://github.com/" + GitOwner
 let gitName = ProjectName
 
 let projectPath = __SOURCE_DIRECTORY__ </> "src" </> ProjectName
-let testProjectPath = __SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests"
-let testAssemblies = __SOURCE_DIRECTORY__ </> "tests" </> "**" </> "bin" </> "Debug" </> "**" </> "*Tests*.exe"
+let testsPath = __SOURCE_DIRECTORY__ </> "tests"
 
 let release = ReleaseNotes.load "RELEASE_NOTES.md"
 
@@ -76,10 +75,13 @@ Target.create "Clean" (fun _ ->
 
 Target.description "Build test project"
 Target.create "BuildDebug" (fun _ ->
-    DotNet.restore id testProjectPath
-    DotNet.build
-        (fun p -> { p with Configuration = DotNet.BuildConfiguration.Debug })
-        testProjectPath
+    !! (testsPath </> "*" </> "*.fsproj")
+    |> Seq.iter (fun testProjectPath ->
+        DotNet.restore id testProjectPath
+        DotNet.build
+            (fun p -> { p with Configuration = DotNet.BuildConfiguration.Debug })
+            testProjectPath
+    )
 )
 
 Target.description "Build library for release"
@@ -95,19 +97,12 @@ Target.create "Build" (fun _ ->
 
 Target.description "Run the unit tests using test runner"
 Target.create "RunTests" (fun _ ->
-    if Environment.isWindows then
-        Expecto.run id (!! testAssemblies)
-    else
-        Process.execSimple
-            (fun f ->
-                f.WithFileName(__SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests" </> "bin" </> "Debug" </> "net40" </> "XRoadProvider.Tests.exe")
-                |> Process.withFramework
-                )
+    !! (testsPath </> "*" </> "bin" </> "**" </> "XRoadProvider.Tests.exe")
+    |> Seq.iter (fun fileName ->
+        Process.execSimple (fun f -> f.WithFileName(fileName) |> Process.withFramework)
             TimeSpan.MaxValue
         |> ignore
-        DotNet.test
-            (fun t -> { t with Framework = Some("net461") })
-            (__SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests")
+    )
 )
 
 Target.description "Build a NuGet package"

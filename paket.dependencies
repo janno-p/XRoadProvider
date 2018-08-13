@@ -1,8 +1,14 @@
 source https://api.nuget.org/v3/index.json
 storage: none
 
+nuget Expecto
 nuget Fake.Core.CommandLineParsing
+nuget FSharp.Core
+nuget Microsoft.CodeAnalysis.CSharp
+nuget Microsoft.NET.Test.Sdk
+nuget NodaTime
 nuget Optional
+nuget YoloDev.Expecto.TestSdk
 
 github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
 
@@ -10,8 +16,10 @@ group Net40
 source https://api.nuget.org/v3/index.json
 storage: none
 
-nuget FSharp.Core 3.1.2.5
-nuget NodaTime 1.4.2
+nuget Argu == 3.7.0
+nuget Expecto == 4.1.1
+nuget FSharp.Core == 3.1.2.5
+nuget NodaTime == 1.4.2
 
 group Build
 source https://api.nuget.org/v3/index.json

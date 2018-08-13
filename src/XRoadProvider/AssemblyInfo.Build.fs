@@ -8,6 +8,7 @@ open Microsoft.FSharp.Core.CompilerServices
 
 #if DEBUG
 [<assembly: InternalsVisibleTo("XRoadProvider.Tests")>]
+[<assembly: InternalsVisibleTo("XRoadProvider.Tests.net40")>]
 #else
 [<assembly: TypeProviderAssembly>]
 #endif

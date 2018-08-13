@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\src\NetFx.props" />
+
+  <PropertyGroup>
+    <AssemblyName>XRoadProvider.Tests</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net40</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\XRoadProvider.Tests\Util.fs" />
+    <Compile Include="..\XRoadProvider.Tests\AdsTest.fs" />
+    <Compile Include="..\XRoadProvider.Tests\CodeEmitterTests.fs" />
+    <Compile Include="..\XRoadProvider.Tests\SerializationTest.fs" />
+    <Compile Include="..\XRoadProvider.Tests\XRoadRpcEncodedV4Test.fs" />
+    <Compile Include="..\XRoadProvider.Tests\XRoadDocLiteralWrappedV5Test.fs" />
+    <Compile Include="..\XRoadProvider.Tests\XmlSchemaTest.fs" />
+    <Compile Include="..\XRoadProvider.Tests\Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="App.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\XRoadProvider.net40\XRoadProvider.net40.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="paket.references" />
+  </ItemGroup>
+
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+
+</Project>
