@@ -1,0 +1,6 @@
+group Main
+Optional
+File: ProvidedTypes.fs
+group Net40
+FSharp.Core
+NodaTime

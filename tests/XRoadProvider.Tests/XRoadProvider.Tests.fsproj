@@ -8,7 +8,10 @@
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
     <AppConfig>App.net40.config</AppConfig>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
+    <ProjectReference Include="..\..\src\XRoadProvider.net40\XRoadProvider.net40.fsproj" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'netcoreapp2.0' ">
     <ProjectReference Include="..\..\src\XRoadProvider\XRoadProvider.fsproj" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'netcoreapp2.0' ">

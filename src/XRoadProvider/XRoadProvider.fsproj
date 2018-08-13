@@ -4,19 +4,15 @@
   <PropertyGroup>
     <AssemblyName>XRoadProvider</AssemblyName>
     <RootNamespace>XRoad</RootNamespace>
-    <TargetFrameworks>net40;net461</TargetFrameworks>
+    <TargetFrameworks>net461</TargetFrameworks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);2003</NoWarn>
-    <DocumentationFile>XRoadProvider.xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="FSharp.Core" Version="4.2.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.7.0" />
     <PackageReference Include="NodaTime" Version="2.2.4" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
-    <PackageReference Include="FSharp.Core" Version="3.1.2.5" />
-    <PackageReference Include="NodaTime" Version="1.4.2" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="System.CodeDom" Version="4.4.0" />
