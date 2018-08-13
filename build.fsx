@@ -95,7 +95,19 @@ Target.create "Build" (fun _ ->
 
 Target.description "Run the unit tests using test runner"
 Target.create "RunTests" (fun _ ->
-    Expecto.run id (!! testAssemblies)
+    if Environment.isWindows then
+        Expecto.run id (!! testAssemblies)
+    else
+        Process.execSimple
+            (fun f ->
+                f.WithFileName(__SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests" </> "bin" </> "Debug" </> "net40" </> "XRoadProvider.Tests.exe")
+                |> Process.withFramework
+                )
+            TimeSpan.MaxValue
+        |> ignore
+        DotNet.test
+            (fun t -> { t with Framework = Some("net461") })
+            (__SOURCE_DIRECTORY__ </> "tests" </> "XRoadProvider.Tests")
 )
 
 Target.description "Build a NuGet package"
