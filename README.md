@@ -14,10 +14,24 @@ A library containing collection of F# type providers to support easier integrati
 
 Documentation and samples can be found at the [XRoadProvider home page](http://janno-p.github.com/XRoadProvider/).
 
+## Prerequisites
+
+* Restore 3rd party dependencies:
+
+  **Mono**: Run `$ mono ./.paket/paket.exe restore`  
+  **Windows**: Run: `> .paket\paket.exe restore`  
+
+* Install FAKE dotnet SDK global tool:
+
+  ```sh
+  dotnet tool install fake-cli -g
+  ```
+
 ## Building
 
-* Mono: Run `$ ./build.sh`
-* Windows: Run `> build.cmd`
+```sh
+fake run build.fsx
+```
 
 ## Disclaimer
 

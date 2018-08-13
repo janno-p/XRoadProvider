@@ -1,17 +1,20 @@
-﻿#r "packages/FAKE/tools/FakeLib.dll"
+﻿#r "paket: groupref Build //"
 
-#load "paket-files/fsharp/FAKE/modules/Octokit/Octokit.fsx"
+#load "./.fake/build.fsx/intellisense.fsx"
+#load "./paket-files/build/fsharp/FAKE/modules/Octokit/Octokit.fsx"
+
+#if INTERACTIVE
+#r "netstandard"
+#endif
 
 open Fake.Core
-open Fake.DocFxHelper
+open Fake.Core.TargetOperators
+open Fake.Documentation
 open Fake.DotNet
-open Fake.Core.BuildServer
-open Fake.Core.Environment
+open Fake.DotNet.Testing
 open Fake.IO
 open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
-open Fake.Core.TargetOperators
-open Fake.Testing.Expecto
 open Fake.Tools
 open Octokit
 open System
@@ -33,10 +36,10 @@ let testAssemblies = __SOURCE_DIRECTORY__ </> "tests" </> "**" </> "bin" </> "De
 
 let release = ReleaseNotes.load "RELEASE_NOTES.md"
 
-let docfxToolPath = __SOURCE_DIRECTORY__ </> "paket-files" </> "github.com" </> "docfx.exe"
+let docfxToolPath = __SOURCE_DIRECTORY__ </> "paket-files" </> "build" </> "github.com" </> "docfx.exe"
 let tempDocsDir = "temp" </> "gh-pages"
 
-Target.Description "Generate assembly info files with the right version & up-to-date information"
+Target.description "Generate assembly info files with the right version & up-to-date information"
 Target.create "AssemblyInfo" (fun _ ->
     let getAssemblyInfoAttributes projectName =
         [ AssemblyInfo.Title (projectName)
@@ -59,19 +62,19 @@ Target.create "AssemblyInfo" (fun _ ->
     |> Seq.iter (fun (_, _, folderName, attributes) -> AssemblyInfoFile.createFSharp (folderName </> "AssemblyInfo.fs") attributes)
 )
 
-Target.Description "Copies binaries from default VS location to exepcted bin folder, but keeps a subdirectory structure for each project in the src folder to support multiple project outputs"
+Target.description "Copies binaries from default VS location to exepcted bin folder, but keeps a subdirectory structure for each project in the src folder to support multiple project outputs"
 Target.create "CopyBinaries" (fun _ ->
     !! "src/**/*.fsproj"
     |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin" </> "Release", "bin"))
-    |>  Seq.iter (fun (fromDir, toDir) -> Shell.CopyDir toDir fromDir (fun _ -> true))
+    |>  Seq.iter (fun (fromDir, toDir) -> Shell.copyDir toDir fromDir (fun _ -> true))
 )
 
-Target.Description "Clean build results"
+Target.description "Clean build results"
 Target.create "Clean" (fun _ ->
-    Shell.CleanDirs ["bin"; "temp"]
+    Shell.cleanDirs ["bin"; "temp"]
 )
 
-Target.Description "Build test project"
+Target.description "Build test project"
 Target.create "BuildDebug" (fun _ ->
     DotNet.restore id testProjectPath
     DotNet.build
@@ -79,7 +82,7 @@ Target.create "BuildDebug" (fun _ ->
         testProjectPath
 )
 
-Target.Description "Build library for release"
+Target.description "Build library for release"
 Target.create "Build" (fun _ ->
     DotNet.restore id projectPath
     DotNet.build
@@ -90,14 +93,14 @@ Target.create "Build" (fun _ ->
         projectPath
 )
 
-Target.Description "Run the unit tests using test runner"
+Target.description "Run the unit tests using test runner"
 Target.create "RunTests" (fun _ ->
-    Expecto id (!! testAssemblies)
+    Expecto.run id (!! testAssemblies)
 )
 
-Target.Description "Build a NuGet package"
+Target.description "Build a NuGet package"
 Target.create "NuGet" (fun _ ->
-    Shell.CopyDir ("temp" </> "lib") "bin" FileFilter.allFiles
+    Shell.copyDir ("temp" </> "lib") "bin" FileFilter.allFiles
 
     NuGet.NuGet.NuGet (fun p ->
         { p with
@@ -122,39 +125,39 @@ Target.create "PublishNuget" (fun _ ->
 
 Target.create "GenerateHelp" (fun _ ->
     Shell.rm "docs/articles/release-notes.md"
-    Shell.CopyFile "docs/articles/" "RELEASE_NOTES.md"
-    Shell.Rename "docs/articles/release-notes.md" "docs/articles/RELEASE_NOTES.md"
+    Shell.copyFile "docs/articles/" "RELEASE_NOTES.md"
+    Shell.rename "docs/articles/release-notes.md" "docs/articles/RELEASE_NOTES.md"
 
     Shell.rm "docs/articles/license.md"
-    Shell.CopyFile "docs/articles/" "LICENSE.md"
-    Shell.Rename "docs/articles/license.md" "docs/articles/LICENSE.md"
+    Shell.copyFile "docs/articles/" "LICENSE.md"
+    Shell.rename "docs/articles/license.md" "docs/articles/LICENSE.md"
 )
 
 Target.create "CleanDocs" (fun _ ->
-    Shell.CleanDirs [ tempDocsDir ]
+    Shell.cleanDirs [ tempDocsDir ]
 )
 
 Target.create "Serve" (fun _ ->
-    DocFx (fun p -> { p with Serve = true; ToolPath = docfxToolPath; Timeout = TimeSpan.MaxValue })
+    DocFx.serve (fun p -> { p with Common = { p.Common with DocFxPath = docfxToolPath; Timeout = TimeSpan.MaxValue } })
 )
 
-Target.Description "Generate the documentation"
+Target.description "Generate the documentation"
 Target.create "GenerateDocs" (fun _ ->
-    DocFx (fun p -> { p with ToolPath = docfxToolPath })
+    DocFx.build (fun p -> { p with Common = { p.Common with DocFxPath = docfxToolPath } })
 )
 
 Target.create "ReleaseDocs" (fun _ ->
-    Shell.CleanDirs [ tempDocsDir ]
+    Shell.cleanDirs [ tempDocsDir ]
     Git.Repository.cloneSingleBranch "" (gitHome + "/" + gitName + ".git") "gh-pages" tempDocsDir
-    DocFx (fun p -> { p with ToolPath = docfxToolPath })
+    DocFx.build (fun p -> { p with Common = { p.Common with DocFxPath = docfxToolPath } })
     Git.Staging.stageAll tempDocsDir
     Git.Commit.exec tempDocsDir (sprintf "Update generated documentation for version %s" release.NugetVersion)
     Git.Branches.push tempDocsDir
 )
 
 Target.create "Release" (fun _ ->
-    let user = environVarOrFail "github-user"
-    let pw = environVarOrFail "github-pw"
+    let user = Environment.environVarOrFail "github-user"
+    let pw = Environment.environVarOrFail "github-pw"
     let remote =
         Git.CommandHelper.getGitResult "" "remote -v"
         |> Seq.filter (fun (s: string) -> s.EndsWith("(push)"))
@@ -174,8 +177,8 @@ Target.create "Release" (fun _ ->
     |> Async.RunSynchronously
 )
 
-Target.create "BuildPackage" Target.DoNothing
-Target.create "All" Target.DoNothing
+Target.create "BuildPackage" ignore
+Target.create "All" ignore
 
 "Clean"
   ==> "AssemblyInfo"
@@ -185,7 +188,7 @@ Target.create "All" Target.DoNothing
   ==> "CopyBinaries"
   ==> "GenerateDocs"
   ==> "All"
-  =?> ("ReleaseDocs", isLocalBuild)
+  =?> ("ReleaseDocs", BuildServer.isLocalBuild)
 
 "All"
   ==> "NuGet"
