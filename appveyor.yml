@@ -5,7 +5,7 @@ branches:
     - master
 init:
   - git config --global core.autocrlf true
-  - ./.paket/paket.exe restore
+  - .paket\paket.exe restore
   - dotnet tool install fake-cli -g
 build: off
 test_script:
