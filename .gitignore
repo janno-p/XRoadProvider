@@ -190,4 +190,4 @@ docs/content/release-notes.md
 .fake
 .idea
 
-src/XRoadProvider/XRoadProvider.xml
+XRoadProvider.xml
