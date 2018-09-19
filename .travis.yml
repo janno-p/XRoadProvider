@@ -1,6 +1,11 @@
 language: csharp
-dotnet: 2.1.4
+dotnet: 2.1.402
 mono: latest
 sudo: false
 dist: trusty
-script: ./build.sh RunTests
+env:
+  - PATH=$PATH:/home/travis/.dotnet/tools
+script:
+  - mono ./.paket/paket.exe restore
+  - dotnet tool install fake-cli -g
+  - fake run build.fsx target RunTests

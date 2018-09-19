@@ -6,6 +6,9 @@
           "files": [
             "**.fsproj"
           ],
+          "exclude": [
+            "**.net40.fsproj"
+          ],
           "src": "../src"
         }
       ],

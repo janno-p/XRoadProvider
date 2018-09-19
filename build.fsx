@@ -46,7 +46,7 @@ let testAssemblies = testProjectPath </> "**" </> "bin" </> "Debug" </> "**" </>
 
 let release = ReleaseNotes.load "RELEASE_NOTES.md"
 
-let docfxToolPath = __SOURCE_DIRECTORY__ </> "paket-files" </> "github.com" </> "docfx.exe"
+let docfxToolPath = __SOURCE_DIRECTORY__ </> "paket-files" </> "build" </> "github.com" </> "docfx.exe"
 let tempDocsDir = "temp" </> "gh-pages"
 
 Target.description "Generate assembly info files with the right version & up-to-date information"
@@ -154,21 +154,30 @@ Target.create "CleanDocs" (fun _ ->
 )
 
 Target.create "Serve" (fun _ ->
-    //DocFx (fun p -> { p with Serve = true; ToolPath = docfxToolPath; Timeout = TimeSpan.MaxValue })
-    DocFx.serve (fun p -> { p with Common = { p.Common with DocFxPath = docfxToolPath; Timeout = TimeSpan.MaxValue } })
+    DocFx.exec
+        (fun p ->
+            { p with
+                DocFxPath = docfxToolPath
+                Timeout = TimeSpan.MaxValue })
+        "serve"
+        tempDocsDir
 )
 
 Target.description "Generate the documentation"
 Target.create "GenerateDocs" (fun _ ->
-    //DocFx (fun p -> { p with ToolPath = docfxToolPath })
-    DocFx.build (fun p -> { p with Common = { p.Common with DocFxPath = docfxToolPath } })
+    DocFx.exec
+        (fun p -> { p with DocFxPath = docfxToolPath })
+        (__SOURCE_DIRECTORY__ </> "docs" </> "docfx.json")
+        ""
 )
 
 Target.create "ReleaseDocs" (fun _ ->
     Shell.cleanDirs [ tempDocsDir ]
     Git.Repository.cloneSingleBranch "" (gitHome + "/" + gitName + ".git") "gh-pages" tempDocsDir
-    //DocFx (fun p -> { p with ToolPath = docfxToolPath })
-    DocFx.build (fun p -> { p with Common = { p.Common with DocFxPath = docfxToolPath } })
+    DocFx.exec
+        (fun p -> { p with DocFxPath = docfxToolPath })
+        (__SOURCE_DIRECTORY__ </> "docs" </> "docfx.json")
+        ""
     Git.Staging.stageAll tempDocsDir
     Git.Commit.exec tempDocsDir (sprintf "Update generated documentation for version %s" release.NugetVersion)
     Git.Branches.push tempDocsDir
