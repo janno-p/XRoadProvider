@@ -1,5 +1,8 @@
 image: Visual Studio 2017
 version: "{build}"
+branches:
+  only:
+    - master
 init:
   - git config --global core.autocrlf true
   - dotnet tool install fake-cli -g
