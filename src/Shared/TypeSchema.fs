@@ -692,7 +692,8 @@ module Parser =
                 | _ ->
                     let path = (uri |> MyOption.defaultValue ns.NamespaceName) |> fixUri schemaUri
                     let schemaNode =
-                        XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
+                        let doc = Http.getXDocument path
+                        doc.Element (xnsname "schema" XmlNamespace.Xsd)
                         |> findSchemaNode path schemaLookup documentSchemas
                     if schemaNode.TargetNamespace <> ns then
                         failwithf "Imported type schema targetNamespace `%s` does not match with expected namespace value `%s` on import element." schemaNode.TargetNamespace.NamespaceName ns.NamespaceName)
@@ -705,7 +706,8 @@ module Parser =
                 let path =
                     uri |> fixUri schemaUri
                 let schemaNode =
-                    XDocument.Load(path.ToString()).Element(xnsname "schema" XmlNamespace.Xsd)
+                    let doc = Http.getXDocument path
+                    doc.Element(xnsname "schema" XmlNamespace.Xsd)
                     |> findSchemaNode path schemaLookup documentSchemas
                 if schemaNode.TargetNamespace <> targetNamespace then
                     failwith "Included type schema should define same target namespace as the schema including it.")

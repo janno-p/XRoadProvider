@@ -1,0 +1,5 @@
+group Net461
+Expecto
+FSharp.Core
+Microsoft.NET.Test.Sdk
+YoloDev.Expecto.TestSdk

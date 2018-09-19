@@ -2,12 +2,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\src\NetFx.props" />
   <PropertyGroup>
+    <AssemblyName>XRoadProvider.Tests</AssemblyName>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net40</TargetFramework>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\XRoadProvider\XRoadProvider.fsproj" />
+    <ProjectReference Include="..\..\src\XRoadProvider.net40\XRoadProvider.net40.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Shared\Util.fs">

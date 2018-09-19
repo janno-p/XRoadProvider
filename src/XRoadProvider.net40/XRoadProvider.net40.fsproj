@@ -3,11 +3,11 @@
   <Import Project="..\NetFx.props" />
   <PropertyGroup>
     <AssemblyName>XRoadProvider</AssemblyName>
-    <RootNamespace>XRoad</RootNamespace>
-    <TargetFramework>net461</TargetFramework>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);2003</NoWarn>
     <DocumentationFile>XRoadProvider.xml</DocumentationFile>
+    <NoWarn>$(NoWarn);2003</NoWarn>
+    <RootNamespace>XRoad</RootNamespace>
+    <TargetFramework>net40</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">

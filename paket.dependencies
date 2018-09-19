@@ -1,10 +1,31 @@
 source https://api.nuget.org/v3/index.json
-framework: net461
 
-nuget FAKE rc
-nuget NuGet.CommandLine
+nuget Optional
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
 github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
 
 http https://github.com/dotnet/docfx/releases/download/v2.34/docfx.zip
+
+group Build
+source https://api.nuget.org/v3/index.json
+
+group Net461
+source https://api.nuget.org/v3/index.json
+framework: net461
+
+nuget Expecto
+nuget FSharp.Core
+nuget Microsoft.CodeAnalysis.CSharp
+nuget Microsoft.NET.Test.Sdk
+nuget NodaTime
+nuget YoloDev.Expecto.TestSdk
+
+group Net40
+source https://api.nuget.org/v3/index.json
+framework: net40
+
+nuget Argu 4.2.1
+nuget Expecto 4.1.1
+nuget FSharp.Core 3.1.2.5
+nuget NodaTime 1.4.2
