@@ -8,7 +8,7 @@ open XRoad.Wsdl
 let [<Tests>] tests =
     testList "doc/literal wrapped v5 tests" [
         test "read aktorstest service" {
-            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml"), "et", [])
+            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"), "et", [])
             let services = schema.Services
             Expect.equal services.Length 1 "should find exactly 1 service definition"
             let service = services |> List.head
@@ -21,7 +21,7 @@ let [<Tests>] tests =
         }
     
         test "parse multipart input operation" {
-            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml"), "et", [])
+            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"), "et", [])
             let services = schema.Services
             let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "fileUpload")
             Expect.equal operation.Documentation (Some "Faili üleslaadimine") "invalid documentation"
@@ -40,7 +40,7 @@ let [<Tests>] tests =
         }
     
         test "parse multipart output operation" {
-            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml"), "et", [])
+            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"), "et", [])
             let services = schema.Services
             let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "fileDownload")
             Expect.equal operation.Documentation (Some "Faili allalaadimine") "invalid documentation"
@@ -54,7 +54,7 @@ let [<Tests>] tests =
         }
     
         test "parse operation without version number" {
-            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml"), "et", [])
+            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"), "et", [])
             let services = schema.Services
             let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "listMethods")
             Expect.isNone operation.Documentation "should not have documentation"
@@ -68,7 +68,7 @@ let [<Tests>] tests =
         }
     
         test "parse non-multipart operation" {
-            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml"), "et", [])
+            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"), "et", [])
             let services = schema.Services
             let operation = services.Head.Ports.Head.Methods |> List.find (fun op -> op.Name = "isikOtsing")
             Expect.equal operation.Name "isikOtsing" "wrong operation name"
@@ -83,7 +83,7 @@ let [<Tests>] tests =
         }
     
         test "parse Aktorstest xml schema definition" {
-            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/Wsdl/AktorstestService.wsdl.xml"), "et", [])
+            let schema = ProducerDescription.Load(Uri(__SOURCE_DIRECTORY__ + "/../Wsdl/AktorstestService.wsdl.xml"), "et", [])
             let typeSchemas = schema.TypeSchemas
             Expect.equal typeSchemas.Count 2 "wrong number of type schemas parsed"
             Expect.isTrue (typeSchemas.ContainsKey "http://aktorstest.x-road.ee/producer") "should contain aktorstest schema"

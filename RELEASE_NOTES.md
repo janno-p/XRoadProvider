@@ -1,3 +1,7 @@
+#### 1.0.6 - Unreleased
+
+* Fix SSL issue with referenced schemas using https scheme.
+
 #### 1.0.5 - 22.05.2018
 
 * Add service version to service identifier (no more random version selection when multiple are available).

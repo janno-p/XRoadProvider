@@ -2,18 +2,18 @@
 namespace System
 open System.Reflection
 
-[<assembly: AssemblyTitleAttribute("XRoadProvider")>]
+[<assembly: AssemblyTitleAttribute("XRoadProvider.net40")>]
 [<assembly: AssemblyProductAttribute("XRoadProvider")>]
 [<assembly: AssemblyDescriptionAttribute("Type providers for generating types and service interfaces for XRoad producers.")>]
-[<assembly: AssemblyVersionAttribute("1.0.5")>]
-[<assembly: AssemblyFileVersionAttribute("1.0.5")>]
-[<assembly: AssemblyInformationalVersionAttribute("1.0.5")>]
+[<assembly: AssemblyVersionAttribute("1.0.6")>]
+[<assembly: AssemblyFileVersionAttribute("1.0.6")>]
+[<assembly: AssemblyInformationalVersionAttribute("1.0.6")>]
 do ()
 
 module internal AssemblyVersionInformation =
-    let [<Literal>] AssemblyTitle = "XRoadProvider"
+    let [<Literal>] AssemblyTitle = "XRoadProvider.net40"
     let [<Literal>] AssemblyProduct = "XRoadProvider"
     let [<Literal>] AssemblyDescription = "Type providers for generating types and service interfaces for XRoad producers."
-    let [<Literal>] AssemblyVersion = "1.0.5"
-    let [<Literal>] AssemblyFileVersion = "1.0.5"
-    let [<Literal>] AssemblyInformationalVersion = "1.0.5"
+    let [<Literal>] AssemblyVersion = "1.0.6"
+    let [<Literal>] AssemblyFileVersion = "1.0.6"
+    let [<Literal>] AssemblyInformationalVersion = "1.0.6"
