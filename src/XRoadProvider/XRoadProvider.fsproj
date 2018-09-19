@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\NetFx.props" />
   <PropertyGroup>
     <AssemblyName>XRoadProvider</AssemblyName>
     <RootNamespace>XRoad</RootNamespace>
@@ -9,6 +8,7 @@
     <NoWarn>$(NoWarn);2003</NoWarn>
     <DocumentationFile>XRoadProvider.xml</DocumentationFile>
   </PropertyGroup>
+  <Import Project="..\NetFx.props" />
   <ItemGroup>
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
       <Link>paket-files/ProvidedTypes.fs</Link>

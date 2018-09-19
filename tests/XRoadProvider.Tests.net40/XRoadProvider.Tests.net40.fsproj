@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\..\src\NetFx.props" />
   <PropertyGroup>
     <AssemblyName>XRoadProvider.Tests</AssemblyName>
     <OutputType>Exe</OutputType>
     <TargetFramework>net40</TargetFramework>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
+  <Import Project="..\..\src\NetFx.props" />
   <ItemGroup>
     <ProjectReference Include="..\..\src\XRoadProvider.net40\XRoadProvider.net40.fsproj" />
   </ItemGroup>

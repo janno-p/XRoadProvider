@@ -111,7 +111,17 @@ Target.create "Build" (fun _ ->
 
 Target.description "Run the unit tests using test runner"
 Target.create "RunTests" (fun _ ->
-    Expecto.run id (!! testAssemblies)
+    if Environment.isUnix then
+        !! testAssemblies
+        |> Seq.iter (fun testExe ->
+            let result =
+                Process.execSimple
+                    (fun info -> { info with FileName = testExe } |> Process.withFramework)
+                    TimeSpan.MaxValue
+            if result <> 0 then failwithf "Running test assembly '%s' failed." testExe
+        )
+    else
+        Expecto.run id (!! testAssemblies)
 )
 
 Target.description "Build a NuGet package"
