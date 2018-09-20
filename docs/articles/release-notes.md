@@ -1,4 +1,4 @@
-#### 1.0.6 - Unreleased
+#### 1.0.6 - 20.09.2018
 
 * Fix SSL issue with referenced schemas using https scheme.
 

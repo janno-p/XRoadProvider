@@ -20,6 +20,7 @@ nuget Fake.DotNet.NuGet
 nuget Fake.DotNet.Paket
 nuget Fake.DotNet.Testing.Expecto
 nuget Fake.Tools.Git
+nuget NuGet.CommandLine storage: packages
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
 
