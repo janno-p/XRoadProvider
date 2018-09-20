@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class ProvidedMethod
    ">
-    <meta name="generator" content="docfx 2.34.0.0">
+    <meta name="generator" content="docfx 2.39.2.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -22,7 +22,7 @@
     
     
   </head>
-  <body data-spy="scroll" data-target="#affix">
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
     <div id="wrapper">
       <header>
         
@@ -292,7 +292,7 @@
   <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
   <h5 id="ProviderImplementation_ProvidedTypes_ProvidedMethod_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">type ProvidedMethod (isTgt:bool, methodName:string, attrs:MethodAttributes, parameters:ProvidedParameter [], returnType:Type, invokeCode:Expr list -&gt; Expr, staticParams:ProvidedStaticParameter list, staticParamsApply:string -&gt; obj [] -&gt; ProvidedMethod option, customAttributesData:unit -&gt; CustomAttributeData [])
+    <pre><code class="lang-csharp hljs">type ProvidedMethod (isTgt:bool, methodName:string, attrs:MethodAttributes, parameters:ProvidedParameter [], returnType:Type, invokeCode:Expr list -&gt; Expr option, staticParams:ProvidedStaticParameter list, staticParamsApply:string -&gt; obj [] -&gt; ProvidedMethod option, customAttributesData:unit -&gt; CustomAttributeData [])
     inherit MethodInfo
     interface ICustomAttributeProvider
     interface _MemberInfo
@@ -335,7 +335,7 @@
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">FSharp.Quotations.Expr</span> <span class="xref">list</span> -&gt; <span class="xref">FSharp.Quotations.Expr</span></td>
+        <td><span class="xref">FSharp.Quotations.Expr</span> <span class="xref">list</span> -&gt; <span class="xref">FSharp.Quotations.Expr</span> <span class="xref">option</span></td>
         <td><span class="parametername">invokeCode</span></td>
         <td></td>
       </tr>
@@ -361,13 +361,13 @@
   
   
   <a id="ProviderImplementation_ProvidedTypes_ProvidedMethod__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.#ctor*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedMethod__ctor_bool___string___System_Reflection_MethodAttributes___ProviderImplementation_ProvidedTypes_ProvidedParameter______System_Type___FSharp_Quotations_Expr_list____FSharp_Quotations_Expr___ProviderImplementation_ProvidedTypes_ProvidedStaticParameter_list___string____obj_______ProviderImplementation_ProvidedTypes_ProvidedMethod_option___unit____System_Reflection_CustomAttributeData____" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.#ctor(bool * string * System.Reflection.MethodAttributes * ProviderImplementation.ProvidedTypes.ProvidedParameter [] * System.Type * FSharp.Quotations.Expr list -&gt; FSharp.Quotations.Expr * ProviderImplementation.ProvidedTypes.ProvidedStaticParameter list * string -&gt; obj [] -&gt; ProviderImplementation.ProvidedTypes.ProvidedMethod option * unit -&gt; System.Reflection.CustomAttributeData [])">new: bool * string * MethodAttributes * ProvidedParameter [] * Type * Expr list -&gt; Expr * ProvidedStaticParameter list * string -&gt; obj [] -&gt; ProvidedMethod option * unit -&gt; CustomAttributeData [] -&gt; ProvidedMethod</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedMethod__ctor_bool___string___System_Reflection_MethodAttributes___ProviderImplementation_ProvidedTypes_ProvidedParameter______System_Type___FSharp_Quotations_Expr_list____FSharp_Quotations_Expr_option___ProviderImplementation_ProvidedTypes_ProvidedStaticParameter_list___string____obj_______ProviderImplementation_ProvidedTypes_ProvidedMethod_option___unit____System_Reflection_CustomAttributeData____" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.#ctor(bool * string * System.Reflection.MethodAttributes * ProviderImplementation.ProvidedTypes.ProvidedParameter [] * System.Type * FSharp.Quotations.Expr list -&gt; FSharp.Quotations.Expr option * ProviderImplementation.ProvidedTypes.ProvidedStaticParameter list * string -&gt; obj [] -&gt; ProviderImplementation.ProvidedTypes.ProvidedMethod option * unit -&gt; System.Reflection.CustomAttributeData [])">new: bool * string * MethodAttributes * ProvidedParameter [] * Type * Expr list -&gt; Expr option * ProvidedStaticParameter list * string -&gt; obj [] -&gt; ProvidedMethod option * unit -&gt; CustomAttributeData [] -&gt; ProvidedMethod</h4>
   <div class="markdown level1 summary"><p>Implicit constructor.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">new: isTgt:bool * methodName:string * attrs:MethodAttributes * parameters:ProvidedParameter [] * returnType:Type * invokeCode:Expr list -&gt; Expr * staticParams:ProvidedStaticParameter list * staticParamsApply:string -&gt; obj [] -&gt; ProvidedMethod option * customAttributesData:unit -&gt; CustomAttributeData [] -&gt; ProvidedMethod</code></pre>
+    <pre><code class="lang-csharp hljs">new: isTgt:bool * methodName:string * attrs:MethodAttributes * parameters:ProvidedParameter [] * returnType:Type * invokeCode:Expr list -&gt; Expr option * staticParams:ProvidedStaticParameter list * staticParamsApply:string -&gt; obj [] -&gt; ProvidedMethod option * customAttributesData:unit -&gt; CustomAttributeData [] -&gt; ProvidedMethod</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -405,7 +405,7 @@
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">FSharp.Quotations.Expr</span> <span class="xref">list</span> -&gt; <span class="xref">FSharp.Quotations.Expr</span></td>
+        <td><span class="xref">FSharp.Quotations.Expr</span> <span class="xref">list</span> -&gt; <span class="xref">FSharp.Quotations.Expr</span> <span class="xref">option</span></td>
         <td><span class="parametername">invokeCode</span></td>
         <td></td>
       </tr>
@@ -444,13 +444,13 @@
   
   
   <a id="ProviderImplementation_ProvidedTypes_ProvidedMethod__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.#ctor*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedMethod__ctor_string___ProviderImplementation_ProvidedTypes_ProvidedParameter_list___System_Type___FSharp_Quotations_Expr_list____FSharp_Quotations_Expr___bool_option_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.#ctor(string * ProviderImplementation.ProvidedTypes.ProvidedParameter list * System.Type * FSharp.Quotations.Expr list -&gt; FSharp.Quotations.Expr * bool option)">new: string * ProvidedParameter list * Type * Expr list -&gt; Expr * bool option -&gt; ProvidedMethod</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedMethod__ctor_string___ProviderImplementation_ProvidedTypes_ProvidedParameter_list___System_Type___FSharp_Quotations_Expr_list____FSharp_Quotations_Expr_option___bool_option_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.#ctor(string * ProviderImplementation.ProvidedTypes.ProvidedParameter list * System.Type * FSharp.Quotations.Expr list -&gt; FSharp.Quotations.Expr option * bool option)">new: string * ProvidedParameter list * Type * Expr list -&gt; Expr option * bool option -&gt; ProvidedMethod</h4>
   <div class="markdown level1 summary"><p> The public constructor for the design-time/source model</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">new: methodName:string * parameters:ProvidedParameter list * returnType:Type * invokeCode:Expr list -&gt; Expr * isStatic:bool option -&gt; ProvidedMethod</code></pre>
+    <pre><code class="lang-csharp hljs">new: methodName:string * parameters:ProvidedParameter list * returnType:Type * invokeCode:Expr list -&gt; Expr option * isStatic:bool option -&gt; ProvidedMethod</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -478,7 +478,7 @@
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">FSharp.Quotations.Expr</span> <span class="xref">list</span> -&gt; <span class="xref">FSharp.Quotations.Expr</span></td>
+        <td><span class="xref">FSharp.Quotations.Expr</span> <span class="xref">list</span> -&gt; <span class="xref">FSharp.Quotations.Expr</span> <span class="xref">option</span></td>
         <td><span class="parametername">invokeCode</span></td>
         <td></td>
       </tr>
@@ -552,6 +552,31 @@
     <tbody>
       <tr>
         <td><a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html">ProvidedTypeDefinition</a> <span class="xref">option</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedMethod_GetInvokeCode_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.GetInvokeCode*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedMethod_GetInvokeCode_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.GetInvokeCode(unit)">property GetInvokeCode: Expr list -&gt; Expr option</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">property GetInvokeCode: Expr list -&gt; Expr option with get</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">FSharp.Quotations.Expr</span> <span class="xref">list</span> -&gt; <span class="xref">FSharp.Quotations.Expr</span> <span class="xref">option</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -1242,48 +1267,6 @@
   </table>
   
   
-  <a id="ProviderImplementation_ProvidedTypes_ProvidedMethod_GetInvokeCode_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.GetInvokeCode*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedMethod_GetInvokeCode_FSharp_Quotations_Expr_list_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.GetInvokeCode(FSharp.Quotations.Expr list)">member GetInvokeCode: Expr list -&gt; Expr</h4>
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">member GetInvokeCode: args:Expr list -&gt; Expr</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">FSharp.Quotations.Expr</span> <span class="xref">list</span></td>
-        <td><span class="parametername">args</span></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 class="returns">Returns</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">FSharp.Quotations.Expr</span></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  
-  
   <a id="ProviderImplementation_ProvidedTypes_ProvidedMethod_GetStaticParametersInternal_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.GetStaticParametersInternal*"></a>
   <h4 id="ProviderImplementation_ProvidedTypes_ProvidedMethod_GetStaticParametersInternal_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedMethod.GetStaticParametersInternal(unit)">member GetStaticParametersInternal: unit -&gt; ParameterInfo []</h4>
   <div class="markdown level1 summary"><p> Get ParameterInfo[] for the parametric type parameters</p>
@@ -1441,7 +1424,7 @@
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">override member GetCustomAttributes: _attributeType:Type * _inherit:bool -&gt; obj []</code></pre>
+    <pre><code class="lang-csharp hljs">override member GetCustomAttributes: attributeType:Type * _inherit:bool -&gt; obj []</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -1455,7 +1438,7 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Type</span></td>
-        <td><span class="parametername">_attributeType</span></td>
+        <td><span class="parametername">attributeType</span></td>
         <td></td>
       </tr>
       <tr>

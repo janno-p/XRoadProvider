@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class ProvidedTypeDefinition
    ">
-    <meta name="generator" content="docfx 2.34.0.0">
+    <meta name="generator" content="docfx 2.39.2.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -22,7 +22,7 @@
     
     
   </head>
-  <body data-spy="scroll" data-target="#affix">
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
     <div id="wrapper">
       <header>
         
@@ -73,7 +73,10 @@
   
   <h1 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition" class="text-break">Class ProvidedTypeDefinition
   </h1>
-  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 summary"><p> backingDataSource is a set of functions to fetch backing data for the ProvidedTypeDefinition,
+ and allows us to reuse this type for both target and source models, even when the
+ source model is being incrementally updates by further .AddMember calls</p>
+</div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
@@ -759,7 +762,7 @@
   <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
   <h5 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">type ProvidedTypeDefinition (isTgt:bool, container:TypeContainer, className:string, getBaseType:unit -&gt; Type option, attrs:TypeAttributes, getEnumUnderlyingType:unit -&gt; Type option, staticParams:ProvidedStaticParameter list, staticParamsApply:string -&gt; obj [] -&gt; ProvidedTypeDefinition option, initialData:unit -&gt; MemberInfo [] * unit -&gt; Type [] * unit -&gt; ProvidedMethod * MethodInfo [] option, customAttributesData:unit -&gt; CustomAttributeData [], nonNullable:bool, hideObjectMethods:bool)
+    <pre><code class="lang-csharp hljs">type ProvidedTypeDefinition (isTgt:bool, container:TypeContainer, className:string, getBaseType:unit -&gt; Type option, attrs:TypeAttributes, getEnumUnderlyingType:unit -&gt; Type option, staticParams:ProvidedStaticParameter list, staticParamsApply:string -&gt; obj [] -&gt; ProvidedTypeDefinition option, backingDataSource:unit -&gt; bool * unit -&gt; MemberInfo [] * unit -&gt; Type [] * unit -&gt; ProvidedMethod * MethodInfo [] option, customAttributesData:unit -&gt; CustomAttributeData [], nonNullable:bool, hideObjectMethods:bool)
     inherit TypeDelegator
     interface ICustomAttributeProvider
     interface _MemberInfo
@@ -818,8 +821,8 @@
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">unit</span> -&gt; <span class="xref">System.Reflection.MemberInfo</span> [] * <span class="xref">unit</span> -&gt; <span class="xref">System.Type</span> [] * <span class="xref">unit</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedMethod.html">ProvidedMethod</a> * <span class="xref">System.Reflection.MethodInfo</span> [] <span class="xref">option</span></td>
-        <td><span class="parametername">initialData</span></td>
+        <td><span class="xref">unit</span> -&gt; <span class="xref">bool</span> * <span class="xref">unit</span> -&gt; <span class="xref">System.Reflection.MemberInfo</span> [] * <span class="xref">unit</span> -&gt; <span class="xref">System.Type</span> [] * <span class="xref">unit</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedMethod.html">ProvidedMethod</a> * <span class="xref">System.Reflection.MethodInfo</span> [] <span class="xref">option</span></td>
+        <td><span class="parametername">backingDataSource</span></td>
         <td></td>
       </tr>
       <tr>
@@ -844,13 +847,13 @@
   
   
   <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_bool___ProviderImplementation_ProvidedTypes_TypeContainer___string___unit____System_Type_option___System_Reflection_TypeAttributes___unit____System_Type_option___ProviderImplementation_ProvidedTypes_ProvidedStaticParameter_list___string____obj_______ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_option___unit____System_Reflection_MemberInfo______unit____System_Type______unit____ProviderImplementation_ProvidedTypes_ProvidedMethod___System_Reflection_MethodInfo____option___unit____System_Reflection_CustomAttributeData______bool___bool_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor(bool * ProviderImplementation.ProvidedTypes.TypeContainer * string * unit -&gt; System.Type option * System.Reflection.TypeAttributes * unit -&gt; System.Type option * ProviderImplementation.ProvidedTypes.ProvidedStaticParameter list * string -&gt; obj [] -&gt; ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition option * unit -&gt; System.Reflection.MemberInfo [] * unit -&gt; System.Type [] * unit -&gt; ProviderImplementation.ProvidedTypes.ProvidedMethod * System.Reflection.MethodInfo [] option * unit -&gt; System.Reflection.CustomAttributeData [] * bool * bool)">new: bool * TypeContainer * string * unit -&gt; Type option * TypeAttributes * unit -&gt; Type option * ProvidedStaticParameter list * string -&gt; obj [] -&gt; ProvidedTypeDefinition option * unit -&gt; MemberInfo [] * unit -&gt; Type [] * unit -&gt; ProvidedMethod * MethodInfo [] option * unit -&gt; CustomAttributeData [] * bool * bool -&gt; ProvidedTypeDefinition</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_bool___ProviderImplementation_ProvidedTypes_TypeContainer___string___unit____System_Type_option___System_Reflection_TypeAttributes___unit____System_Type_option___ProviderImplementation_ProvidedTypes_ProvidedStaticParameter_list___string____obj_______ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_option___unit____bool___unit____System_Reflection_MemberInfo______unit____System_Type______unit____ProviderImplementation_ProvidedTypes_ProvidedMethod___System_Reflection_MethodInfo____option___unit____System_Reflection_CustomAttributeData______bool___bool_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor(bool * ProviderImplementation.ProvidedTypes.TypeContainer * string * unit -&gt; System.Type option * System.Reflection.TypeAttributes * unit -&gt; System.Type option * ProviderImplementation.ProvidedTypes.ProvidedStaticParameter list * string -&gt; obj [] -&gt; ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition option * unit -&gt; bool * unit -&gt; System.Reflection.MemberInfo [] * unit -&gt; System.Type [] * unit -&gt; ProviderImplementation.ProvidedTypes.ProvidedMethod * System.Reflection.MethodInfo [] option * unit -&gt; System.Reflection.CustomAttributeData [] * bool * bool)">new: bool * TypeContainer * string * unit -&gt; Type option * TypeAttributes * unit -&gt; Type option * ProvidedStaticParameter list * string -&gt; obj [] -&gt; ProvidedTypeDefinition option * unit -&gt; bool * unit -&gt; MemberInfo [] * unit -&gt; Type [] * unit -&gt; ProvidedMethod * MethodInfo [] option * unit -&gt; CustomAttributeData [] * bool * bool -&gt; ProvidedTypeDefinition</h4>
   <div class="markdown level1 summary"><p>Implicit constructor.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">new: isTgt:bool * container:TypeContainer * className:string * getBaseType:unit -&gt; Type option * attrs:TypeAttributes * getEnumUnderlyingType:unit -&gt; Type option * staticParams:ProvidedStaticParameter list * staticParamsApply:string -&gt; obj [] -&gt; ProvidedTypeDefinition option * initialData:unit -&gt; MemberInfo [] * unit -&gt; Type [] * unit -&gt; ProvidedMethod * MethodInfo [] option * customAttributesData:unit -&gt; CustomAttributeData [] * nonNullable:bool * hideObjectMethods:bool -&gt; ProvidedTypeDefinition</code></pre>
+    <pre><code class="lang-csharp hljs">new: isTgt:bool * container:TypeContainer * className:string * getBaseType:unit -&gt; Type option * attrs:TypeAttributes * getEnumUnderlyingType:unit -&gt; Type option * staticParams:ProvidedStaticParameter list * staticParamsApply:string -&gt; obj [] -&gt; ProvidedTypeDefinition option * backingDataSource:unit -&gt; bool * unit -&gt; MemberInfo [] * unit -&gt; Type [] * unit -&gt; ProvidedMethod * MethodInfo [] option * customAttributesData:unit -&gt; CustomAttributeData [] * nonNullable:bool * hideObjectMethods:bool -&gt; ProvidedTypeDefinition</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -903,8 +906,8 @@
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">unit</span> -&gt; <span class="xref">System.Reflection.MemberInfo</span> [] * <span class="xref">unit</span> -&gt; <span class="xref">System.Type</span> [] * <span class="xref">unit</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedMethod.html">ProvidedMethod</a> * <span class="xref">System.Reflection.MethodInfo</span> [] <span class="xref">option</span></td>
-        <td><span class="parametername">initialData</span></td>
+        <td><span class="xref">unit</span> -&gt; <span class="xref">bool</span> * <span class="xref">unit</span> -&gt; <span class="xref">System.Reflection.MemberInfo</span> [] * <span class="xref">unit</span> -&gt; <span class="xref">System.Type</span> [] * <span class="xref">unit</span> -&gt; <a class="xref" href="ProviderImplementation.ProvidedTypes.ProvidedMethod.html">ProvidedMethod</a> * <span class="xref">System.Reflection.MethodInfo</span> [] <span class="xref">option</span></td>
+        <td><span class="parametername">backingDataSource</span></td>
         <td></td>
       </tr>
       <tr>
@@ -942,12 +945,12 @@
   
   
   <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_string___System_Type_option___bool_option___bool_option___bool_option_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor(string * System.Type option * bool option * bool option * bool option)">new: string * Type option * bool option * bool option * bool option -&gt; ProvidedTypeDefinition</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_string___System_Type_option___bool_option___bool_option___bool_option___bool_option___bool_option_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor(string * System.Type option * bool option * bool option * bool option * bool option * bool option)">new: string * Type option * bool option * bool option * bool option * bool option * bool option -&gt; ProvidedTypeDefinition</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">new: className:string * baseType:Type option * hideObjectMethods:bool option * nonNullable:bool option * isErased:bool option -&gt; ProvidedTypeDefinition</code></pre>
+    <pre><code class="lang-csharp hljs">new: className:string * baseType:Type option * hideObjectMethods:bool option * nonNullable:bool option * isErased:bool option * isSealed:bool option * isInterface:bool option -&gt; ProvidedTypeDefinition</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -984,6 +987,16 @@
         <td><span class="parametername">isErased</span></td>
         <td></td>
       </tr>
+      <tr>
+        <td><span class="xref">bool</span> <span class="xref">option</span></td>
+        <td><span class="parametername">isSealed</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">bool</span> <span class="xref">option</span></td>
+        <td><span class="parametername">isInterface</span></td>
+        <td></td>
+      </tr>
     </tbody>
   </table>
   <h5 class="returns">Returns</h5>
@@ -1004,12 +1017,12 @@
   
   
   <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_System_Reflection_Assembly___string___string___System_Type_option___bool_option___bool_option___bool_option_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor(System.Reflection.Assembly * string * string * System.Type option * bool option * bool option * bool option)">new: Assembly * string * string * Type option * bool option * bool option * bool option -&gt; ProvidedTypeDefinition</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition__ctor_System_Reflection_Assembly___string___string___System_Type_option___bool_option___bool_option___bool_option___bool_option___bool_option_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.#ctor(System.Reflection.Assembly * string * string * System.Type option * bool option * bool option * bool option * bool option * bool option)">new: Assembly * string * string * Type option * bool option * bool option * bool option * bool option * bool option -&gt; ProvidedTypeDefinition</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">new: assembly:Assembly * namespaceName:string * className:string * baseType:Type option * hideObjectMethods:bool option * nonNullable:bool option * isErased:bool option -&gt; ProvidedTypeDefinition</code></pre>
+    <pre><code class="lang-csharp hljs">new: assembly:Assembly * namespaceName:string * className:string * baseType:Type option * hideObjectMethods:bool option * nonNullable:bool option * isErased:bool option * isSealed:bool option * isInterface:bool option -&gt; ProvidedTypeDefinition</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -1054,6 +1067,16 @@
       <tr>
         <td><span class="xref">bool</span> <span class="xref">option</span></td>
         <td><span class="parametername">isErased</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">bool</span> <span class="xref">option</span></td>
+        <td><span class="parametername">isSealed</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">bool</span> <span class="xref">option</span></td>
+        <td><span class="parametername">isInterface</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -1851,12 +1874,12 @@
   
   
   <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_AddMemberDelayed_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_AddMemberDelayed_unit______90957_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed(unit -&gt; '?90957)">member AddMemberDelayed: unit -&gt; '?90957 -&gt; unit</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_AddMemberDelayed_unit______93919_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed(unit -&gt; '?93919)">member AddMemberDelayed: unit -&gt; '?93919 -&gt; unit</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">member AddMemberDelayed: memberFunction:unit -&gt; '?90957 -&gt; unit</code></pre>
+    <pre><code class="lang-csharp hljs">member AddMemberDelayed: memberFunction:unit -&gt; '?93919 -&gt; unit</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -1869,7 +1892,7 @@
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">unit</span> -&gt; &#39;?90957</td>
+        <td><span class="xref">unit</span> -&gt; &#39;?93919</td>
         <td><span class="parametername">memberFunction</span></td>
         <td></td>
       </tr>
@@ -2156,6 +2179,48 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Type</span> <span class="xref">option</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_CountMembersFromCursor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.CountMembersFromCursor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_CountMembersFromCursor_int_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.CountMembersFromCursor(int)">member CountMembersFromCursor: int -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member CountMembersFromCursor: idx:int -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">idx</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -2835,7 +2900,7 @@
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">override member GetCustomAttributes: _attributeType:Type * _inherit:bool -&gt; obj []</code></pre>
+    <pre><code class="lang-csharp hljs">override member GetCustomAttributes: attributeType:Type * _inherit:bool -&gt; obj []</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -2849,7 +2914,7 @@
     <tbody>
       <tr>
         <td><span class="xref">System.Type</span></td>
-        <td><span class="parametername">_attributeType</span></td>
+        <td><span class="parametername">attributeType</span></td>
         <td></td>
       </tr>
       <tr>
