@@ -144,8 +144,10 @@ Target.create "NuGet" (fun _ ->
 )
 
 Target.create "PublishNuget" (fun _ ->
+    let apiKey = Environment.environVarOrFail "nugetkey"
     Paket.push(fun p ->
         { p with
+            ApiKey = apiKey
             WorkingDir = "bin" })
 )
 
