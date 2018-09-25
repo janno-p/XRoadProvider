@@ -1289,6 +1289,11 @@ module internal XsdTypes =
         elif unbox value = "" then ()
         else writer.WriteValue(value)
 
+    let serializePeriod (writer: XmlWriter, value: obj, _: SerializerContext) =
+        if value |> isNull then writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true") else
+        let period: Period = unbox value
+        writer.WriteValue(PeriodPattern.NormalizingIso.Format(period))
+
     let serializeNullable (writer: XmlWriter) (value: obj) (context: SerializerContext) fser =
         if value |> isNull then writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
         else fser(writer, value, context)
@@ -1332,6 +1337,7 @@ module internal XsdTypes =
     let deserializeBigInteger (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger))
     let deserializeLocalDate (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> LocalDatePattern.Iso.Parse(reader.ReadContentAsString()).GetValueOrThrow()))
     let deserializeLocalDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateTimeValue))
+    let deserializePeriod (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context (fun (reader, _) -> PeriodPattern.NormalizingIso.Parse(reader.ReadContentAsString()).GetValueOrThrow()))
 
     let deserializeNullableBoolean (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeBoolean)
     let deserializeNullableDecimal (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeDecimal)
@@ -1437,6 +1443,7 @@ module internal XsdTypes =
         addTypeMap typeof<Nullable<LocalDate>> (mi <@ serializeNullableLocalDate(null, null, null) @>) (mi <@ deserializeNullableLocalDate(null, null) @>)
         addTypeMap typeof<LocalDateTime> (mi <@ serializeLocalDateTime(null, null, null) @>) (mi <@ deserializeLocalDateTime(null, null) @>)
         addTypeMap typeof<Nullable<LocalDateTime>> (mi <@ serializeNullableLocalDateTime(null, null, null) @>) (mi <@ deserializeNullableLocalDateTime(null, null) @>)
+        addTypeMap typeof<Period> (mi <@ serializePeriod(null, null, null) @>) (mi <@ deserializePeriod(null, null) @>)
         addTypeMap typeof<string> (mi <@ serializeString(null, null, null) @>) (mi <@ deserializeString(null, null) @>)
         addBinaryTypeMap typeof<BinaryContent> (mi <@ serializeBinaryContent(null, null, null) @>) (mi <@ deserializeBinaryContent(null, null) @>)
         addBinaryTypeMap typeof<XopBinaryContent> (mi <@ serializeXopBinaryContent(null, null, null) @>) (mi <@ deserializeXopBinaryContent(null, null) @>)

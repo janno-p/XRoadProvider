@@ -131,6 +131,7 @@ module internal XRoadHelper =
     let getSystemTypeName = function
         | "NodaTime.LocalDate" -> Some(XmlQualifiedName("date", XmlNamespace.Xsd))
         | "NodaTime.LocalDateTime" -> Some(XmlQualifiedName("dateTime", XmlNamespace.Xsd))
+        | "NodaTime.Period" -> Some(XmlQualifiedName("duration", XmlNamespace.Xsd))
         | "System.String" -> Some(XmlQualifiedName("string", XmlNamespace.Xsd))
         | "System.Boolean" -> Some(XmlQualifiedName("boolean", XmlNamespace.Xsd))
         | "System.Decimal" -> Some(XmlQualifiedName("decimal", XmlNamespace.Xsd))
@@ -454,6 +455,7 @@ module internal Wsdl =
             | XsdName "dateTime" -> Some typeof<LocalDateTime>
             | XsdName "decimal" -> Some typeof<decimal>
             | XsdName "double" -> Some typeof<double>
+            | XsdName "duration" -> Some typeof<Period>
             | XsdName "float" -> Some typeof<single>
             | XsdName "int" -> Some typeof<int>
             | XsdName "integer" -> Some typeof<bigint>
