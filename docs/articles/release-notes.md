@@ -1,3 +1,7 @@
+#### 1.0.7 - 25.09.2018
+
+* Implement `xsd:duration` type.
+
 #### 1.0.6 - 20.09.2018
 
 * Fix SSL issue with referenced schemas using https scheme.
