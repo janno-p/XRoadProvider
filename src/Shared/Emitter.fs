@@ -1314,6 +1314,11 @@ module internal XsdTypes =
         elif reader.Read() then fread() |> box
         else failwith "Unexpected end of SOAP message."
 
+    let deserializePeriodValue (reader: XmlReader, _: SerializerContext) : obj =
+        if reader.IsEmptyElement then box Period.Zero
+        elif reader.Read() then PeriodPattern.NormalizingIso.Parse(reader.ReadContentAsString()).GetValueOrThrow() |> box
+        else failwith "Unexpected end of SOAP message."
+
     let deserializeStringValue (reader: XmlReader, _: SerializerContext) : obj =
         if reader.IsEmptyElement then box ""
         elif reader.Read() then reader.ReadContentAsString() |> box
@@ -1337,7 +1342,6 @@ module internal XsdTypes =
     let deserializeBigInteger (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (reader.ReadContentAsDecimal >> BigInteger))
     let deserializeLocalDate (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> LocalDatePattern.Iso.Parse(reader.ReadContentAsString()).GetValueOrThrow()))
     let deserializeLocalDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeValue reader context (fun () -> reader.ReadContentAsString() |> deserializeDateTimeValue))
-    let deserializePeriod (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context (fun (reader, _) -> PeriodPattern.NormalizingIso.Parse(reader.ReadContentAsString()).GetValueOrThrow()))
 
     let deserializeNullableBoolean (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeBoolean)
     let deserializeNullableDecimal (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeDecimal)
@@ -1347,6 +1351,7 @@ module internal XsdTypes =
     let deserializeNullableBigInteger (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeBigInteger)
     let deserializeNullableLocalDate (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeLocalDate)
     let deserializeNullableLocalDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeLocalDateTime)
+    let deserializePeriod (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializePeriodValue)
     let deserializeString (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeStringValue)
 
     let serializeBinaryContent (writer: XmlWriter, value: obj, context: SerializerContext) =
