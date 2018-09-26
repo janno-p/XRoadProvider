@@ -1,3 +1,7 @@
+#### 1.0.8 - 26.09.2018
+
+* Period type deserialization fix.
+
 #### 1.0.7 - 25.09.2018
 
 * Implement `xsd:duration` type.
