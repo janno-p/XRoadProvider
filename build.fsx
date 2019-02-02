@@ -115,10 +115,12 @@ Target.create "RunTests" (fun _ ->
         !! testAssemblies
         |> Seq.iter (fun testExe ->
             let result =
-                Process.execSimple
-                    (fun info -> { info with FileName = testExe } |> Process.withFramework)
-                    TimeSpan.MaxValue
-            if result <> 0 then failwithf "Running test assembly '%s' failed." testExe
+                Command.RawCommand(testExe, Arguments.Empty)
+                |> CreateProcess.fromCommand
+                |> CreateProcess.withFramework
+                |> CreateProcess.withTimeout TimeSpan.MaxValue
+                |> Proc.run
+            if result.ExitCode <> 0 then failwithf "Running test assembly '%s' failed." testExe
         )
     else
         Expecto.run id (!! testAssemblies)

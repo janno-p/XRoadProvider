@@ -12,7 +12,7 @@
     <summary>@summary@</summary>
     <description>@description@</description>
     <releaseNotes>@releaseNotes@</releaseNotes>
-    <copyright>Copyright © 2015-2018</copyright>
+    <copyright>Copyright © 2015-2019</copyright>
     <tags>@tags@</tags>
     <references>
       <reference file="XRoadProvider.dll" />
