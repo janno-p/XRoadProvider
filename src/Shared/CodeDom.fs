@@ -14,7 +14,7 @@ open System.Globalization
 open System.IO
 
 open TypeSchema
-open XRoad.Wsdl.Pattern
+open XRoad.Serialization.Attributes
 
 /// Get type reference from generic argument.
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
@@ -64,7 +64,6 @@ module Attributes =
     open System.Xml.Linq
     open System.Xml.Schema
     open System.Xml.Serialization
-    open XRoad.Serialization.Attributes
 
     let private addUnqualifiedForm a = a |> Attr.addNamedArg "Form" (Expr.enumValue<XmlSchemaForm> "Unqualified")
 

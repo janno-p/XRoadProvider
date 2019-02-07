@@ -99,7 +99,7 @@ module TypeBuilder =
     let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
         let valueExpr (value: string) =
             match itemType with
-            | PrimitiveType(_, Int) -> !^ (Convert.ToInt32(value))
+            | PrimitiveType(_, XsdType.Int) -> !^ (Convert.ToInt32(value))
             | _ -> !^ value
         content
         |> List.choose (fun x ->

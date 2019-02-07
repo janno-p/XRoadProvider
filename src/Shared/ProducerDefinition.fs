@@ -4,9 +4,7 @@ open CodeDom
 open CodeDomGenerator
 open System
 open System.CodeDom
-open System.Collections.Generic
 open System.Reflection
-open System.Security.Cryptography.X509Certificates
 open System.Xml
 open XRoad.Serialization.Attributes
 open TypeSchema

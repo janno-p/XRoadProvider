@@ -447,40 +447,23 @@ module internal Wsdl =
             | XsdName name -> Some name
             | _ -> None
 
-        type XsdType =
-            | AnyUri
-            | Boolean
-            | Date
-            | DateTime
-            | Decimal
-            | Double
-            | Duration
-            | Float
-            | Int
-            | Integer
-            | Long
-            | String
-            | Id
-            | NmToken
-            | Token
-
         /// Matches type names which are mapped to system types.
         let (|SystemType|_|) = function
-            | XsdName "anyURI" -> Some(typeof<string>, AnyUri)
-            | XsdName "boolean" -> Some(typeof<bool>, Boolean)
-            | XsdName "date" -> Some(typeof<LocalDate>, Date)
-            | XsdName "dateTime" -> Some(typeof<LocalDateTime>, DateTime)
-            | XsdName "decimal" -> Some(typeof<decimal>, Decimal)
-            | XsdName "double" -> Some(typeof<double>, Double)
-            | XsdName "duration" -> Some(typeof<Period>, Duration)
-            | XsdName "float" -> Some(typeof<single>, Float)
-            | XsdName "int" -> Some(typeof<int>, Int)
-            | XsdName "integer" -> Some(typeof<bigint>, Integer)
-            | XsdName "long" -> Some(typeof<int64>, Long)
-            | XsdName "string" -> Some(typeof<string>, String)
-            | XsdName "ID" -> Some(typeof<string>, Id)
-            | XsdName "NMTOKEN" -> Some(typeof<string>, NmToken)
-            | XsdName "token" -> Some(typeof<string>, Token)
+            | XsdName "anyURI" -> Some(typeof<string>, XsdType.AnyUri)
+            | XsdName "boolean" -> Some(typeof<bool>, XsdType.Boolean)
+            | XsdName "date" -> Some(typeof<LocalDate>, XsdType.Date)
+            | XsdName "dateTime" -> Some(typeof<LocalDateTime>, XsdType.DateTime)
+            | XsdName "decimal" -> Some(typeof<decimal>, XsdType.Decimal)
+            | XsdName "double" -> Some(typeof<double>, XsdType.Double)
+            | XsdName "duration" -> Some(typeof<Period>, XsdType.Duration)
+            | XsdName "float" -> Some(typeof<single>, XsdType.Float)
+            | XsdName "int" -> Some(typeof<int>, XsdType.Int)
+            | XsdName "integer" -> Some(typeof<bigint>, XsdType.Integer)
+            | XsdName "long" -> Some(typeof<int64>, XsdType.Long)
+            | XsdName "string" -> Some(typeof<string>, XsdType.String)
+            | XsdName "ID" -> Some(typeof<string>, XsdType.Id)
+            | XsdName "NMTOKEN" -> Some(typeof<string>, XsdType.NmToken)
+            | XsdName "token" -> Some(typeof<string>, XsdType.Token)
             | XsdName name -> failwithf "Unmapped XSD type %s" name
             | SoapEncName name -> failwithf "Unmapped SOAP-ENC type %s" name
             | _ -> None

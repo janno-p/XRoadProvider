@@ -22,6 +22,25 @@ type XRoadProtocol =
     | Version40 = 5
 
 
+type XsdType =
+    | None = 0
+    | AnyUri = 1
+    | Boolean = 2
+    | Date = 3
+    | DateTime = 4
+    | Decimal = 5
+    | Double = 6
+    | Duration = 7
+    | Float = 8
+    | Int = 9
+    | Integer = 10
+    | Long = 11
+    | String = 12
+    | Id = 13
+    | NmToken = 14
+    | Token = 15
+
+
 /// Attribute which identifies serializable type.
 /// Provides overrides for content layout, type name and namespace.
 /// Default constructor initializes new attribute by giving type name and content layout.

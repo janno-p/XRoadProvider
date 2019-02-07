@@ -12,7 +12,6 @@ open System.Net.Security
 #endif
 
 open System.Security.Cryptography.X509Certificates
-open System.Text
 open System.Xml
 open XRoad.Serialization.Attributes
 
@@ -36,7 +35,6 @@ module private Response =
 
 open Response
 open System.Xml.XPath
-open Emitter
 
 type internal XRoadResponse(response: WebResponse, methodMap: MethodMap) =
     let stream = new MemoryStream()
