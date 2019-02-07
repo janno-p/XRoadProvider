@@ -992,7 +992,7 @@ NUGET
     Expecto (8.8)
       Argu (>= 5.2)
       Mono.Cecil (>= 0.10.1)
-    FSharp.Core (4.6.1)
+    FSharp.Core (4.5.4)
     Microsoft.CodeAnalysis.Analyzers (2.6.3)
     Microsoft.CodeAnalysis.Common (2.10)
       Microsoft.CodeAnalysis.Analyzers (>= 2.6.1)

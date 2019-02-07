@@ -38,6 +38,7 @@ module internal XmlNamespace =
     let [<Literal>] SoapEnc = "http://schemas.xmlsoap.org/soap/encoding/"
     let [<Literal>] SoapEnv = "http://schemas.xmlsoap.org/soap/envelope/"
     let [<Literal>] Wsdl = "http://schemas.xmlsoap.org/wsdl/"
+    let [<Literal>] Wsi = "http://ws-i.org/profiles/basic/1.1/xsd"
     let [<Literal>] Xmime = "http://www.w3.org/2005/05/xmlmime"
     let [<Literal>] Xml = "http://www.w3.org/XML/1998/namespace"
     let [<Literal>] Xmlns = "http://www.w3.org/2000/xmlns/";
@@ -54,7 +55,7 @@ module internal XmlNamespace =
 
     /// Defines namespaces which are handled separately (not generated).
     let predefined =
-        [ Http; Mime; Soap; SoapEnc; SoapEnv; Wsdl; Xmime; Xml; Xmlns; Xop; Xsd; Xsi; XRoad40; XRoad40Id; XRoad40Repr ]
+        [ Http; Mime; Soap; SoapEnc; SoapEnv; Wsdl; Wsi; Xmime; Xml; Xmlns; Xop; Xsd; Xsi; XRoad40; XRoad40Id; XRoad40Repr ]
 
 type XRoadMessageProtocolVersion =
     | Version20 of string
@@ -441,6 +442,11 @@ module internal Wsdl =
             | XmlNamespace.SoapEnc -> Some name.LocalName
             | _ -> None
 
+        let (|WsiName|_|) (name: XName) =
+            match name.NamespaceName with
+            | XmlNamespace.Wsi -> Some name.LocalName
+            | _ -> None
+
         /// Matches elements defined in `http://www.w3.org/2001/XMLSchema` namespace.
         let (|Xsd|_|) (element: XElement) =
             match element.Name with
@@ -474,7 +480,8 @@ module internal Wsdl =
         let (|BinaryType|_|) = function
             | XsdName "hexBinary"
             | XsdName "base64Binary"
-            | SoapEncName "base64Binary" -> Some typeof<byte[]>
+            | SoapEncName "base64Binary"
+            | WsiName "swaRef" -> Some typeof<byte[]>
             | _ -> None
 
         /// Matches X-Road legacy format header elements.

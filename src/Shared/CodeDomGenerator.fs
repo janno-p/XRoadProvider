@@ -48,8 +48,8 @@ module TypeBuilder =
         match prop.IsWrappedArray, prop.Type with
         | Some(hasWrapper), CollectionType(itemTy, itemName, _) ->
             let isItemNillable = prop.IsItemNillable |> MyOption.defaultValue false
-            [ Attributes.xrdElement idx elementName None prop.IsNillable (not hasWrapper) None prop.UseXop
-              Attributes.xrdCollection idx (Some(itemName)) None isItemNillable itemTy.XsdType false ]
+            [ Attributes.xrdElement idx elementName None prop.IsNillable (not hasWrapper) itemTy.XsdType prop.UseXop
+              Attributes.xrdCollection idx (Some(itemName)) None isItemNillable false ]
         | Some(_), _ ->
             failwith "Array should match to CollectionType."
         | None, _ ->

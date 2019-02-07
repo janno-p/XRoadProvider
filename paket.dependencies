@@ -36,7 +36,7 @@ framework: net461
 storage: none
 
 nuget Expecto
-nuget FSharp.Core
+nuget FSharp.Core ~> 4.5.4
 nuget Microsoft.CodeAnalysis.CSharp
 nuget Microsoft.NET.Test.Sdk
 nuget NodaTime

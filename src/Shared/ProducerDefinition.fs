@@ -155,8 +155,8 @@ module ServiceBuilder =
                         |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                     resultClass
                     |> addProperty("response", elementType, false)
-                    |> Prop.describe(Attributes.xrdElement None None None false true None elementSpec.ExpectedContentTypes.IsSome)
-                    |> Prop.describe(Attributes.xrdCollection None (Some(itemName)) None false itemTy.XsdType false)
+                    |> Prop.describe(Attributes.xrdElement None None None false true itemTy.XsdType elementSpec.ExpectedContentTypes.IsSome)
+                    |> Prop.describe(Attributes.xrdCollection None (Some(itemName)) None false false)
                     |> ignore
                     Some(resultClass)
                 | _ -> None

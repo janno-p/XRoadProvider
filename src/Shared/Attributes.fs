@@ -136,8 +136,6 @@ type XRoadCollectionAttribute(id: int, itemName: string) =
     /// item elements become direct child elements of property owner element.
     member val MergeContent = false with get, set
 
-    member val ItemXsdType = XsdType.None with get, set
-
 
 /// Describes required header elements of specified X-Road operation.
 [<AllowNullLiteral>]
