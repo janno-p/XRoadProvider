@@ -14,6 +14,7 @@ open System.Globalization
 open System.IO
 
 open TypeSchema
+open XRoad.Wsdl.Pattern
 
 /// Get type reference from generic argument.
 let typeRef<'T> = CodeTypeReference(typeof<'T>)
@@ -339,8 +340,12 @@ module String =
 
 /// Type abstraction for code generator.
 type RuntimeType =
+    /// Represents anonymous type (xs:any definition).
+    | AnyType
+    /// Represents missing type.
+    | UnitType
     /// Simple types that are presented with system runtime types.
-    | PrimitiveType of Type
+    | PrimitiveType of Type * XsdType
     /// Types that are provided by generated assembly.
     | ProvidedType of CodeTypeDeclaration * string
     /// Types that represent collection or array of runtime type.
@@ -352,10 +357,12 @@ type RuntimeType =
         let readonly = match readonly with Some(true) -> "readonly " | _ -> ""
         let ctr =
             match this with
-            | PrimitiveType(typ) -> CodeTypeReference(typ)
+            | AnyType -> CodeTypeReference(typeof<System.Xml.Linq.XElement[]>)
+            | PrimitiveType(typ, xstyp) -> CodeTypeReference(typ)
             | ProvidedType(_,name) -> CodeTypeReference(readonly + name)
             | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
             | ContentType -> CodeTypeReference(typeof<BinaryContent>)
+            | UnitType -> CodeTypeReference(typeof<Void>)
         match optional with
         | Some(true) ->
             let optionalType = CodeTypeReference(typedefof<Optional.Option<_>>)

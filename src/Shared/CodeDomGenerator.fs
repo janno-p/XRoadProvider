@@ -27,21 +27,19 @@ module TypeBuilder =
           IsWrappedArray: bool option
           // Attribute type:
           IsAttribute: bool
-          IsAny: bool
           IsIgnored: bool
           // Documentation tooltips
           Documentation: string option
           UseXop: bool }
         /// Initializes default property with name and optional value.
         static member Create(name, isOptional, doc, useXop) =
-            { Type = PrimitiveType(typeof<Void>)
+            { Type = UnitType
               IsNillable = false
               IsItemNillable = None
               IsOptional = isOptional
               IsWrappedArray = None
               Name = name
               IsAttribute = false
-              IsAny = false
               IsIgnored = false
               Documentation = doc
               UseXop = useXop }
@@ -66,7 +64,7 @@ module TypeBuilder =
             let elementName = if prop.Name <> definition.Name then Some(definition.Name) else None
             if definition.IsIgnored then
                 prop |> Prop.describe Attributes.XmlIgnore |> ignore
-            elif definition.IsAny then
+            elif definition.Type = AnyType then
                 prop |> Prop.describe Attributes.XmlAnyElement |> ignore
             elif definition.IsAttribute then
                 prop |> Prop.describe Attributes.XmlAttribute |> ignore
@@ -79,7 +77,7 @@ module TypeBuilder =
     /// Create definition of property that accepts any element not defined in schema.
     let private buildAnyProperty () =
         let prop = PropertyDefinition.Create("AnyElements", false, None, false)
-        { prop with Type = PrimitiveType(typeof<XElement[]>); IsAny = true }
+        { prop with Type = AnyType }
 
     let private annotationToText (context: TypeBuilderContext) (annotation: Annotation option) =
         annotation
@@ -101,7 +99,7 @@ module TypeBuilder =
     let private buildEnumerationConstants (runtimeType: RuntimeType) (itemType: RuntimeType) (content: RestrictionContent list) =
         let valueExpr (value: string) =
             match itemType with
-            | PrimitiveType(t) when t = typeof<int32> -> !^ (Convert.ToInt32(value))
+            | PrimitiveType(_, Int) -> !^ (Convert.ToInt32(value))
             | _ -> !^ value
         content
         |> List.choose (fun x ->
@@ -208,9 +206,9 @@ module TypeBuilder =
                     Type = CollectionType(x, name, None)
                     IsNillable = isNillable
                     IsWrappedArray = Some(false) }, [])
-            | PrimitiveType(x) when x.IsValueType ->
+            | PrimitiveType(x, xstyp) when x.IsValueType ->
                 ({ PropertyDefinition.Create(name, isOptional, doc, useXop) with
-                    Type = PrimitiveType(if isNillable then typedefof<Nullable<_>>.MakeGenericType(x) else x)
+                    Type = PrimitiveType((if isNillable then typedefof<Nullable<_>>.MakeGenericType(x) else x), xstyp)
                     IsNillable = isNillable }, [])
             | x ->
                 ({ PropertyDefinition.Create(name, isOptional, doc, useXop) with

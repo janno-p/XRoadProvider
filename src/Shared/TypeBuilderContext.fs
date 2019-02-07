@@ -162,7 +162,7 @@ type internal TypeBuilderContext =
             | true, typeInfo -> typeInfo
             | _ -> match resolvedName.XName with
                    | BinaryType(_) -> ContentType
-                   | SystemType(typ) -> PrimitiveType(typ)
+                   | SystemType(args) -> PrimitiveType(args)
                    | _ -> failwithf "Invalid type name `%A`: type not found in cache." resolvedName
 
         /// Generates new RuntimeType instance depending on given type:
@@ -173,7 +173,7 @@ type internal TypeBuilderContext =
         member private this.CreateType(name: SchemaName) =
             match name.XName with
             | BinaryType(_) -> ContentType
-            | SystemType(typ) -> PrimitiveType(typ)
+            | SystemType(args) -> PrimitiveType(args)
             | _ ->
                 let nstyp = this.GetOrCreateNamespace(name.XName.Namespace)
                 let schemaType =
