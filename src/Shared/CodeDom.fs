@@ -84,7 +84,7 @@ module Attributes =
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "IsAnonymous" (!^ true)
 
-    let xrdElement idx name ``namespace`` isNullable mergeContent useXop =
+    let xrdElement idx name ``namespace`` isNullable mergeContent xsdType useXop =
         Attr.create<XRoadElementAttribute>
         |> (match idx with Some(idx) -> (Attr.addArg (!^ idx)) | None -> id)
         |> (match name with Some(name) -> (Attr.addArg (!^ name)) | None -> id)
@@ -92,14 +92,22 @@ module Attributes =
         |> (if isNullable then (Attr.addNamedArg "IsNullable" (!^ true)) else id)
         |> (if mergeContent then (Attr.addNamedArg "MergeContent" (!^ true)) else id)
         |> (if useXop then (Attr.addNamedArg "UseXop" (!^ true)) else id)
+        |> (match xsdType with
+            | Some(XsdType.None)
+            | None -> id
+            | Some(xst) -> (Attr.addNamedArg "XsdType" (Expr.typeRefOf<XsdType> @=> (xst.ToString()))))
 
-    let xrdCollection idx itemName itemNamespace itemIsNullable mergeContent =
+    let xrdCollection idx itemName itemNamespace itemIsNullable xsdType mergeContent =
         Attr.create<XRoadCollectionAttribute>
         |> (match idx with Some(idx) -> (Attr.addArg (!^ idx)) | None -> id)
         |> (match itemName with Some(name) -> (Attr.addArg (!^ name)) | None -> id)
         |> (match itemNamespace with Some(ns) -> (Attr.addNamedArg "ItemNamespace" (!^ ns)) | None -> id)
         |> (if itemIsNullable then (Attr.addNamedArg "ItemIsNullable" (!^ true)) else id)
         |> (if mergeContent then (Attr.addNamedArg "MergeContent" (!^ true)) else id)
+        |> (match xsdType with
+            | Some(XsdType.None)
+            | None -> id
+            | Some(xst) -> (Attr.addNamedArg "ItemXsdType" (Expr.typeRefOf<XsdType> @=> (xst.ToString()))))
     
     let xrdOperation name (version: string option) (protocol: XRoadProtocol) messageProtocol =
         Attr.create<XRoadOperationAttribute>
@@ -367,7 +375,8 @@ type RuntimeType =
             let optionalType = CodeTypeReference(typedefof<Optional.Option<_>>)
             optionalType.TypeArguments.Add(ctr) |> ignore
             optionalType
-        | _ -> ctr 
+        | _ -> ctr
+    member this.XsdType with get() = match this with PrimitiveType(_, xst) -> Some(xst) | _ -> None
 
 /// Create property with backing field.
 let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
@@ -401,7 +410,7 @@ let addContentProperty (name: string, ty: RuntimeType, useXop) (owner: CodeTypeD
     let name = name.GetValidPropertyName()
     Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
     |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-    |> Fld.describe (Attributes.xrdElement None None None false true useXop)
+    |> Fld.describe (Attributes.xrdElement None None None false true ty.XsdType useXop)
     |> Fld.addTo owner
     |> ignore
     Ctor.create()

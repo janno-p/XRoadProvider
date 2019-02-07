@@ -104,7 +104,7 @@ module ServiceBuilder =
                         let p =
                             let isOptional = dspec.MinOccurs = 0u
                             Param.create (runtimeType.AsCodeTypeReference(optional=isOptional)) name
-                            |> Param.describe (Attributes.xrdElement None None None false false dspec.ExpectedContentTypes.IsSome)
+                            |> Param.describe (Attributes.xrdElement None None None false false runtimeType.XsdType dspec.ExpectedContentTypes.IsSome)
                             |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ name)
@@ -114,7 +114,7 @@ module ServiceBuilder =
                             let argName = argNameGen()
                             Param.create (def.Type.AsCodeTypeReference(optional=def.IsOptional)) argName
                             //|> Code.comment (def.Documentation)
-                            |> Param.describe (Attributes.xrdElement None None None def.IsNillable false false)
+                            |> Param.describe (Attributes.xrdElement None None None def.IsNillable false def.Type.XsdType false)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ p.Name)
                         additionalMembers.AddRange(addedTypes |> Seq.cast<_>)
@@ -147,7 +147,7 @@ module ServiceBuilder =
             let elementType = TypeBuilder.buildResponseElementType context name
             let resultClass =
                 match elementType with
-                | CollectionType(_, itemName, _) ->
+                | CollectionType(itemTy, itemName, _) ->
                     let elementSpec = name |> context.GetElementSpec
                     let resultClass =
                         Cls.create (sprintf "%sResult" operation.Name)
@@ -155,8 +155,8 @@ module ServiceBuilder =
                         |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                     resultClass
                     |> addProperty("response", elementType, false)
-                    |> Prop.describe(Attributes.xrdElement None None None false true elementSpec.ExpectedContentTypes.IsSome)
-                    |> Prop.describe(Attributes.xrdCollection None (Some(itemName)) None false false)
+                    |> Prop.describe(Attributes.xrdElement None None None false true None elementSpec.ExpectedContentTypes.IsSome)
+                    |> Prop.describe(Attributes.xrdCollection None (Some(itemName)) None false itemTy.XsdType false)
                     |> ignore
                     Some(resultClass)
                 | _ -> None

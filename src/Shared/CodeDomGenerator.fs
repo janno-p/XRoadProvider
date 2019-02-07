@@ -46,14 +46,14 @@ module TypeBuilder =
 
     let private getAttributesForProperty idx elementName (prop: PropertyDefinition) =
         match prop.IsWrappedArray, prop.Type with
-        | Some(hasWrapper), CollectionType(_,itemName,_) ->
+        | Some(hasWrapper), CollectionType(itemTy, itemName, _) ->
             let isItemNillable = prop.IsItemNillable |> MyOption.defaultValue false
-            [ Attributes.xrdElement idx elementName None prop.IsNillable (not hasWrapper) prop.UseXop
-              Attributes.xrdCollection idx (Some(itemName)) None isItemNillable false ]
+            [ Attributes.xrdElement idx elementName None prop.IsNillable (not hasWrapper) None prop.UseXop
+              Attributes.xrdCollection idx (Some(itemName)) None isItemNillable itemTy.XsdType false ]
         | Some(_), _ ->
             failwith "Array should match to CollectionType."
         | None, _ ->
-            [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.UseXop ]
+            [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.Type.XsdType prop.UseXop ]
 
     /// Build property declarations from property definitions and add them to owner type.
     let private addTypeProperties (definitions, subTypes) ownerTy =
@@ -304,7 +304,7 @@ module TypeBuilder =
                 | Sequence(spec) ->
                     let props, types = buildSequenceMembers context spec
                     let optionName = optionNameGenerator()
-                    choiceType |> Cls.describe (Attributes.xrdElement (Some(i + 1)) (Some(optionName)) None false true false) |> ignore
+                    choiceType |> Cls.describe (Attributes.xrdElement (Some(i + 1)) (Some(optionName)) None false true None false) |> ignore
                     let optionType = createOptionType optionName props
                     let optionRuntimeType = ProvidedType(optionType, optionType.Name)
                     addNewMethod (i + 1) optionName optionRuntimeType
@@ -374,7 +374,7 @@ module TypeBuilder =
                     match context.GetRuntimeType(SchemaType(spec.Base)) with
                     | PrimitiveType(_)
                     | ContentType as rtyp ->
-                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe (Attributes.xrdElement None None None false true false) |> ignore
+                        providedTy |> addProperty("BaseValue", rtyp, false) |> Prop.describe (Attributes.xrdElement None None None false true rtyp.XsdType false) |> ignore
                         Some(spec.Content)
                     | _ ->
                         failwith "ComplexType-s simpleContent should not extend complex types."

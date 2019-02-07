@@ -103,6 +103,8 @@ type XRoadElementAttribute(id: int, name: string) =
     /// MTOM+XOP protocol.
     member val UseXop = false with get, set
 
+    member val XsdType = XsdType.None with get, set
+
 
 /// Provides serialization option for various collection types.
 /// Initializes new attribute with item element name.
@@ -133,6 +135,8 @@ type XRoadCollectionAttribute(id: int, itemName: string) =
     /// When true, no extra element is serialized for this property. Instead, all collection
     /// item elements become direct child elements of property owner element.
     member val MergeContent = false with get, set
+
+    member val ItemXsdType = XsdType.None with get, set
 
 
 /// Describes required header elements of specified X-Road operation.
