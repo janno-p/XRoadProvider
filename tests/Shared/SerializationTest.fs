@@ -979,9 +979,10 @@ let [<Tests>] tests =
         
         test "serialize token" {
             let context = SerializerContext()
-            let entity = Types.WithTokenContent(TokenValue="\r\n random   content \t \r\n    ")
+            let tokenValue = String.Format("{0} random   content \t {0}    ", Environment.NewLine)
+            let entity = Types.WithTokenContent(TokenValue=tokenValue)
             let xml = serialize context "WithTokenContentService" [| entity |]
-            Expect.equal xml "<?xml version=\"1.0\" encoding=\"utf-8\"?><Body xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:tns=\"http://producer.x-road.eu/\" xmlns:test=\"testns\"><tns:WithTokenContentService><request><TokenValue>\r\n random   content \t \r\n    </TokenValue></request></tns:WithTokenContentService></Body>" "invalid serialization result"
+            Expect.equal xml (sprintf "<?xml version=\"1.0\" encoding=\"utf-8\"?><Body xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:tns=\"http://producer.x-road.eu/\" xmlns:test=\"testns\"><tns:WithTokenContentService><request><TokenValue>%s</TokenValue></request></tns:WithTokenContentService></Body>" tokenValue) "invalid serialization result"
         }
         
         test "deserialize token" {

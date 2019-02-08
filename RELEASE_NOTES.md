@@ -1,3 +1,5 @@
+#### 1.0.9 -
+
 #### 1.0.8 - 26.09.2018
 
 * Period type deserialization fix.
