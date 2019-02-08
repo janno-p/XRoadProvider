@@ -2,16 +2,9 @@ module XRoadProvider.Tests.SerializationTest
 
 open Expecto
 open System
-open System.IO
 open System.Runtime.InteropServices
-open System.Text
-open System.Threading
-open System.Xml
-open System.Xml.Linq
 open XRoad
-open XRoad.Emitter
 open XRoad.Serialization.Attributes
-open XRoadProvider.Tests.SoapUtil
 
 let [<Literal>] producerName = "producer"
 let [<Literal>] producerNamespace = "http://producer.x-road.eu/"
@@ -212,8 +205,13 @@ module Types =
         
     [<XRoadType(LayoutKind.Sequence)>]
     type WithXopBinaryContent() =
-        [<XRoadElement(UseXop=true)>]
+        [<XRoadElement(TypeHint=TypeHint.Xop)>]
         member val BinaryContent = Unchecked.defaultof<BinaryContent> with get, set
+        
+    [<XRoadType(LayoutKind.Sequence)>]
+    type WithTokenContent() =
+        [<XRoadElement(TypeHint=TypeHint.Token)>]
+        member val TokenValue = "" with get, set
         
     [<XRoadType>]
     type HasOptionalElements () =
@@ -324,6 +322,9 @@ module ResultTypes =
         
     type [<XRoadType>] WithXopBinaryContentServiceResult () =
         [<XRoadElement>] member val response = Unchecked.defaultof<Types.WithXopBinaryContent> with get, set
+        
+    type [<XRoadType>] WithTokenContentServiceResult () =
+        [<XRoadElement>] member val response = Unchecked.defaultof<Types.WithTokenContent> with get, set
         
     type [<XRoadType>] HasOptionalElementsServiceResult () =
         [<XRoadElement>] member val response = Unchecked.defaultof<Types.HasOptionalElements> with get, set
@@ -461,6 +462,11 @@ type Services =
     [<XRoadRequest("WithXopBinaryContentService", producerNamespace)>]
     [<XRoadResponse("WithXopBinaryContentServiceResponse", producerNamespace)>]
     abstract WithXopBinaryContentService: [<XRoadElement("request")>] request: Types.WithXopBinaryContent -> ResultTypes.WithXopBinaryContentServiceResult
+    
+    [<XRoadOperation("WithTokenContentService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+    [<XRoadRequest("WithTokenContentService", producerNamespace)>]
+    [<XRoadResponse("WithTokenContentServiceResponse", producerNamespace)>]
+    abstract WithTokenContentService: [<XRoadElement("request")>] request: Types.WithTokenContent -> ResultTypes.WithTokenContentServiceResult
 
     [<XRoadOperation("HasOptionalElementsService", "v1", XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
     [<XRoadRequest("HasOptionalElementsService", producerNamespace)>]
@@ -969,6 +975,23 @@ let [<Tests>] tests =
             Expect.equal result.response.BinaryContent.ContentID "Content-ID" "wrong content id"
             Expect.isTrue (result.response.BinaryContent = context.Attachments.["Content-ID"]) "should be same content"
             Expect.equal (result.response.BinaryContent.GetBytes()) [| 1uy; 2uy; 3uy; 4uy |] "wrong content" 
+        }
+        
+        test "serialize token" {
+            let context = SerializerContext()
+            let entity = Types.WithTokenContent(TokenValue="\r\n random   content \t \r\n    ")
+            let xml = serialize context "WithTokenContentService" [| entity |]
+            Expect.equal xml "<?xml version=\"1.0\" encoding=\"utf-8\"?><Body xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:tns=\"http://producer.x-road.eu/\" xmlns:test=\"testns\"><tns:WithTokenContentService><request><TokenValue>\r\n random   content \t \r\n    </TokenValue></request></tns:WithTokenContentService></Body>" "invalid serialization result"
+        }
+        
+        test "deserialize token" {
+            let context = SerializerContext()
+            let xml = "<Body><tns:WithTokenContentServiceResponse xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:tns=\"http://producer.x-road.eu/\" xmlns:test=\"testns\"><response><TokenValue>\r\n random   content \t \r    </TokenValue></response></tns:WithTokenContentServiceResponse></Body>"
+            let response = deserialize context "WithTokenContentService" xml
+            Expect.isTrue (response :? ResultTypes.WithTokenContentServiceResult) "wrong result type"
+            let result = response |> unbox<ResultTypes.WithTokenContentServiceResult>
+            Expect.isNotNull result.response.TokenValue "token content was not deserialized"
+            Expect.equal result.response.TokenValue "random content" "wrong token content" 
         }
         
         test "can serialize type with optional reference type members" {

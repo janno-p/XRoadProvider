@@ -100,11 +100,12 @@ module ServiceBuilder =
                                 let runtimeType = ProvidedType(subTy, providedTypeFullName ns.Name subTy.Name)
                                 TypeBuilder.build context runtimeType definition
                                 runtimeType
-                            | Name(typeName) -> context.GetRuntimeType(SchemaType(typeName))
+                            | Name(typeName) ->
+                                context.GetRuntimeType(SchemaType(typeName)) |> fixContentType dspec.ExpectedContentTypes.IsSome
                         let p =
                             let isOptional = dspec.MinOccurs = 0u
                             Param.create (runtimeType.AsCodeTypeReference(optional=isOptional)) name
-                            |> Param.describe (Attributes.xrdElement None None None false false runtimeType.XsdType dspec.ExpectedContentTypes.IsSome)
+                            |> Param.describe (Attributes.xrdElement None None None false false runtimeType.TypeHint)
                             |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ name)
@@ -114,7 +115,7 @@ module ServiceBuilder =
                             let argName = argNameGen()
                             Param.create (def.Type.AsCodeTypeReference(optional=def.IsOptional)) argName
                             //|> Code.comment (def.Documentation)
-                            |> Param.describe (Attributes.xrdElement None None None def.IsNillable false def.Type.XsdType false)
+                            |> Param.describe (Attributes.xrdElement None None None def.IsNillable false def.Type.TypeHint)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ p.Name)
                         additionalMembers.AddRange(addedTypes |> Seq.cast<_>)
@@ -149,13 +150,14 @@ module ServiceBuilder =
                 match elementType with
                 | CollectionType(itemTy, itemName, _) ->
                     let elementSpec = name |> context.GetElementSpec
+                    let itemTy = itemTy |> fixContentType elementSpec.ExpectedContentTypes.IsSome
                     let resultClass =
                         Cls.create (sprintf "%sResult" operation.Name)
                         |> Cls.setAttr (TypeAttributes.NestedPrivate ||| TypeAttributes.Sealed)
                         |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                     resultClass
                     |> addProperty("response", elementType, false)
-                    |> Prop.describe(Attributes.xrdElement None None None false true itemTy.XsdType elementSpec.ExpectedContentTypes.IsSome)
+                    |> Prop.describe(Attributes.xrdElement None None None false true itemTy.TypeHint)
                     |> Prop.describe(Attributes.xrdCollection None (Some(itemName)) None false false)
                     |> ignore
                     Some(resultClass)

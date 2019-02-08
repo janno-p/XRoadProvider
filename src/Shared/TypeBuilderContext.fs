@@ -161,7 +161,7 @@ type internal TypeBuilderContext =
             match this.CachedTypes.TryGetValue(resolvedName) with
             | true, typeInfo -> typeInfo
             | _ -> match resolvedName.XName with
-                   | BinaryType(_) -> ContentType
+                   | BinaryType(thv) -> ContentType(thv)
                    | SystemType(args) -> PrimitiveType(args)
                    | _ -> failwithf "Invalid type name `%A`: type not found in cache." resolvedName
 
@@ -172,7 +172,7 @@ type internal TypeBuilderContext =
         /// Other types will define separate ProvidedType in generated assembly.
         member private this.CreateType(name: SchemaName) =
             match name.XName with
-            | BinaryType(_) -> ContentType
+            | BinaryType(thv) -> ContentType(thv)
             | SystemType(args) -> PrimitiveType(args)
             | _ ->
                 let nstyp = this.GetOrCreateNamespace(name.XName.Namespace)

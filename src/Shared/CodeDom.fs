@@ -84,18 +84,16 @@ module Attributes =
         |> Attr.addArg (Expr.typeRefOf<LayoutKind> @=> (layout.ToString()))
         |> Attr.addNamedArg "IsAnonymous" (!^ true)
 
-    let xrdElement idx name ``namespace`` isNullable mergeContent xsdType useXop =
+    let xrdElement idx name ``namespace`` isNullable mergeContent typeHint =
         Attr.create<XRoadElementAttribute>
         |> (match idx with Some(idx) -> (Attr.addArg (!^ idx)) | None -> id)
         |> (match name with Some(name) -> (Attr.addArg (!^ name)) | None -> id)
         |> (match ``namespace`` with Some(ns) -> (Attr.addNamedArg "Namespace" (!^ ns)) | None -> id)
         |> (if isNullable then (Attr.addNamedArg "IsNullable" (!^ true)) else id)
         |> (if mergeContent then (Attr.addNamedArg "MergeContent" (!^ true)) else id)
-        |> (if useXop then (Attr.addNamedArg "UseXop" (!^ true)) else id)
-        |> (match xsdType with
-            | Some(XsdType.None)
-            | None -> id
-            | Some(xst) -> (Attr.addNamedArg "XsdType" (Expr.typeRefOf<XsdType> @=> (xst.ToString()))))
+        |> (match typeHint with
+            | Some(TypeHint.None) | None -> id
+            | Some(thv) -> (Attr.addNamedArg "TypeHint" (Expr.typeRefOf<TypeHint> @=> (thv.ToString()))))
 
     let xrdCollection idx itemName itemNamespace itemIsNullable mergeContent =
         Attr.create<XRoadCollectionAttribute>
@@ -348,23 +346,23 @@ type RuntimeType =
     /// Represents missing type.
     | UnitType
     /// Simple types that are presented with system runtime types.
-    | PrimitiveType of Type * XsdType
+    | PrimitiveType of Type * TypeHint
     /// Types that are provided by generated assembly.
     | ProvidedType of CodeTypeDeclaration * string
     /// Types that represent collection or array of runtime type.
     | CollectionType of RuntimeType * string * SchemaTypeDefinition option
     /// Binary content types are handled separately.
-    | ContentType
+    | ContentType of TypeHint
     /// Get type name reference for this instance.
     member this.AsCodeTypeReference(?readonly, ?optional): CodeTypeReference =
         let readonly = match readonly with Some(true) -> "readonly " | _ -> ""
         let ctr =
             match this with
             | AnyType -> CodeTypeReference(typeof<System.Xml.Linq.XElement[]>)
-            | PrimitiveType(typ, xstyp) -> CodeTypeReference(typ)
+            | PrimitiveType(typ, _) -> CodeTypeReference(typ)
             | ProvidedType(_,name) -> CodeTypeReference(readonly + name)
             | CollectionType(typ,_,_) -> CodeTypeReference(typ.AsCodeTypeReference(), 1)
-            | ContentType -> CodeTypeReference(typeof<BinaryContent>)
+            | ContentType(_) -> CodeTypeReference(typeof<BinaryContent>)
             | UnitType -> CodeTypeReference(typeof<Void>)
         match optional with
         | Some(true) ->
@@ -372,7 +370,19 @@ type RuntimeType =
             optionalType.TypeArguments.Add(ctr) |> ignore
             optionalType
         | _ -> ctr
-    member this.XsdType with get() = match this with PrimitiveType(_, xst) -> Some(xst) | _ -> None
+    member this.TypeHint
+        with get() =
+            match this with
+            | ContentType(TypeHint.None)
+            | PrimitiveType(_, TypeHint.None) -> None
+            | ContentType(thv)
+            | PrimitiveType(_, thv) -> Some(thv)
+            | _ -> None
+
+let fixContentType useXop rtyp =
+    match rtyp with
+    | ContentType(TypeHint.None) when useXop -> ContentType(TypeHint.Xop)
+    | rtyp -> rtyp
 
 /// Create property with backing field.
 let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
@@ -402,11 +412,11 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
     owner |> Cls.addMember(f) |> Cls.addMember(p) |> ignore
     p
 
-let addContentProperty (name: string, ty: RuntimeType, useXop) (owner: CodeTypeDeclaration) =
+let addContentProperty (name: string, ty: RuntimeType) (owner: CodeTypeDeclaration) =
     let name = name.GetValidPropertyName()
     Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
     |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
-    |> Fld.describe (Attributes.xrdElement None None None false true ty.XsdType useXop)
+    |> Fld.describe (Attributes.xrdElement None None None false true ty.TypeHint)
     |> Fld.addTo owner
     |> ignore
     Ctor.create()

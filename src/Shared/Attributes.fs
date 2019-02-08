@@ -22,7 +22,7 @@ type XRoadProtocol =
     | Version40 = 5
 
 
-type XsdType =
+type TypeHint =
     | None = 0
     | AnyUri = 1
     | Boolean = 2
@@ -39,6 +39,8 @@ type XsdType =
     | Id = 13
     | NmToken = 14
     | Token = 15
+    | SwaRef = 16
+    | Xop = 17
 
 
 /// Attribute which identifies serializable type.
@@ -99,11 +101,8 @@ type XRoadElementAttribute(id: int, name: string) =
     /// contents become direct child elements of property owner element.
     member val MergeContent = false with get, set
 
-    /// Applicable for binary properties. When true, given property is serialized using
-    /// MTOM+XOP protocol.
-    member val UseXop = false with get, set
-
-    member val XsdType = XsdType.None with get, set
+    /// Provides additional serialization context to given property.
+    member val TypeHint = TypeHint.None with get, set
 
 
 /// Provides serialization option for various collection types.

@@ -455,21 +455,21 @@ module internal Wsdl =
 
         /// Matches type names which are mapped to system types.
         let (|SystemType|_|) = function
-            | XsdName "anyURI" -> Some(typeof<string>, XsdType.AnyUri)
-            | XsdName "boolean" -> Some(typeof<bool>, XsdType.Boolean)
-            | XsdName "date" -> Some(typeof<LocalDate>, XsdType.Date)
-            | XsdName "dateTime" -> Some(typeof<LocalDateTime>, XsdType.DateTime)
-            | XsdName "decimal" -> Some(typeof<decimal>, XsdType.Decimal)
-            | XsdName "double" -> Some(typeof<double>, XsdType.Double)
-            | XsdName "duration" -> Some(typeof<Period>, XsdType.Duration)
-            | XsdName "float" -> Some(typeof<single>, XsdType.Float)
-            | XsdName "int" -> Some(typeof<int>, XsdType.Int)
-            | XsdName "integer" -> Some(typeof<bigint>, XsdType.Integer)
-            | XsdName "long" -> Some(typeof<int64>, XsdType.Long)
-            | XsdName "string" -> Some(typeof<string>, XsdType.String)
-            | XsdName "ID" -> Some(typeof<string>, XsdType.Id)
-            | XsdName "NMTOKEN" -> Some(typeof<string>, XsdType.NmToken)
-            | XsdName "token" -> Some(typeof<string>, XsdType.Token)
+            | XsdName "anyURI" -> Some(typeof<string>, TypeHint.AnyUri)
+            | XsdName "boolean" -> Some(typeof<bool>, TypeHint.Boolean)
+            | XsdName "date" -> Some(typeof<LocalDate>, TypeHint.Date)
+            | XsdName "dateTime" -> Some(typeof<LocalDateTime>, TypeHint.DateTime)
+            | XsdName "decimal" -> Some(typeof<decimal>, TypeHint.Decimal)
+            | XsdName "double" -> Some(typeof<double>, TypeHint.Double)
+            | XsdName "duration" -> Some(typeof<Period>, TypeHint.Duration)
+            | XsdName "float" -> Some(typeof<single>, TypeHint.Float)
+            | XsdName "int" -> Some(typeof<int>, TypeHint.Int)
+            | XsdName "integer" -> Some(typeof<bigint>, TypeHint.Integer)
+            | XsdName "long" -> Some(typeof<int64>, TypeHint.Long)
+            | XsdName "string" -> Some(typeof<string>, TypeHint.String)
+            | XsdName "ID" -> Some(typeof<string>, TypeHint.Id)
+            | XsdName "NMTOKEN" -> Some(typeof<string>, TypeHint.NmToken)
+            | XsdName "token" -> Some(typeof<string>, TypeHint.Token)
             | XsdName name -> failwithf "Unmapped XSD type %s" name
             | SoapEncName name -> failwithf "Unmapped SOAP-ENC type %s" name
             | _ -> None
@@ -480,8 +480,8 @@ module internal Wsdl =
         let (|BinaryType|_|) = function
             | XsdName "hexBinary"
             | XsdName "base64Binary"
-            | SoapEncName "base64Binary"
-            | WsiName "swaRef" -> Some typeof<byte[]>
+            | SoapEncName "base64Binary" -> Some(TypeHint.None)
+            | WsiName "swaRef" -> Some(TypeHint.SwaRef)
             | _ -> None
 
         /// Matches X-Road legacy format header elements.

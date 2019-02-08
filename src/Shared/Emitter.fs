@@ -156,8 +156,23 @@ let firstRequired (properties: Property list) =
     properties
     |> List.tryPick (fun p -> match p.Element with Some(_,_,false) -> Some(p) | _ -> None)
 
-type private XopBinaryContent() =
-    inherit BinaryContent("", Data [| |])
+module internal MarkerTypes =
+    type TokenString = class end
+    type SwaRefAttachment = class end
+    type XopAttachment = class end
+    
+let getMarkedType typ =
+    if typ = typeof<MarkerTypes.TokenString> then typeof<string>
+    elif typ = typeof<MarkerTypes.SwaRefAttachment> then typeof<BinaryContent>
+    elif typ = typeof<MarkerTypes.XopAttachment> then typeof<BinaryContent>
+    else typ
+
+let getMarkerType typeHint typ =
+    match typeHint with
+    | TypeHint.Token -> typeof<MarkerTypes.TokenString>
+    | TypeHint.SwaRef -> typeof<MarkerTypes.SwaRefAttachment>
+    | TypeHint.Xop -> typeof<MarkerTypes.XopAttachment>
+    | _ -> typ
 
 let (|Serializable|NotSerializable|) (typ: Type) =
     match typ.GetCustomAttribute<XRoadTypeAttribute>() with
@@ -1183,7 +1198,7 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
             let element = if attr.MergeContent then None else Some(xname, attr.IsNullable, isOptionalType)
             if propertyType.IsArray then
                 let elementType = propertyType.GetElementType()
-                let itemTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else elementType) |> tmf
+                let itemTypeMap = elementType |> getMarkerType attr.TypeHint |> tmf
                 let itemName = cattr |> Option.bind (fun a -> match a.ItemName with null | "" -> None | name -> Some(name)) |> MyOption.defaultWith (fun _ -> "item")
                 let itemXName = cattr |> Option.bind (fun a -> match a.ItemNamespace with "" -> None | ns -> Some(XName.Get(itemName, ns))) |> MyOption.defaultWith (fun _ -> XName.Get(itemName))
                 let itemElement = if itemTypeMap.Layout <> Some(LayoutKind.Choice)
@@ -1199,7 +1214,7 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
                         SetMethod = setMethod
                         HasValueMethod = hasValueMethod }
             else
-                let propertyTypeMap = (if attr.UseXop then typeof<XopBinaryContent> else propertyType) |> tmf
+                let propertyTypeMap = propertyType |> getMarkerType attr.TypeHint |> tmf
                 let element = if propertyTypeMap.Layout <> Some(LayoutKind.Choice) then element else None
                 Individual { TypeMap = propertyTypeMap
                              SimpleTypeName = XRoadHelper.getSystemTypeName (propertyType.FullName)
@@ -1324,6 +1339,15 @@ module internal XsdTypes =
         elif reader.Read() then reader.ReadContentAsString() |> box
         else failwith "Unexpected end of SOAP message."
 
+    let spaceRegex = System.Text.RegularExpressions.Regex("[ ]+")
+    
+    let deserializeTokenStringValue (reader: XmlReader, _: SerializerContext) : obj =
+        if reader.IsEmptyElement then box ""
+        elif reader.Read() then
+            let v = reader.ReadContentAsString().Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ')
+            spaceRegex.Replace(v, " ").Trim(' ') |> box
+        else failwith "Unexpected end of SOAP message."
+
     let deserializeDateTimeValue value =
         match LocalDateTimePattern.ExtendedIso.Parse(value) with
         | result when result.Success -> result.Value
@@ -1353,6 +1377,7 @@ module internal XsdTypes =
     let deserializeNullableLocalDateTime (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeLocalDateTime)
     let deserializePeriod (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializePeriodValue)
     let deserializeString (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeStringValue)
+    let deserializeTokenString (reader, context) = readToNextWrapper reader (fun () -> deserializeNullable reader context deserializeTokenStringValue)
 
     let serializeBinaryContent (writer: XmlWriter, value: obj, context: SerializerContext) =
         match value with
@@ -1375,6 +1400,14 @@ module internal XsdTypes =
             context.AddAttachment(content.ContentID, content, true)
             writer.WriteAttributeString("href", sprintf "cid:%s" content.ContentID)
             writer.WriteEndElement()
+            
+    let serializeSwaRefBinaryContent(writer: XmlWriter, value: obj, context: SerializerContext) =
+        match value with
+        | null -> writer.WriteAttributeString("nil", XmlNamespace.Xsi, "true")
+        | _ ->
+            let content = unbox<BinaryContent> value
+            context.AddAttachment(content.ContentID, content, true)
+            writer.WriteString(sprintf "cid:%s" content.ContentID)
 
     let deserializeBinaryContent (reader: XmlReader, context: SerializerContext) = readToNextWrapper reader (fun () ->
         let nilValue = match reader.GetAttribute("nil", XmlNamespace.Xsi) with null -> "" | x -> x
@@ -1418,9 +1451,19 @@ module internal XsdTypes =
                 | contentID -> reader.Read() |> ignore; context.GetAttachment(contentID)
             else BinaryContent.Create([| |])
     )
+    
+    let deserializeSwaRefBinaryContent (reader: XmlReader, context: SerializerContext) = readToNextWrapper reader (fun () ->
+        let nilValue = match reader.GetAttribute("nil", XmlNamespace.Xsi) with null -> "" | x -> x
+        match nilValue.ToLower() with
+        | "true" | "1" -> null
+        | _ ->
+            if reader.IsEmptyElement then BinaryContent.Create([| |]) else
+            let contentId = reader.ReadElementContentAsString()
+            context.GetAttachment(contentId)
+    )
 
     let private addTypeMap typ ser deser =
-        let typeMap = TypeMap.Create(typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
+        let typeMap = TypeMap.Create(getMarkedType typ, { Root = deser; Content = null; MatchType = null }, { Root = ser; Content = null }, None)
         typeMap.IsComplete <- true
         typeMaps.TryAdd(typ, typeMap) |> ignore
 
@@ -1450,8 +1493,10 @@ module internal XsdTypes =
         addTypeMap typeof<Nullable<LocalDateTime>> (mi <@ serializeNullableLocalDateTime(null, null, null) @>) (mi <@ deserializeNullableLocalDateTime(null, null) @>)
         addTypeMap typeof<Period> (mi <@ serializePeriod(null, null, null) @>) (mi <@ deserializePeriod(null, null) @>)
         addTypeMap typeof<string> (mi <@ serializeString(null, null, null) @>) (mi <@ deserializeString(null, null) @>)
+        addTypeMap typeof<MarkerTypes.TokenString> (mi <@ serializeString(null, null, null) @>) (mi <@ deserializeTokenString(null, null) @>)
         addBinaryTypeMap typeof<BinaryContent> (mi <@ serializeBinaryContent(null, null, null) @>) (mi <@ deserializeBinaryContent(null, null) @>)
-        addBinaryTypeMap typeof<XopBinaryContent> (mi <@ serializeXopBinaryContent(null, null, null) @>) (mi <@ deserializeXopBinaryContent(null, null) @>)
+        addBinaryTypeMap typeof<MarkerTypes.XopAttachment> (mi <@ serializeXopBinaryContent(null, null, null) @>) (mi <@ deserializeXopBinaryContent(null, null) @>)
+        addBinaryTypeMap typeof<MarkerTypes.SwaRefAttachment> (mi <@ serializeSwaRefBinaryContent(null, null, null) @>) (mi <@ deserializeSwaRefBinaryContent(null, null) @>)
 
 module internal DynamicMethods =
     let requiredOpAttr<'T when 'T :> Attribute and 'T : null and 'T : equality> (mi: MethodInfo) : 'T =
