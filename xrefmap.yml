@@ -112,19 +112,6 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile
   nameWithType: ByteFile.( .ctor )
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.Bytes(unit)
-  name: 'property Bytes: byte []'
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.html#ProviderImplementation_ProvidedTypes_AssemblyReader_ByteFile_Bytes_unit_
-  commentId: P:ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.Bytes
-  fullName: 'property ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.Bytes: byte []'
-  nameWithType: 'property ByteFile.Bytes: byte []'
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.Bytes*
-  name: Bytes
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.html#ProviderImplementation_ProvidedTypes_AssemblyReader_ByteFile_Bytes_
-  commentId: Overload:ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.Bytes*
-  isSpec: "True"
-  fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.Bytes
-  nameWithType: ByteFile.Bytes
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.CountUtf8String(int)
   name: 'member CountUtf8String: int -> int'
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.html#ProviderImplementation_ProvidedTypes_AssemblyReader_ByteFile_CountUtf8String_int_
@@ -2774,12 +2761,12 @@ references:
   commentId: P:ProviderImplementation.ProvidedTypes.AssemblyReader.nt_VOID
   fullName: 'val ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.nt_VOID: byte'
   nameWithType: 'val Constants.nt_VOID: byte'
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.tokToTaggedIdx(int -> '?94104 -> int -> int)
-  name: "val tokToTaggedIdx: int -> '?94104 -> int -> int -> TaggedIndex<'?94104>"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Constants_tokToTaggedIdx_int______94104____int____int_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.tokToTaggedIdx(int -> '?94247 -> int -> int)
+  name: "val tokToTaggedIdx: int -> '?94247 -> int -> int -> TaggedIndex<'?94247>"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Constants_tokToTaggedIdx_int______94247____int____int_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.tokToTaggedIdx``1(Microsoft.FSharp.Core.FSharpFunc{System.Int32,``0},System.Int32,System.Int32)
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.tokToTaggedIdx: int -> '?94104 -> int -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TaggedIndex<'?94104>"
-  nameWithType: "val Constants.tokToTaggedIdx: int -> '?94104 -> int -> int -> TaggedIndex<'?94104>"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.tokToTaggedIdx: int -> '?94247 -> int -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TaggedIndex<'?94247>"
+  nameWithType: "val Constants.tokToTaggedIdx: int -> '?94247 -> int -> int -> TaggedIndex<'?94247>"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.tokToTaggedIdx*
   name: tokToTaggedIdx
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Constants_tokToTaggedIdx_
@@ -10033,6 +10020,19 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.( |ElementType|_| )
   nameWithType: Reader.( |ElementType|_| )
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.___System.IO.File.ReadBinaryChunk(string * int * int)
+  name: 'extension System.IO.File.ReadBinaryChunk: string * int * int -> byte []'
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader____System_IO_File_ReadBinaryChunk_string___int___int_
+  commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.File.ReadBinaryChunk.Static(System.String,System.Int32,System.Int32)
+  fullName: 'extension ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ReadBinaryChunk: string * int * int -> byte []'
+  nameWithType: 'extension System.IO.File.ReadBinaryChunk: string * int * int -> byte []'
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.___System.IO.File.ReadBinaryChunk*
+  name: ReadBinaryChunk
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader____System_IO_File_ReadBinaryChunk_
+  commentId: Overload:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.___System.IO.File.ReadBinaryChunk*
+  isSpec: "True"
+  fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ReadBinaryChunk
+  nameWithType: Reader.ReadBinaryChunk
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.bits_of_float(float)
   name: 'val bits_of_float: float -> int64'
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_bits_of_float_float_
@@ -10065,12 +10065,12 @@ references:
   commentId: T:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue
   nameWithType: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue(ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue)
-  name: 'val CacheValue: CacheValue -> WeakReference'
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_CacheValue_ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_CacheValue_
-  commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.CacheValue(ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader)
-  fullName: 'val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue -> System.WeakReference'
-  nameWithType: 'val Reader.CacheValue: CacheValue -> WeakReference'
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue(ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader * System.DateTime)
+  name: 'val CacheValue: ILModuleReader * DateTime -> WeakReference'
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_CacheValue_ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_ILModuleReader___System_DateTime_
+  commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.CacheValue(ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader,System.DateTime)
+  fullName: 'val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader * System.DateTime -> System.WeakReference'
+  nameWithType: 'val Reader.CacheValue: ILModuleReader * DateTime -> WeakReference'
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue*
   name: CacheValue
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_CacheValue_
@@ -10450,19 +10450,6 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader
   nameWithType: ILModuleReader.( .ctor )
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.Bytes(unit)
-  name: 'property Bytes: byte []'
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_ILModuleReader_Bytes_unit_
-  commentId: P:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.Bytes
-  fullName: 'property ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.Bytes: byte []'
-  nameWithType: 'property ILModuleReader.Bytes: byte []'
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.Bytes*
-  name: Bytes
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_ILModuleReader_Bytes_
-  commentId: Overload:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.Bytes*
-  isSpec: "True"
-  fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.Bytes
-  nameWithType: ILModuleReader.Bytes
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.ILAssemblyRefs(unit)
   name: 'property ILAssemblyRefs: ILAssemblyRef list'
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_ILModuleReader_ILAssemblyRefs_unit_
@@ -10503,11 +10490,11 @@ references:
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.ILModuleDef
   nameWithType: ILModuleReader.ILModuleDef
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReaderAfterReadingAllBytes(string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals)
-  name: 'val ILModuleReaderAfterReadingAllBytes: string * ILGlobals -> CacheValue'
+  name: 'val ILModuleReaderAfterReadingAllBytes: string * ILGlobals -> ILModuleReader'
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_ILModuleReaderAfterReadingAllBytes_string___ProviderImplementation_ProvidedTypes_AssemblyReader_ILGlobals_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleReaderAfterReadingAllBytes(System.String,ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals)
-  fullName: 'val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReaderAfterReadingAllBytes: string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals -> ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue'
-  nameWithType: 'val Reader.ILModuleReaderAfterReadingAllBytes: string * ILGlobals -> CacheValue'
+  fullName: 'val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReaderAfterReadingAllBytes: string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals -> ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader'
+  nameWithType: 'val Reader.ILModuleReaderAfterReadingAllBytes: string * ILGlobals -> ILModuleReader'
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReaderAfterReadingAllBytes*
   name: ILModuleReaderAfterReadingAllBytes
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_ILModuleReaderAfterReadingAllBytes_
@@ -10776,12 +10763,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mfCompare
   nameWithType: Reader.mfCompare
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric(bool -> '?94116 -> '?94117 -> '?94118)
-  name: "val mkCacheGeneric: bool -> '?94116 -> '?94117 -> '?94118 -> ('T -> '?94120) -> 'T -> '?94120"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheGeneric_bool______94116______94117______94118_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric(bool -> '?94259 -> '?94260 -> '?94261)
+  name: "val mkCacheGeneric: bool -> '?94259 -> '?94260 -> '?94261 -> ('T -> '?94263) -> 'T -> '?94263"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheGeneric_bool______94259______94260______94261_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.mkCacheGeneric``5(System.Boolean,``0,``1,``2)
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric: bool -> '?94116 -> '?94117 -> '?94118 -> ('T -> '?94120) -> 'T -> '?94120"
-  nameWithType: "val Reader.mkCacheGeneric: bool -> '?94116 -> '?94117 -> '?94118 -> ('T -> '?94120) -> 'T -> '?94120"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric: bool -> '?94259 -> '?94260 -> '?94261 -> ('T -> '?94263) -> 'T -> '?94263"
+  nameWithType: "val Reader.mkCacheGeneric: bool -> '?94259 -> '?94260 -> '?94261 -> ('T -> '?94263) -> 'T -> '?94263"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric*
   name: mkCacheGeneric
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheGeneric_
@@ -10789,12 +10776,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric
   nameWithType: Reader.mkCacheGeneric
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheInt32(bool -> '?94112 -> '?94113 -> '?94114)
-  name: "val mkCacheInt32: bool -> '?94112 -> '?94113 -> '?94114 -> (int32 -> '?94115) -> int32 -> '?94115"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheInt32_bool______94112______94113______94114_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheInt32(bool -> '?94255 -> '?94256 -> '?94257)
+  name: "val mkCacheInt32: bool -> '?94255 -> '?94256 -> '?94257 -> (int32 -> '?94258) -> int32 -> '?94258"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheInt32_bool______94255______94256______94257_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.mkCacheInt32``4(System.Boolean,``0,``1,``2)
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheInt32: bool -> '?94112 -> '?94113 -> '?94114 -> (int32 -> '?94115) -> int32 -> '?94115"
-  nameWithType: "val Reader.mkCacheInt32: bool -> '?94112 -> '?94113 -> '?94114 -> (int32 -> '?94115) -> int32 -> '?94115"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheInt32: bool -> '?94255 -> '?94256 -> '?94257 -> (int32 -> '?94258) -> int32 -> '?94258"
+  nameWithType: "val Reader.mkCacheInt32: bool -> '?94255 -> '?94256 -> '?94257 -> (int32 -> '?94258) -> int32 -> '?94258"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheInt32*
   name: mkCacheInt32
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheInt32_
@@ -10932,12 +10919,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkILTypeForGlobalFunctions
   nameWithType: Reader.mkILTypeForGlobalFunctions
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk('?94111)
-  name: "val nochunk: '?94111 -> ILImageChunk * '?94111"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_nochunk___94111_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk('?94254)
+  name: "val nochunk: '?94254 -> ILImageChunk * '?94254"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_nochunk___94254_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.nochunk``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk: '?94111 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk * '?94111"
-  nameWithType: "val Reader.nochunk: '?94111 -> ILImageChunk * '?94111"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk: '?94254 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk * '?94254"
+  nameWithType: "val Reader.nochunk: '?94254 -> ILImageChunk * '?94254"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk*
   name: nochunk
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_nochunk_
@@ -10945,6 +10932,51 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk
   nameWithType: Reader.nochunk
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader
+  name: Reader.PEReader
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.html
+  commentId: T:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader
+  fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader
+  nameWithType: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.#ctor(string * ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile)
+  name: 'new: string * ByteFile -> PEReader'
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader__ctor_string___ProviderImplementation_ProvidedTypes_AssemblyReader_ByteFile_
+  commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.#ctor(System.String,ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile)
+  fullName: 'new: string * ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile -> ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader'
+  nameWithType: 'new: string * ByteFile -> PEReader'
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.#ctor*
+  name: ( .ctor )
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader__ctor_
+  commentId: Overload:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.#ctor*
+  isSpec: "True"
+  fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader
+  nameWithType: PEReader.( .ctor )
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataPhysLoc(unit)
+  name: 'property MetadataPhysLoc: int'
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_MetadataPhysLoc_unit_
+  commentId: P:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataPhysLoc
+  fullName: 'property ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataPhysLoc: int'
+  nameWithType: 'property PEReader.MetadataPhysLoc: int'
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataPhysLoc*
+  name: MetadataPhysLoc
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_MetadataPhysLoc_
+  commentId: Overload:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataPhysLoc*
+  isSpec: "True"
+  fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataPhysLoc
+  nameWithType: PEReader.MetadataPhysLoc
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataSize(unit)
+  name: 'property MetadataSize: int'
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_MetadataSize_unit_
+  commentId: P:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataSize
+  fullName: 'property ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataSize: int'
+  nameWithType: 'property PEReader.MetadataSize: int'
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataSize*
+  name: MetadataSize
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_MetadataSize_
+  commentId: Overload:ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataSize*
+  isSpec: "True"
+  fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataSize
+  nameWithType: PEReader.MetadataSize
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.readersWeakCache()
   name: val readersWeakCache
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_readersWeakCache__
@@ -11055,12 +11087,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadGuid
   nameWithType: Reader.seekReadGuid
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow(int * int -> '?94127 * '?94127 -> '?94128 * '?94128 -> int * bool * '?94127 -> '?94129)
-  name: "val seekReadIndexedRow: int * int -> '?94127 * '?94127 -> '?94128 * '?94128 -> int * bool * '?94127 -> '?94129 -> '?94129"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRow_int___int______94127_____94127______94128_____94128____int___bool_____94127______94129_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow(int * int -> '?94270 * '?94270 -> '?94271 * '?94271 -> int * bool * '?94270 -> '?94272)
+  name: "val seekReadIndexedRow: int * int -> '?94270 * '?94270 -> '?94271 * '?94271 -> int * bool * '?94270 -> '?94272 -> '?94272"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRow_int___int______94270_____94270______94271_____94271____int___bool_____94270______94272_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.seekReadIndexedRow``3(System.Int32,Microsoft.FSharp.Core.FSharpFunc{System.Int32,``0},Microsoft.FSharp.Core.FSharpFunc{``0,``1},Microsoft.FSharp.Core.FSharpFunc{``1,System.Int32},System.Boolean,Microsoft.FSharp.Core.FSharpFunc{``0,``2})
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow: int * int -> '?94127 * '?94127 -> '?94128 * '?94128 -> int * bool * '?94127 -> '?94129 -> '?94129"
-  nameWithType: "val Reader.seekReadIndexedRow: int * int -> '?94127 * '?94127 -> '?94128 * '?94128 -> int * bool * '?94127 -> '?94129 -> '?94129"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow: int * int -> '?94270 * '?94270 -> '?94271 * '?94271 -> int * bool * '?94270 -> '?94272 -> '?94272"
+  nameWithType: "val Reader.seekReadIndexedRow: int * int -> '?94270 * '?94270 -> '?94271 * '?94271 -> int * bool * '?94270 -> '?94272 -> '?94272"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow*
   name: seekReadIndexedRow
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRow_
@@ -11068,12 +11100,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow
   nameWithType: Reader.seekReadIndexedRow
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRows(int * int -> '?94121 * '?94121 -> '?94122 * '?94122 -> int * bool * '?94121 -> '?94123)
-  name: "val seekReadIndexedRows: int * int -> '?94121 * '?94121 -> '?94122 * '?94122 -> int * bool * '?94121 -> '?94123 -> '?94123 []"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRows_int___int______94121_____94121______94122_____94122____int___bool_____94121______94123_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRows(int * int -> '?94264 * '?94264 -> '?94265 * '?94265 -> int * bool * '?94264 -> '?94266)
+  name: "val seekReadIndexedRows: int * int -> '?94264 * '?94264 -> '?94265 * '?94265 -> int * bool * '?94264 -> '?94266 -> '?94266 []"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRows_int___int______94264_____94264______94265_____94265____int___bool_____94264______94266_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.seekReadIndexedRows``3(System.Int32,Microsoft.FSharp.Core.FSharpFunc{System.Int32,``0},Microsoft.FSharp.Core.FSharpFunc{``0,``1},Microsoft.FSharp.Core.FSharpFunc{``1,System.Int32},System.Boolean,Microsoft.FSharp.Core.FSharpFunc{``0,``2})
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRows: int * int -> '?94121 * '?94121 -> '?94122 * '?94122 -> int * bool * '?94121 -> '?94123 -> '?94123 []"
-  nameWithType: "val Reader.seekReadIndexedRows: int * int -> '?94121 * '?94121 -> '?94122 * '?94122 -> int * bool * '?94121 -> '?94123 -> '?94123 []"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRows: int * int -> '?94264 * '?94264 -> '?94265 * '?94265 -> int * bool * '?94264 -> '?94266 -> '?94266 []"
+  nameWithType: "val Reader.seekReadIndexedRows: int * int -> '?94264 * '?94264 -> '?94265 * '?94265 -> int * bool * '?94264 -> '?94266 -> '?94266 []"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRows*
   name: seekReadIndexedRows
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRows_
@@ -11107,12 +11139,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadInt64
   nameWithType: Reader.seekReadInt64
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadOptionalIndexedRow(int * int -> '?94124 * '?94124 -> '?94125 * '?94125 -> int * bool * '?94124 -> '?94126)
-  name: "val seekReadOptionalIndexedRow: int * int -> '?94124 * '?94124 -> '?94125 * '?94125 -> int * bool * '?94124 -> '?94126 -> '?94126 option"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadOptionalIndexedRow_int___int______94124_____94124______94125_____94125____int___bool_____94124______94126_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadOptionalIndexedRow(int * int -> '?94267 * '?94267 -> '?94268 * '?94268 -> int * bool * '?94267 -> '?94269)
+  name: "val seekReadOptionalIndexedRow: int * int -> '?94267 * '?94267 -> '?94268 * '?94268 -> int * bool * '?94267 -> '?94269 -> '?94269 option"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadOptionalIndexedRow_int___int______94267_____94267______94268_____94268____int___bool_____94267______94269_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.seekReadOptionalIndexedRow``3(System.Int32,Microsoft.FSharp.Core.FSharpFunc{System.Int32,``0},Microsoft.FSharp.Core.FSharpFunc{``0,``1},Microsoft.FSharp.Core.FSharpFunc{``1,System.Int32},System.Boolean,Microsoft.FSharp.Core.FSharpFunc{``0,``2})
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadOptionalIndexedRow: int * int -> '?94124 * '?94124 -> '?94125 * '?94125 -> int * bool * '?94124 -> '?94126 -> '?94126 option"
-  nameWithType: "val Reader.seekReadOptionalIndexedRow: int * int -> '?94124 * '?94124 -> '?94125 * '?94125 -> int * bool * '?94124 -> '?94126 -> '?94126 option"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadOptionalIndexedRow: int * int -> '?94267 * '?94267 -> '?94268 * '?94268 -> int * bool * '?94267 -> '?94269 -> '?94269 option"
+  nameWithType: "val Reader.seekReadOptionalIndexedRow: int * int -> '?94267 * '?94267 -> '?94268 * '?94268 -> int * bool * '?94267 -> '?94269 -> '?94269 option"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadOptionalIndexedRow*
   name: seekReadOptionalIndexedRow
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadOptionalIndexedRow_
@@ -11406,12 +11438,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptr_get_u8
   nameWithType: Reader.sigptr_get_u8
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold(byte [] -> int -> '?94110 * int -> int -> byte [] -> int)
-  name: "val sigptrFold: byte [] -> int -> '?94110 * int -> int -> byte [] -> int -> '?94110 [] * int"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFold_byte_______int______94110___int____int____byte_______int_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold(byte [] -> int -> '?94253 * int -> int -> byte [] -> int)
+  name: "val sigptrFold: byte [] -> int -> '?94253 * int -> int -> byte [] -> int -> '?94253 [] * int"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFold_byte_______int______94253___int____int____byte_______int_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.sigptrFold``1(Microsoft.FSharp.Core.FSharpFunc{System.Byte[],Microsoft.FSharp.Core.FSharpFunc{System.Int32,System.Tuple{``0,System.Int32}}},System.Int32,System.Byte[],System.Int32)
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold: byte [] -> int -> '?94110 * int -> int -> byte [] -> int -> '?94110 [] * int"
-  nameWithType: "val Reader.sigptrFold: byte [] -> int -> '?94110 * int -> int -> byte [] -> int -> '?94110 [] * int"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold: byte [] -> int -> '?94253 * int -> int -> byte [] -> int -> '?94253 [] * int"
+  nameWithType: "val Reader.sigptrFold: byte [] -> int -> '?94253 * int -> int -> byte [] -> int -> '?94253 [] * int"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold*
   name: sigptrFold
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFold_
@@ -11419,12 +11451,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold
   nameWithType: Reader.sigptrFold
-- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFoldAcc(byte [] -> int -> '?94109 * int -> int -> byte [] -> int -> int -> '?94109 list)
-  name: "val sigptrFoldAcc: byte [] -> int -> '?94109 * int -> int -> byte [] -> int -> int -> '?94109 list -> '?94109 [] * int"
-  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFoldAcc_byte_______int______94109___int____int____byte_______int____int______94109_list_
+- uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFoldAcc(byte [] -> int -> '?94252 * int -> int -> byte [] -> int -> int -> '?94252 list)
+  name: "val sigptrFoldAcc: byte [] -> int -> '?94252 * int -> int -> byte [] -> int -> int -> '?94252 list -> '?94252 [] * int"
+  href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFoldAcc_byte_______int______94252___int____int____byte_______int____int______94252_list_
   commentId: M:ProviderImplementation.ProvidedTypes.AssemblyReader.sigptrFoldAcc``1(Microsoft.FSharp.Core.FSharpFunc{System.Byte[],Microsoft.FSharp.Core.FSharpFunc{System.Int32,System.Tuple{``0,System.Int32}}},System.Int32,System.Byte[],System.Int32,System.Int32,Microsoft.FSharp.Collections.FSharpList{``0})
-  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFoldAcc: byte [] -> int -> '?94109 * int -> int -> byte [] -> int -> int -> '?94109 list -> '?94109 [] * int"
-  nameWithType: "val Reader.sigptrFoldAcc: byte [] -> int -> '?94109 * int -> int -> byte [] -> int -> int -> '?94109 list -> '?94109 [] * int"
+  fullName: "val ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFoldAcc: byte [] -> int -> '?94252 * int -> int -> byte [] -> int -> int -> '?94252 list -> '?94252 [] * int"
+  nameWithType: "val Reader.sigptrFoldAcc: byte [] -> int -> '?94252 * int -> int -> byte [] -> int -> int -> '?94252 list -> '?94252 [] * int"
 - uid: ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFoldAcc*
   name: sigptrFoldAcc
   href: api/ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.html#ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFoldAcc_
@@ -12730,12 +12762,12 @@ references:
   commentId: T:ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf
   nameWithType: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.applyBrFixups(byte [] -> int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind [] -> int * '?94186 [] -> System.Collections.Generic.Dictionary<ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel,int> -> int * int option * int * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel list [])
-  name: "val applyBrFixups: byte [] -> int * int * int * int * ExceptionClauseKind [] -> int * '?94186 [] -> Dictionary<ILCodeLabel,int> -> int * int option * int * ILCodeLabel list [] -> byte [] * int * '?94186 [] * int * int * int * int * ExceptionClauseKind []"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_applyBrFixups_byte_______int___int___int___int___ProviderImplementation_ProvidedTypes_BinaryWriter_ExceptionClauseKind_______int_____94186_______System_Collections_Generic_Dictionary_ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_int_____int___int_option___int___ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_list____
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.applyBrFixups(byte [] -> int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind [] -> int * '?94330 [] -> System.Collections.Generic.Dictionary<ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel,int> -> int * int option * int * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel list [])
+  name: "val applyBrFixups: byte [] -> int * int * int * int * ExceptionClauseKind [] -> int * '?94330 [] -> Dictionary<ILCodeLabel,int> -> int * int option * int * ILCodeLabel list [] -> byte [] * int * '?94330 [] * int * int * int * int * ExceptionClauseKind []"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_applyBrFixups_byte_______int___int___int___int___ProviderImplementation_ProvidedTypes_BinaryWriter_ExceptionClauseKind_______int_____94330_______System_Collections_Generic_Dictionary_ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_int_____int___int_option___int___ProviderImplementation_ProvidedTypes_AssemblyReader_ILCodeLabel_list____
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.applyBrFixups``1(System.Byte[],System.Tuple{System.Int32,System.Int32,System.Int32,System.Int32,ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind}[],System.Tuple{System.Int32,``0}[],System.Collections.Generic.Dictionary{System.Int32,System.Int32},System.Tuple{System.Tuple{System.Int32,Microsoft.FSharp.Core.FSharpOption{System.Int32}},System.Int32,Microsoft.FSharp.Collections.FSharpList{System.Int32}}[])
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.applyBrFixups: byte [] -> int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind [] -> int * '?94186 [] -> System.Collections.Generic.Dictionary<ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel,int> -> int * int option * int * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel list [] -> byte [] * int * '?94186 [] * int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind []"
-  nameWithType: "val Codebuf.applyBrFixups: byte [] -> int * int * int * int * ExceptionClauseKind [] -> int * '?94186 [] -> Dictionary<ILCodeLabel,int> -> int * int option * int * ILCodeLabel list [] -> byte [] * int * '?94186 [] * int * int * int * int * ExceptionClauseKind []"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.applyBrFixups: byte [] -> int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind [] -> int * '?94330 [] -> System.Collections.Generic.Dictionary<ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel,int> -> int * int option * int * ProviderImplementation.ProvidedTypes.AssemblyReader.ILCodeLabel list [] -> byte [] * int * '?94330 [] * int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind []"
+  nameWithType: "val Codebuf.applyBrFixups: byte [] -> int * int * int * int * ExceptionClauseKind [] -> int * '?94330 [] -> Dictionary<ILCodeLabel,int> -> int * int option * int * ILCodeLabel list [] -> byte [] * int * '?94330 [] * int * int * int * int * ExceptionClauseKind []"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.applyBrFixups*
   name: applyBrFixups
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_applyBrFixups_
@@ -12769,12 +12801,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitAlignment
   nameWithType: Codebuf.emitAlignment
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitCode(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94193 -> ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode)
-  name: "val emitCode: cenv -> '?94193 -> CodeBuffer -> ILTypeWriterEnv -> ILCode -> unit"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitCode_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94193____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCode_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitCode(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94337 -> ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode)
+  name: "val emitCode: cenv -> '?94337 -> CodeBuffer -> ILTypeWriterEnv -> ILCode -> unit"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitCode_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94337____ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCode_
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.emitCode``1(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,``0,ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer,ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv,ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitCode: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94193 -> ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode -> unit"
-  nameWithType: "val Codebuf.emitCode: cenv -> '?94193 -> CodeBuffer -> ILTypeWriterEnv -> ILCode -> unit"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitCode: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94337 -> ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode -> unit"
+  nameWithType: "val Codebuf.emitCode: cenv -> '?94337 -> CodeBuffer -> ILTypeWriterEnv -> ILCode -> unit"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitCode*
   name: emitCode
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_emitCode_
@@ -12912,12 +12944,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.emitTailness
   nameWithType: Codebuf.emitTailness
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.EmitTopCode(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94194 -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94195 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode)
-  name: "val EmitTopCode: cenv -> '?94194 -> ILTypeWriterEnv -> '?94195 -> ILCode -> int * int [] * int * int * int * int * ExceptionClauseKind [] * byte []"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_EmitTopCode_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94194____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv______94195____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCode_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.EmitTopCode(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94338 -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94339 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode)
+  name: "val EmitTopCode: cenv -> '?94338 -> ILTypeWriterEnv -> '?94339 -> ILCode -> int * int [] * int * int * int * int * ExceptionClauseKind [] * byte []"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_EmitTopCode_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94338____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv______94339____ProviderImplementation_ProvidedTypes_AssemblyReader_ILCode_
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.EmitTopCode``2(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,``0,ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv,``1,ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.EmitTopCode: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94194 -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94195 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode -> int * int [] * int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind [] * byte []"
-  nameWithType: "val Codebuf.EmitTopCode: cenv -> '?94194 -> ILTypeWriterEnv -> '?94195 -> ILCode -> int * int [] * int * int * int * int * ExceptionClauseKind [] * byte []"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.EmitTopCode: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94338 -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94339 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILCode -> int * int [] * int * int * int * int * ProviderImplementation.ProvidedTypes.BinaryWriter.ExceptionClauseKind [] * byte []"
+  nameWithType: "val Codebuf.EmitTopCode: cenv -> '?94338 -> ILTypeWriterEnv -> '?94339 -> ILCode -> int * int [] * int * int * int * int * ExceptionClauseKind [] * byte []"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.EmitTopCode*
   name: EmitTopCode
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_EmitTopCode_
@@ -12970,12 +13002,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.encodingsOfNoArgInstr
   nameWithType: Codebuf.encodingsOfNoArgInstr
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.findRoots('?94192 -> '?94192 -> bool -> '?94192 [])
-  name: "val findRoots: '?94192 -> '?94192 -> bool -> '?94192 [] -> '?94192 * '?94192 [] []"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_findRoots___94192______94192____bool______94192____
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.findRoots('?94336 -> '?94336 -> bool -> '?94336 [])
+  name: "val findRoots: '?94336 -> '?94336 -> bool -> '?94336 [] -> '?94336 * '?94336 [] []"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_findRoots___94336______94336____bool______94336____
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.findRoots``1(Microsoft.FSharp.Core.FSharpFunc{``0,Microsoft.FSharp.Core.FSharpFunc{``0,System.Boolean}},``0[])
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.findRoots: '?94192 -> '?94192 -> bool -> '?94192 [] -> '?94192 * '?94192 [] []"
-  nameWithType: "val Codebuf.findRoots: '?94192 -> '?94192 -> bool -> '?94192 [] -> '?94192 * '?94192 [] []"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.findRoots: '?94336 -> '?94336 -> bool -> '?94336 [] -> '?94336 * '?94336 [] []"
+  nameWithType: "val Codebuf.findRoots: '?94336 -> '?94336 -> bool -> '?94336 [] -> '?94336 * '?94336 [] []"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.findRoots*
   name: findRoots
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_findRoots_
@@ -13035,12 +13067,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.makeSEHTree
   nameWithType: Codebuf.makeSEHTree
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.mapFold('?94189 -> '?94190 -> '?94191 * '?94189 -> '?94189 -> '?94190 [])
-  name: "val mapFold: '?94189 -> '?94190 -> '?94191 * '?94189 -> '?94189 -> '?94190 [] -> '?94191 [] * '?94189"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_mapFold___94189______94190______94191_____94189______94189______94190____
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.mapFold('?94333 -> '?94334 -> '?94335 * '?94333 -> '?94333 -> '?94334 [])
+  name: "val mapFold: '?94333 -> '?94334 -> '?94335 * '?94333 -> '?94333 -> '?94334 [] -> '?94335 [] * '?94333"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_mapFold___94333______94334______94335_____94333______94333______94334____
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.mapFold``3(Microsoft.FSharp.Core.FSharpFunc{``0,Microsoft.FSharp.Core.FSharpFunc{``1,System.Tuple{``2,``0}}},``0,``1[])
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.mapFold: '?94189 -> '?94190 -> '?94191 * '?94189 -> '?94189 -> '?94190 [] -> '?94191 [] * '?94189"
-  nameWithType: "val Codebuf.mapFold: '?94189 -> '?94190 -> '?94191 * '?94189 -> '?94189 -> '?94190 [] -> '?94191 [] * '?94189"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.mapFold: '?94333 -> '?94334 -> '?94335 * '?94333 -> '?94333 -> '?94334 [] -> '?94335 [] * '?94333"
+  nameWithType: "val Codebuf.mapFold: '?94333 -> '?94334 -> '?94335 * '?94333 -> '?94333 -> '?94334 [] -> '?94335 [] * '?94333"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.mapFold*
   name: mapFold
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.Codebuf.html#ProviderImplementation_ProvidedTypes_BinaryWriter_Codebuf_mapFold_
@@ -13091,12 +13123,12 @@ references:
   commentId: P:ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.code
   fullName: 'val ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.code: ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer'
   nameWithType: 'val CodeBuffer.code: ByteBuffer'
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.Create('?94169)
-  name: "static member Create: '?94169 -> CodeBuffer"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html#ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer_Create___94169_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.Create('?94313)
+  name: "static member Create: '?94313 -> CodeBuffer"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html#ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer_Create___94313_
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.Create``1(``0)
-  fullName: "static member ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.Create: '?94169 -> ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer"
-  nameWithType: "static member CodeBuffer.Create: '?94169 -> CodeBuffer"
+  fullName: "static member ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.Create: '?94313 -> ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer"
+  nameWithType: "static member CodeBuffer.Create: '?94313 -> CodeBuffer"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.Create*
   name: Create
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.CodeBuffer.html#ProviderImplementation_ProvidedTypes_BinaryWriter_CodeBuffer_Create_
@@ -13265,12 +13297,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.combineHash
   nameWithType: BinaryWriter.combineHash
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.count('?94178 -> int -> '?94178 [])
-  name: "val count: '?94178 -> int -> '?94178 [] -> int"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_count___94178____int______94178____
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.count('?94322 -> int -> '?94322 [])
+  name: "val count: '?94322 -> int -> '?94322 [] -> int"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_count___94322____int______94322____
   commentId: M:ProviderImplementation.ProvidedTypes.count``1(Microsoft.FSharp.Core.FSharpFunc{``0,System.Int32},``0[])
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.count: '?94178 -> int -> '?94178 [] -> int"
-  nameWithType: "val BinaryWriter.count: '?94178 -> int -> '?94178 [] -> int"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.count: '?94322 -> int -> '?94322 [] -> int"
+  nameWithType: "val BinaryWriter.count: '?94322 -> int -> '?94322 [] -> int"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.count*
   name: count
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_count_
@@ -13505,12 +13537,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.envForMethodRef
   nameWithType: BinaryWriter.envForMethodRef
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.envForNonGenericMethodRef('?94143)
-  name: "val envForNonGenericMethodRef: '?94143 -> ILTypeWriterEnv"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_envForNonGenericMethodRef___94143_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.envForNonGenericMethodRef('?94287)
+  name: "val envForNonGenericMethodRef: '?94287 -> ILTypeWriterEnv"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_envForNonGenericMethodRef___94287_
   commentId: M:ProviderImplementation.ProvidedTypes.envForNonGenericMethodRef``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.envForNonGenericMethodRef: '?94143 -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv"
-  nameWithType: "val BinaryWriter.envForNonGenericMethodRef: '?94143 -> ILTypeWriterEnv"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.envForNonGenericMethodRef: '?94287 -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv"
+  nameWithType: "val BinaryWriter.envForNonGenericMethodRef: '?94287 -> ILTypeWriterEnv"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.envForNonGenericMethodRef*
   name: envForNonGenericMethodRef
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_envForNonGenericMethodRef_
@@ -13890,12 +13922,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.GenGenericParamConstraintPass4
   nameWithType: BinaryWriter.GenGenericParamConstraintPass4
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenGenericParamPass3(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94173 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag * int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef)
-  name: "val GenGenericParamPass3: cenv -> '?94173 -> int -> TypeOrMethodDefTag * int -> ILGenericParameterDef -> unit"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenGenericParamPass3_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94173____int____ProviderImplementation_ProvidedTypes_AssemblyReader_TypeOrMethodDefTag___int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILGenericParameterDef_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenGenericParamPass3(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94317 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag * int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef)
+  name: "val GenGenericParamPass3: cenv -> '?94317 -> int -> TypeOrMethodDefTag * int -> ILGenericParameterDef -> unit"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenGenericParamPass3_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94317____int____ProviderImplementation_ProvidedTypes_AssemblyReader_TypeOrMethodDefTag___int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILGenericParameterDef_
   commentId: M:ProviderImplementation.ProvidedTypes.GenGenericParamPass3``1(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,``0,System.Int32,ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag,System.Int32,ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GenGenericParamPass3: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94173 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag * int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef -> unit"
-  nameWithType: "val BinaryWriter.GenGenericParamPass3: cenv -> '?94173 -> int -> TypeOrMethodDefTag * int -> ILGenericParameterDef -> unit"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GenGenericParamPass3: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94317 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag * int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef -> unit"
+  nameWithType: "val BinaryWriter.GenGenericParamPass3: cenv -> '?94317 -> int -> TypeOrMethodDefTag * int -> ILGenericParameterDef -> unit"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenGenericParamPass3*
   name: GenGenericParamPass3
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenGenericParamPass3_
@@ -13916,12 +13948,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.GenGenericParamPass4
   nameWithType: BinaryWriter.GenGenericParamPass4
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenILMethodBody('?94171 -> ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodBody)
-  name: "val GenILMethodBody: '?94171 -> cenv -> ILTypeWriterEnv -> ILMethodBody -> int * int * int * int [] * byte []"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenILMethodBody___94171____ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodBody_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenILMethodBody('?94315 -> ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodBody)
+  name: "val GenILMethodBody: '?94315 -> cenv -> ILTypeWriterEnv -> ILMethodBody -> int * int * int * int [] * byte []"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenILMethodBody___94315____ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv____ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodBody_
   commentId: M:ProviderImplementation.ProvidedTypes.GenILMethodBody``1(``0,ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv,ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodBody)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GenILMethodBody: '?94171 -> ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodBody -> int * int * int * int [] * byte []"
-  nameWithType: "val BinaryWriter.GenILMethodBody: '?94171 -> cenv -> ILTypeWriterEnv -> ILMethodBody -> int * int * int * int [] * byte []"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GenILMethodBody: '?94315 -> ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodBody -> int * int * int * int [] * byte []"
+  nameWithType: "val BinaryWriter.GenILMethodBody: '?94315 -> cenv -> ILTypeWriterEnv -> ILMethodBody -> int * int * int * int [] * byte []"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenILMethodBody*
   name: GenILMethodBody
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenILMethodBody_
@@ -14020,12 +14052,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.GenMethodDefSigAsBlobIdx
   nameWithType: BinaryWriter.GenMethodDefSigAsBlobIdx
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenMethodImplPass3(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94176 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDef)
-  name: "val GenMethodImplPass3: cenv -> ILTypeWriterEnv -> '?94176 -> int -> ILMethodImplDef -> unit"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenMethodImplPass3_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv______94176____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodImplDef_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenMethodImplPass3(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94320 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDef)
+  name: "val GenMethodImplPass3: cenv -> ILTypeWriterEnv -> '?94320 -> int -> ILMethodImplDef -> unit"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenMethodImplPass3_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv______94320____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILMethodImplDef_
   commentId: M:ProviderImplementation.ProvidedTypes.GenMethodImplPass3``1(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv,``0,System.Int32,ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDef)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GenMethodImplPass3: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94176 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDef -> unit"
-  nameWithType: "val BinaryWriter.GenMethodImplPass3: cenv -> ILTypeWriterEnv -> '?94176 -> int -> ILMethodImplDef -> unit"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GenMethodImplPass3: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94320 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILMethodImplDef -> unit"
+  nameWithType: "val BinaryWriter.GenMethodImplPass3: cenv -> ILTypeWriterEnv -> '?94320 -> int -> ILMethodImplDef -> unit"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenMethodImplPass3*
   name: GenMethodImplPass3
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenMethodImplPass3_
@@ -14072,12 +14104,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.GenNestedExportedTypesPass3
   nameWithType: BinaryWriter.GenNestedExportedTypesPass3
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenParamPass3(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94175 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter)
-  name: "val GenParamPass3: cenv -> '?94175 -> int -> ILParameter -> unit"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenParamPass3_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94175____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILParameter_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenParamPass3(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94319 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter)
+  name: "val GenParamPass3: cenv -> '?94319 -> int -> ILParameter -> unit"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenParamPass3_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94319____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILParameter_
   commentId: M:ProviderImplementation.ProvidedTypes.GenParamPass3``1(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,``0,System.Int32,ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GenParamPass3: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94175 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter -> unit"
-  nameWithType: "val BinaryWriter.GenParamPass3: cenv -> '?94175 -> int -> ILParameter -> unit"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GenParamPass3: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94319 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter -> unit"
+  nameWithType: "val BinaryWriter.GenParamPass3: cenv -> '?94319 -> int -> ILParameter -> unit"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GenParamPass3*
   name: GenParamPass3
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GenParamPass3_
@@ -14566,12 +14598,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.GetFieldSpecSigAsBytes
   nameWithType: BinaryWriter.GetFieldSpecSigAsBytes
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetGenericParamAsGenericParamRow(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94172 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag * int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef)
-  name: "val GetGenericParamAsGenericParamRow: cenv -> '?94172 -> int -> TypeOrMethodDefTag * int -> ILGenericParameterDef -> SharedRow"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetGenericParamAsGenericParamRow_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94172____int____ProviderImplementation_ProvidedTypes_AssemblyReader_TypeOrMethodDefTag___int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILGenericParameterDef_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetGenericParamAsGenericParamRow(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94316 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag * int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef)
+  name: "val GetGenericParamAsGenericParamRow: cenv -> '?94316 -> int -> TypeOrMethodDefTag * int -> ILGenericParameterDef -> SharedRow"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetGenericParamAsGenericParamRow_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94316____int____ProviderImplementation_ProvidedTypes_AssemblyReader_TypeOrMethodDefTag___int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILGenericParameterDef_
   commentId: M:ProviderImplementation.ProvidedTypes.GetGenericParamAsGenericParamRow``1(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,``0,System.Int32,ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag,System.Int32,ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GetGenericParamAsGenericParamRow: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94172 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag * int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef -> ProviderImplementation.ProvidedTypes.BinaryWriter.SharedRow"
-  nameWithType: "val BinaryWriter.GetGenericParamAsGenericParamRow: cenv -> '?94172 -> int -> TypeOrMethodDefTag * int -> ILGenericParameterDef -> SharedRow"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GetGenericParamAsGenericParamRow: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94316 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.TypeOrMethodDefTag * int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILGenericParameterDef -> ProviderImplementation.ProvidedTypes.BinaryWriter.SharedRow"
+  nameWithType: "val BinaryWriter.GetGenericParamAsGenericParamRow: cenv -> '?94316 -> int -> TypeOrMethodDefTag * int -> ILGenericParameterDef -> SharedRow"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetGenericParamAsGenericParamRow*
   name: GetGenericParamAsGenericParamRow
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetGenericParamAsGenericParamRow_
@@ -14995,12 +15027,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.GetOverridesSpecAsMethodDefOrRef
   nameWithType: BinaryWriter.GetOverridesSpecAsMethodDefOrRef
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetParamAsParamRow(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94174 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter)
-  name: "val GetParamAsParamRow: cenv -> '?94174 -> int -> ILParameter -> UnsharedRow"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetParamAsParamRow_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94174____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILParameter_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetParamAsParamRow(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94318 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter)
+  name: "val GetParamAsParamRow: cenv -> '?94318 -> int -> ILParameter -> UnsharedRow"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetParamAsParamRow_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv______94318____int____ProviderImplementation_ProvidedTypes_AssemblyReader_ILParameter_
   commentId: M:ProviderImplementation.ProvidedTypes.GetParamAsParamRow``1(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,``0,System.Int32,ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GetParamAsParamRow: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94174 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter -> ProviderImplementation.ProvidedTypes.BinaryWriter.UnsharedRow"
-  nameWithType: "val BinaryWriter.GetParamAsParamRow: cenv -> '?94174 -> int -> ILParameter -> UnsharedRow"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GetParamAsParamRow: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> '?94318 -> int -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter -> ProviderImplementation.ProvidedTypes.BinaryWriter.UnsharedRow"
+  nameWithType: "val BinaryWriter.GetParamAsParamRow: cenv -> '?94318 -> int -> ILParameter -> UnsharedRow"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetParamAsParamRow*
   name: GetParamAsParamRow
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetParamAsParamRow_
@@ -15242,12 +15274,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.GetTypeDefAsPropertyMapRow
   nameWithType: BinaryWriter.GetTypeDefAsPropertyMapRow
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetTypeDefAsRow(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94166 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef)
-  name: "val GetTypeDefAsRow: cenv -> ILTypeWriterEnv -> '?94166 -> ILTypeDef -> UnsharedRow"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetTypeDefAsRow_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv______94166____ProviderImplementation_ProvidedTypes_AssemblyReader_ILTypeDef_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetTypeDefAsRow(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94310 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef)
+  name: "val GetTypeDefAsRow: cenv -> ILTypeWriterEnv -> '?94310 -> ILTypeDef -> UnsharedRow"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetTypeDefAsRow_ProviderImplementation_ProvidedTypes_BinaryWriter_cenv____ProviderImplementation_ProvidedTypes_BinaryWriter_ILTypeWriterEnv______94310____ProviderImplementation_ProvidedTypes_AssemblyReader_ILTypeDef_
   commentId: M:ProviderImplementation.ProvidedTypes.GetTypeDefAsRow``1(ProviderImplementation.ProvidedTypes.BinaryWriter.cenv,ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv,``0,ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GetTypeDefAsRow: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94166 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef -> ProviderImplementation.ProvidedTypes.BinaryWriter.UnsharedRow"
-  nameWithType: "val BinaryWriter.GetTypeDefAsRow: cenv -> ILTypeWriterEnv -> '?94166 -> ILTypeDef -> UnsharedRow"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.GetTypeDefAsRow: ProviderImplementation.ProvidedTypes.BinaryWriter.cenv -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTypeWriterEnv -> '?94310 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef -> ProviderImplementation.ProvidedTypes.BinaryWriter.UnsharedRow"
+  nameWithType: "val BinaryWriter.GetTypeDefAsRow: cenv -> ILTypeWriterEnv -> '?94310 -> ILTypeDef -> UnsharedRow"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.GetTypeDefAsRow*
   name: GetTypeDefAsRow
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_GetTypeDefAsRow_
@@ -15476,12 +15508,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.hasthisToByte
   nameWithType: BinaryWriter.hasthisToByte
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.headerVersionSupportedByCLRVersion('?94162)
-  name: "val headerVersionSupportedByCLRVersion: '?94162 -> int * int"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_headerVersionSupportedByCLRVersion___94162_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.headerVersionSupportedByCLRVersion('?94306)
+  name: "val headerVersionSupportedByCLRVersion: '?94306 -> int * int"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_headerVersionSupportedByCLRVersion___94306_
   commentId: M:ProviderImplementation.ProvidedTypes.headerVersionSupportedByCLRVersion``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.headerVersionSupportedByCLRVersion: '?94162 -> int * int"
-  nameWithType: "val BinaryWriter.headerVersionSupportedByCLRVersion: '?94162 -> int * int"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.headerVersionSupportedByCLRVersion: '?94306 -> int * int"
+  nameWithType: "val BinaryWriter.headerVersionSupportedByCLRVersion: '?94306 -> int * int"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.headerVersionSupportedByCLRVersion*
   name: headerVersionSupportedByCLRVersion
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_headerVersionSupportedByCLRVersion_
@@ -15621,12 +15653,12 @@ references:
   commentId: T:ProviderImplementation.ProvidedTypes.BinaryWriter.List
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.List
   nameWithType: ProviderImplementation.ProvidedTypes.BinaryWriter.List
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.List.assoc('?94196 -> '?94196 * '?94197 list)
-  name: "val assoc: '?94196 -> '?94196 * '?94197 list -> '?94197"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.List.html#ProviderImplementation_ProvidedTypes_BinaryWriter_List_assoc___94196______94196_____94197_list_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.List.assoc('?94340 -> '?94340 * '?94341 list)
+  name: "val assoc: '?94340 -> '?94340 * '?94341 list -> '?94341"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.List.html#ProviderImplementation_ProvidedTypes_BinaryWriter_List_assoc___94340______94340_____94341_list_
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.assoc``2(``0,Microsoft.FSharp.Collections.FSharpList{System.Tuple{``0,``1}})
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.List.assoc: '?94196 -> '?94196 * '?94197 list -> '?94197"
-  nameWithType: "val List.assoc: '?94196 -> '?94196 * '?94197 list -> '?94197"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.List.assoc: '?94340 -> '?94340 * '?94341 list -> '?94341"
+  nameWithType: "val List.assoc: '?94340 -> '?94340 * '?94341 list -> '?94341"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.List.assoc*
   name: assoc
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.List.html#ProviderImplementation_ProvidedTypes_BinaryWriter_List_assoc_
@@ -15634,12 +15666,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.List.assoc
   nameWithType: List.assoc
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.List.memAssoc('?94198 -> '?94198 * '?94199 list)
-  name: "val memAssoc: '?94198 -> '?94198 * '?94199 list -> bool"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.List.html#ProviderImplementation_ProvidedTypes_BinaryWriter_List_memAssoc___94198______94198_____94199_list_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.List.memAssoc('?94342 -> '?94342 * '?94343 list)
+  name: "val memAssoc: '?94342 -> '?94342 * '?94343 list -> bool"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.List.html#ProviderImplementation_ProvidedTypes_BinaryWriter_List_memAssoc___94342______94342_____94343_list_
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.memAssoc``2(``0,Microsoft.FSharp.Collections.FSharpList{System.Tuple{``0,``1}})
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.List.memAssoc: '?94198 -> '?94198 * '?94199 list -> bool"
-  nameWithType: "val List.memAssoc: '?94198 -> '?94198 * '?94199 list -> bool"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.List.memAssoc: '?94342 -> '?94342 * '?94343 list -> bool"
+  nameWithType: "val List.memAssoc: '?94342 -> '?94342 * '?94343 list -> bool"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.List.memAssoc*
   name: memAssoc
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.List.html#ProviderImplementation_ProvidedTypes_BinaryWriter_List_memAssoc_
@@ -15699,12 +15731,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.MemberRefRow
   nameWithType: BinaryWriter.MemberRefRow
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.metadataSchemaVersionSupportedByCLRVersion('?94161)
-  name: "val metadataSchemaVersionSupportedByCLRVersion: '?94161 -> int * int"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_metadataSchemaVersionSupportedByCLRVersion___94161_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.metadataSchemaVersionSupportedByCLRVersion('?94305)
+  name: "val metadataSchemaVersionSupportedByCLRVersion: '?94305 -> int * int"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_metadataSchemaVersionSupportedByCLRVersion___94305_
   commentId: M:ProviderImplementation.ProvidedTypes.metadataSchemaVersionSupportedByCLRVersion``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.metadataSchemaVersionSupportedByCLRVersion: '?94161 -> int * int"
-  nameWithType: "val BinaryWriter.metadataSchemaVersionSupportedByCLRVersion: '?94161 -> int * int"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.metadataSchemaVersionSupportedByCLRVersion: '?94305 -> int * int"
+  nameWithType: "val BinaryWriter.metadataSchemaVersionSupportedByCLRVersion: '?94305 -> int * int"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.metadataSchemaVersionSupportedByCLRVersion*
   name: metadataSchemaVersionSupportedByCLRVersion
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_metadataSchemaVersionSupportedByCLRVersion_
@@ -15943,12 +15975,12 @@ references:
   commentId: P:ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.name
   fullName: 'val ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable<_>.name: string'
   nameWithType: 'val MetadataTable.name: string'
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.New(string * System.Collections.Generic.IEqualityComparer<'?94146>)
-  name: "static member New: string * IEqualityComparer<'?94146> -> MetadataTable<'?94146>"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html#ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_New_string___System_Collections_Generic_IEqualityComparer___94146__
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.New(string * System.Collections.Generic.IEqualityComparer<'?94290>)
+  name: "static member New: string * IEqualityComparer<'?94290> -> MetadataTable<'?94290>"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html#ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_New_string___System_Collections_Generic_IEqualityComparer___94290__
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.New``1(System.String,System.Collections.Generic.IEqualityComparer{``0})
-  fullName: "static member ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable.New: string * System.Collections.Generic.IEqualityComparer<'?94146> -> ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable<'?94146>"
-  nameWithType: "static member MetadataTable.New: string * IEqualityComparer<'?94146> -> MetadataTable<'?94146>"
+  fullName: "static member ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable.New: string * System.Collections.Generic.IEqualityComparer<'?94290> -> ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable<'?94290>"
+  nameWithType: "static member MetadataTable.New: string * IEqualityComparer<'?94290> -> MetadataTable<'?94290>"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable`1.New*
   name: New
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.MetadataTable-1.html#ProviderImplementation_ProvidedTypes_BinaryWriter_MetadataTable_1_New_
@@ -16188,12 +16220,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.newGuid
   nameWithType: BinaryWriter.newGuid
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.nochunk('?94177)
-  name: "val nochunk: '?94177 -> ILImageChunk * '?94177"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_nochunk___94177_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.nochunk('?94321)
+  name: "val nochunk: '?94321 -> ILImageChunk * '?94321"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_nochunk___94321_
   commentId: M:ProviderImplementation.ProvidedTypes.nochunk``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.nochunk: '?94177 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk * '?94177"
-  nameWithType: "val BinaryWriter.nochunk: '?94177 -> ILImageChunk * '?94177"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.nochunk: '?94321 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk * '?94321"
+  nameWithType: "val BinaryWriter.nochunk: '?94321 -> ILImageChunk * '?94321"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.nochunk*
   name: nochunk
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_nochunk_
@@ -16273,12 +16305,12 @@ references:
   commentId: P:ProviderImplementation.ProvidedTypes.BinaryWriter.options.sourceLink
   fullName: 'val ProviderImplementation.ProvidedTypes.BinaryWriter.options.sourceLink: string'
   nameWithType: 'val options.sourceLink: string'
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.peOptionalHeaderByteByCLRVersion('?94163)
-  name: "val peOptionalHeaderByteByCLRVersion: '?94163 -> int"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_peOptionalHeaderByteByCLRVersion___94163_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.peOptionalHeaderByteByCLRVersion('?94307)
+  name: "val peOptionalHeaderByteByCLRVersion: '?94307 -> int"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_peOptionalHeaderByteByCLRVersion___94307_
   commentId: M:ProviderImplementation.ProvidedTypes.peOptionalHeaderByteByCLRVersion``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.peOptionalHeaderByteByCLRVersion: '?94163 -> int"
-  nameWithType: "val BinaryWriter.peOptionalHeaderByteByCLRVersion: '?94163 -> int"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.peOptionalHeaderByteByCLRVersion: '?94307 -> int"
+  nameWithType: "val BinaryWriter.peOptionalHeaderByteByCLRVersion: '?94307 -> int"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.peOptionalHeaderByteByCLRVersion*
   name: peOptionalHeaderByteByCLRVersion
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_peOptionalHeaderByteByCLRVersion_
@@ -16298,12 +16330,12 @@ references:
   commentId: T:ProviderImplementation.ProvidedTypes.BinaryWriter.PropertyTableKey.PropKey
   fullName: 'ProviderImplementation.ProvidedTypes.BinaryWriter.PropertyTableKey.PropKey of Item1: int * Item2: string * Item3: ProviderImplementation.ProvidedTypes.AssemblyReader.ILType * Item4: ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypes'
   nameWithType: 'PropertyTableKey.PropKey of Item1: int * Item2: string * Item3: ILType * Item4: ILTypes'
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.recordRequiredDataFixup(ResizeArray<'?94164 * '?94165> -> ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer -> '?94164 -> '?94165)
-  name: "val recordRequiredDataFixup: ResizeArray<'?94164 * '?94165> -> ByteBuffer -> '?94164 -> '?94165 -> unit"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_recordRequiredDataFixup_ResizeArray___94164_____94165_____ProviderImplementation_ProvidedTypes_AssemblyReader_Constants_ByteBuffer______94164______94165_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.recordRequiredDataFixup(ResizeArray<'?94308 * '?94309> -> ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer -> '?94308 -> '?94309)
+  name: "val recordRequiredDataFixup: ResizeArray<'?94308 * '?94309> -> ByteBuffer -> '?94308 -> '?94309 -> unit"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_recordRequiredDataFixup_ResizeArray___94308_____94309_____ProviderImplementation_ProvidedTypes_AssemblyReader_Constants_ByteBuffer______94308______94309_
   commentId: M:ProviderImplementation.ProvidedTypes.recordRequiredDataFixup``2(System.Collections.Generic.List{System.Tuple{``0,``1}},ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer,``0,``1)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.recordRequiredDataFixup: ResizeArray<'?94164 * '?94165> -> ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer -> '?94164 -> '?94165 -> unit"
-  nameWithType: "val BinaryWriter.recordRequiredDataFixup: ResizeArray<'?94164 * '?94165> -> ByteBuffer -> '?94164 -> '?94165 -> unit"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.recordRequiredDataFixup: ResizeArray<'?94308 * '?94309> -> ProviderImplementation.ProvidedTypes.AssemblyReader.Constants.ByteBuffer -> '?94308 -> '?94309 -> unit"
+  nameWithType: "val BinaryWriter.recordRequiredDataFixup: ResizeArray<'?94308 * '?94309> -> ByteBuffer -> '?94308 -> '?94309 -> unit"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.recordRequiredDataFixup*
   name: recordRequiredDataFixup
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_recordRequiredDataFixup_
@@ -16949,11 +16981,11 @@ references:
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.String.index
   nameWithType: String.index
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.String.indexNotFound(unit)
-  name: "val indexNotFound: unit -> '?94184"
+  name: "val indexNotFound: unit -> '?94328"
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.String.html#ProviderImplementation_ProvidedTypes_BinaryWriter_String_indexNotFound_unit_
   commentId: M:ProviderImplementation.ProvidedTypes.BinaryWriter.indexNotFound``1
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.String.indexNotFound: unit -> '?94184"
-  nameWithType: "val String.indexNotFound: unit -> '?94184"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.String.indexNotFound: unit -> '?94328"
+  nameWithType: "val String.indexNotFound: unit -> '?94328"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.String.indexNotFound*
   name: indexNotFound
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.String.html#ProviderImplementation_ProvidedTypes_BinaryWriter_String_indexNotFound_
@@ -17147,12 +17179,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.BinaryWriter.UShort
   nameWithType: BinaryWriter.UShort
-- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.writeBinaryAndReportMappings(string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals * string option * '?94179 * bool * '?94180 * '?94181 * '?94182 * bool * bool * bool * '?94183 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleDef)
-  name: "val writeBinaryAndReportMappings: string * ILGlobals * string option * '?94179 * bool * '?94180 * '?94181 * '?94182 * bool * bool * bool * '?94183 -> ILModuleDef -> ILTokenMappings"
-  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_writeBinaryAndReportMappings_string___ProviderImplementation_ProvidedTypes_AssemblyReader_ILGlobals___string_option_____94179___bool_____94180_____94181_____94182___bool___bool___bool_____94183____ProviderImplementation_ProvidedTypes_AssemblyReader_ILModuleDef_
+- uid: ProviderImplementation.ProvidedTypes.BinaryWriter.writeBinaryAndReportMappings(string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals * string option * '?94323 * bool * '?94324 * '?94325 * '?94326 * bool * bool * bool * '?94327 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleDef)
+  name: "val writeBinaryAndReportMappings: string * ILGlobals * string option * '?94323 * bool * '?94324 * '?94325 * '?94326 * bool * bool * bool * '?94327 -> ILModuleDef -> ILTokenMappings"
+  href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_writeBinaryAndReportMappings_string___ProviderImplementation_ProvidedTypes_AssemblyReader_ILGlobals___string_option_____94323___bool_____94324_____94325_____94326___bool___bool___bool_____94327____ProviderImplementation_ProvidedTypes_AssemblyReader_ILModuleDef_
   commentId: M:ProviderImplementation.ProvidedTypes.writeBinaryAndReportMappings``5(System.String,ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals,Microsoft.FSharp.Core.FSharpOption{System.String},``0,System.Boolean,``1,``2,``3,System.Boolean,System.Boolean,System.Boolean,``4,ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleDef)
-  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.writeBinaryAndReportMappings: string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals * string option * '?94179 * bool * '?94180 * '?94181 * '?94182 * bool * bool * bool * '?94183 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleDef -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTokenMappings"
-  nameWithType: "val BinaryWriter.writeBinaryAndReportMappings: string * ILGlobals * string option * '?94179 * bool * '?94180 * '?94181 * '?94182 * bool * bool * bool * '?94183 -> ILModuleDef -> ILTokenMappings"
+  fullName: "val ProviderImplementation.ProvidedTypes.BinaryWriter.writeBinaryAndReportMappings: string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals * string option * '?94323 * bool * '?94324 * '?94325 * '?94326 * bool * bool * bool * '?94327 -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILModuleDef -> ProviderImplementation.ProvidedTypes.BinaryWriter.ILTokenMappings"
+  nameWithType: "val BinaryWriter.writeBinaryAndReportMappings: string * ILGlobals * string option * '?94323 * bool * '?94324 * '?94325 * '?94326 * bool * bool * bool * '?94327 -> ILModuleDef -> ILTokenMappings"
 - uid: ProviderImplementation.ProvidedTypes.BinaryWriter.writeBinaryAndReportMappings*
   name: writeBinaryAndReportMappings
   href: api/ProviderImplementation.ProvidedTypes.BinaryWriter.html#ProviderImplementation_ProvidedTypes_BinaryWriter_writeBinaryAndReportMappings_
@@ -20211,12 +20243,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Misc.CustomAttributesImpl.NonNullable
   nameWithType: CustomAttributesImpl.NonNullable
-- uid: ProviderImplementation.ProvidedTypes.Misc.mkAllowNullLiteralCustomAttributeData('?93969)
-  name: "val mkAllowNullLiteralCustomAttributeData: '?93969 -> CustomAttributeData"
-  href: api/ProviderImplementation.ProvidedTypes.Misc.html#ProviderImplementation_ProvidedTypes_Misc_mkAllowNullLiteralCustomAttributeData___93969_
+- uid: ProviderImplementation.ProvidedTypes.Misc.mkAllowNullLiteralCustomAttributeData('?94112)
+  name: "val mkAllowNullLiteralCustomAttributeData: '?94112 -> CustomAttributeData"
+  href: api/ProviderImplementation.ProvidedTypes.Misc.html#ProviderImplementation_ProvidedTypes_Misc_mkAllowNullLiteralCustomAttributeData___94112_
   commentId: M:ProviderImplementation.ProvidedTypes.mkAllowNullLiteralCustomAttributeData``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.Misc.mkAllowNullLiteralCustomAttributeData: '?93969 -> System.Reflection.CustomAttributeData"
-  nameWithType: "val Misc.mkAllowNullLiteralCustomAttributeData: '?93969 -> CustomAttributeData"
+  fullName: "val ProviderImplementation.ProvidedTypes.Misc.mkAllowNullLiteralCustomAttributeData: '?94112 -> System.Reflection.CustomAttributeData"
+  nameWithType: "val Misc.mkAllowNullLiteralCustomAttributeData: '?94112 -> CustomAttributeData"
 - uid: ProviderImplementation.ProvidedTypes.Misc.mkAllowNullLiteralCustomAttributeData*
   name: mkAllowNullLiteralCustomAttributeData
   href: api/ProviderImplementation.ProvidedTypes.Misc.html#ProviderImplementation_ProvidedTypes_Misc_mkAllowNullLiteralCustomAttributeData_
@@ -23685,12 +23717,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMember
   nameWithType: ProvidedTypeDefinition.AddMember
-- uid: ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed(unit -> '?93919)
-  name: "member AddMemberDelayed: unit -> '?93919 -> unit"
-  href: api/ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html#ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_AddMemberDelayed_unit______93919_
+- uid: ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed(unit -> '?94062)
+  name: "member AddMemberDelayed: unit -> '?94062 -> unit"
+  href: api/ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html#ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_AddMemberDelayed_unit______94062_
   commentId: M:ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed``1(Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,``0})
-  fullName: "member ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed: unit -> '?93919 -> unit"
-  nameWithType: "member ProvidedTypeDefinition.AddMemberDelayed: unit -> '?93919 -> unit"
+  fullName: "member ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed: unit -> '?94062 -> unit"
+  nameWithType: "member ProvidedTypeDefinition.AddMemberDelayed: unit -> '?94062 -> unit"
 - uid: ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.AddMemberDelayed*
   name: AddMemberDelayed
   href: api/ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition.html#ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_AddMemberDelayed_
@@ -24918,6 +24950,19 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.AddTargetAssembly
   nameWithType: ProvidedTypesContext.AddTargetAssembly
+- uid: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceConstructorRefToTarget(System.Reflection.ConstructorInfo)
+  name: 'member ConvertSourceConstructorRefToTarget: ConstructorInfo -> ConstructorInfo'
+  href: api/ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html#ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceConstructorRefToTarget_System_Reflection_ConstructorInfo_
+  commentId: M:ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceConstructorRefToTarget(System.Reflection.ConstructorInfo)
+  fullName: 'member ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceConstructorRefToTarget: System.Reflection.ConstructorInfo -> System.Reflection.ConstructorInfo'
+  nameWithType: 'member ProvidedTypesContext.ConvertSourceConstructorRefToTarget: ConstructorInfo -> ConstructorInfo'
+- uid: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceConstructorRefToTarget*
+  name: ConvertSourceConstructorRefToTarget
+  href: api/ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html#ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceConstructorRefToTarget_
+  commentId: Overload:ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceConstructorRefToTarget*
+  isSpec: "True"
+  fullName: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceConstructorRefToTarget
+  nameWithType: ProvidedTypesContext.ConvertSourceConstructorRefToTarget
 - uid: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceExprToTarget(FSharp.Quotations.Expr)
   name: 'member ConvertSourceExprToTarget: Expr -> Expr'
   href: api/ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html#ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceExprToTarget_FSharp_Quotations_Expr_
@@ -24931,6 +24976,19 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceExprToTarget
   nameWithType: ProvidedTypesContext.ConvertSourceExprToTarget
+- uid: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceMethodRefToTarget(System.Reflection.MethodInfo)
+  name: 'member ConvertSourceMethodRefToTarget: MethodInfo -> MethodInfo'
+  href: api/ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html#ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceMethodRefToTarget_System_Reflection_MethodInfo_
+  commentId: M:ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceMethodRefToTarget(System.Reflection.MethodInfo)
+  fullName: 'member ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceMethodRefToTarget: System.Reflection.MethodInfo -> System.Reflection.MethodInfo'
+  nameWithType: 'member ProvidedTypesContext.ConvertSourceMethodRefToTarget: MethodInfo -> MethodInfo'
+- uid: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceMethodRefToTarget*
+  name: ConvertSourceMethodRefToTarget
+  href: api/ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html#ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceMethodRefToTarget_
+  commentId: Overload:ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceMethodRefToTarget*
+  isSpec: "True"
+  fullName: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceMethodRefToTarget
+  nameWithType: ProvidedTypesContext.ConvertSourceMethodRefToTarget
 - uid: ProviderImplementation.ProvidedTypes.ProvidedTypesContext.ConvertSourceNamespaceToTarget(IProvidedNamespace)
   name: 'member ConvertSourceNamespaceToTarget: IProvidedNamespace -> IProvidedNamespace'
   href: api/ProviderImplementation.ProvidedTypes.ProvidedTypesContext.html#ProviderImplementation_ProvidedTypes_ProvidedTypesContext_ConvertSourceNamespaceToTarget_IProvidedNamespace_
@@ -29739,12 +29797,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.getAttributeFlagsImpl
   nameWithType: Utils.getAttributeFlagsImpl
-- uid: ProviderImplementation.ProvidedTypes.Utils.hasFlag(^?93955 -> ^?93955)
-  name: 'val hasFlag: ^?93955 -> ^?93955 -> bool'
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_hasFlag___93955______93955_
+- uid: ProviderImplementation.ProvidedTypes.Utils.hasFlag(^?94098 -> ^?94098)
+  name: 'val hasFlag: ^?94098 -> ^?94098 -> bool'
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_hasFlag___94098______94098_
   commentId: M:ProviderImplementation.ProvidedTypes.hasFlag``1(``0,``0)
-  fullName: 'val ProviderImplementation.ProvidedTypes.Utils.hasFlag: ^?93955 -> ^?93955 -> bool'
-  nameWithType: 'val Utils.hasFlag: ^?93955 -> ^?93955 -> bool'
+  fullName: 'val ProviderImplementation.ProvidedTypes.Utils.hasFlag: ^?94098 -> ^?94098 -> bool'
+  nameWithType: 'val Utils.hasFlag: ^?94098 -> ^?94098 -> bool'
 - uid: ProviderImplementation.ProvidedTypes.Utils.hasFlag*
   name: hasFlag
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_hasFlag_
@@ -29791,12 +29849,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.isAssignableFrom
   nameWithType: Utils.isAssignableFrom
-- uid: ProviderImplementation.ProvidedTypes.Utils.isEmpty('?93932 [])
-  name: "val isEmpty: '?93932 [] -> bool"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isEmpty___93932____
+- uid: ProviderImplementation.ProvidedTypes.Utils.isEmpty('?94075 [])
+  name: "val isEmpty: '?94075 [] -> bool"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isEmpty___94075____
   commentId: M:ProviderImplementation.ProvidedTypes.isEmpty``1(``0[])
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.isEmpty: '?93932 [] -> bool"
-  nameWithType: "val Utils.isEmpty: '?93932 [] -> bool"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.isEmpty: '?94075 [] -> bool"
+  nameWithType: "val Utils.isEmpty: '?94075 [] -> bool"
 - uid: ProviderImplementation.ProvidedTypes.Utils.isEmpty*
   name: isEmpty
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isEmpty_
@@ -29804,12 +29862,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.isEmpty
   nameWithType: Utils.isEmpty
-- uid: ProviderImplementation.ProvidedTypes.Utils.isNil('?93931 list)
-  name: "val isNil: '?93931 list -> bool"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isNil___93931_list_
+- uid: ProviderImplementation.ProvidedTypes.Utils.isNil('?94074 list)
+  name: "val isNil: '?94074 list -> bool"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isNil___94074_list_
   commentId: M:ProviderImplementation.ProvidedTypes.isNil``1(Microsoft.FSharp.Collections.FSharpList{``0})
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.isNil: '?93931 list -> bool"
-  nameWithType: "val Utils.isNil: '?93931 list -> bool"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.isNil: '?94074 list -> bool"
+  nameWithType: "val Utils.isNil: '?94074 list -> bool"
 - uid: ProviderImplementation.ProvidedTypes.Utils.isNil*
   name: isNil
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isNil_
@@ -29817,12 +29875,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.isNil
   nameWithType: Utils.isNil
-- uid: ProviderImplementation.ProvidedTypes.Utils.isNull('?93930)
-  name: "val isNull: '?93930 -> bool"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isNull___93930_
+- uid: ProviderImplementation.ProvidedTypes.Utils.isNull('?94073)
+  name: "val isNull: '?94073 -> bool"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isNull___94073_
   commentId: M:ProviderImplementation.ProvidedTypes.isNull``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.isNull: '?93930 -> bool"
-  nameWithType: "val Utils.isNull: '?93930 -> bool"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.isNull: '?94073 -> bool"
+  nameWithType: "val Utils.isNull: '?94073 -> bool"
 - uid: ProviderImplementation.ProvidedTypes.Utils.isNull*
   name: isNull
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_isNull_
@@ -29856,12 +29914,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.joinILTypeName
   nameWithType: Utils.joinILTypeName
-- uid: ProviderImplementation.ProvidedTypes.Utils.K('?93929 -> unit)
-  name: "val K: '?93929 -> unit -> '?93929"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_K___93929____unit_
+- uid: ProviderImplementation.ProvidedTypes.Utils.K('?94072 -> unit)
+  name: "val K: '?94072 -> unit -> '?94072"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_K___94072____unit_
   commentId: M:ProviderImplementation.ProvidedTypes.K``1(``0,Microsoft.FSharp.Core.Unit)
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.K: '?93929 -> unit -> '?93929"
-  nameWithType: "val Utils.K: '?93929 -> unit -> '?93929"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.K: '?94072 -> unit -> '?94072"
+  nameWithType: "val Utils.K: '?94072 -> unit -> '?94072"
 - uid: ProviderImplementation.ProvidedTypes.Utils.K*
   name: K
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_K_
@@ -29895,12 +29953,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.memberBinds
   nameWithType: Utils.memberBinds
-- uid: ProviderImplementation.ProvidedTypes.Utils.nonNone(string -> '?93960 option)
-  name: "val nonNone: string -> '?93960 option -> '?93960"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_nonNone_string______93960_option_
+- uid: ProviderImplementation.ProvidedTypes.Utils.nonNone(string -> '?94103 option)
+  name: "val nonNone: string -> '?94103 option -> '?94103"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_nonNone_string______94103_option_
   commentId: M:ProviderImplementation.ProvidedTypes.nonNone``1(System.String,Microsoft.FSharp.Core.FSharpOption{``0})
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.nonNone: string -> '?93960 option -> '?93960"
-  nameWithType: "val Utils.nonNone: string -> '?93960 option -> '?93960"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.nonNone: string -> '?94103 option -> '?94103"
+  nameWithType: "val Utils.nonNone: string -> '?94103 option -> '?94103"
 - uid: ProviderImplementation.ProvidedTypes.Utils.nonNone*
   name: nonNone
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_nonNone_
@@ -29908,12 +29966,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.nonNone
   nameWithType: Utils.nonNone
-- uid: ProviderImplementation.ProvidedTypes.Utils.nonNull(string -> '?93959)
-  name: "val nonNull: string -> '?93959 -> '?93959"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_nonNull_string______93959_
+- uid: ProviderImplementation.ProvidedTypes.Utils.nonNull(string -> '?94102)
+  name: "val nonNull: string -> '?94102 -> '?94102"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_nonNull_string______94102_
   commentId: M:ProviderImplementation.ProvidedTypes.nonNull``1(System.String,``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.nonNull: string -> '?93959 -> '?93959"
-  nameWithType: "val Utils.nonNull: string -> '?93959 -> '?93959"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.nonNull: string -> '?94102 -> '?94102"
+  nameWithType: "val Utils.nonNull: string -> '?94102 -> '?94102"
 - uid: ProviderImplementation.ProvidedTypes.Utils.nonNull*
   name: nonNull
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_nonNull_
@@ -29921,12 +29979,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.nonNull
   nameWithType: Utils.nonNull
-- uid: ProviderImplementation.ProvidedTypes.Utils.notRequired('?93963 -> string -> string)
-  name: "val notRequired: '?93963 -> string -> string -> '?93964"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_notRequired___93963____string____string_
+- uid: ProviderImplementation.ProvidedTypes.Utils.notRequired('?94106 -> string -> string)
+  name: "val notRequired: '?94106 -> string -> string -> '?94107"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_notRequired___94106____string____string_
   commentId: M:ProviderImplementation.ProvidedTypes.notRequired``2(``0,System.String,System.String)
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.notRequired: '?93963 -> string -> string -> '?93964"
-  nameWithType: "val Utils.notRequired: '?93963 -> string -> string -> '?93964"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.notRequired: '?94106 -> string -> string -> '?94107"
+  nameWithType: "val Utils.notRequired: '?94106 -> string -> string -> '?94107"
 - uid: ProviderImplementation.ProvidedTypes.Utils.notRequired*
   name: notRequired
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_notRequired_
@@ -29940,12 +29998,12 @@ references:
   commentId: T:ProviderImplementation.ProvidedTypes.Utils.Option
   fullName: ProviderImplementation.ProvidedTypes.Utils.Option
   nameWithType: ProviderImplementation.ProvidedTypes.Utils.Option
-- uid: ProviderImplementation.ProvidedTypes.Utils.Option.ofObj('?93966)
-  name: "val ofObj: '?93966 -> '?93966 option"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.Option.html#ProviderImplementation_ProvidedTypes_Utils_Option_ofObj___93966_
+- uid: ProviderImplementation.ProvidedTypes.Utils.Option.ofObj('?94109)
+  name: "val ofObj: '?94109 -> '?94109 option"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.Option.html#ProviderImplementation_ProvidedTypes_Utils_Option_ofObj___94109_
   commentId: M:ProviderImplementation.ProvidedTypes.Utils.ofObj``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.Option.ofObj: '?93966 -> '?93966 option"
-  nameWithType: "val Option.ofObj: '?93966 -> '?93966 option"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.Option.ofObj: '?94109 -> '?94109 option"
+  nameWithType: "val Option.ofObj: '?94109 -> '?94109 option"
 - uid: ProviderImplementation.ProvidedTypes.Utils.Option.ofObj*
   name: ofObj
   href: api/ProviderImplementation.ProvidedTypes.Utils.Option.html#ProviderImplementation_ProvidedTypes_Utils_Option_ofObj_
@@ -29953,12 +30011,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.Option.ofObj
   nameWithType: Option.ofObj
-- uid: ProviderImplementation.ProvidedTypes.Utils.Option.toObj('?93965 option)
-  name: "val toObj: '?93965 option -> '?93965"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.Option.html#ProviderImplementation_ProvidedTypes_Utils_Option_toObj___93965_option_
+- uid: ProviderImplementation.ProvidedTypes.Utils.Option.toObj('?94108 option)
+  name: "val toObj: '?94108 option -> '?94108"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.Option.html#ProviderImplementation_ProvidedTypes_Utils_Option_toObj___94108_option_
   commentId: M:ProviderImplementation.ProvidedTypes.Utils.toObj``1(Microsoft.FSharp.Core.FSharpOption{``0})
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.Option.toObj: '?93965 option -> '?93965"
-  nameWithType: "val Option.toObj: '?93965 option -> '?93965"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.Option.toObj: '?94108 option -> '?94108"
+  nameWithType: "val Option.toObj: '?94108 option -> '?94108"
 - uid: ProviderImplementation.ProvidedTypes.Utils.Option.toObj*
   name: toObj
   href: api/ProviderImplementation.ProvidedTypes.Utils.Option.html#ProviderImplementation_ProvidedTypes_Utils_Option_toObj_
@@ -29966,12 +30024,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.Option.toObj
   nameWithType: Option.toObj
-- uid: ProviderImplementation.ProvidedTypes.Utils.patchOption('?93961 option -> unit -> '?93962)
-  name: "val patchOption: '?93961 option -> unit -> '?93962 -> '?93962"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_patchOption___93961_option____unit______93962_
+- uid: ProviderImplementation.ProvidedTypes.Utils.patchOption('?94104 option -> unit -> '?94105)
+  name: "val patchOption: '?94104 option -> unit -> '?94105 -> '?94105"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_patchOption___94104_option____unit______94105_
   commentId: M:ProviderImplementation.ProvidedTypes.patchOption``2(Microsoft.FSharp.Core.FSharpOption{``0},Microsoft.FSharp.Core.FSharpFunc{Microsoft.FSharp.Core.Unit,``1})
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.patchOption: '?93961 option -> unit -> '?93962 -> '?93962"
-  nameWithType: "val Utils.patchOption: '?93961 option -> unit -> '?93962 -> '?93962"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.patchOption: '?94104 option -> unit -> '?94105 -> '?94105"
+  nameWithType: "val Utils.patchOption: '?94104 option -> unit -> '?94105 -> '?94105"
 - uid: ProviderImplementation.ProvidedTypes.Utils.patchOption*
   name: patchOption
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_patchOption_
@@ -30011,12 +30069,12 @@ references:
   commentId: T:ProviderImplementation.ProvidedTypes.Utils.StructOption
   fullName: ProviderImplementation.ProvidedTypes.Utils.StructOption
   nameWithType: ProviderImplementation.ProvidedTypes.Utils.StructOption
-- uid: ProviderImplementation.ProvidedTypes.Utils.StructOption.ofObj('?93968)
-  name: "val ofObj: '?93968 -> StructOption<'?93968>"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.StructOption.html#ProviderImplementation_ProvidedTypes_Utils_StructOption_ofObj___93968_
+- uid: ProviderImplementation.ProvidedTypes.Utils.StructOption.ofObj('?94111)
+  name: "val ofObj: '?94111 -> StructOption<'?94111>"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.StructOption.html#ProviderImplementation_ProvidedTypes_Utils_StructOption_ofObj___94111_
   commentId: M:ProviderImplementation.ProvidedTypes.Utils.ofObj``1(``0)
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.StructOption.ofObj: '?93968 -> ProviderImplementation.ProvidedTypes.Utils.StructOption<'?93968>"
-  nameWithType: "val StructOption.ofObj: '?93968 -> StructOption<'?93968>"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.StructOption.ofObj: '?94111 -> ProviderImplementation.ProvidedTypes.Utils.StructOption<'?94111>"
+  nameWithType: "val StructOption.ofObj: '?94111 -> StructOption<'?94111>"
 - uid: ProviderImplementation.ProvidedTypes.Utils.StructOption.ofObj*
   name: ofObj
   href: api/ProviderImplementation.ProvidedTypes.Utils.StructOption.html#ProviderImplementation_ProvidedTypes_Utils_StructOption_ofObj_
@@ -30024,12 +30082,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils.StructOption.ofObj
   nameWithType: StructOption.ofObj
-- uid: ProviderImplementation.ProvidedTypes.Utils.StructOption.toObj(ProviderImplementation.ProvidedTypes.Utils.uoption<'?93967>)
-  name: "val toObj: uoption<'?93967> -> '?93967"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.StructOption.html#ProviderImplementation_ProvidedTypes_Utils_StructOption_toObj_ProviderImplementation_ProvidedTypes_Utils_uoption___93967__
+- uid: ProviderImplementation.ProvidedTypes.Utils.StructOption.toObj(ProviderImplementation.ProvidedTypes.Utils.uoption<'?94110>)
+  name: "val toObj: uoption<'?94110> -> '?94110"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.StructOption.html#ProviderImplementation_ProvidedTypes_Utils_StructOption_toObj_ProviderImplementation_ProvidedTypes_Utils_uoption___94110__
   commentId: M:ProviderImplementation.ProvidedTypes.Utils.toObj``1(ProviderImplementation.ProvidedTypes.Utils.StructOption{``0})
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.StructOption.toObj: ProviderImplementation.ProvidedTypes.Utils.uoption<'?93967> -> '?93967"
-  nameWithType: "val StructOption.toObj: uoption<'?93967> -> '?93967"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.StructOption.toObj: ProviderImplementation.ProvidedTypes.Utils.uoption<'?94110> -> '?94110"
+  nameWithType: "val StructOption.toObj: uoption<'?94110> -> '?94110"
 - uid: ProviderImplementation.ProvidedTypes.Utils.StructOption.toObj*
   name: toObj
   href: api/ProviderImplementation.ProvidedTypes.Utils.StructOption.html#ProviderImplementation_ProvidedTypes_Utils_StructOption_toObj_
@@ -30114,12 +30172,12 @@ references:
   commentId: P:ProviderImplementation.ProvidedTypes.token
   fullName: 'val ProviderImplementation.ProvidedTypes.Utils.token: int'
   nameWithType: 'val Utils.token: int'
-- uid: ProviderImplementation.ProvidedTypes.Utils.tryFindMulti('?93951 -> Map<'?93951,'?93952 []>)
-  name: "val tryFindMulti: '?93951 -> Map<'?93951,'?93952 []> -> '?93952 []"
-  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_tryFindMulti___93951____Map___93951___93952_____
+- uid: ProviderImplementation.ProvidedTypes.Utils.tryFindMulti('?94094 -> Map<'?94094,'?94095 []>)
+  name: "val tryFindMulti: '?94094 -> Map<'?94094,'?94095 []> -> '?94095 []"
+  href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_tryFindMulti___94094____Map___94094___94095_____
   commentId: M:ProviderImplementation.ProvidedTypes.tryFindMulti``2(``0,Microsoft.FSharp.Collections.FSharpMap{``0,``1[]})
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils.tryFindMulti: '?93951 -> Map<'?93951,'?93952 []> -> '?93952 []"
-  nameWithType: "val Utils.tryFindMulti: '?93951 -> Map<'?93951,'?93952 []> -> '?93952 []"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils.tryFindMulti: '?94094 -> Map<'?94094,'?94095 []> -> '?94095 []"
+  nameWithType: "val Utils.tryFindMulti: '?94094 -> Map<'?94094,'?94095 []> -> '?94095 []"
 - uid: ProviderImplementation.ProvidedTypes.Utils.tryFindMulti*
   name: tryFindMulti
   href: api/ProviderImplementation.ProvidedTypes.Utils.html#ProviderImplementation_ProvidedTypes_Utils_tryFindMulti_
@@ -30236,12 +30294,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils2.eqILTypes
   nameWithType: Utils2.eqILTypes
-- uid: ProviderImplementation.ProvidedTypes.Utils2.eqParametersAndILParameterTypesWithInst('?94138 [] -> System.Reflection.ParameterInfo [] -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameters)
-  name: "val eqParametersAndILParameterTypesWithInst: '?94138 [] -> ParameterInfo [] -> ILParameters -> bool"
-  href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqParametersAndILParameterTypesWithInst___94138_______System_Reflection_ParameterInfo_______ProviderImplementation_ProvidedTypes_AssemblyReader_ILParameters_
+- uid: ProviderImplementation.ProvidedTypes.Utils2.eqParametersAndILParameterTypesWithInst('?94282 [] -> System.Reflection.ParameterInfo [] -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameters)
+  name: "val eqParametersAndILParameterTypesWithInst: '?94282 [] -> ParameterInfo [] -> ILParameters -> bool"
+  href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqParametersAndILParameterTypesWithInst___94282_______System_Reflection_ParameterInfo_______ProviderImplementation_ProvidedTypes_AssemblyReader_ILParameters_
   commentId: M:ProviderImplementation.ProvidedTypes.eqParametersAndILParameterTypesWithInst``1(``0[],System.Reflection.ParameterInfo[],ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameter[])
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils2.eqParametersAndILParameterTypesWithInst: '?94138 [] -> System.Reflection.ParameterInfo [] -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameters -> bool"
-  nameWithType: "val Utils2.eqParametersAndILParameterTypesWithInst: '?94138 [] -> ParameterInfo [] -> ILParameters -> bool"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils2.eqParametersAndILParameterTypesWithInst: '?94282 [] -> System.Reflection.ParameterInfo [] -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILParameters -> bool"
+  nameWithType: "val Utils2.eqParametersAndILParameterTypesWithInst: '?94282 [] -> ParameterInfo [] -> ILParameters -> bool"
 - uid: ProviderImplementation.ProvidedTypes.Utils2.eqParametersAndILParameterTypesWithInst*
   name: eqParametersAndILParameterTypesWithInst
   href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqParametersAndILParameterTypesWithInst_
@@ -30262,12 +30320,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils2.eqTypeAndILTypeRef
   nameWithType: Utils2.eqTypeAndILTypeRef
-- uid: ProviderImplementation.ProvidedTypes.Utils2.eqTypeAndILTypeWithInst('?94137 [] -> System.Type -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILType)
-  name: "val eqTypeAndILTypeWithInst: '?94137 [] -> Type -> ILType -> bool"
-  href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqTypeAndILTypeWithInst___94137_______System_Type____ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_
+- uid: ProviderImplementation.ProvidedTypes.Utils2.eqTypeAndILTypeWithInst('?94281 [] -> System.Type -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILType)
+  name: "val eqTypeAndILTypeWithInst: '?94281 [] -> Type -> ILType -> bool"
+  href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqTypeAndILTypeWithInst___94281_______System_Type____ProviderImplementation_ProvidedTypes_AssemblyReader_ILType_
   commentId: M:ProviderImplementation.ProvidedTypes.eqTypeAndILTypeWithInst``1(``0[],System.Type,ProviderImplementation.ProvidedTypes.AssemblyReader.ILType)
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils2.eqTypeAndILTypeWithInst: '?94137 [] -> System.Type -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILType -> bool"
-  nameWithType: "val Utils2.eqTypeAndILTypeWithInst: '?94137 [] -> Type -> ILType -> bool"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils2.eqTypeAndILTypeWithInst: '?94281 [] -> System.Type -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILType -> bool"
+  nameWithType: "val Utils2.eqTypeAndILTypeWithInst: '?94281 [] -> Type -> ILType -> bool"
 - uid: ProviderImplementation.ProvidedTypes.Utils2.eqTypeAndILTypeWithInst*
   name: eqTypeAndILTypeWithInst
   href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqTypeAndILTypeWithInst_
@@ -30288,12 +30346,12 @@ references:
   isSpec: "True"
   fullName: ProviderImplementation.ProvidedTypes.Utils2.eqTypesAndILTypes
   nameWithType: Utils2.eqTypesAndILTypes
-- uid: ProviderImplementation.ProvidedTypes.Utils2.eqTypesAndILTypesWithInst('?94136 [] -> System.Type [] -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILType [])
-  name: "val eqTypesAndILTypesWithInst: '?94136 [] -> Type [] -> ILType [] -> bool"
-  href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqTypesAndILTypesWithInst___94136_______System_Type_______ProviderImplementation_ProvidedTypes_AssemblyReader_ILType____
+- uid: ProviderImplementation.ProvidedTypes.Utils2.eqTypesAndILTypesWithInst('?94280 [] -> System.Type [] -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILType [])
+  name: "val eqTypesAndILTypesWithInst: '?94280 [] -> Type [] -> ILType [] -> bool"
+  href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqTypesAndILTypesWithInst___94280_______System_Type_______ProviderImplementation_ProvidedTypes_AssemblyReader_ILType____
   commentId: M:ProviderImplementation.ProvidedTypes.eqTypesAndILTypesWithInst``1(``0[],System.Type[],ProviderImplementation.ProvidedTypes.AssemblyReader.ILType[])
-  fullName: "val ProviderImplementation.ProvidedTypes.Utils2.eqTypesAndILTypesWithInst: '?94136 [] -> System.Type [] -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILType [] -> bool"
-  nameWithType: "val Utils2.eqTypesAndILTypesWithInst: '?94136 [] -> Type [] -> ILType [] -> bool"
+  fullName: "val ProviderImplementation.ProvidedTypes.Utils2.eqTypesAndILTypesWithInst: '?94280 [] -> System.Type [] -> ProviderImplementation.ProvidedTypes.AssemblyReader.ILType [] -> bool"
+  nameWithType: "val Utils2.eqTypesAndILTypesWithInst: '?94280 [] -> Type [] -> ILType [] -> bool"
 - uid: ProviderImplementation.ProvidedTypes.Utils2.eqTypesAndILTypesWithInst*
   name: eqTypesAndILTypesWithInst
   href: api/ProviderImplementation.ProvidedTypes.Utils2.html#ProviderImplementation_ProvidedTypes_Utils2_eqTypesAndILTypesWithInst_
@@ -31448,6 +31506,120 @@ references:
   commentId: P:XRoad.Serialization.Attributes.LayoutKind.Sequence
   fullName: 'val XRoad.Serialization.Attributes.LayoutKind.Sequence: XRoad.Serialization.Attributes.LayoutKind'
   nameWithType: 'val LayoutKind.Sequence: LayoutKind'
+- uid: XRoad.Serialization.Attributes.TypeHint
+  name: TypeHint
+  href: api/XRoad.Serialization.Attributes.TypeHint.html
+  commentId: T:XRoad.Serialization.Attributes.TypeHint
+  fullName: XRoad.Serialization.Attributes.TypeHint
+  nameWithType: XRoad.Serialization.Attributes.TypeHint
+- uid: XRoad.Serialization.Attributes.TypeHint.AnyUri
+  name: 'val AnyUri: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_AnyUri
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.AnyUri
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.AnyUri: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.AnyUri: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Boolean
+  name: 'val Boolean: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Boolean
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Boolean
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Boolean: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Boolean: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Date
+  name: 'val Date: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Date
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Date
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Date: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Date: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.DateTime
+  name: 'val DateTime: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_DateTime
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.DateTime
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.DateTime: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.DateTime: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Decimal
+  name: 'val Decimal: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Decimal
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Decimal
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Decimal: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Decimal: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Double
+  name: 'val Double: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Double
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Double
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Double: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Double: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Duration
+  name: 'val Duration: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Duration
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Duration
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Duration: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Duration: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Float
+  name: 'val Float: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Float
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Float
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Float: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Float: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Id
+  name: 'val Id: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Id
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Id
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Id: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Id: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Int
+  name: 'val Int: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Int
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Int
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Int: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Int: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Integer
+  name: 'val Integer: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Integer
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Integer
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Integer: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Integer: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Long
+  name: 'val Long: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Long
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Long
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Long: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Long: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.NmToken
+  name: 'val NmToken: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_NmToken
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.NmToken
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.NmToken: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.NmToken: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.None
+  name: 'val None: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_None
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.None
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.None: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.None: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.String
+  name: 'val String: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_String
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.String
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.String: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.String: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.SwaRef
+  name: 'val SwaRef: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_SwaRef
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.SwaRef
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.SwaRef: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.SwaRef: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Token
+  name: 'val Token: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Token
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Token
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Token: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Token: TypeHint'
+- uid: XRoad.Serialization.Attributes.TypeHint.Xop
+  name: 'val Xop: TypeHint'
+  href: api/XRoad.Serialization.Attributes.TypeHint.html#XRoad_Serialization_Attributes_TypeHint_Xop
+  commentId: P:XRoad.Serialization.Attributes.TypeHint.Xop
+  fullName: 'val XRoad.Serialization.Attributes.TypeHint.Xop: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'val TypeHint.Xop: TypeHint'
 - uid: XRoad.Serialization.Attributes.XRoadCollectionAttribute
   name: XRoadCollectionAttribute
   href: api/XRoad.Serialization.Attributes.XRoadCollectionAttribute.html
@@ -31652,19 +31824,19 @@ references:
   isSpec: "True"
   fullName: XRoad.Serialization.Attributes.XRoadElementAttribute.Namespace
   nameWithType: XRoadElementAttribute.Namespace
-- uid: XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop(unit)
-  name: 'property UseXop: bool'
-  href: api/XRoad.Serialization.Attributes.XRoadElementAttribute.html#XRoad_Serialization_Attributes_XRoadElementAttribute_UseXop_unit_
-  commentId: P:XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop
-  fullName: 'property XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop: bool'
-  nameWithType: 'property XRoadElementAttribute.UseXop: bool'
-- uid: XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop*
-  name: UseXop
-  href: api/XRoad.Serialization.Attributes.XRoadElementAttribute.html#XRoad_Serialization_Attributes_XRoadElementAttribute_UseXop_
-  commentId: Overload:XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop*
+- uid: XRoad.Serialization.Attributes.XRoadElementAttribute.TypeHint(unit)
+  name: 'property TypeHint: TypeHint'
+  href: api/XRoad.Serialization.Attributes.XRoadElementAttribute.html#XRoad_Serialization_Attributes_XRoadElementAttribute_TypeHint_unit_
+  commentId: P:XRoad.Serialization.Attributes.XRoadElementAttribute.TypeHint
+  fullName: 'property XRoad.Serialization.Attributes.XRoadElementAttribute.TypeHint: XRoad.Serialization.Attributes.TypeHint'
+  nameWithType: 'property XRoadElementAttribute.TypeHint: TypeHint'
+- uid: XRoad.Serialization.Attributes.XRoadElementAttribute.TypeHint*
+  name: TypeHint
+  href: api/XRoad.Serialization.Attributes.XRoadElementAttribute.html#XRoad_Serialization_Attributes_XRoadElementAttribute_TypeHint_
+  commentId: Overload:XRoad.Serialization.Attributes.XRoadElementAttribute.TypeHint*
   isSpec: "True"
-  fullName: XRoad.Serialization.Attributes.XRoadElementAttribute.UseXop
-  nameWithType: XRoadElementAttribute.UseXop
+  fullName: XRoad.Serialization.Attributes.XRoadElementAttribute.TypeHint
+  nameWithType: XRoadElementAttribute.TypeHint
 - uid: XRoad.Serialization.Attributes.XRoadOperationAttribute
   name: XRoadOperationAttribute
   href: api/XRoad.Serialization.Attributes.XRoadOperationAttribute.html

@@ -5,10 +5,10 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Class ILLocalDebugMapping (rec)
+    <title>Class Reader.PEReader
    </title>
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="Class ILLocalDebugMapping (rec)
+    <meta name="title" content="Class Reader.PEReader
    ">
     <meta name="generator" content="docfx 2.40.10.0">
     
@@ -68,42 +68,109 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugMapping">
+            <article class="content wrap" id="_content" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader">
   
   
-  <h1 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILLocalDebugMapping" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugMapping" class="text-break">Class ILLocalDebugMapping (rec)
+  <h1 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader" class="text-break">Class Reader.PEReader
   </h1>
-  <div class="markdown level0 summary"><p> Indicates that a particular local variable has a particular source 
- language name within a given set of ranges. This does not effect local 
- variable numbering, which is global over the whole method. </p>
-</div>
+  <div class="markdown level0 summary"></div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><span class="xref">System.Object</span></div>
-    <div class="level1"><span class="xref">ILLocalDebugMapping (rec)</span></div>
+    <div class="level1"><span class="xref">Reader.PEReader</span></div>
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.html">ProviderImplementation.ProvidedTypes.AssemblyReader</a></h6>
   <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
-  <h5 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILLocalDebugMapping_syntax">Syntax</h5>
+  <h5 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">[&lt;RequireQualifiedAccess; NoEquality; NoComparison&gt;]
-record ILLocalDebugMapping
-    val LocalIndex: int
-    val LocalName: string</code></pre>
+    <pre><code class="lang-csharp hljs">type Reader.PEReader (infile:string, is:ByteFile)</code></pre>
   </div>
-  <h3 id="fields">Fields
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">infile</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.html">ByteFile</a></td>
+        <td><span class="parametername">is</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="constructors">Constructors
   </h3>
   
   
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILLocalDebugMapping_LocalIndex" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugMapping.LocalIndex">val LocalIndex: int</h4>
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader__ctor_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.#ctor*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader__ctor_string___ProviderImplementation_ProvidedTypes_AssemblyReader_ByteFile_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.#ctor(string * ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile)">new: string * ByteFile -&gt; PEReader</h4>
+  <div class="markdown level1 summary"><p>Implicit constructor.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">new: infile:string * is:ByteFile -&gt; PEReader</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">infile</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ByteFile.html">ByteFile</a></td>
+        <td><span class="parametername">is</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.html">PEReader</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_MetadataPhysLoc_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataPhysLoc*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_MetadataPhysLoc_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataPhysLoc(unit)">property MetadataPhysLoc: int</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val LocalIndex: int</code></pre>
+    <pre><code class="lang-csharp hljs">property MetadataPhysLoc: int with get</code></pre>
   </div>
-  <h5 class="fieldValue">Field Value</h5>
+  <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
       <tr>
@@ -120,14 +187,15 @@ record ILLocalDebugMapping
   </table>
   
   
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_ILLocalDebugMapping_LocalName" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.ILLocalDebugMapping.LocalName">val LocalName: string</h4>
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_MetadataSize_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataSize*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_MetadataSize_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.MetadataSize(unit)">property MetadataSize: int</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val LocalName: string</code></pre>
+    <pre><code class="lang-csharp hljs">property MetadataSize: int with get</code></pre>
   </div>
-  <h5 class="fieldValue">Field Value</h5>
+  <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
       <tr>
@@ -137,7 +205,7 @@ record ILLocalDebugMapping
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">string</span></td>
+        <td><span class="xref">int</span></td>
         <td></td>
       </tr>
     </tbody>
