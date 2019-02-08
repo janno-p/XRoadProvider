@@ -1,3 +1,8 @@
+#### 1.0.9 - 08.02.2019
+
+* Implement `xsd:token` type.
+* Implement `wsi:swaRef` attachment type.
+
 #### 1.0.8 - 26.09.2018
 
 * Period type deserialization fix.
