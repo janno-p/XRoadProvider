@@ -126,7 +126,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
 
     let serializeMultipartMessage (context: SerializerContext) (serializeContent: Stream -> unit) (stream: Stream) =
         if context.Attachments.Count > 0 then
-            use writer = new StreamWriter(stream, NewLine = "\r\n")
+            let writer = new StreamWriter(stream, NewLine = "\r\n")
             let boundaryMarker = Guid.NewGuid().ToString()
             request.ContentType <-
                 if context.IsMtomMessage then sprintf @"multipart/related; type=""application/xop+xml""; start=""<XML-%s>""; start-info=""text/xml""; boundary=""%s""" boundaryMarker boundaryMarker
