@@ -1225,20 +1225,18 @@ and private getProperties (tmf: Type -> TypeMap) (input: PropertyInput list) : P
                              HasValueMethod = hasValueMethod })
 
 and private typeMaps = ConcurrentDictionary<Type, TypeMap>()
-and private uncompleteTypeMaps = ConcurrentDictionary<Type, TypeMap>()
 
 and private createTypeMap (isEncoded: bool) (typ: Type) =
     let addTypeMap (init: TypeMap -> unit) (typ: Type) =
         let serialization, deserialization = typ |> Serialization.Create, typ |> Deserialization.Create
         let typeMap = TypeMap.Create(typ, deserialization, serialization, typ |> findBaseType isEncoded)
         if typeMaps.TryAdd(typ, typeMap) then
-            uncompleteTypeMaps.TryAdd(typ, typeMap) |> ignore
+            let typeMap = typeMaps.[typ]
             try
                 typeMap |> init
             // with
             //     TODO: generate exceptions for invalid typemap methods.
             finally
-                uncompleteTypeMaps.TryRemove(typ) |> ignore
                 typeMap.IsComplete <- true
             typeMap
         else typeMaps.[typ]
@@ -1276,7 +1274,7 @@ and findDirectSubTypes (isEncoded: bool) (typ: Type) : TypeMap list =
 
 let getCompleteTypeMap isEncoded typ =
     let typeMap = getTypeMap isEncoded typ
-    while uncompleteTypeMaps.Count > 0 do
+    while not typeMap.IsComplete do
         System.Threading.Thread.Sleep(100)
     typeMap
 
