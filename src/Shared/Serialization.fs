@@ -36,7 +36,8 @@ module private Response =
 open Response
 open System.Xml.XPath
 
-type internal XRoadResponse(response: WebResponse, methodMap: MethodMap) =
+type internal XRoadResponse(endpoint: AbstractEndpointDeclaration, request: XRoadRequest, methodMap: MethodMap) =
+    let response: WebResponse = request.GetResponse()
     let stream = new MemoryStream()
 
     let checkXRoadFault (stream: Stream) =
@@ -58,9 +59,11 @@ type internal XRoadResponse(response: WebResponse, methodMap: MethodMap) =
             let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> MyOption.defaultValue ""
             raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
 
-    member __.RetrieveMessage() =
+    member this.RetrieveMessage() =
         use responseStream = response.GetResponseStream()
         responseStream.CopyTo(stream)
+
+        endpoint.TriggerResponseReady(ResponseReadyEventArgs(this, request.Header, request.RequestId, methodMap.ServiceCode, methodMap.ServiceVersion |> MyOption.defaultValue ""))
 
         let attachments = Dictionary<string, BinaryContent>()
         use content =
@@ -96,16 +99,16 @@ type internal XRoadResponse(response: WebResponse, methodMap: MethodMap) =
             stream.Dispose()
             (response :> IDisposable).Dispose()
 
-type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertificate: X509Certificate, authenticationCertificates: ResizeArray<X509Certificate>) =
+and internal XRoadRequest(endpoint: AbstractEndpointDeclaration, methodMap: MethodMap, header: AbstractXRoadHeader) =
     let request =
-        let request = WebRequest.Create(uri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
+        let request = WebRequest.Create(endpoint.Uri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
         request.Headers.Set("SOAPAction", "")
 #if !NET40
-        if acceptedServerCertificate |> isNull |> not then
+        if endpoint.AcceptedServerCertificate |> isNull |> not then
             request.ServerCertificateValidationCallback <-
-                (fun _ cert _ errors -> if errors = SslPolicyErrors.None then true else cert = acceptedServerCertificate)
+                (fun _ cert _ errors -> if errors = SslPolicyErrors.None then true else cert = endpoint.AcceptedServerCertificate)
 #endif
-        authenticationCertificates |> Seq.iter (request.ClientCertificates.Add >> ignore)
+        endpoint.AuthenticationCertificates |> Seq.iter (request.ClientCertificates.Add >> ignore)
         request
 
     let addNamespace =
@@ -316,7 +319,10 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
 
     let stream = new MemoryStream() :> Stream
 
-    member __.CreateMessage(requestId, header, args) =
+    member val RequestId = if String.IsNullOrWhiteSpace(header.Id) then XRoadHelper.getUUID() else header.Id with get
+    member val Header = header with get
+
+    member this.CreateMessage(args) =
         use content = new MemoryStream()
         use sw = new StreamWriter(content)
         let context = SerializerContext(IsMultipart = methodMap.Request.IsMultipart)
@@ -331,7 +337,7 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
             writer.WriteAttributeString("xmlns", "xsd", XmlNamespace.Xmlns, XmlNamespace.Xsd)
             writer.WriteAttributeString("encodingStyle", XmlNamespace.SoapEnv, XmlNamespace.SoapEnc)
         writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
-        writer |> writeXRoadHeader requestId header
+        writer |> writeXRoadHeader this.RequestId header
         writer.WriteEndElement()
         writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
         methodMap.Serializer.Invoke(writer, args, context)
@@ -339,14 +345,15 @@ type internal XRoadRequest(uri: Uri, methodMap: MethodMap, acceptedServerCertifi
         writer.WriteEndDocument()
         writer.Flush()
         (content, stream) ||> serializeMessage context
+        endpoint.TriggerRequestReady(RequestReadyEventArgs(this, header, this.RequestId, methodMap.ServiceCode, methodMap.ServiceVersion |> MyOption.defaultValue ""))
 
     member __.SendMessage() =
         stream.Position <- 0L
         use networkStream = request.GetRequestStream()
         stream.CopyTo(networkStream)
 
-    member __.GetResponse(methodMap: MethodMap) =
-        new XRoadResponse(request.GetResponse(), methodMap)
+    member __.GetResponse() =
+        request.GetResponse()
 
     interface IXRoadRequest with
         member __.Save(outputStream: Stream) =
@@ -363,12 +370,9 @@ type public XRoadUtil =
     static member MakeServiceCall(endpoint: AbstractEndpointDeclaration, methodName: string, header: AbstractXRoadHeader, args: obj[]) =
         let serviceMethod = endpoint.GetType().GetMethod(methodName)
         let serviceMethodMap = getMethodMap serviceMethod
-        use request = new XRoadRequest(endpoint.Uri, serviceMethodMap, endpoint.AcceptedServerCertificate, endpoint.AuthenticationCertificates)
-        let requestId = if String.IsNullOrWhiteSpace(header.Id) then XRoadHelper.getUUID() else header.Id
-        request.CreateMessage(requestId, header, args)
-        endpoint.TriggerRequestReady(RequestReadyEventArgs(request, header, requestId, serviceMethodMap.ServiceCode, serviceMethodMap.ServiceVersion |> MyOption.defaultValue ""))
+        use request = new XRoadRequest(endpoint, serviceMethodMap, header)
+        request.CreateMessage(args)
         request.SendMessage()
-        use response = request.GetResponse(serviceMethodMap)
+        use response = new XRoadResponse(endpoint, request, serviceMethodMap)
         let result = response.RetrieveMessage()
-        endpoint.TriggerResponseReady(ResponseReadyEventArgs(response, header, requestId, serviceMethodMap.ServiceCode, serviceMethodMap.ServiceVersion |> MyOption.defaultValue ""))
         result
