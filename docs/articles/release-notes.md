@@ -1,3 +1,8 @@
+#### 1.0.10 - 16.05.2019
+
+* Change the order of loggin while handling responses.
+* Fix concurrency issue while building dynamic type serializers.
+
 #### 1.0.9 - 08.02.2019
 
 * Implement `xsd:token` type.
