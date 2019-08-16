@@ -1,40 +1,28 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net461</TargetFramework>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
+
   <Import Project="..\..\src\NetFx.props" />
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\XRoadProvider\XRoadProvider.fsproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="..\Shared\Util.fs">
-      <Link>Util.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\AdsTest.fs">
-      <Link>AdsTest.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\CodeEmitterTests.fs">
-      <Link>CodeEmitterTests.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\SerializationTest.fs">
-      <Link>SerializationTest.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\XRoadRpcEncodedV4Test.fs">
-      <Link>XRoadRpcEncodedV4Test.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\XRoadDocLiteralWrappedV5Test.fs">
-      <Link>XRoadDocLiteralWrappedV5Test.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\XmlSchemaTest.fs">
-      <Link>XmlSchemaTest.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\Program.fs">
-      <Link>Program.fs</Link>
-    </Compile>
+    <Compile Include="Util.fs" />
+    <Compile Include="AdsTest.fs" />
+    <Compile Include="CodeEmitterTests.fs" />
+    <Compile Include="SerializationTest.fs" />
+    <Compile Include="XRoadRpcEncodedV4Test.fs" />
+    <Compile Include="XRoadDocLiteralWrappedV5Test.fs" />
+    <Compile Include="XmlSchemaTest.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
+
   <ItemGroup>
     <None Include="..\Wsdl\AktorstestService.wsdl.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -69,8 +57,15 @@
       <Link>Wsdl\XRoadV6.wsdl.xml</Link>
     </None>
   </ItemGroup>
+
   <ItemGroup>
     <Content Include="app.config" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="paket.references" />
+  </ItemGroup>
+
   <Import Project="..\..\.paket\Paket.Restore.targets" />
+
 </Project>

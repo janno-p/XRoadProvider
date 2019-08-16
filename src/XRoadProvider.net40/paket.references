@@ -1,5 +1,0 @@
-group Main
-Optional
-group Net40
-FSharp.Core
-NodaTime

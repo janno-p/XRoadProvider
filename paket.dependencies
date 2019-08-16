@@ -1,17 +1,22 @@
-version 5.193.0
+version 5.215.0
 
 source https://api.nuget.org/v3/index.json
-
 storage: none
 
+nuget Expecto
+nuget FSharp.Core ~> 4.5.4
+nuget Microsoft.CodeAnalysis.CSharp
+nuget Microsoft.NET.Test.Sdk
+nuget NodaTime
 nuget Optional
+nuget YoloDev.Expecto.TestSdk
 
 github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
 
 group Build
-source https://api.nuget.org/v3/index.json
 
-storage: none
+source https://api.nuget.org/v3/index.json
+storage: packages
 
 nuget Fake.Core.ReleaseNotes
 nuget Fake.Core.Target
@@ -23,32 +28,9 @@ nuget Fake.DotNet.Paket
 nuget Fake.DotNet.Testing.Expecto
 nuget Fake.Tools.Git
 nuget FSharp.Core ~> 4.5.4
-nuget NuGet.CommandLine storage: packages
+nuget NuGet.CommandLine
+nuget Octokit
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
 
 http https://github.com/dotnet/docfx/releases/download/v2.40.10/docfx.zip
-
-group Net461
-source https://api.nuget.org/v3/index.json
-
-framework: net461
-storage: none
-
-nuget Expecto
-nuget FSharp.Core ~> 4.5.4
-nuget Microsoft.CodeAnalysis.CSharp
-nuget Microsoft.NET.Test.Sdk
-nuget NodaTime
-nuget YoloDev.Expecto.TestSdk
-
-group Net40
-source https://api.nuget.org/v3/index.json
-
-framework: net40
-storage: none
-
-nuget Argu 4.2.1
-nuget Expecto 4.1.1
-nuget FSharp.Core 3.1.2.5
-nuget NodaTime 1.4.2

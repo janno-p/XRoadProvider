@@ -1,6 +1,4 @@
-group Main
-Optional
-group Net461
 FSharp.Core
 Microsoft.CodeAnalysis.CSharp
 NodaTime
+Optional

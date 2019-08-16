@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <AssemblyName>XRoadProvider</AssemblyName>
     <RootNamespace>XRoad</RootNamespace>
@@ -8,66 +8,38 @@
     <NoWarn>$(NoWarn);2003</NoWarn>
     <DocumentationFile>XRoadProvider.xml</DocumentationFile>
   </PropertyGroup>
+
   <Import Project="..\NetFx.props" />
+
   <ItemGroup>
     <Compile Include="..\..\paket-files\fsprojects\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs">
       <Link>paket-files/ProvidedTypes.fs</Link>
     </Compile>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="..\Shared\AssemblyInfo.Build.fs">
-      <Link>AssemblyInfo.Build.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\Attributes.fs">
-      <Link>Attributes.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\Choices.fs">
-      <Link>Choices.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\Commons.fs">
-      <Link>Commons.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\Http.fs">
-      <Link>Http.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\XmlExtensions.fs">
-      <Link>XmlExtensions.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\EmitterDsl.fs">
-      <Link>EmitterDsl.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\Emitter.fs">
-      <Link>Emitter.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\Serialization.fs">
-      <Link>Serialization.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\ServiceDescription.fs">
-      <Link>ServiceDescription.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\TypeSchema.fs">
-      <Link>TypeSchema.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\CodeDom.fs">
-      <Link>CodeDom.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\TypeBuilderContext.fs">
-      <Link>TypeBuilderContext.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\CodeDomGenerator.fs">
-      <Link>CodeDomGenerator.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\ProducerDefinition.fs">
-      <Link>ProducerDefinition.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\SecurityServer.fs">
-      <Link>SecurityServer.fs</Link>
-    </Compile>
-    <Compile Include="..\Shared\XRoadProvidedTypes.fsi">
-      <Link>XRoadProvidedTypes.fsi</Link>
-    </Compile>
-    <Compile Include="..\Shared\XRoadProvidedTypes.fs">
-      <Link>XRoadProvidedTypes.fs</Link>
-    </Compile>
+    <Compile Include="AssemblyInfo.Build.fs" />
+    <Compile Include="Attributes.fs" />
+    <Compile Include="Choices.fs" />
+    <Compile Include="Commons.fs" />
+    <Compile Include="Http.fs" />
+    <Compile Include="XmlExtensions.fs" />
+    <Compile Include="EmitterDsl.fs" />
+    <Compile Include="Emitter.fs" />
+    <Compile Include="Serialization.fs" />
+    <Compile Include="ServiceDescription.fs" />
+    <Compile Include="TypeSchema.fs" />
+    <Compile Include="CodeDom.fs" />
+    <Compile Include="TypeBuilderContext.fs" />
+    <Compile Include="CodeDomGenerator.fs" />
+    <Compile Include="ProducerDefinition.fs" />
+    <Compile Include="SecurityServer.fs" />
+    <Compile Include="XRoadProvidedTypes.fsi" />
+    <Compile Include="XRoadProvidedTypes.fs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="paket.references" />
+  </ItemGroup>
+
   <Import Project="..\..\.paket\Paket.Restore.targets" />
+
 </Project>

@@ -3,7 +3,7 @@
 #load "./.fake/build.fsx/intellisense.fsx"
 #load "./paket-files/build/fsharp/FAKE/modules/Octokit/Octokit.fsx"
 
-#if INTERACTIVE
+#if !FAKE
 #r "netstandard"
 #endif
 
