@@ -32,12 +32,10 @@ let gitName = ProjectName
 
 let projects = [
     ProjectName
-    (sprintf "%s.net40" ProjectName)
 ]
 
 let testProjects = [
     (sprintf "%s.Tests" ProjectName)
-    (sprintf "%s.Tests.net40" ProjectName)
 ]
 
 let projectPath = __SOURCE_DIRECTORY__ </> "src"
