@@ -4,11 +4,13 @@ source https://api.nuget.org/v3/index.json
 storage: none
 
 nuget Expecto
-nuget FSharp.Core ~> 4.5.4
+nuget FSharp.Core
 nuget Microsoft.CodeAnalysis.CSharp
 nuget Microsoft.NET.Test.Sdk
 nuget NodaTime
 nuget Optional
+nuget System.CodeDom
+nuget System.Reflection.Emit.Lightweight
 nuget YoloDev.Expecto.TestSdk
 
 github fsprojects/FSharp.TypeProviders.SDK src/ProvidedTypes.fs
@@ -27,7 +29,7 @@ nuget Fake.DotNet.NuGet
 nuget Fake.DotNet.Paket
 nuget Fake.DotNet.Testing.Expecto
 nuget Fake.Tools.Git
-nuget FSharp.Core ~> 4.5.4
+nuget FSharp.Core
 nuget NuGet.CommandLine
 nuget Octokit
 

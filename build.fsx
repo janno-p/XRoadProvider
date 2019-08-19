@@ -40,7 +40,7 @@ let testProjects = [
 
 let projectPath = __SOURCE_DIRECTORY__ </> "src"
 let testProjectPath = __SOURCE_DIRECTORY__ </> "tests"
-let testAssemblies = testProjectPath </> "**" </> "bin" </> "Debug" </> "**" </> "*Tests*.exe"
+let testAssemblies = testProjectPath </> "**" </> "bin" </> "Debug" </> "**" </> "*Tests*.dll"
 
 let release = ReleaseNotes.load "RELEASE_NOTES.md"
 

@@ -6,12 +6,7 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Net
-
-#if !NET40
 open System.Net.Security
-#endif
-
-open System.Security.Cryptography.X509Certificates
 open System.Xml
 open XRoad.Serialization.Attributes
 
@@ -103,11 +98,9 @@ and internal XRoadRequest(endpoint: AbstractEndpointDeclaration, methodMap: Meth
     let request =
         let request = WebRequest.Create(endpoint.Uri, Method="POST", ContentType="text/xml; charset=utf-8") |> unbox<HttpWebRequest>
         request.Headers.Set("SOAPAction", "")
-#if !NET40
         if endpoint.AcceptedServerCertificate |> isNull |> not then
             request.ServerCertificateValidationCallback <-
                 (fun _ cert _ errors -> if errors = SslPolicyErrors.None then true else cert = endpoint.AcceptedServerCertificate)
-#endif
         endpoint.AuthenticationCertificates |> Seq.iter (request.ClientCertificates.Add >> ignore)
         request
 

@@ -2,3 +2,5 @@ FSharp.Core
 Microsoft.CodeAnalysis.CSharp
 NodaTime
 Optional
+System.CodeDom
+System.Reflection.Emit.Lightweight

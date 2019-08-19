@@ -1,9 +1,6 @@
 ﻿module internal XRoad.CodeDom
 
-#if !NET40
 open Microsoft.CodeAnalysis.CSharp
-#endif
-
 open Microsoft.CSharp
 open Microsoft.FSharp.Core.CompilerServices
 open System
@@ -268,43 +265,9 @@ module Compiler =
 module String =
     let isNullOrEmpty = String.IsNullOrEmpty
 
-#if NET40
-    // http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-334.pdf
-
-    let isLetterCharacter (ch: char) =
-        match CharUnicodeInfo.GetUnicodeCategory(ch) with
-        | UnicodeCategory.UppercaseLetter
-        | UnicodeCategory.LowercaseLetter
-        | UnicodeCategory.TitlecaseLetter
-        | UnicodeCategory.ModifierLetter
-        | UnicodeCategory.OtherLetter
-        | UnicodeCategory.LetterNumber -> true
-        | _ -> false
-
-    let isCombiningCharacter (ch: char) =
-        match CharUnicodeInfo.GetUnicodeCategory(ch) with
-        | UnicodeCategory.NonSpacingMark
-        | UnicodeCategory.SpacingCombiningMark -> true
-        | _ -> false
-
-    let inline private isDecimalDigitCharacter (ch: char) = CharUnicodeInfo.GetUnicodeCategory(ch) = UnicodeCategory.DecimalDigitNumber
-    let inline private isConnectingCharacter (ch: char) = CharUnicodeInfo.GetUnicodeCategory(ch) = UnicodeCategory.ConnectorPunctuation
-    let inline private isFormattingCharacter (ch: char) = CharUnicodeInfo.GetUnicodeCategory(ch) = UnicodeCategory.Format
-    let inline private isUnderscoreCharacter (ch: char) = ch = '_'
-    let inline private isIdentifierStartCharacter (ch: char) = isLetterCharacter ch || isUnderscoreCharacter ch
-
-    let private isIdentifierPartCharacter (ch: char) =
-        isLetterCharacter ch || isDecimalDigitCharacter ch || isConnectingCharacter ch || isCombiningCharacter ch || isFormattingCharacter ch
-
-    let private isValidIdentifier (name: string) =
-        if name |> isNullOrEmpty then false else
-        if isIdentifierStartCharacter name.[0] |> not then false else
-        Array.TrueForAll(name.ToCharArray() |> Array.skip 1, Predicate(isIdentifierPartCharacter))
-#else
     let private isIdentifierPartCharacter = SyntaxFacts.IsIdentifierPartCharacter
     let private isIdentifierStartCharacter = SyntaxFacts.IsIdentifierStartCharacter
     let private isValidIdentifier = SyntaxFacts.IsValidIdentifier
-#endif
 
     /// Joins sequence of elements with given separator to string.
     let join (sep: string) (arr: seq<'T>) = String.Join(sep, arr)

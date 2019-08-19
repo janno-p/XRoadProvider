@@ -13,24 +13,6 @@ open XRoad.Serialization.Attributes
 open EmitterDsl
 open XmlExtensions
 
-#if NET40
-type ICustomAttributeProvider with
-    member this.GetCustomAttribute<'T when 'T :> Attribute and 'T : null>() =
-        match this.GetCustomAttributes(typeof<'T>, false) with
-        | [||] -> null
-        | [|attr|] -> attr |> unbox<'T>
-        | _ -> failwith "multiple attributes of same type"
-    member this.GetCustomAttributes<'T when 'T :> Attribute and 'T : null>() =
-        this.GetCustomAttributes(typeof<'T>, false) |> Array.map unbox<'T>
-
-type Type with
-    member this.GenericTypeArguments with get() = this.GetGenericArguments()
-
-type MethodInfo with
-    member this.CreateDelegate(delegateType: Type) =
-        (this |> unbox<DynamicMethod>).CreateDelegate(delegateType)
-#endif
-
 type Serialization =
     { Root: MethodInfo
       Content: MethodInfo }
