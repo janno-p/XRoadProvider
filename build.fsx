@@ -75,6 +75,10 @@ Target.create "CopyBinaries" (fun _ ->
     !! "src/**/*.fsproj"
     |>  Seq.map (fun f -> ((System.IO.Path.GetDirectoryName f) </> "bin" </> "Release", "bin"))
     |>  Seq.iter (fun (fromDir, toDir) -> Shell.copyDir toDir fromDir (fun _ -> true))
+
+    ["netstandard.dll"; "System.Reflection.dll"; "System.Runtime.dll"]
+    |> Seq.map ((</>) (__SOURCE_DIRECTORY__ </> "packages" </> "build" </> "NETStandard.Library.NETFramework" </> "build" </> "net461" </> "lib"))
+    |> Seq.iter (Shell.copyFile ("bin" </> "netstandard2.0"))
 )
 
 Target.description "Clean build results"

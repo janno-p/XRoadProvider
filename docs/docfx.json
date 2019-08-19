@@ -6,16 +6,13 @@
           "files": [
             "**.fsproj"
           ],
-          "exclude": [
-            "**.net40.fsproj"
-          ],
           "src": "../src"
         }
       ],
       "dest": "api",
       "disableGitFeatures": false,
       "properties": {
-        "TargetFramework": "net461"
+        "TargetFramework": "netstandard2.0"
       }
     }
   ],

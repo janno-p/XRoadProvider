@@ -189,5 +189,6 @@ docs/content/release-notes.md
 # FAKE tool
 .fake
 .idea
+.ionide
 
 XRoadProvider.xml
