@@ -9,4 +9,4 @@ script:
   - dotnet tool install paket -g
   - dotnet tool install fake-cli -g
   - paket restore
-  - fake run build.fsx target RunTests
+  - fake run build.fsx -e "DisableNet40=true" target RunTests

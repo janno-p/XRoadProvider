@@ -14,4 +14,4 @@ build: off
 before_test:
   - paket restore
 test_script:
-  - fake run build.fsx target RunTests
+  - fake run build.fsx -e "DisableNet40=true" target RunTests

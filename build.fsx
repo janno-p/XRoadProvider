@@ -19,6 +19,8 @@ open Fake.Tools
 open Octokit
 open System
 
+Target.initEnvironment()
+
 let [<Literal>] ProjectName = "XRoadProvider"
 let [<Literal>] Summary = "Type providers for generating types and service interfaces for XRoad producers."
 let [<Literal>] Description = "Type providers for generating types and service interfaces for XRoad producers."
@@ -30,14 +32,18 @@ let authors = [ "Janno Põldma" ]
 let gitHome = "https://github.com/" + GitOwner
 let gitName = ProjectName
 
+let enableNet40 = Environment.environVarAsBool "DisableNet40" |> not
+
 let projects = [
-    ProjectName
-    (sprintf "%s.net40" ProjectName)
+    yield ProjectName
+    if enableNet40 then
+        yield sprintf "%s.net40" ProjectName
 ]
 
 let testProjects = [
-    (sprintf "%s.Tests" ProjectName, None)
-    (sprintf "%s.Tests.net40" ProjectName, Some "net40")
+    yield sprintf "%s.Tests" ProjectName
+    if enableNet40 then
+        yield sprintf "%s.Tests.net40" ProjectName
 ]
 
 let projectPath = __SOURCE_DIRECTORY__ </> "src"
@@ -87,16 +93,10 @@ Target.create "Clean" (fun _ ->
 Target.description "Build test project"
 Target.create "BuildDebug" (fun _ ->
     testProjects
-    |> Seq.iter (fun (path, framework) ->
-        DotNet.restore id (testProjectPath </> path)
-        DotNet.build
-            (fun p ->
-                { p with
-                    Configuration = DotNet.BuildConfiguration.Debug
-                    Framework = framework
-                }
-            )
-            (testProjectPath </> path)
+    |> Seq.map ((</>) testProjectPath)
+    |> Seq.iter (fun path ->
+        DotNet.restore id path
+        DotNet.build (fun p -> { p with Configuration = DotNet.BuildConfiguration.Debug }) path
     )
 )
 
