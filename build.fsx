@@ -3,10 +3,6 @@
 #load "./.fake/build.fsx/intellisense.fsx"
 #load "./paket-files/build/fsharp/FAKE/modules/Octokit/Octokit.fsx"
 
-#if INTERACTIVE
-#r "netstandard"
-#endif
-
 open Fake.Core
 open Fake.Core.TargetOperators
 open Fake.Documentation
