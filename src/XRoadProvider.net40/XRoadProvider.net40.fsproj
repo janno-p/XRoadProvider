@@ -2,7 +2,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>XRoadProvider</AssemblyName>
-    <DefineConstants>NET40</DefineConstants>
     <DocumentationFile>XRoadProvider.xml</DocumentationFile>
     <NoWarn>$(NoWarn);2003</NoWarn>
     <RootNamespace>XRoad</RootNamespace>

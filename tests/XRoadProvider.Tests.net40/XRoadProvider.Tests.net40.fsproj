@@ -2,7 +2,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>XRoadProvider.Tests</AssemblyName>
-    <DefineConstants>NET40</DefineConstants>
     <OutputType>Exe</OutputType>
     <TargetFramework>net40</TargetFramework>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

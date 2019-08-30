@@ -36,8 +36,8 @@ let projects = [
 ]
 
 let testProjects = [
-    (sprintf "%s.Tests" ProjectName)
-    (sprintf "%s.Tests.net40" ProjectName)
+    (sprintf "%s.Tests" ProjectName, None)
+    (sprintf "%s.Tests.net40" ProjectName, Some "net40")
 ]
 
 let projectPath = __SOURCE_DIRECTORY__ </> "src"
@@ -87,10 +87,16 @@ Target.create "Clean" (fun _ ->
 Target.description "Build test project"
 Target.create "BuildDebug" (fun _ ->
     testProjects
-    |> Seq.map ((</>) testProjectPath)
-    |> Seq.iter (fun path ->
-        DotNet.restore id path
-        DotNet.build (fun p -> { p with Configuration = DotNet.BuildConfiguration.Debug }) path
+    |> Seq.iter (fun (path, framework) ->
+        DotNet.restore id (testProjectPath </> path)
+        DotNet.build
+            (fun p ->
+                { p with
+                    Configuration = DotNet.BuildConfiguration.Debug
+                    Framework = framework
+                }
+            )
+            (testProjectPath </> path)
     )
 )
 
