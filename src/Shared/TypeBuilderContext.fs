@@ -189,7 +189,7 @@ type internal TypeBuilderContext =
                     match this.DereferenceElementSpec(element) with
                     | dspec, Name(xn) ->
                         let itemName = dspec.Name |> Option.get
-                        CollectionType(this.GetRuntimeType(SchemaType(xn)), itemName, None)
+                        CollectionType(this.GetOrCreateType(SchemaType(xn)), itemName, None)
                     | dspec, Definition(def) ->
                         let itemName = dspec.Name |> Option.get
                         let suffix = itemName.ToClassName()

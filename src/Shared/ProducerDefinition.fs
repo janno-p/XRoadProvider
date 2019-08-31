@@ -215,9 +215,7 @@ module ServiceBuilder =
         | _ -> ()
         additionalMembers |> Seq.toList
 
-/// Builds all types, namespaces and services for give producer definition.
-/// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
+let buildProducerTargetClass targetClassName uri languageCode operationFilter =
     // Load schema details from specified file or network location.
     let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
 
@@ -248,7 +246,7 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
 
     // Main class that wraps all provided functionality and types.
     let targetClass =
-        Cls.create typeNamePath.[typeNamePath.Length - 1]
+        Cls.create targetClassName
         |> Cls.setAttr TypeAttributes.Public
         |> Cls.asStatic
         |> Cls.addMember serviceTypesTy
@@ -272,7 +270,7 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
                 |> Ctor.setAttr MemberAttributes.Public
                 |> Ctor.addParam<string> "uri"
                 |> Ctor.addChainedArg (Expr.inst<Uri> [!+ "uri"])
-            
+
             let ctor3 =
                 Ctor.create()
                 |> Ctor.setAttr MemberAttributes.Public
@@ -317,6 +315,13 @@ let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilte
 
     // Create types for all type namespaces.
     context.CachedNamespaces |> Seq.iter (fun kvp -> kvp.Value |> serviceTypesTy.Members.Add |> ignore)
+
+    targetClass
+
+/// Builds all types, namespaces and services for give producer definition.
+/// Called by type provider to retrieve assembly details for generated types.
+let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
+    let targetClass = buildProducerTargetClass typeNamePath.[typeNamePath.Length - 1] uri languageCode operationFilter
 
     // Initialize default namespace to hold main type.
     let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))

@@ -144,11 +144,11 @@ and RestrictionContent =
     | MinInclusive of decimal
     | MaxExclusive of decimal
     | MaxInclusive of decimal
-    | TotalDigits
-    | FractionDigits
-    | Length
+    | TotalDigits of int
+    | FractionDigits of int
+    | Length of int
     | MinLength of int
-    | MaxLength
+    | MaxLength of int
     | Enumeration of string
     | WhiteSpace
     | Pattern of string
@@ -548,8 +548,14 @@ module Parser =
             | Xsd "enumeration", (Begin | Annotation | TypeSpec | Content) ->
                 let value = node |> reqAttr(xname "value")
                 Content, { spec with Content = spec.Content @ [Enumeration(value)] }
+            | Xsd "fractionDigits", (Begin | Annotation | TypeSpec | Content) ->
+                Content, { spec with Content = spec.Content @ [FractionDigits(node |> readInt "value")] }
+            | Xsd "length", (Begin | Annotation | TypeSpec | Content) ->
+                Content, { spec with Content = spec.Content @ [Length(node |> readInt "value")] }
             | Xsd "minLength", (Begin | Annotation | TypeSpec | Content) ->
                 Content, { spec with Content = spec.Content @ [MinLength(node |> readInt "value")] }
+            | Xsd "maxLength", (Begin | Annotation | TypeSpec | Content) ->
+                Content, { spec with Content = spec.Content @ [MaxLength(node |> readInt "value")] }
             | Xsd "minInclusive", (Begin | Annotation | TypeSpec | Content) ->
                 Content, { spec with Content = spec.Content @ [MinInclusive(node |> readDecimal "value") ] }
             | Xsd "maxInclusive", (Begin | Annotation | TypeSpec | Content) ->
@@ -560,7 +566,9 @@ module Parser =
                 Content, { spec with Content = spec.Content @ [MaxExclusive(node |> readDecimal "value") ] }
             | Xsd "pattern", (Begin | Annotation | TypeSpec | Content) ->
                 Content, { spec with Content = spec.Content @ [Pattern(node |> reqAttr(xname "value"))] }
-            | (Xsd "totalDigits" | Xsd "fractionDigits" | Xsd "length" | Xsd "minLength" | Xsd "maxLength" | Xsd "whiteSpace"), (Begin | Annotation | TypeSpec | Content) ->
+            | Xsd "totalDigits", (Begin | Annotation | TypeSpec | Content) ->
+                Content, { spec with Content = spec.Content @ [TotalDigits(node |> readInt "value")] }
+            | Xsd "whiteSpace", (Begin | Annotation | TypeSpec | Content) ->
                 Content, node |> notImplementedIn "simpleType restriction"
             | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | TypeSpec | Content | Attribute) ->
                 Attribute, node |> notImplementedIn "simpleType restriction"

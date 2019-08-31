@@ -31,6 +31,7 @@
     <Compile Include="..\Shared\XmlSchemaTest.fs">
       <Link>XmlSchemaTest.fs</Link>
     </Compile>
+    <Compile Include="DebugProvider.fs" />
     <Compile Include="..\Shared\Program.fs">
       <Link>Program.fs</Link>
     </Compile>
