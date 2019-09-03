@@ -15,6 +15,8 @@ module TypeBuilder =
     type PropertyDefinition =
         { /// Name of the property.
           Name: string
+          /// Qualified namespace of the propertys XML element.
+          QualifiedNamespace: string option
           /// Runtime type to use on property.
           Type: RuntimeType
           /// Does property accept nil values?
@@ -31,13 +33,14 @@ module TypeBuilder =
           // Documentation tooltips
           Documentation: string option }
         /// Initializes default property with name and optional value.
-        static member Create(name, isOptional, doc) =
+        static member Create(name, qualifiedNamespace, isOptional, doc) =
             { Type = UnitType
               IsNillable = false
               IsItemNillable = None
               IsOptional = isOptional
               IsWrappedArray = None
               Name = name
+              QualifiedNamespace = qualifiedNamespace
               IsAttribute = false
               IsIgnored = false
               Documentation = doc }
@@ -46,12 +49,12 @@ module TypeBuilder =
         match prop.IsWrappedArray, prop.Type with
         | Some(hasWrapper), CollectionType(itemTy, itemName, _) ->
             let isItemNillable = prop.IsItemNillable |> MyOption.defaultValue false
-            [ Attributes.xrdElement idx elementName None prop.IsNillable (not hasWrapper) itemTy.TypeHint
+            [ Attributes.xrdElement idx elementName prop.QualifiedNamespace prop.IsNillable (not hasWrapper) itemTy.TypeHint
               Attributes.xrdCollection idx (Some(itemName)) None isItemNillable false ]
         | Some(_), _ ->
             failwith "Array should match to CollectionType."
         | None, _ ->
-            [ Attributes.xrdElement idx elementName None prop.IsNillable false prop.Type.TypeHint ]
+            [ Attributes.xrdElement idx elementName prop.QualifiedNamespace prop.IsNillable false prop.Type.TypeHint ]
 
     /// Build property declarations from property definitions and add them to owner type.
     let private addTypeProperties (definitions, subTypes) ownerTy =
@@ -74,7 +77,7 @@ module TypeBuilder =
 
     /// Create definition of property that accepts any element not defined in schema.
     let private buildAnyProperty () =
-        { PropertyDefinition.Create("AnyElements", false, None) with Type = AnyType }
+        { PropertyDefinition.Create("AnyElements", None, false, None) with Type = AnyType }
 
     let private annotationToText (context: TypeBuilderContext) (annotation: Annotation option) =
         annotation
@@ -147,7 +150,7 @@ module TypeBuilder =
     and private buildElementProperty (context: TypeBuilderContext) (forceOptional: bool) (spec: ElementSpec) : PropertyDefinition * CodeTypeDeclaration list =
         let dspec, schemaType = context.DereferenceElementSpec(spec)
         let name = dspec.Name |> Option.get
-        buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (forceOptional || spec.MinOccurs = 0u) context (annotationToText context spec.Annotation) spec.ExpectedContentTypes.IsSome
+        buildPropertyDef schemaType spec.MaxOccurs name dspec.Namespace spec.IsNillable (forceOptional || spec.MinOccurs = 0u) context (annotationToText context spec.Annotation) spec.ExpectedContentTypes.IsSome
 
     /// Create single property definition for given attribute-s schema specification.
     and private buildAttributeProperty (context: TypeBuilderContext) (spec: AttributeSpec) : PropertyDefinition * CodeTypeDeclaration list =
@@ -158,18 +161,18 @@ module TypeBuilder =
             | Definition(simpleTypeSpec) -> Definition(SimpleDefinition(simpleTypeSpec))
             | Name(name) -> Name(name)
         let isOptional = match spec.Use with Required -> true | _ -> false
-        let prop, types = buildPropertyDef schemaType 1u name false isOptional context (annotationToText context spec.Annotation) false
+        let prop, types = buildPropertyDef schemaType 1u name None false isOptional context (annotationToText context spec.Annotation) false
         { prop with IsAttribute = true }, types
 
     /// Build default property definition from provided schema information.
-    and private buildPropertyDef schemaType maxOccurs name isNillable isOptional context doc useXop : PropertyDefinition * CodeTypeDeclaration list =
+    and private buildPropertyDef schemaType maxOccurs name qualifiedNamespace isNillable isOptional context doc useXop : PropertyDefinition * CodeTypeDeclaration list =
         match schemaType with
         | Definition(ArrayContent itemSpec) ->
             match context.DereferenceElementSpec(itemSpec) with
             | dspec, Name(n) ->
                 let itemName = dspec.Name |> Option.get
                 let itemTy = context.GetRuntimeType(SchemaType(n)) |> fixContentType useXop
-                ({ PropertyDefinition.Create(name, isOptional, doc) with
+                ({ PropertyDefinition.Create(name, qualifiedNamespace, isOptional, doc) with
                     Type = CollectionType(itemTy, itemName, None)
                     IsNillable = isNillable
                     IsItemNillable = Some(itemSpec.IsNillable)
@@ -180,7 +183,7 @@ module TypeBuilder =
                 let typ = Cls.create(name.ToClassName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
-                ({ PropertyDefinition.Create(name, isOptional, doc) with
+                ({ PropertyDefinition.Create(name, qualifiedNamespace, isOptional, doc) with
                     Type = CollectionType(runtimeType, itemName, None)
                     IsNillable = isNillable
                     IsItemNillable = Some(itemSpec.IsNillable)
@@ -190,27 +193,27 @@ module TypeBuilder =
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then
-                ({ PropertyDefinition.Create(name, false, doc) with
+                ({ PropertyDefinition.Create(name, qualifiedNamespace, false, doc) with
                     Type = CollectionType(runtimeType, name, None)
                     IsNillable = isNillable
                     IsWrappedArray = Some(false) }, [subTy])
             else
-                ({ PropertyDefinition.Create(name, isOptional, doc) with
+                ({ PropertyDefinition.Create(name, qualifiedNamespace, isOptional, doc) with
                     Type = runtimeType
                     IsNillable = isNillable }, [subTy])
         | Name(n) ->
             match context.GetRuntimeType(SchemaType(n)) with
             | x when maxOccurs > 1u ->
-                ({ PropertyDefinition.Create(name, false, doc) with
+                ({ PropertyDefinition.Create(name, qualifiedNamespace, false, doc) with
                     Type = CollectionType(x |> fixContentType useXop, name, None)
                     IsNillable = isNillable
                     IsWrappedArray = Some(false) }, [])
             | PrimitiveType(x, thv) when x.IsValueType ->
-                ({ PropertyDefinition.Create(name, isOptional, doc) with
+                ({ PropertyDefinition.Create(name, qualifiedNamespace, isOptional, doc) with
                     Type = PrimitiveType((if isNillable then typedefof<Nullable<_>>.MakeGenericType(x) else x), thv)
                     IsNillable = isNillable }, [])
             | x ->
-                ({ PropertyDefinition.Create(name, isOptional, doc) with
+                ({ PropertyDefinition.Create(name, qualifiedNamespace, isOptional, doc) with
                     Type = x |> fixContentType useXop
                     IsNillable = isNillable }, [])
 
@@ -316,7 +319,7 @@ module TypeBuilder =
                 | Group -> failwith "Not implemented: group in choice.")
             |> List.collect id
 
-        { PropertyDefinition.Create(choiceName, false, None) with Type = choiceRuntimeType }, choiceType::addedTypes
+        { PropertyDefinition.Create(choiceName, None, false, None) with Type = choiceRuntimeType }, choiceType::addedTypes
 
     /// Extract property definitions for all the elements defined in sequence element.
     and private buildSequenceMembers context (spec: ParticleSpec) : PropertyDefinition list * CodeTypeDeclaration list =

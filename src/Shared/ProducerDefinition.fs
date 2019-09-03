@@ -105,7 +105,7 @@ module ServiceBuilder =
                         let p =
                             let isOptional = dspec.MinOccurs = 0u
                             Param.create (runtimeType.AsCodeTypeReference(optional=isOptional)) name
-                            |> Param.describe (Attributes.xrdElement None None None false false runtimeType.TypeHint)
+                            |> Param.describe (Attributes.xrdElement None None dspec.Namespace false false runtimeType.TypeHint)
                             |> iif isOptional (fun p -> p |> Param.describe Attributes.Optional)
                         m |> Meth.addParamExpr p |> ignore
                         argumentExpressions.Add(!+ name)

@@ -230,7 +230,7 @@ Target.create "All" ignore
   ==> "RunTests"
   ==> "Build"
   ==> "CopyBinaries"
-  ==> "GenerateDocs"
+  =?> ("GenerateDocs", Environment.environVarAsBool "SkipDocs" |> not)
   ==> "All"
   =?> ("ReleaseDocs", BuildServer.isLocalBuild)
 

@@ -72,14 +72,16 @@ type RefOrTypeDefinition<'T> =
 type ElementSpec =
     { Annotation: Annotation option
       Name: string option
+      Namespace: string option
       MinOccurs: uint32
       MaxOccurs: uint32
       IsNillable: bool
       Definition: RefOrTypeDefinition<SchemaTypeDefinition>
       ExpectedContentTypes: string option }
-    static member FromNode(node) =
+    static member FromNode(node, schema: SchemaNode) =
         { Annotation = None
           Name = None
+          Namespace = if node |> attr (XName.Get("form")) |> Option.map ((=) "qualified") |> MyOption.defaultValue schema.QualifiedElements then Some(schema.TargetNamespace.NamespaceName) else None
           MinOccurs = readMinOccurs node
           MaxOccurs = readMaxOccurs node
           IsNillable = readNillable node
@@ -220,7 +222,7 @@ and AttributeGroupSpec =
 and Annotation = { AppInfo: XElement list }
 
 /// Root type to hold definition for entire type schema.
-type SchemaNode =
+and SchemaNode =
     { QualifiedAttributes: bool
       QualifiedElements: bool
       TargetNamespace: XNamespace
@@ -271,7 +273,7 @@ module Parser =
             | elements -> Some({ AppInfo = elements })
 
     /// Extracts complexType specification from schema definition.
-    let rec private parseComplexType (node: XElement): ComplexTypeSpec =
+    let rec private parseComplexType (schema: SchemaNode) (node: XElement): ComplexTypeSpec =
         let parseChildElements() =
             node.Elements()
             |> Seq.fold (fun (state, spec) node ->
@@ -279,17 +281,17 @@ module Parser =
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "simpleContent", (Begin | Annotation) ->
-                    Content, Some(SimpleContent(parseSimpleContent node))
+                    Content, Some(SimpleContent(parseSimpleContent schema node))
                 | Xsd "complexContent", (Begin | Annotation) ->
-                    Content, Some(ComplexContent(parseComplexContent node))
+                    Content, Some(ComplexContent(parseComplexContent schema node))
                 | Xsd "choice", (Begin | Annotation) ->
-                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Choice(parseChoice(node))); Attributes = []; AttributeGroups = [] }))
+                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Choice(parseChoice schema node)); Attributes = []; AttributeGroups = [] }))
                 | Xsd "group", (Begin | Annotation) ->
                     Particle, node |> notImplementedIn "complexType"
                 | Xsd "sequence", (Begin | Annotation) ->
-                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Sequence(parseSequence node)); Attributes = []; AttributeGroups = [] }))
+                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(ComplexTypeParticle.Sequence(parseSequence schema node)); Attributes = []; AttributeGroups = [] }))
                 | Xsd "all", (Begin | Annotation) ->
-                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(All(parseAll node)); Attributes = []; AttributeGroups = [] }))
+                    Particle, Some(ComplexTypeContent.Particle({ Content = Some(All(parseAll schema node)); Attributes = []; AttributeGroups = [] }))
                 | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
                     let attribute = parseAttribute node
                     let content = match spec with
@@ -314,7 +316,7 @@ module Parser =
         { IsAbstract = node |> readBoolean "abstract"; Content = parseChildElements(); Annotation = parseAnnotation(node) }
 
     /// Extracts complexType-s simpleContent element specification from schema definition.
-    and private parseSimpleContent (node: XElement): SimpleContentSpec =
+    and private parseSimpleContent (schema: SchemaNode) (node: XElement): SimpleContentSpec =
         let content =
             node.Elements()
             |> Seq.fold (fun (state, spec) node ->
@@ -324,7 +326,7 @@ module Parser =
                 | Xsd "restriction", (Begin | Annotation) ->
                     Content, Some(SimpleContentSpec.Restriction(parseSimpleContentRestriction node))
                 | Xsd "extension", (Begin | Annotation) ->
-                    Content, Some(SimpleContentSpec.Extension(parseExtension node))
+                    Content, Some(SimpleContentSpec.Extension(parseExtension schema node))
                 | _ -> node |> notExpectedIn "simpleContent"
                 ) (Begin, None)
             |> snd
@@ -333,7 +335,7 @@ module Parser =
         | _ -> failwith "Element simpleContent is expected to contain either restriction or extension element."
 
     /// Extracts complexType-s complexContent element specification from schema definition.
-    and private parseComplexContent (node: XElement): ComplexContentSpec =
+    and private parseComplexContent (schema: SchemaNode) (node: XElement): ComplexContentSpec =
         let content =
             node.Elements()
             |> Seq.fold (fun (state, spec: ComplexContentSpec option) node ->
@@ -341,9 +343,9 @@ module Parser =
                 | Xsd "annotation", Begin ->
                     Annotation, spec
                 | Xsd "restriction", (Begin | Annotation) ->
-                    Content, Some(Restriction(parseComplexContentRestriction node))
+                    Content, Some(Restriction(parseComplexContentRestriction schema node))
                 | Xsd "extension", (Begin | Annotation) ->
-                    Content, Some(Extension(parseExtension node))
+                    Content, Some(Extension(parseExtension schema node))
                 | _ -> node |> notExpectedIn "complexContent")
                 (Begin, None)
             |> snd
@@ -352,7 +354,7 @@ module Parser =
         | _ -> failwith "Element complexContent is expected to contain either restriction or extension element."
 
     /// Extracts choice or sequence element specification from schema definition.
-    and private parseParticle particleName (node: XElement): ParticleSpec =
+    and private parseParticle (schema: SchemaNode) particleName (node: XElement): ParticleSpec =
         node.Elements()
         |> Seq.fold (fun (state, spec: ParticleSpec) node ->
             match node, state with
@@ -361,13 +363,13 @@ module Parser =
             | Xsd "any", _ ->
                 Content, { spec with Content = spec.Content @ [Any] }
             | Xsd "choice", _ ->
-                Content, { spec with Content = spec.Content @ [Choice(parseChoice(node))] }
+                Content, { spec with Content = spec.Content @ [Choice(parseChoice schema node)] }
             | Xsd "element", _ ->
-                Content, { spec with Content = spec.Content @ [Element(parseElement(node))] }
+                Content, { spec with Content = spec.Content @ [Element(parseElement schema node)] }
             | Xsd "group", _ ->
                 Content, node |> notImplementedIn particleName
             | Xsd "sequence", _ ->
-                Content, { spec with Content = spec.Content @ [Sequence(parseSequence(node))] }
+                Content, { spec with Content = spec.Content @ [Sequence(parseSequence schema node)] }
             | _ -> node |> notExpectedIn particleName
             ) (Begin, { Annotation = None
                         MaxOccurs = readMaxOccurs node
@@ -375,18 +377,18 @@ module Parser =
                         Content = [] })
         |> snd
 
-    and private parseChoice = parseParticle "choice"
-    and private parseSequence = parseParticle "sequence"
+    and private parseChoice (schema: SchemaNode) node = parseParticle schema "choice" node
+    and private parseSequence (schema: SchemaNode) node = parseParticle schema "sequence" node
 
     /// Extracts `all` element specification from schema definition.
-    and private parseAll (node: XElement): AllSpec =
+    and private parseAll (schema: SchemaNode) (node: XElement): AllSpec =
         node.Elements()
         |> Seq.fold (fun (state, spec: AllSpec) node ->
             match node, state with
             | Xsd "annotation", Begin ->
                 Annotation, spec
             | Xsd "element", (Begin | Annotation | Content) ->
-                Content, { spec with Elements = spec.Elements @ [parseElement(node)] }
+                Content, { spec with Elements = spec.Elements @ [parseElement schema node] }
             | _ -> node |> notExpectedIn "all"
             ) (Begin, { MinOccurs = readMinOccurs node
                         MaxOccurs = readMaxOccurs node
@@ -435,7 +437,7 @@ module Parser =
         node |> notImplementedIn "simpleContent restriction"
 
     /// Extracts `extension` element specification from schema definition.
-    and private parseExtension (node: XElement): ExtensionSpec =
+    and private parseExtension (schema: SchemaNode) (node: XElement): ExtensionSpec =
         let parseChildElements () =
             node.Elements()
             |> Seq.fold (fun (state, spec: ComplexTypeContentSpec) node ->
@@ -445,7 +447,7 @@ module Parser =
                 | (Xsd "group" | Xsd "all" | Xsd "choice"), (Begin | Annotation) ->
                     node |> notImplementedIn "extension"
                 | Xsd "sequence", (Begin | Annotation) ->
-                    Particle, { spec with Content = Some(ComplexTypeParticle.Sequence(parseSequence node)) }
+                    Particle, { spec with Content = Some(ComplexTypeParticle.Sequence(parseSequence schema node)) }
                 | (Xsd "attribute" | Xsd "attributeGroup"), (Begin | Annotation | Particle | Attribute) ->
                     Attribute, { spec with Attributes = spec.Attributes @ [parseAttribute node] }
                 | Xsd "anyAttribute", (Begin | Annotation | Particle | Attribute) ->
@@ -457,7 +459,7 @@ module Parser =
           Content = parseChildElements() }
 
     /// Extracts complexType-s complexContent-s `restriction` element specification from schema definition.
-    and private parseComplexContentRestriction (node: XElement): ComplexContentRestrictionSpec =
+    and private parseComplexContentRestriction (schema: SchemaNode) (node: XElement): ComplexContentRestrictionSpec =
         let parseChildElements () =
             node.Elements()
             |> Seq.fold (fun (state, spec: ComplexTypeContentSpec) node ->
@@ -469,7 +471,7 @@ module Parser =
                 | Xsd "choice", (Begin | Annotation) ->
                     node |> notImplementedIn "complexContent restriction"
                 | Xsd "sequence", (Begin | Annotation) ->
-                    Particle,  { spec with Content = Some(ComplexTypeParticle.Sequence(parseSequence node)) }
+                    Particle,  { spec with Content = Some(ComplexTypeParticle.Sequence(parseSequence schema node)) }
                 | Xsd "attribute", (Begin | Annotation | Particle | Attribute) ->
                     Attribute, { spec with Attributes = spec.Attributes @ [parseAttribute node] }
                 | Xsd "attributeGroup", (Begin | Annotation | Particle | Attribute) ->
@@ -484,7 +486,7 @@ module Parser =
           Content = parseChildElements() }
 
     /// Extracts `element` element specification from schema definition.
-    and private parseElement (node: XElement): ElementSpec =
+    and private parseElement (schema: SchemaNode) (node: XElement): ElementSpec =
         let parseChildElements () =
             node.Elements()
             |> Seq.fold (fun (state, spec: TypeDefinition<_> option) node ->
@@ -494,13 +496,13 @@ module Parser =
                 | Xsd "simpleType", (Begin | Annotation) ->
                     TypeSpec, Some(Definition(SimpleDefinition(parseSimpleType node)))
                 | Xsd "complexType", (Begin | Annotation) ->
-                    TypeSpec, Some(Definition(ComplexDefinition(parseComplexType node)))
+                    TypeSpec, Some(Definition(ComplexDefinition(parseComplexType schema node)))
                 | (Xsd "unique" | Xsd "key" | Xsd "keyref"), (Begin | Annotation | TypeSpec | Other) ->
                     node |> notImplementedIn "element"
                 | _ -> node |> notExpectedIn "element"
                 ) (Begin, None)
             |> (fun (_, spec) -> spec |> MyOption.defaultValue (Definition(EmptyDefinition)))
-        let elementSpec = ElementSpec.FromNode(node)
+        let elementSpec = ElementSpec.FromNode(node, schema)
         match node |> attr (xname "ref") with
         | Some refv ->
             match node |> attr (xname "name") with
@@ -640,11 +642,11 @@ module Parser =
                 node |> notImplementedIn "schema"
             | Xsd "complexType", _ ->
                 let name = node |> reqAttr (xname "name")
-                let typ = ComplexDefinition(parseComplexType node)
+                let typ = ComplexDefinition(parseComplexType schemaNode node)
                 snode.Types.Add(xnsname name snode.TargetNamespace.NamespaceName, typ)
                 TypeSpec, snode, includes, imports
             | Xsd "element", _ ->
-                let element = parseElement node
+                let element = parseElement schemaNode node
                 match element.Name with
                 | None -> failwith "`name` attribute is required if the parent element is the schema element"
                 | Some(name) -> snode.Elements.Add(xnsname name snode.TargetNamespace.NamespaceName, element)
