@@ -119,9 +119,10 @@ module TypeBuilder =
         let elementProperties, elemTypes =
             match spec.Content with
             | Some(All(spec)) ->
-                if spec.MinOccurs <> 1u || spec.MaxOccurs <> 1u then failwith "not implemented"
+                if spec.MaxOccurs <> 1u then failwithf "Invalid `maxOccurs` value '%d' specified." spec.MaxOccurs
+                if spec.MinOccurs > 1u then failwithf "Invalid `minOccurs` value '%d' specified." spec.MinOccurs
                 spec.Elements
-                |> List.map (buildElementProperty context)
+                |> List.map (buildElementProperty context (spec.MinOccurs = 0u))
                 |> List.unzip
                 |> (fun (a, b) -> a, b |> List.collect id)
             | Some(ComplexTypeParticle.Sequence(spec)) ->
@@ -129,7 +130,7 @@ module TypeBuilder =
                 let collectSequenceProperties content =
                     match content with
                     | Choice(cspec) -> let x, ts = collectChoiceProperties choiceNameGen context cspec in [x], ts
-                    | Element(spec) -> let x, ts = buildElementProperty context spec in [x], ts
+                    | Element(spec) -> let x, ts = buildElementProperty context false spec in [x], ts
                     | Sequence(sspec) -> (collectSequenceProperties seqNameGen context sspec), []
                     | Any -> [ buildAnyProperty() ], []
                     | Group -> failwith "Not implemented: group in complexType sequence."
@@ -143,10 +144,10 @@ module TypeBuilder =
         (List.concat [attributeProperties; elementProperties], List.concat [attrTypes; elemTypes])
 
     /// Create single property definition for given element-s schema specification.
-    and private buildElementProperty (context: TypeBuilderContext) (spec: ElementSpec) : PropertyDefinition * CodeTypeDeclaration list =
+    and private buildElementProperty (context: TypeBuilderContext) (forceOptional: bool) (spec: ElementSpec) : PropertyDefinition * CodeTypeDeclaration list =
         let dspec, schemaType = context.DereferenceElementSpec(spec)
         let name = dspec.Name |> Option.get
-        buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (spec.MinOccurs = 0u) context (annotationToText context spec.Annotation) spec.ExpectedContentTypes.IsSome
+        buildPropertyDef schemaType spec.MaxOccurs name spec.IsNillable (forceOptional || spec.MinOccurs = 0u) context (annotationToText context spec.Annotation) spec.ExpectedContentTypes.IsSome
 
     /// Create single property definition for given attribute-s schema specification.
     and private buildAttributeProperty (context: TypeBuilderContext) (spec: AttributeSpec) : PropertyDefinition * CodeTypeDeclaration list =
@@ -176,7 +177,7 @@ module TypeBuilder =
             | dspec, Definition(def) ->
                 let itemName = dspec.Name |> Option.get
                 let suffix = itemName.ToClassName()
-                let typ = Cls.create(name + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+                let typ = Cls.create(name.ToClassName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
                 ({ PropertyDefinition.Create(name, isOptional, doc) with
@@ -185,7 +186,7 @@ module TypeBuilder =
                     IsItemNillable = Some(itemSpec.IsNillable)
                     IsWrappedArray = Some(true) }, [typ])
         | Definition(def) ->
-            let subTy = Cls.create (name + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+            let subTy = Cls.create (name.ToClassName() + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then
@@ -292,7 +293,7 @@ module TypeBuilder =
                     sprintf "TryGet%s%s" (if Char.IsLower(name.[0]) then "_" else "") name
                 match choiceContent with
                 | Element(spec) ->
-                    let prop, types = buildElementProperty context spec
+                    let prop, types = buildElementProperty context false spec
                     prop |> getAttributesForProperty (Some(i + 1)) (Some(prop.Name)) |> List.iter (fun attr -> choiceType |> Cls.describe attr |> ignore)
                     addNewMethod (i + 1) prop.Name prop.Type
                     let name = methName prop.Name
@@ -323,7 +324,7 @@ module TypeBuilder =
         |> List.map (function
             | Any -> failwith "Not implemented: any in sequence."
             | Choice(_) -> failwith "Not implemented: choice in sequence."
-            | Element(espec) -> buildElementProperty context espec
+            | Element(espec) -> buildElementProperty context false espec
             | Group -> failwith "Not implemented: group in sequence."
             | Sequence(_) -> failwith "Not implemented: sequence in sequence.")
         |> List.unzip

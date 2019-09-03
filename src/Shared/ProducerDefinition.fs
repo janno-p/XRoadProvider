@@ -278,7 +278,8 @@ let buildProducerTargetClass targetClassName uri languageCode operationFilter =
                 |> Ctor.addBaseArg (!+ "uri")
 
             let portTy =
-                Cls.create port.Name
+                let portName = if port.Name = service.Name then sprintf "%sPort" port.Name else port.Name
+                Cls.create portName
                 |> Cls.implements typeRef<AbstractEndpointDeclaration>
                 |> Cls.setAttr TypeAttributes.Public
                 |> iif ctor.IsSome (Cls.addMember ctor.Value)

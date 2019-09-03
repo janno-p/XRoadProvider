@@ -193,7 +193,7 @@ type internal TypeBuilderContext =
                     | dspec, Definition(def) ->
                         let itemName = dspec.Name |> Option.get
                         let suffix = itemName.ToClassName()
-                        let typ = Cls.create(name.XName.LocalName + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+                        let typ = Cls.create(name.XName.LocalName.ToClassName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                         nstyp |> Cls.addMember typ |> ignore
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
                 | _ ->
@@ -201,7 +201,7 @@ type internal TypeBuilderContext =
                         match name with
                         | SchemaElement(_) -> Attributes.xrdAnonymousType LayoutKind.Sequence
                         | SchemaType(_) -> Attributes.xrdType name.XName LayoutKind.Sequence
-                    let typ = Cls.create(name.XName.LocalName) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
+                    let typ = Cls.create(name.XName.LocalName.ToClassName()) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
                     nstyp |> Cls.addMember typ |> ignore
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
 
