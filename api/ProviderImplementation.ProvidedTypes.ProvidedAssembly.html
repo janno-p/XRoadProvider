@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class ProvidedAssembly
    ">
-    <meta name="generator" content="docfx 2.40.10.0">
+    <meta name="generator" content="docfx 2.45.0.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -347,7 +347,7 @@
   <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
   <h5 id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">type ProvidedAssembly (isTgt:bool, assemblyName:AssemblyName, assemblyFileName:string)
+    <pre><code class="lang-csharp hljs">type ProvidedAssembly (isTgt:bool, assemblyName:AssemblyName, assemblyFileName:string, customAttributesData:unit -&gt; CustomAttributeData [])
     inherit Assembly
     interface _Assembly
     interface IEvidenceFactory
@@ -379,6 +379,11 @@
         <td><span class="parametername">assemblyFileName</span></td>
         <td></td>
       </tr>
+      <tr>
+        <td><span class="xref">unit</span> -&gt; <span class="xref">System.Reflection.CustomAttributeData</span> []</td>
+        <td><span class="parametername">customAttributesData</span></td>
+        <td></td>
+      </tr>
     </tbody>
   </table>
   <h3 id="constructors">Constructors
@@ -386,13 +391,13 @@
   
   
   <a id="ProviderImplementation_ProvidedTypes_ProvidedAssembly__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.#ctor*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedAssembly__ctor_bool___System_Reflection_AssemblyName___string_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.#ctor(bool * System.Reflection.AssemblyName * string)">new: bool * AssemblyName * string -&gt; ProvidedAssembly</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedAssembly__ctor_bool___System_Reflection_AssemblyName___string___unit____System_Reflection_CustomAttributeData____" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.#ctor(bool * System.Reflection.AssemblyName * string * unit -&gt; System.Reflection.CustomAttributeData [])">new: bool * AssemblyName * string * unit -&gt; CustomAttributeData [] -&gt; ProvidedAssembly</h4>
   <div class="markdown level1 summary"><p>Implicit constructor.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">new: isTgt:bool * assemblyName:AssemblyName * assemblyFileName:string -&gt; ProvidedAssembly</code></pre>
+    <pre><code class="lang-csharp hljs">new: isTgt:bool * assemblyName:AssemblyName * assemblyFileName:string * customAttributesData:unit -&gt; CustomAttributeData [] -&gt; ProvidedAssembly</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -417,6 +422,11 @@
       <tr>
         <td><span class="xref">string</span></td>
         <td><span class="parametername">assemblyFileName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">unit</span> -&gt; <span class="xref">System.Reflection.CustomAttributeData</span> []</td>
+        <td><span class="parametername">customAttributesData</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -620,6 +630,33 @@
   </h3>
   
   
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_AddCustomAttribute_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.AddCustomAttribute*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_AddCustomAttribute_System_Reflection_CustomAttributeData_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.AddCustomAttribute(System.Reflection.CustomAttributeData)">member AddCustomAttribute: CustomAttributeData -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member AddCustomAttribute: attribute:CustomAttributeData -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Reflection.CustomAttributeData</span></td>
+        <td><span class="parametername">attribute</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
   <a id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_AddNestedTypes_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.AddNestedTypes*"></a>
   <h4 id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_AddNestedTypes_ProviderImplementation_ProvidedTypes_ProvidedTypeDefinition_list___string_list_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.AddNestedTypes(ProviderImplementation.ProvidedTypes.ProvidedTypeDefinition list * string list)">member AddNestedTypes: ProvidedTypeDefinition list * string list -&gt; unit</h4>
   <div class="markdown level1 summary"></div>
@@ -734,6 +771,60 @@
       </tr>
     </tbody>
   </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_System_Object_ToString_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.System.Object.ToString*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_System_Object_ToString_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.System.Object.ToString(unit)">override member ToString: unit -&gt; string</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member ToString: unit -&gt; string</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Object.ToString: unit -&gt; string</span></div>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_System_Reflection_Assembly_GetCustomAttributesData_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.System.Reflection.Assembly.GetCustomAttributesData*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_System_Reflection_Assembly_GetCustomAttributesData_unit_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.System.Reflection.Assembly.GetCustomAttributesData(unit)">override member GetCustomAttributesData: unit -&gt; IList&lt;CustomAttributeData&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">override member GetCustomAttributesData: unit -&gt; IList&lt;CustomAttributeData&gt;</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.IList</span>&lt;<span class="xref">System.Reflection.CustomAttributeData</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><span class="xref">abstract member System.Reflection.Assembly.GetCustomAttributesData: unit -&gt; System.Collections.Generic.IList&lt;System.Reflection.CustomAttributeData&gt;</span></div>
   
   
   <a id="ProviderImplementation_ProvidedTypes_ProvidedAssembly_System_Reflection_Assembly_GetName_" data-uid="ProviderImplementation.ProvidedTypes.ProvidedAssembly.System.Reflection.Assembly.GetName*"></a>

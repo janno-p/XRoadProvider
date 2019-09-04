@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class Reader (mod)
    ">
-    <meta name="generator" content="docfx 2.40.10.0">
+    <meta name="generator" content="docfx 2.45.0.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -88,6 +88,54 @@ module Reader</code></pre>
   </div>
   <h3 id="fields">Fields
   </h3>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_clearSpan__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.clearSpan()">val clearSpan</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val clearSpan: int</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_clearSpanDefault__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.clearSpanDefault()">val clearSpanDefault</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val clearSpanDefault: int</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   
   
   <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_EcmaMscorlibScopeRef__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.EcmaMscorlibScopeRef()">val EcmaMscorlibScopeRef</h4>
@@ -300,6 +348,30 @@ module Reader</code></pre>
     <tbody>
       <tr>
         <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDefs.html">ILTypeDefs</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_enableAutoClear__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.enableAutoClear()">val enableAutoClear</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val enableAutoClear: bool</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">bool</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -1170,12 +1242,12 @@ module Reader</code></pre>
   </table>
   
   
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_readersWeakCache__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.readersWeakCache()">val readersWeakCache</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_lastAccess__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.lastAccess()">val lastAccess</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val readersWeakCache: ConcurrentDictionary&lt;string * string,WeakReference&gt;</code></pre>
+    <pre><code class="lang-csharp hljs">val lastAccess: DateTime</code></pre>
   </div>
   <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -1187,7 +1259,79 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">System.Collections.Concurrent.ConcurrentDictionary</span>&lt;<span class="xref">string</span> * <span class="xref">string</span>,<span class="xref">System.WeakReference</span>&gt;</td>
+        <td><span class="xref">System.DateTime</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_lastAccessLock__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.lastAccessLock()">val lastAccessLock</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val lastAccessLock: Object</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Object</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_readerStrongCache__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.readerStrongCache()">val readerStrongCache</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val readerStrongCache: ConcurrentDictionary&lt;string * string,DateTime * int * ILModuleReader&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Concurrent.ConcurrentDictionary</span>&lt;<span class="xref">string</span> * <span class="xref">string</span>,<span class="xref">System.DateTime</span> * <span class="xref">int</span> * <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html">ILModuleReader</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_readerWeakCache__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.readerWeakCache()">val readerWeakCache</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val readerWeakCache: ConcurrentDictionary&lt;string * string,DateTime * WeakReference&lt;ILModuleReader&gt;&gt;</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Concurrent.ConcurrentDictionary</span>&lt;<span class="xref">string</span> * <span class="xref">string</span>,<span class="xref">System.DateTime</span> * <span class="xref">System.WeakReference</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html">ILModuleReader</a>&gt;&gt;</td>
         <td></td>
       </tr>
     </tbody>
@@ -1218,49 +1362,6 @@ module Reader</code></pre>
   </table>
   <h3 id="methods">Methods
   </h3>
-  
-  
-  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader____CacheValue______" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.( |CacheValue|_| )*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader____CacheValue______System_WeakReference_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.( |CacheValue|_| )(System.WeakReference)">val ( |CacheValue|_| ): WeakReference</h4>
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val ( |CacheValue|_| ): wr:WeakReference -&gt;
-    | CacheValue of CacheValue</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">System.WeakReference</span></td>
-        <td><span class="parametername">wr</span></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 class="returns">Returns</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue.html">CacheValue</a> <span class="xref">option</span></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader____ElementType______" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.( |ElementType|_| )*"></a>
@@ -1300,6 +1401,64 @@ module Reader</code></pre>
     <tbody>
       <tr>
         <td><span class="xref">byte</span> <span class="xref">option</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader____WeakReference______" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.( |WeakReference|_| )*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader____WeakReference______System_WeakReference__T__" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.( |WeakReference|_| )(System.WeakReference&lt;'T&gt;)">val ( |WeakReference|_| ): WeakReference&lt;'T&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val ( |WeakReference|_| ): x:WeakReference&lt;'T&gt; -&gt;
+    | WeakReference of 'T</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.WeakReference</span>&lt;&#39;T&gt;</td>
+        <td><span class="parametername">x</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&#39;T <span class="xref">option</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">'T</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -1442,53 +1601,6 @@ module Reader</code></pre>
   </table>
   
   
-  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_CacheValue_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_CacheValue_ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_ILModuleReader___System_DateTime_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.CacheValue(ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader * System.DateTime)">val CacheValue: ILModuleReader * DateTime -&gt; WeakReference</h4>
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val CacheValue: ILModuleReader * DateTime -&gt; WeakReference</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html">ILModuleReader</a></td>
-        <td><span class="parametername"></span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><span class="xref">System.DateTime</span></td>
-        <td><span class="parametername"></span></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 class="returns">Returns</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">System.WeakReference</span></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  
-  
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_chunk_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.chunk*"></a>
   <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_chunk_int32____int32_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.chunk(int32 -&gt; int32)">val chunk: int32 -&gt; int32 -&gt; ILImageChunk * int32</h4>
   <div class="markdown level1 summary"></div>
@@ -1530,6 +1642,53 @@ module Reader</code></pre>
     <tbody>
       <tr>
         <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk.html">ILImageChunk</a> * <span class="xref">int32</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_createReader_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.createReader*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_createReader_ProviderImplementation_ProvidedTypes_AssemblyReader_ILGlobals____string_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.createReader(ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals -&gt; string)">val createReader: ILGlobals -&gt; string -&gt; ILModuleReader</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val createReader: ilGlobals:ILGlobals -&gt; fileName:string -&gt; ILModuleReader</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals.html">ILGlobals</a></td>
+        <td><span class="parametername">ilGlobals</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">string</span></td>
+        <td><span class="parametername">fileName</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html">ILModuleReader</a></td>
         <td></td>
       </tr>
     </tbody>
@@ -1940,6 +2099,90 @@ module Reader</code></pre>
     <tbody>
       <tr>
         <td><span class="xref">string</span> * <span class="xref">System.Lazy</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILTypeDef.html">ILTypeDef</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_GetStrongReaderCache_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.GetStrongReaderCache*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_GetStrongReaderCache_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.GetStrongReaderCache(unit)">val GetStrongReaderCache: unit -&gt; ConcurrentDictionary&lt;string * string,DateTime * int * ILModuleReader&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val GetStrongReaderCache: unit -&gt; ConcurrentDictionary&lt;string * string,DateTime * int * ILModuleReader&gt;</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">unit</span></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Concurrent.ConcurrentDictionary</span>&lt;<span class="xref">string</span> * <span class="xref">string</span>,<span class="xref">System.DateTime</span> * <span class="xref">int</span> * <a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html">ILModuleReader</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_GetWeakReaderCache_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.GetWeakReaderCache*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_GetWeakReaderCache_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.GetWeakReaderCache(unit)">val GetWeakReaderCache: unit -&gt; ConcurrentDictionary&lt;string * string,DateTime * WeakReference&lt;ILModuleReader&gt;&gt;</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val GetWeakReaderCache: unit -&gt; ConcurrentDictionary&lt;string * string,DateTime * WeakReference&lt;ILModuleReader&gt;&gt;</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">unit</span></td>
+        <td><span class="parametername"></span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Concurrent.ConcurrentDictionary</span>&lt;<span class="xref">string</span> * <span class="xref">string</span>,<span class="xref">System.DateTime</span> * <span class="xref">System.WeakReference</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.ILModuleReader.html">ILModuleReader</a>&gt;&gt;</td>
         <td></td>
       </tr>
     </tbody>
@@ -2523,7 +2766,7 @@ module Reader</code></pre>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val ILModuleReaderAfterReadingAllBytes: fileName:string * ilGlobals:ILGlobals -&gt; ILModuleReader</code></pre>
+    <pre><code class="lang-csharp hljs">val ILModuleReaderAfterReadingAllBytes: file:string * ilGlobals:ILGlobals -&gt; ILModuleReader</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -2537,7 +2780,7 @@ module Reader</code></pre>
     <tbody>
       <tr>
         <td><span class="xref">string</span></td>
-        <td><span class="parametername">fileName</span></td>
+        <td><span class="parametername">file</span></td>
         <td></td>
       </tr>
       <tr>
@@ -2612,12 +2855,12 @@ module Reader</code></pre>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheGeneric_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheGeneric_bool______94259______94260______94261_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric(bool -&gt; '?94259 -&gt; '?94260 -&gt; '?94261)">val mkCacheGeneric: bool -&gt; '?94259 -&gt; '?94260 -&gt; '?94261 -&gt; ('T -&gt; '?94263) -&gt; 'T -&gt; '?94263</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheGeneric_bool______101899______101900______101901_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheGeneric(bool -&gt; '?101899 -&gt; '?101900 -&gt; '?101901)">val mkCacheGeneric: bool -&gt; '?101899 -&gt; '?101900 -&gt; '?101901 -&gt; ('T -&gt; '?101903) -&gt; 'T -&gt; '?101903</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val mkCacheGeneric: lowMem:bool -&gt; _inbase:'?94259 -&gt; _nm:'?94260 -&gt; _sz:'?94261 -&gt; ('T -&gt; '?94263) -&gt; 'T -&gt; '?94263</code></pre>
+    <pre><code class="lang-csharp hljs">val mkCacheGeneric: lowMem:bool -&gt; _inbase:'?101899 -&gt; _nm:'?101900 -&gt; _sz:'?101901 -&gt; ('T -&gt; '?101903) -&gt; 'T -&gt; '?101903</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -2635,17 +2878,17 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94259</td>
+        <td>&#39;?101899</td>
         <td><span class="parametername">_inbase</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94260</td>
+        <td>&#39;?101900</td>
         <td><span class="parametername">_nm</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94261</td>
+        <td>&#39;?101901</td>
         <td><span class="parametername">_sz</span></td>
         <td></td>
       </tr>
@@ -2661,7 +2904,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td>(&#39;T -&gt; &#39;?94263) -&gt; &#39;T -&gt; &#39;?94263</td>
+        <td>(&#39;T -&gt; &#39;?101903) -&gt; &#39;T -&gt; &#39;?101903</td>
         <td></td>
       </tr>
     </tbody>
@@ -2700,12 +2943,12 @@ module Reader</code></pre>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheInt32_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheInt32*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheInt32_bool______94255______94256______94257_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheInt32(bool -&gt; '?94255 -&gt; '?94256 -&gt; '?94257)">val mkCacheInt32: bool -&gt; '?94255 -&gt; '?94256 -&gt; '?94257 -&gt; (int32 -&gt; '?94258) -&gt; int32 -&gt; '?94258</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_mkCacheInt32_bool______101895______101896______101897_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.mkCacheInt32(bool -&gt; '?101895 -&gt; '?101896 -&gt; '?101897)">val mkCacheInt32: bool -&gt; '?101895 -&gt; '?101896 -&gt; '?101897 -&gt; (int32 -&gt; '?101898) -&gt; int32 -&gt; '?101898</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val mkCacheInt32: lowMem:bool -&gt; _infile:'?94255 -&gt; _nm:'?94256 -&gt; _sz:'?94257 -&gt; (int32 -&gt; '?94258) -&gt; int32 -&gt; '?94258</code></pre>
+    <pre><code class="lang-csharp hljs">val mkCacheInt32: lowMem:bool -&gt; _infile:'?101895 -&gt; _nm:'?101896 -&gt; _sz:'?101897 -&gt; (int32 -&gt; '?101898) -&gt; int32 -&gt; '?101898</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -2723,17 +2966,17 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94255</td>
+        <td>&#39;?101895</td>
         <td><span class="parametername">_infile</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94256</td>
+        <td>&#39;?101896</td>
         <td><span class="parametername">_nm</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94257</td>
+        <td>&#39;?101897</td>
         <td><span class="parametername">_sz</span></td>
         <td></td>
       </tr>
@@ -2749,7 +2992,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td>(<span class="xref">int32</span> -&gt; &#39;?94258) -&gt; <span class="xref">int32</span> -&gt; &#39;?94258</td>
+        <td>(<span class="xref">int32</span> -&gt; &#39;?101898) -&gt; <span class="xref">int32</span> -&gt; &#39;?101898</td>
         <td></td>
       </tr>
     </tbody>
@@ -3264,12 +3507,12 @@ module Reader</code></pre>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_nochunk_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_nochunk___94254_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk('?94254)">val nochunk: '?94254 -&gt; ILImageChunk * '?94254</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_nochunk___101894_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.nochunk('?101894)">val nochunk: '?101894 -&gt; ILImageChunk * '?101894</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val nochunk: next:'?94254 -&gt; ILImageChunk * '?94254</code></pre>
+    <pre><code class="lang-csharp hljs">val nochunk: next:'?101894 -&gt; ILImageChunk * '?101894</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -3282,7 +3525,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td>&#39;?94254</td>
+        <td>&#39;?101894</td>
         <td><span class="parametername">next</span></td>
         <td></td>
       </tr>
@@ -3298,7 +3541,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk.html">ILImageChunk</a> * &#39;?94254</td>
+        <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILImageChunk.html">ILImageChunk</a> * &#39;?101894</td>
         <td></td>
       </tr>
     </tbody>
@@ -3707,12 +3950,12 @@ module Reader</code></pre>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRow_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRow_int___int______94270_____94270______94271_____94271____int___bool_____94270______94272_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow(int * int -&gt; '?94270 * '?94270 -&gt; '?94271 * '?94271 -&gt; int * bool * '?94270 -&gt; '?94272)">val seekReadIndexedRow: int * int -&gt; '?94270 * '?94270 -&gt; '?94271 * '?94271 -&gt; int * bool * '?94270 -&gt; '?94272 -&gt; '?94272</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRow_int___int______101910_____101910______101911_____101911____int___bool_____101910______101912_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRow(int * int -&gt; '?101910 * '?101910 -&gt; '?101911 * '?101911 -&gt; int * bool * '?101910 -&gt; '?101912)">val seekReadIndexedRow: int * int -&gt; '?101910 * '?101910 -&gt; '?101911 * '?101911 -&gt; int * bool * '?101910 -&gt; '?101912 -&gt; '?101912</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val seekReadIndexedRow: int * int -&gt; '?94270 * '?94270 -&gt; '?94271 * '?94271 -&gt; int * bool * '?94270 -&gt; '?94272 -&gt; '?94272</code></pre>
+    <pre><code class="lang-csharp hljs">val seekReadIndexedRow: int * int -&gt; '?101910 * '?101910 -&gt; '?101911 * '?101911 -&gt; int * bool * '?101910 -&gt; '?101912 -&gt; '?101912</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -3730,17 +3973,17 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">int</span> -&gt; &#39;?94270</td>
+        <td><span class="xref">int</span> -&gt; &#39;?101910</td>
         <td><span class="parametername"></span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94270 -&gt; &#39;?94271</td>
+        <td>&#39;?101910 -&gt; &#39;?101911</td>
         <td><span class="parametername"></span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94271 -&gt; <span class="xref">int</span></td>
+        <td>&#39;?101911 -&gt; <span class="xref">int</span></td>
         <td><span class="parametername"></span></td>
         <td></td>
       </tr>
@@ -3750,7 +3993,7 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94270 -&gt; &#39;?94272</td>
+        <td>&#39;?101910 -&gt; &#39;?101912</td>
         <td><span class="parametername"></span></td>
         <td></td>
       </tr>
@@ -3766,7 +4009,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td>&#39;?94272</td>
+        <td>&#39;?101912</td>
         <td></td>
       </tr>
     </tbody>
@@ -3797,12 +4040,12 @@ module Reader</code></pre>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRows_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRows*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRows_int___int______94264_____94264______94265_____94265____int___bool_____94264______94266_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRows(int * int -&gt; '?94264 * '?94264 -&gt; '?94265 * '?94265 -&gt; int * bool * '?94264 -&gt; '?94266)">val seekReadIndexedRows: int * int -&gt; '?94264 * '?94264 -&gt; '?94265 * '?94265 -&gt; int * bool * '?94264 -&gt; '?94266 -&gt; '?94266 []</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadIndexedRows_int___int______101904_____101904______101905_____101905____int___bool_____101904______101906_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadIndexedRows(int * int -&gt; '?101904 * '?101904 -&gt; '?101905 * '?101905 -&gt; int * bool * '?101904 -&gt; '?101906)">val seekReadIndexedRows: int * int -&gt; '?101904 * '?101904 -&gt; '?101905 * '?101905 -&gt; int * bool * '?101904 -&gt; '?101906 -&gt; '?101906 []</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val seekReadIndexedRows: numRows:int * rowReader:int -&gt; '?94264 * keyFunc:'?94264 -&gt; '?94265 * keyComparer:'?94265 -&gt; int * binaryChop:bool * rowConverter:'?94264 -&gt; '?94266 -&gt; '?94266 []</code></pre>
+    <pre><code class="lang-csharp hljs">val seekReadIndexedRows: numRows:int * rowReader:int -&gt; '?101904 * keyFunc:'?101904 -&gt; '?101905 * keyComparer:'?101905 -&gt; int * binaryChop:bool * rowConverter:'?101904 -&gt; '?101906 -&gt; '?101906 []</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -3820,17 +4063,17 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">int</span> -&gt; &#39;?94264</td>
+        <td><span class="xref">int</span> -&gt; &#39;?101904</td>
         <td><span class="parametername">rowReader</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94264 -&gt; &#39;?94265</td>
+        <td>&#39;?101904 -&gt; &#39;?101905</td>
         <td><span class="parametername">keyFunc</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94265 -&gt; <span class="xref">int</span></td>
+        <td>&#39;?101905 -&gt; <span class="xref">int</span></td>
         <td><span class="parametername">keyComparer</span></td>
         <td></td>
       </tr>
@@ -3840,7 +4083,7 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94264 -&gt; &#39;?94266</td>
+        <td>&#39;?101904 -&gt; &#39;?101906</td>
         <td><span class="parametername">rowConverter</span></td>
         <td></td>
       </tr>
@@ -3856,7 +4099,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td>&#39;?94266 []</td>
+        <td>&#39;?101906 []</td>
         <td></td>
       </tr>
     </tbody>
@@ -3981,12 +4224,12 @@ module Reader</code></pre>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadOptionalIndexedRow_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadOptionalIndexedRow*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadOptionalIndexedRow_int___int______94267_____94267______94268_____94268____int___bool_____94267______94269_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadOptionalIndexedRow(int * int -&gt; '?94267 * '?94267 -&gt; '?94268 * '?94268 -&gt; int * bool * '?94267 -&gt; '?94269)">val seekReadOptionalIndexedRow: int * int -&gt; '?94267 * '?94267 -&gt; '?94268 * '?94268 -&gt; int * bool * '?94267 -&gt; '?94269 -&gt; '?94269 option</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_seekReadOptionalIndexedRow_int___int______101907_____101907______101908_____101908____int___bool_____101907______101909_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.seekReadOptionalIndexedRow(int * int -&gt; '?101907 * '?101907 -&gt; '?101908 * '?101908 -&gt; int * bool * '?101907 -&gt; '?101909)">val seekReadOptionalIndexedRow: int * int -&gt; '?101907 * '?101907 -&gt; '?101908 * '?101908 -&gt; int * bool * '?101907 -&gt; '?101909 -&gt; '?101909 option</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val seekReadOptionalIndexedRow: int * int -&gt; '?94267 * '?94267 -&gt; '?94268 * '?94268 -&gt; int * bool * '?94267 -&gt; '?94269 -&gt; '?94269 option</code></pre>
+    <pre><code class="lang-csharp hljs">val seekReadOptionalIndexedRow: int * int -&gt; '?101907 * '?101907 -&gt; '?101908 * '?101908 -&gt; int * bool * '?101907 -&gt; '?101909 -&gt; '?101909 option</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -4004,17 +4247,17 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td><span class="xref">int</span> -&gt; &#39;?94267</td>
+        <td><span class="xref">int</span> -&gt; &#39;?101907</td>
         <td><span class="parametername"></span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94267 -&gt; &#39;?94268</td>
+        <td>&#39;?101907 -&gt; &#39;?101908</td>
         <td><span class="parametername"></span></td>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94268 -&gt; <span class="xref">int</span></td>
+        <td>&#39;?101908 -&gt; <span class="xref">int</span></td>
         <td><span class="parametername"></span></td>
         <td></td>
       </tr>
@@ -4024,7 +4267,7 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94267 -&gt; &#39;?94269</td>
+        <td>&#39;?101907 -&gt; &#39;?101909</td>
         <td><span class="parametername"></span></td>
         <td></td>
       </tr>
@@ -4040,7 +4283,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td>&#39;?94269 <span class="xref">option</span></td>
+        <td>&#39;?101909 <span class="xref">option</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -5115,12 +5358,12 @@ module Reader</code></pre>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFold_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFold_byte_______int______94253___int____int____byte_______int_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold(byte [] -&gt; int -&gt; '?94253 * int -&gt; int -&gt; byte [] -&gt; int)">val sigptrFold: byte [] -&gt; int -&gt; '?94253 * int -&gt; int -&gt; byte [] -&gt; int -&gt; '?94253 [] * int</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFold_byte_______int______101893___int____int____byte_______int_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFold(byte [] -&gt; int -&gt; '?101893 * int -&gt; int -&gt; byte [] -&gt; int)">val sigptrFold: byte [] -&gt; int -&gt; '?101893 * int -&gt; int -&gt; byte [] -&gt; int -&gt; '?101893 [] * int</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val sigptrFold: f:byte [] -&gt; int -&gt; '?94253 * int -&gt; n:int -&gt; bytes:byte [] -&gt; sigptr:int -&gt; '?94253 [] * int</code></pre>
+    <pre><code class="lang-csharp hljs">val sigptrFold: f:byte [] -&gt; int -&gt; '?101893 * int -&gt; n:int -&gt; bytes:byte [] -&gt; sigptr:int -&gt; '?101893 [] * int</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -5133,7 +5376,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">byte</span> [] -&gt; <span class="xref">int</span> -&gt; &#39;?94253 * <span class="xref">int</span></td>
+        <td><span class="xref">byte</span> [] -&gt; <span class="xref">int</span> -&gt; &#39;?101893 * <span class="xref">int</span></td>
         <td><span class="parametername">f</span></td>
         <td></td>
       </tr>
@@ -5164,7 +5407,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td>&#39;?94253 [] * <span class="xref">int</span></td>
+        <td>&#39;?101893 [] * <span class="xref">int</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -5187,12 +5430,12 @@ module Reader</code></pre>
   
   
   <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFoldAcc_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFoldAcc*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFoldAcc_byte_______int______94252___int____int____byte_______int____int______94252_list_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFoldAcc(byte [] -&gt; int -&gt; '?94252 * int -&gt; int -&gt; byte [] -&gt; int -&gt; int -&gt; '?94252 list)">val sigptrFoldAcc: byte [] -&gt; int -&gt; '?94252 * int -&gt; int -&gt; byte [] -&gt; int -&gt; int -&gt; '?94252 list -&gt; '?94252 [] * int</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_sigptrFoldAcc_byte_______int______101892___int____int____byte_______int____int______101892_list_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.sigptrFoldAcc(byte [] -&gt; int -&gt; '?101892 * int -&gt; int -&gt; byte [] -&gt; int -&gt; int -&gt; '?101892 list)">val sigptrFoldAcc: byte [] -&gt; int -&gt; '?101892 * int -&gt; int -&gt; byte [] -&gt; int -&gt; int -&gt; '?101892 list -&gt; '?101892 [] * int</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">val sigptrFoldAcc: f:byte [] -&gt; int -&gt; '?94252 * int -&gt; n:int -&gt; bytes:byte [] -&gt; sigptr:int -&gt; i:int -&gt; acc:'?94252 list -&gt; '?94252 [] * int</code></pre>
+    <pre><code class="lang-csharp hljs">val sigptrFoldAcc: f:byte [] -&gt; int -&gt; '?101892 * int -&gt; n:int -&gt; bytes:byte [] -&gt; sigptr:int -&gt; i:int -&gt; acc:'?101892 list -&gt; '?101892 [] * int</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -5205,7 +5448,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">byte</span> [] -&gt; <span class="xref">int</span> -&gt; &#39;?94252 * <span class="xref">int</span></td>
+        <td><span class="xref">byte</span> [] -&gt; <span class="xref">int</span> -&gt; &#39;?101892 * <span class="xref">int</span></td>
         <td><span class="parametername">f</span></td>
         <td></td>
       </tr>
@@ -5230,7 +5473,7 @@ module Reader</code></pre>
         <td></td>
       </tr>
       <tr>
-        <td>&#39;?94252 <span class="xref">list</span></td>
+        <td>&#39;?101892 <span class="xref">list</span></td>
         <td><span class="parametername">acc</span></td>
         <td></td>
       </tr>
@@ -5246,7 +5489,7 @@ module Reader</code></pre>
     </thead>
     <tbody>
       <tr>
-        <td>&#39;?94252 [] * <span class="xref">int</span></td>
+        <td>&#39;?101892 [] * <span class="xref">int</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -5977,6 +6220,33 @@ module Reader</code></pre>
     <tbody>
       <tr>
         <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_StartClearReaderCache_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.StartClearReaderCache*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_StartClearReaderCache_unit_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.StartClearReaderCache(unit)">val StartClearReaderCache: unit -&gt; unit</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">val StartClearReaderCache: unit -&gt; unit</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">unit</span></td>
+        <td><span class="parametername"></span></td>
         <td></td>
       </tr>
     </tbody>

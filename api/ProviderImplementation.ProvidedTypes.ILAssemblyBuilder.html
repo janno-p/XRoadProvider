@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class ILAssemblyBuilder
    ">
-    <meta name="generator" content="docfx 2.40.10.0">
+    <meta name="generator" content="docfx 2.45.0.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -84,7 +84,7 @@
   <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
   <h5 id="ProviderImplementation_ProvidedTypes_ILAssemblyBuilder_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">type ILAssemblyBuilder (assemblyName:AssemblyName, fileName:string, ilg:ILGlobals)</code></pre>
+    <pre><code class="lang-csharp hljs">type ILAssemblyBuilder (assemblyName:AssemblyName, fileName:string, ilg:ILGlobals, attrs:seq&lt;ILCustomAttribute&gt;)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -109,6 +109,11 @@
       <tr>
         <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals.html">ILGlobals</a></td>
         <td><span class="parametername">ilg</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">seq</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttribute.html">ILCustomAttribute</a>&gt;</td>
+        <td><span class="parametername">attrs</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -118,13 +123,13 @@
   
   
   <a id="ProviderImplementation_ProvidedTypes_ILAssemblyBuilder__ctor_" data-uid="ProviderImplementation.ProvidedTypes.ILAssemblyBuilder.#ctor*"></a>
-  <h4 id="ProviderImplementation_ProvidedTypes_ILAssemblyBuilder__ctor_System_Reflection_AssemblyName___string___ProviderImplementation_ProvidedTypes_AssemblyReader_ILGlobals_" data-uid="ProviderImplementation.ProvidedTypes.ILAssemblyBuilder.#ctor(System.Reflection.AssemblyName * string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals)">new: AssemblyName * string * ILGlobals -&gt; ILAssemblyBuilder</h4>
+  <h4 id="ProviderImplementation_ProvidedTypes_ILAssemblyBuilder__ctor_System_Reflection_AssemblyName___string___ProviderImplementation_ProvidedTypes_AssemblyReader_ILGlobals___seq_ProviderImplementation_ProvidedTypes_AssemblyReader_ILCustomAttribute__" data-uid="ProviderImplementation.ProvidedTypes.ILAssemblyBuilder.#ctor(System.Reflection.AssemblyName * string * ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals * seq&lt;ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttribute&gt;)">new: AssemblyName * string * ILGlobals * seq&lt;ILCustomAttribute&gt; -&gt; ILAssemblyBuilder</h4>
   <div class="markdown level1 summary"><p>Implicit constructor.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">new: assemblyName:AssemblyName * fileName:string * ilg:ILGlobals -&gt; ILAssemblyBuilder</code></pre>
+    <pre><code class="lang-csharp hljs">new: assemblyName:AssemblyName * fileName:string * ilg:ILGlobals * attrs:seq&lt;ILCustomAttribute&gt; -&gt; ILAssemblyBuilder</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -149,6 +154,11 @@
       <tr>
         <td><a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILGlobals.html">ILGlobals</a></td>
         <td><span class="parametername">ilg</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">seq</span>&lt;<a class="xref" href="ProviderImplementation.ProvidedTypes.AssemblyReader.ILCustomAttribute.html">ILCustomAttribute</a>&gt;</td>
+        <td><span class="parametername">attrs</span></td>
         <td></td>
       </tr>
     </tbody>
