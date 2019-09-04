@@ -1,3 +1,7 @@
+#### 1.0.12 - 04.09.2019
+
+* Fix: regression with identifier names.
+
 #### 1.0.11 - 04.09.2019
 
 * Fix: allow unsupported restriction attributes: `totalDigits`, `fractionDigits`, `length` and `maxLength`.
