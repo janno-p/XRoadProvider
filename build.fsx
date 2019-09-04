@@ -250,7 +250,7 @@ Target.create "All" ignore
   ==> "Release"
 
 "BuildPackage"
-//  ==> "PublishNuget"
+  ==> "PublishNuget"
   ==> "Release"
 
 Target.runOrDefault "All"

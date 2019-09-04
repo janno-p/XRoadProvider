@@ -119,7 +119,7 @@ type internal TypeBuilderContext =
                 | m when m.Success ->
                     let suffix =
                         if m.Groups.["path"].Success
-                        then sprintf "_%s" <| m.Groups.["path"].Value.ToClassName()
+                        then sprintf "_%s" <| m.Groups.["path"].Value.XmlNamespaceToClassName()
                         else ""
                     Some(sprintf "%s%s" m.Groups.["producer"].Value suffix)
                 | _ -> None
@@ -130,7 +130,7 @@ type internal TypeBuilderContext =
                     | Producer(producerName) -> producerName
                     | XmlNamespace.XRoad20 -> "xtee"
                     | XmlNamespace.XRoad31Ee -> "xroad"
-                    | ns -> ns.ToClassName()
+                    | ns -> ns.XmlNamespaceToClassName()
                 let typ = Cls.create(producerName) |> Cls.addAttr TypeAttributes.Public
                 Fld.create<string> "__TargetNamespace__"
                 |> Fld.init (!^ nsname.NamespaceName)
@@ -192,8 +192,8 @@ type internal TypeBuilderContext =
                         CollectionType(this.GetOrCreateType(SchemaType(xn)), itemName, None)
                     | dspec, Definition(def) ->
                         let itemName = dspec.Name |> Option.get
-                        let suffix = itemName.ToClassName()
-                        let typ = Cls.create(name.XName.LocalName.ToClassName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+                        let suffix = itemName.GetValidIdentifierName()
+                        let typ = Cls.create(name.XName.LocalName.GetValidIdentifierName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                         nstyp |> Cls.addMember typ |> ignore
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))
                 | _ ->
@@ -201,7 +201,7 @@ type internal TypeBuilderContext =
                         match name with
                         | SchemaElement(_) -> Attributes.xrdAnonymousType LayoutKind.Sequence
                         | SchemaType(_) -> Attributes.xrdType name.XName LayoutKind.Sequence
-                    let typ = Cls.create(name.XName.LocalName.ToClassName()) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
+                    let typ = Cls.create(name.XName.LocalName.GetValidIdentifierName()) |> Cls.addAttr TypeAttributes.Public |> Cls.describe attr
                     nstyp |> Cls.addMember typ |> ignore
                     ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name)
 

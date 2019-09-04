@@ -105,7 +105,7 @@ module TypeBuilder =
         |> List.choose (fun x ->
             match x with
             | Enumeration(value) ->
-                Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.GetValidPropertyName())
+                Fld.createRef (runtimeType.AsCodeTypeReference(true)) (value.GetValidIdentifierName())
                 |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Static)
                 |> Fld.init (Expr.instOf (runtimeType.AsCodeTypeReference()) [valueExpr value])
                 |> Some
@@ -179,8 +179,8 @@ module TypeBuilder =
                     IsWrappedArray = Some(true) }, [])
             | dspec, Definition(def) ->
                 let itemName = dspec.Name |> Option.get
-                let suffix = itemName.ToClassName()
-                let typ = Cls.create(name.ToClassName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+                let suffix = itemName.GetValidIdentifierName()
+                let typ = Cls.create(name.GetValidIdentifierName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
                 ({ PropertyDefinition.Create(name, qualifiedNamespace, isOptional, doc) with
@@ -189,7 +189,7 @@ module TypeBuilder =
                     IsItemNillable = Some(itemSpec.IsNillable)
                     IsWrappedArray = Some(true) }, [typ])
         | Definition(def) ->
-            let subTy = Cls.create (name.ToClassName() + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
+            let subTy = Cls.create (name.GetValidIdentifierName() + "Type") |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
             let runtimeType = ProvidedType(subTy, subTy.Name)
             build context runtimeType def
             if maxOccurs > 1u then

@@ -311,7 +311,7 @@ module String =
 
     type String with
         /// Converts given XML namespace to class name.
-        member this.ToClassName() =
+        member this.XmlNamespaceToClassName() =
             // Remove `http://` prefix from namespace if present.
             let str =
                 match this.StartsWith("http://") with
@@ -328,7 +328,8 @@ module String =
             // Check validity of generated class name.
             if not (isValidIdentifier className) then failwithf "invalid name %s" className
             className
-        member this.GetValidPropertyName() =
+
+        member this.GetValidIdentifierName() =
             let propertyName = Text.StringBuilder()
             if not (isIdentifierStartCharacter this.[0]) then propertyName.Append("_") |> ignore
             this.ToCharArray() |> Array.iter (fun c ->
@@ -402,7 +403,7 @@ let createProperty<'T> name doc (ownerType: CodeTypeDeclaration) =
 /// Add property to given type with backing field.
 /// For optional members, extra field is added to notify if property was assigned or not.
 let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDeclaration) =
-    let fixedName = name.GetValidPropertyName()
+    let fixedName = name.GetValidIdentifierName()
     let f = Fld.createRef (ty.AsCodeTypeReference(optional=isOptional)) (fixedName + "__backing")
             |> Fld.describe Attributes.DebuggerBrowsable
     let p = Prop.createRef (ty.AsCodeTypeReference(optional=isOptional)) fixedName
@@ -413,7 +414,7 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
     p
 
 let addContentProperty (name: string, ty: RuntimeType) (owner: CodeTypeDeclaration) =
-    let name = name.GetValidPropertyName()
+    let name = name.GetValidIdentifierName()
     Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
     |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
     |> Fld.describe (Attributes.xrdElement None None None false true ty.TypeHint)
