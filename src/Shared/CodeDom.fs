@@ -406,7 +406,8 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
     let fixedName = name.GetValidIdentifierName()
     let f = Fld.createRef (ty.AsCodeTypeReference(optional=isOptional)) (fixedName + "__backing")
             |> Fld.describe Attributes.DebuggerBrowsable
-    let p = Prop.createRef (ty.AsCodeTypeReference(optional=isOptional)) fixedName
+    let propName = if fixedName = owner.Name then sprintf "%s_" fixedName else fixedName
+    let p = Prop.createRef (ty.AsCodeTypeReference(optional=isOptional)) propName
             |> Prop.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
             |> Prop.addGetStmt (Stmt.ret (Expr.this @=> f.Name))
             |> Prop.addSetStmt (Stmt.assign (Expr.this @=> f.Name) (Prop.setValue))
@@ -415,12 +416,13 @@ let addProperty (name : string, ty: RuntimeType, isOptional) (owner: CodeTypeDec
 
 let addContentProperty (name: string, ty: RuntimeType) (owner: CodeTypeDeclaration) =
     let name = name.GetValidIdentifierName()
-    Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" name)
+    let fixedName = if name = owner.Name then sprintf "%s_" name else name
+    Fld.createRef (ty.AsCodeTypeReference(true)) (sprintf "%s { get; private set; } //" fixedName)
     |> Fld.setAttr (MemberAttributes.Public ||| MemberAttributes.Final)
     |> Fld.describe (Attributes.xrdElement None None None false true ty.TypeHint)
     |> Fld.addTo owner
     |> ignore
     Ctor.create()
     |> Ctor.addParamRef (ty.AsCodeTypeReference()) "value"
-    |> Ctor.addStmt (Stmt.assign (Expr.this @=> name) (!+ "value"))
+    |> Ctor.addStmt (Stmt.assign (Expr.this @=> fixedName) (!+ "value"))
     |> Ctor.addTo owner

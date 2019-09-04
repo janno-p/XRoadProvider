@@ -1,3 +1,7 @@
+#### 1.0.13 - 04.09.2019
+
+* Fix: generated types should not contain properties with names that equal to parent type name.
+
 #### 1.0.12 - 04.09.2019
 
 * Fix: regression with identifier names.
