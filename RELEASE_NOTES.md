@@ -1,4 +1,4 @@
-#### 1.0.11 - Unreleased
+#### 1.0.11 - 04.09.2019
 
 * Fix: allow unsupported restriction attributes: `totalDigits`, `fractionDigits`, `length` and `maxLength`.
 * Fix: improved occurrence handling for `xsd:all` elements.

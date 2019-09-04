@@ -148,10 +148,11 @@ Target.create "NuGet" (fun _ ->
 )
 
 Target.create "PublishNuget" (fun _ ->
-    let apiKey = Environment.environVarOrFail "nugetkey"
+    let apiKey = Environment.environVarOrFail "NUGET_KEY"
     Paket.push(fun p ->
         { p with
             ApiKey = apiKey
+            ToolPath = "paket"
             WorkingDir = "bin" })
 )
 
@@ -249,7 +250,7 @@ Target.create "All" ignore
   ==> "Release"
 
 "BuildPackage"
-  ==> "PublishNuget"
+//  ==> "PublishNuget"
   ==> "Release"
 
 Target.runOrDefault "All"

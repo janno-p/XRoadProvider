@@ -1,3 +1,11 @@
+#### 1.0.11 - 04.09.2019
+
+* Fix: allow unsupported restriction attributes: `totalDigits`, `fractionDigits`, `length` and `maxLength`.
+* Fix: improved occurrence handling for `xsd:all` elements.
+* Fix: handle type names with dashes `-`.
+* Fix: support qualified element form.
+* Upgrade FSharp.Core dependency 4.5 -> 4.6.
+
 #### 1.0.10 - 16.05.2019
 
 * Change the order of loggin while handling responses.
