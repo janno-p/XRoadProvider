@@ -3225,7 +3225,7 @@
       "output": {
         ".html": {
           "relative_path": "articles/release-notes.html",
-          "hash": "gk2yiBXqqWpBNITq3zwUdw=="
+          "hash": "Glj3lISfDBNj9JcQwauDkQ=="
         }
       },
       "is_incremental": true,
@@ -3321,18 +3321,12 @@
         "skipped_file_count": 0
       },
       "processors": {
-        "ResourceDocumentProcessor": {
+        "TocDocumentProcessor": {
           "can_incremental": false,
-          "details": "Processor ResourceDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "details": "Processor TocDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build",
           "total_file_count": 0,
           "skipped_file_count": 0
-        },
-        "ManagedReferenceDocumentProcessor": {
-          "can_incremental": true,
-          "incrementalPhase": "build",
-          "total_file_count": 260,
-          "skipped_file_count": 260
         },
         "ConceptualDocumentProcessor": {
           "can_incremental": true,
@@ -3340,9 +3334,15 @@
           "total_file_count": 9,
           "skipped_file_count": 9
         },
-        "TocDocumentProcessor": {
+        "ManagedReferenceDocumentProcessor": {
+          "can_incremental": true,
+          "incrementalPhase": "build",
+          "total_file_count": 260,
+          "skipped_file_count": 260
+        },
+        "ResourceDocumentProcessor": {
           "can_incremental": false,
-          "details": "Processor TocDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "details": "Processor ResourceDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build",
           "total_file_count": 0,
           "skipped_file_count": 0
