@@ -1,3 +1,7 @@
+#### 1.0.14 - 05.09.2019
+
+* Fix capitalization of array item type names (regression).
+
 #### 1.0.13 - 04.09.2019
 
 * Fix: generated types should not contain properties with names that equal to parent type name.

@@ -340,6 +340,11 @@ module String =
             if not (isValidIdentifier fixedName) then failwithf "Invalid property name `%s`." fixedName
             fixedName
 
+        member this.Capitalize() =
+            match this with
+            | null | "" -> this
+            | _ -> sprintf "%c%s" (Char.ToUpper(this.[0])) (this.Substring(1))
+
 /// Type abstraction for code generator.
 type RuntimeType =
     /// Represents anonymous type (xs:any definition).

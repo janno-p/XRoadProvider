@@ -192,7 +192,7 @@ type internal TypeBuilderContext =
                         CollectionType(this.GetOrCreateType(SchemaType(xn)), itemName, None)
                     | dspec, Definition(def) ->
                         let itemName = dspec.Name |> Option.get
-                        let suffix = itemName.GetValidIdentifierName()
+                        let suffix = itemName.GetValidIdentifierName().Capitalize()
                         let typ = Cls.create(name.XName.LocalName.GetValidIdentifierName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                         nstyp |> Cls.addMember typ |> ignore
                         CollectionType(ProvidedType(typ, providedTypeFullName nstyp.Name typ.Name), itemName, Some(def))

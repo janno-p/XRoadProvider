@@ -179,7 +179,7 @@ module TypeBuilder =
                     IsWrappedArray = Some(true) }, [])
             | dspec, Definition(def) ->
                 let itemName = dspec.Name |> Option.get
-                let suffix = itemName.GetValidIdentifierName()
+                let suffix = itemName.GetValidIdentifierName().Capitalize()
                 let typ = Cls.create(name.GetValidIdentifierName() + suffix) |> Cls.addAttr TypeAttributes.Public |> Cls.describe (Attributes.xrdAnonymousType LayoutKind.Sequence)
                 let runtimeType = ProvidedType(typ, typ.Name)
                 build context runtimeType def
