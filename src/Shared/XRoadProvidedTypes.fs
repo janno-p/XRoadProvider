@@ -7,6 +7,24 @@ open System.Collections.Concurrent
 open System.IO
 open System.Reflection
 open XRoad
+open XRoad.Wsdl
+
+(*
+* For shorter arguments list we're using string format of X-Road identifiers as type provider static arguments
+*
+* MEMBER:[X-Road instance]/[member class]/[member code]
+*      MEMBER:EE/BUSINESS/123456789
+*
+* SUBSYSTEM:[subsystem owner]/[subsystem code] where subsystem owner is member identifier without prefix.
+*      SUBSYSTEM:EE/BUSINESS/123456789/highsecurity
+*
+* SERVICE:[service provider]/[service code]/[service version] where service provider is either member or subsystem identifier without prefix and service version part is optional.
+*      SERVICE:EE/BUSINESS/123456789/highsecurity/getSecureData/v1
+*      SERVICE:EE/BUSINESS/123456789/highsecurity/getSecureData2
+* 
+* CENTRALSERVICE:[X-Road instance]/[service code]
+*      CENTRALSERVICE:EE/populationRegister_personData
+*)
 
 /// Generated type providers for X-Road infrastructure.
 /// Currently only one type provider is available, which builds service interface for certain producer.
@@ -48,12 +66,8 @@ type XRoadProducerProvider() as this =
     let metaServiceProducerTypeParameters =
         [
             yield ProvidedStaticParameter("SecurityServerUri", typeof<string>), "Security server uri which is used to access X-Road meta services."
-            yield ProvidedStaticParameter("XRoadInstance", typeof<string>), "Code identifying the instance of X-Road system."
-            yield ProvidedStaticParameter("MemberClass", typeof<string>), "Member class that is used in client identifier in X-Road request."
-            yield ProvidedStaticParameter("MemberCode", typeof<string>), "Member code that is used in client identifier in X-Road requests."
-            yield ProvidedStaticParameter("SubsystemCode", typeof<string>, ""), "Subsystem code that is used in client identifier in X-Road requests."
-            yield ProvidedStaticParameter("ServiceCode", typeof<string>), "Service code which is used to identify service description document."
-            yield ProvidedStaticParameter("ServiceVersion", typeof<string>, ""), "Service version which is used to identify service description document."
+            yield ProvidedStaticParameter("ServiceIdentifier", typeof<string>), "Service identifier (in format of `SERVICE:EE/BUSINESS/123456789/highsecurity/getSecureData/v1`)."
+            yield ProvidedStaticParameter("ClientIdentifier", typeof<string>), "Client identifier used to access X-Road infrastructure (MEMBER or SUBSYSTEM)."
             yield! commonStaticParameters
         ]
         |> toStaticParameterArray
@@ -75,10 +89,33 @@ type XRoadProducerProvider() as this =
                         match filter with
                         | null -> []
                         | value -> value.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun x -> x.Trim()) |> List.ofArray
-                    typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, uri, languageCode, operationFilter)))
+                    // Load schema details from specified file or network location.
+                    let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
+                    typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, schema)))
                 | true, typ -> typ
             | :? ProvidedTypeDefinition as ty when ty.Name = GenerateTypesUsingMetaServiceName ->
-                failwithf "not implemented: %A" ty
+                let uri = unbox<string> staticArguments.[0]
+                let serviceString = unbox<string> staticArguments.[1]
+                let clientString = unbox<string> staticArguments.[2]
+                let languageCode = unbox<string> staticArguments.[3]
+                let filter = unbox<string> staticArguments.[4]
+
+                // Same parameter set should have same output, so caching is reasonable.
+                let key = (String.Join(".", typeNameWithArguments), uri, languageCode, filter)
+                match typeCache.TryGetValue(key) with
+                | false, _ ->
+                    let operationFilter =
+                        match filter with
+                        | null -> []
+                        | value -> value.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun x -> x.Trim()) |> List.ofArray
+                    // Load schema details from specified file or network location.
+                    let client = let c = clientString |> Identifiers.parseMemberIdentifier in (c.XRoadInstance, c.MemberClass, c.MemberCode, c.SubsystemCode)
+                    let service = let s = serviceString |> Identifiers.parseServiceIdentifier in (s.XRoadInstance, s.MemberClass, s.MemberCode, s.SubsystemCode, s.ServiceCode, s.ServiceVersion)
+                    use stream = ForTypes.downloadWsdl uri client service
+                    let document = System.Xml.Linq.XDocument.Load(stream)
+                    let schema = ProducerDescription.Load(document, languageCode, operationFilter)
+                    typeCache.GetOrAdd(key, (fun _ -> ProducerDefinition.makeProducerType(typeNameWithArguments, schema)))
+                | true, typ -> typ
             | _ -> failwith "not implemented"
 
         /// Returns contents of assembly generated by type provider instance.
@@ -186,18 +223,16 @@ type XRoadProviders(config: TypeProviderConfig) as this =
 
     let buildServer6Types (typeName: string) (args: obj []) =
         let securityServerUriString = unbox<string> args.[0]
-        let xRoadInstance: string = unbox args.[1]
-        let memberClass: string = unbox args.[2]
-        let memberCode: string = unbox args.[3]
-        let subsystemCode: string = unbox args.[4]
-        let refresh: bool = unbox args.[5]
+        let clientIdentifier = unbox<string> args.[1]
+        let refresh: bool = unbox args.[2]
 
         let securityServerUri = Uri(securityServerUriString)
 
-        let client =
-            match subsystemCode with
-            | null | "" -> SecurityServerV6.Member(xRoadInstance, memberClass, memberCode)
-            | code -> SecurityServerV6.Subsystem(xRoadInstance, memberClass, memberCode, code)
+        let client = clientIdentifier |> Identifiers.parseMemberIdentifier
+        let xRoadInstance = client.XRoadInstance
+        let memberClass = client.MemberClass
+        let memberCode = client.MemberCode
+        let subsystemCode = client.SubsystemCode
 
         let thisTy = ProvidedTypeDefinition(theAssembly, namespaceName, typeName, Some baseTy)
 
@@ -213,6 +248,9 @@ type XRoadProviders(config: TypeProviderConfig) as this =
         
         let identifier = ProvidedProperty("Identifier", typeof<XRoadMemberIdentifier>, isStatic = true, getterCode = (fun _ -> <@@ XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, subsystemCode) @@>))
         thisTy.AddMember(identifier)
+
+        let identifierString = ProvidedField.Literal("IdentifierString", typeof<string>, clientIdentifier)
+        thisTy.AddMember(identifierString)
 
         let uriField = ProvidedField.Literal("Uri", typeof<string>, securityServerUriString)
         thisTy.AddMember(uriField)
@@ -248,6 +286,7 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                             let addServices provider =
                                 try
                                     let service: SecurityServerV6.Service = { Provider = provider; ServiceCode = "listMethods"; ServiceVersion = None }
+                                    let client = client |> Identifiers.toServiceProvider
                                     SecurityServerV6.downloadMethodsList securityServerUri client service
                                     |> List.map (fun x ->
                                         let versionSuffix = x.ServiceVersion |> Option.fold (fun _ x -> sprintf "/%s" x) ""
@@ -264,8 +303,13 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                                         let s4 = match serviceService.Provider.SubsystemCode with Some(u) -> u | _ -> ""
                                         let s5 = serviceService.ServiceCode
                                         let s6 = match serviceService.ServiceVersion with Some(u) -> u | _ -> ""
-                                        serviceTy.AddMemberDelayed (fun _ -> ProvidedMethod("GetWsdl", [], typeof<string>, invokeCode = (fun _ -> <@@ ForTypes.downloadWsdl2 securityServerUriString (c1, c2, c3, c4) (s1, s2, s3, s4, s5, s6) @@>), isStatic = true))
+                                        serviceTy.AddMemberDelayed (fun _ -> ProvidedMethod("GetWsdl", [], typeof<string>, invokeCode = (fun _ -> <@@ ForTypes.downloadWsdlString securityServerUriString (c1, c2, c3, c4) (s1, s2, s3, s4, s5, s6) @@>), isStatic = true))
                                         serviceTy.AddMemberDelayed (fun _ -> ProvidedField.Literal("ServiceCode", typeof<string>, x.ServiceCode))
+                                        serviceTy.AddMemberDelayed (fun _ -> ProvidedProperty("Identifier", typeof<XRoadServiceIdentifier>, isStatic = true, getterCode = (fun _ -> <@@ XRoadServiceIdentifier(s1, s2, s3, s4, s5, s6) @@>)))
+
+                                        let m = XRoadServiceIdentifier(s1, s2, s3, s4, s5, s6)
+                                        serviceTy.AddMemberDelayed (fun _ -> ProvidedField.Literal("IdentifierString", typeof<string>, m |> Identifiers.formatServiceIdentifier))
+
                                         x.ServiceVersion |> Option.iter (fun versionValue -> serviceTy.AddMemberDelayed (fun _ -> ProvidedField.Literal("ServiceVersion", typeof<string>, versionValue)))
                                         serviceTy :> MemberInfo
                                     )
@@ -275,6 +319,9 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                             memberTy.AddMember(ProvidedField.Literal("Name", typeof<string>, memberItem.Name))
                             memberTy.AddMember(ProvidedField.Literal("Code", typeof<string>, memberItem.Code))
                             memberTy.AddMember(ProvidedProperty("Identifier", typeof<XRoadMemberIdentifier>, isStatic = true, getterCode = (fun _ -> <@@ XRoadMemberIdentifier(xRoadInstance, memberClassName, memberItemCode) @@>)))
+
+                            let m = XRoadMemberIdentifier(xRoadInstance, memberClassName, memberItemCode)
+                            memberTy.AddMember(ProvidedField.Literal("IdentifierString", typeof<string>, m |> Identifiers.formatMemberIdentifier))
 
                             memberTy.AddMembersDelayed(fun _ ->
                                 match addServices memberId with
@@ -299,6 +346,10 @@ type XRoadProviders(config: TypeProviderConfig) as this =
                                             subsystemTy.AddXmlDoc (sprintf "Subsystem %s." subsystem)
                                             subsystemTy.AddMember (ProvidedField.Literal("Name", typeof<string>, subsystem))
                                             subsystemTy.AddMember (ProvidedProperty("Identifier", typeof<XRoadMemberIdentifier>, isStatic = true, getterCode = (fun _ -> <@@ XRoadMemberIdentifier(xRoadInstance, memberClassName, memberItemCode, subsystem) @@>)))
+
+                                            let m = XRoadMemberIdentifier(xRoadInstance, memberClassName, memberItemCode, subsystem)
+                                            subsystemTy.AddMember (ProvidedField.Literal("IdentifierString", typeof<string>, m |> Identifiers.formatMemberIdentifier))
+
                                             subsystemTy.AddMembersDelayed (fun _ ->
                                                 match addServices subsystemId with
                                                 | [] -> []
@@ -327,10 +378,7 @@ type XRoadProviders(config: TypeProviderConfig) as this =
 
     let server6Parameters =
         [ ProvidedStaticParameter("SecurityServerUri", typeof<string>), "X-Road security server uri which is used to connect to that X-Road instance."
-          ProvidedStaticParameter("XRoadInstance", typeof<string>), "Code identifying the instance of X-Road system."
-          ProvidedStaticParameter("MemberClass", typeof<string>), "Member class that is used in client identifier in X-Road request."
-          ProvidedStaticParameter("MemberCode", typeof<string>), "Member code that is used in client identifier in X-Road requests."
-          ProvidedStaticParameter("SubsystemCode", typeof<string>, ""), "Subsystem code that is used in client identifier in X-Road requests."
+          ProvidedStaticParameter("ClientIdentifier", typeof<string>), "Client identifier used to access X-Road infrastructure (MEMBER or SUBSYSTEM)."
           ProvidedStaticParameter("ForceRefresh", typeof<bool>, false), "When `true`, forces type provider to refresh data from security server." ]
         |> List.map (fun (parameter,doc) -> parameter.AddXmlDoc(doc); parameter)
 

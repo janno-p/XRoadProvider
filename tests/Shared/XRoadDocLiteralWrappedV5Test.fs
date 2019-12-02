@@ -35,7 +35,7 @@ let [<Tests>] tests =
             Expect.equal operation.OutputParameters.RequiredHeaders.Length 5 "should have 5 required headers in response"
             Expect.isFalse operation.OutputParameters.IsEncoded "should be literal style response"
             Expect.isFalse operation.OutputParameters.IsMultipart "should not have multipart binding in response"
-            let context = TypeBuilderContext.FromSchema(schema, "et")
+            let context = TypeBuilderContext.FromSchema(schema)
             Expect.equal context.MessageProtocol (Version31Ee "aktorstest") "wrong message protocol version"
         }
     

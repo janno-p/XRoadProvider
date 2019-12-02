@@ -1,3 +1,8 @@
+#### 1.0.15 - Unreleased
+
+* Refactor provider type names to hint underlying functionality.
+* Replace HTTP GET API based wsdl acquisition with `getWsdl` meta service usage.
+
 #### 1.0.14 - 05.09.2019
 
 * Fix capitalization of array item type names (regression).

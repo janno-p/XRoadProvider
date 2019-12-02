@@ -215,12 +215,9 @@ module ServiceBuilder =
         | _ -> ()
         additionalMembers |> Seq.toList
 
-let buildProducerTargetClass targetClassName uri languageCode operationFilter =
-    // Load schema details from specified file or network location.
-    let schema = ProducerDescription.Load(resolveUri uri, languageCode, operationFilter)
-
+let buildProducerTargetClass targetClassName schema =
     // Initialize type and schema element lookup context.
-    let context = TypeBuilderContext.FromSchema(schema, languageCode)
+    let context = TypeBuilderContext.FromSchema(schema)
 
     // Create base type which holds types generated from all provided schema-s.
     let serviceTypesTy = Cls.create "DefinedTypes" |> Cls.setAttr TypeAttributes.Public |> Cls.asStatic
@@ -321,8 +318,8 @@ let buildProducerTargetClass targetClassName uri languageCode operationFilter =
 
 /// Builds all types, namespaces and services for give producer definition.
 /// Called by type provider to retrieve assembly details for generated types.
-let makeProducerType (typeNamePath: string [], uri, languageCode, operationFilter) =
-    let targetClass = buildProducerTargetClass typeNamePath.[typeNamePath.Length - 1] uri languageCode operationFilter
+let makeProducerType (typeNamePath: string [], schema) =
+    let targetClass = buildProducerTargetClass typeNamePath.[typeNamePath.Length - 1] schema
 
     // Initialize default namespace to hold main type.
     let codeNamespace = CodeNamespace(String.Join(".", Array.sub typeNamePath 0 (typeNamePath.Length - 1)))

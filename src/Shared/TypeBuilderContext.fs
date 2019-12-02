@@ -81,7 +81,8 @@ module internal Pattern =
 
 /// Combines operations and types documented in producer definitions.
 type internal ProducerDescription =
-    { TypeSchemas: Map<string,SchemaNode>
+    { LanguageCode: string
+      TypeSchemas: Map<string,SchemaNode>
       Services: Service list }
     /// Load producer definition from given uri location.
     static member Load(uri: Uri, languageCode, operationFilter) =
@@ -89,8 +90,17 @@ type internal ProducerDescription =
         match document.Element(xnsname "definitions" XmlNamespace.Wsdl) with
         | null -> failwithf "Uri `%A` refers to invalid WSDL document (`definitions` element not found)." uri
         | definitions ->
-            { Services = definitions |> ServiceDescription.parseServices languageCode operationFilter
+            { LanguageCode = languageCode
+              Services = definitions |> ServiceDescription.parseServices languageCode operationFilter
               TypeSchemas = definitions |> Parser.parseSchema (uri.ToString()) }
+    static member Load(document: XDocument, languageCode, operationFilter) =
+        match document.Element(xnsname "definitions" XmlNamespace.Wsdl) with
+        | null -> failwith "Invalid WSDL document (`definitions` element not found)."
+        | definitions ->
+            let uri = definitions.Attribute(xname "targetNamespace").Value
+            { LanguageCode = languageCode
+              Services = definitions |> ServiceDescription.parseServices languageCode operationFilter
+              TypeSchemas = definitions |> Parser.parseSchema uri }
 
 /// Context keeps track of already generated types for provided types and namespaces
 /// to simplify reuse and resolve mutual dependencies between types.
@@ -262,7 +272,7 @@ type internal TypeBuilderContext =
             findElementDefinition(spec)
 
         /// Initializes new context object from given schema definition.
-        static member FromSchema(schema, languageCode) =
+        static member FromSchema(schema) =
             // Validates that schema contains single operation style, as required by X-Road specification.
             let messageProtocol =
                 let reduceStyle s1 s2 =
@@ -290,4 +300,4 @@ type internal TypeBuilderContext =
                   |> Seq.collect (fun (_,typ) -> typ.Types |> Seq.map (fun x -> x.Key.ToString(), x.Value))
                   |> Map.ofSeq
               MessageProtocol = messageProtocol
-              LanguageCode = languageCode }
+              LanguageCode = schema.LanguageCode }

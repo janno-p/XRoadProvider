@@ -120,6 +120,14 @@ module internal SecurityServerV6 =
     let downloadProducerList uri instance refresh =
         // Read xml document from file and navigate to root element.
         let doc = Uri(uri, sprintf "listClients?xRoadInstance=%s" instance) |> getFile refresh
+
+        doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
+        |> Option.ofObj
+        |> Option.bind (fun x -> x.Element(xnsname "Body" XmlNamespace.SoapEnv) |> Option.ofObj)
+        |> Option.bind (fun x -> x.Element(xnsname "Fault" XmlNamespace.SoapEnv) |> Option.ofObj)
+        |> Option.map (fun x -> x.Element(xname "faultstring") |> Option.ofObj |> Option.map (fun u -> u.Value) |> MyOption.defaultValue "Could not download producer list from security server")
+        |> Option.iter failwith
+
         let root = doc.Element(xnsname "clientList" XmlNamespace.XRoad40)
         // Data structures to support recomposition to records.
         let subsystems = Dictionary<string * string, ISet<string>>()
@@ -227,63 +235,94 @@ module internal SecurityServerV6 =
               ServiceVersion = service.Element(xnsname "serviceVersion" XmlNamespace.XRoad40Id) |> Option.ofObj |> Option.map (fun x -> x.Value) })
         |> Seq.toList
 
-    let downloadWsdl (uri: string) (client: ServiceProvider) (service: Service) =
-        let service1 = {
-            Provider = service.Provider
-            ServiceCode = "getWsdl"
-            ServiceVersion = None
-        }
-        use stream = new MemoryStream()
-        use streamWriter = new StreamWriter(stream, utf8WithoutBom)
-        use writer = XmlWriter.Create(streamWriter)
-        (client, service1) ||> buildRequest writer (fun _ ->
-            writer.WriteStartElement("getWsdl", XmlNamespace.XRoad40)
-            writer.WriteElementString("serviceCode", XmlNamespace.XRoad40, service.ServiceCode)
-            service.ServiceVersion |> Option.iter (fun vers -> writer.WriteElementString("serviceVersion", XmlNamespace.XRoad40, vers))
-            writer.WriteEndElement()
-        )
-#if !NET40
-        use h = new System.Net.Http.HttpClientHandler()
-        h.SslProtocols <- System.Security.Authentication.SslProtocols.Tls12 ||| System.Security.Authentication.SslProtocols.Tls11 ||| System.Security.Authentication.SslProtocols.Tls
-        let uri = Uri(uri)
-        if uri.Scheme = "https" then h.ServerCertificateCustomValidationCallback <- (fun _ _ _ _ -> true)
-        use client = new System.Net.Http.HttpClient(h)
-        stream.Seek(0L, SeekOrigin.Begin) |> ignore
-        use content = new System.Net.Http.StreamContent(stream)
-        content.Headers.TryAddWithoutValidation("Content-Type", "text/xml; charset=utf-8") |> ignore
-        content.Headers.TryAddWithoutValidation("SOAPAction", "") |> ignore
-        use response = client.PostAsync(uri, content).GetAwaiter().GetResult()
-        match response.Content with
-        | :? System.Net.Http.MultipartContent as mc ->
-            match mc |> List.ofSeq with
-            | [_; attach] ->
-                attach.ReadAsStringAsync().GetAwaiter().GetResult()
-            | _ -> failwith "Invalid getWsdl response"
-        | :? System.Net.Http.StreamContent as sc ->
-            failwithf "%s" (sc.ReadAsStringAsync().GetAwaiter().GetResult())
-        | a ->
+module MetaServices =
+    open XRoad.Serialization.Attributes
 
-            failwithf "Invalid getWsdl response: %A" a
-        // Http.post stream uri
-#else
-        ""
-#endif
+    [<XRoadType(LayoutKind.Sequence, IsAnonymous = true)>]
+    type GetWsdl () =
+        [<XRoadElement("serviceCode", Namespace = XmlNamespace.XRoad40)>] member val ServiceCode = Unchecked.defaultof<string> with get, set
+        [<XRoadElement("serviceVersion", Namespace = XmlNamespace.XRoad40)>] member val ServiceVersion = Optional.Option.None<string>() with get, set
+
+    [<XRoadType(LayoutKind.Sequence, IsAnonymous = true)>]
+    type GetWsdlResponse () =
+        [<XRoadElement("serviceCode", Namespace = XmlNamespace.XRoad40)>] member val ServiceCode = Unchecked.defaultof<string> with get, set
+        [<XRoadElement("serviceVersion", Namespace = XmlNamespace.XRoad40)>] member val ServiceVersion = Optional.Option.None<string>() with get, set
+
+    type MetaServicesEndpoint (uri) =
+        inherit AbstractEndpointDeclaration (uri)
+
+        [<XRoadOperation("getWsdl", null, XRoadProtocol.Version40, ProtocolVersion = "4.0")>]
+        [<XRoadRequiredHeaders(XmlNamespace.XRoad40, "client", "service", "userId", "id", "protocolVersion")>]
+        [<XRoadRequest("getWsdl", XmlNamespace.XRoad40)>]
+        [<XRoadResponse("getWsdlResponse", XmlNamespace.XRoad40, ReturnType = typeof<GetWsdlResponse>)>]
+        member this.GetWsdl(header: XRoadHeader, [<XRoadElementAttribute(MergeContent = true)>] request: GetWsdl) : MultipartResponse<GetWsdlResponse> =
+            XRoadUtil.MakeServiceCall(this, "GetWsdl", header, [| request |]) |> unbox
 
 module ForTypes =
-    open SecurityServerV6
+    open MetaServices
 
-    let downloadWsdl2 uri (ca, cb, cc, cd) (sa, sb, sc, sd, se, sf) =
-        let client: ServiceProvider =
-            match cd with
-            | "" -> Member(ca, cb, cc)
-            | _ -> Subsystem(ca, cb, cc, cd)
-        let serviceProvider: ServiceProvider =
-            match sd with
-            | "" -> Member(sa, sb, sc)
-            | _ -> Subsystem(sa, sb, sc, sd)
-        let service: Service = {
-            Provider = serviceProvider
-            ServiceCode = se
-            ServiceVersion = match sf with "" -> None | _ -> Some(sf)
-        }
-        downloadWsdl uri client service
+    let downloadWsdl uri (client: string*string*string*string) (service: string*string*string*string*string*string) : Stream =
+        let (clientInstance, clientMemberClass, clientMemberCode, clientSubsystem) = client
+        let (serviceInstance, serviceMemberClass, serviceMemberCode, serviceSubsystem, serviceCode, serviceVersion) = service
+        let client = XRoadMemberIdentifier(clientInstance, clientMemberClass, clientMemberCode, clientSubsystem)
+        let producer = XRoadMemberIdentifier(serviceInstance, serviceMemberClass, serviceMemberCode, serviceSubsystem)
+        let serviceVersion = match serviceVersion with "" -> Optional.Option.None<_>() | value -> Optional.Option.Some<_>(value)
+        let header = XRoadHeader(Client = client, Producer = producer, ProtocolVersion = "4.0", UserId = "")
+        let request = GetWsdl(ServiceCode = serviceCode, ServiceVersion = serviceVersion)
+        let endpoint = MetaServicesEndpoint(Uri(uri))
+        let response = endpoint.GetWsdl(header, request)
+        response.Parts.[0].OpenStream()
+
+    let downloadWsdlString uri (client: string*string*string*string) (service: string*string*string*string*string*string) =
+        use stream = downloadWsdl uri client service
+        use reader = new System.IO.StreamReader(stream)
+        reader.ReadToEnd()
+
+module internal Identifiers =
+    let parseMemberIdentifier (value: string) =
+        match value.Split([| ':' |], 2) with
+        | [| "MEMBER"; value |] ->
+            match value.Split('/') with
+            | [| xRoadInstance; memberClass; memberCode |] -> XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode)
+            | _ -> failwithf "Invalid member identifier: %s" value
+        | [| "SUBSYSTEM" ; value |] ->
+            match value.Split('/') with
+            | [| xRoadInstance; memberClass; memberCode; subsystemCode |] -> XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, subsystemCode)
+            | _ -> failwithf "Invalid subsystem identifier: %s" value
+        | _ -> failwithf "Invalid owner identifier: %s" value
+
+    let toServiceProvider (value: XRoadMemberIdentifier) =
+        match value.SubsystemCode with
+        | null | "" -> SecurityServerV6.Member(value.XRoadInstance, value.MemberClass, value.MemberCode)
+        | code -> SecurityServerV6.Subsystem(value.XRoadInstance, value.MemberClass, value.MemberCode, code)
+
+    let (|Regex|_|) pattern input =
+        let m = System.Text.RegularExpressions.Regex.Match(input, pattern)
+        if m.Success then Some(input) else None
+
+    let parseServiceIdentifier (value: string) =
+        match value.Split([| ':' |], 2) with
+        | [| "SERVICE"; value |] ->
+            match value.Split('/') with
+            | [| xRoadInstance; memberClass; memberCode; serviceCode |] ->
+                XRoadServiceIdentifier(XRoadInstance = xRoadInstance, MemberClass = memberClass, MemberCode = memberCode, ServiceCode = serviceCode)
+            | [| xRoadInstance; memberClass; memberCode; serviceCode; Regex @"^v{\d+}$" serviceVersion |] ->
+                XRoadServiceIdentifier(XRoadInstance = xRoadInstance, MemberClass = memberClass, MemberCode = memberCode, ServiceCode = serviceCode, ServiceVersion = serviceVersion)
+            | [| xRoadInstance; memberClass; memberCode; subsystemCode; serviceCode |] ->
+                XRoadServiceIdentifier(XRoadInstance = xRoadInstance, MemberClass = memberClass, MemberCode = memberCode, SubsystemCode = subsystemCode, ServiceCode = serviceCode)
+            | [| xRoadInstance; memberClass; memberCode; subsystemCode; serviceCode; serviceVersion |] ->
+                XRoadServiceIdentifier(XRoadInstance = xRoadInstance, MemberClass = memberClass, MemberCode = memberCode, SubsystemCode = subsystemCode, ServiceCode = serviceCode, ServiceVersion = serviceVersion)
+            | _ -> failwithf "Invalid member identifier: %s" value
+        | _ -> failwithf "Invalid owner identifier: %s" value
+
+    let formatMemberIdentifier (value: XRoadMemberIdentifier) =
+        let prefix, subsystem =
+            match value.SubsystemCode with
+            | null | "" -> "MEMBER", ""
+            | code -> "SUBSYSTEM", sprintf "/%s" code
+        sprintf "%s:%s/%s/%s%s" prefix value.XRoadInstance value.MemberClass value.MemberCode subsystem
+
+    let formatServiceIdentifier (value: XRoadServiceIdentifier) =
+        let subsystem = match value.SubsystemCode with null | "" -> "" | code -> sprintf "/%s" code
+        let serviceVersion = match value.ServiceVersion with null | "" -> "" | vers -> sprintf "/%s" vers
+        sprintf "SERVICE:%s/%s/%s%s/%s%s" value.XRoadInstance value.MemberClass value.MemberCode subsystem value.ServiceCode serviceVersion

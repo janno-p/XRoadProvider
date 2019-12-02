@@ -281,19 +281,20 @@ type public XRoadMemberIdentifier(xRoadInstance, memberClass, memberCode, subsys
 
 /// Represents identifiers of services.
 [<AllowNullLiteral>]
-type public XRoadServiceIdentifier() =
+type public XRoadServiceIdentifier(xRoadInstance, memberClass, memberCode, subsystemCode, serviceCode, serviceVersion) =
+    new () = XRoadServiceIdentifier("", "", "", "", "", "")
     /// Code identifying the instance of the X-Road system.
-    member val XRoadInstance = "" with get, set
+    member val XRoadInstance = xRoadInstance with get, set
     /// Code identifying the member class (e.g., government agency, private enterprise, physical person).
-    member val MemberClass = "" with get, set
+    member val MemberClass = memberClass with get, set
     /// Member code that uniquely identifies the given X-Road member within its member class.
-    member val MemberCode = "" with get, set
+    member val MemberCode = memberCode with get, set
     /// Subsystem code is chosen by the X-Road member and it must be unique among the subsystems of this member.
-    member val SubsystemCode = "" with get, set
+    member val SubsystemCode = subsystemCode with get, set
     /// The service code is chosen by the service provider.
-    member val ServiceCode = "" with get, set
+    member val ServiceCode = serviceCode with get, set
     /// Version is optional and can be used to distinguish between technically incompatible versions of the same basic service.
-    member val ServiceVersion = "" with get, set
+    member val ServiceVersion = serviceVersion with get, set
 
 /// Represents identifiers of central services.
 [<AllowNullLiteral>]
@@ -860,3 +861,7 @@ type AbstractEndpointDeclaration (uri: Uri) =
 
     member internal this.TriggerRequestReady args = requestEvent.Trigger(this, args)
     member internal this.TriggerResponseReady args = responseEvent.Trigger(this, args)
+
+type MultipartResponse<'TBody> (body, parts: BinaryContent seq) =
+    member val Body = body with get
+    member val Parts = parts |> Seq.toArray with get

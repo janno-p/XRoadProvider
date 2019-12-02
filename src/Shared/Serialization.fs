@@ -56,18 +56,20 @@ type internal XRoadResponse(endpoint: AbstractEndpointDeclaration, request: XRoa
             let nodeToString = Option.ofObj >> Option.map (fun x -> (x: XPathNavigator).InnerXml) >> MyOption.defaultValue ""
             raise(XRoadFault(faultCode |> nodeToString, faultString |> nodeToString))
 
+    member val Attachments = Dictionary<string, BinaryContent>() with get
+
     member this.RetrieveMessage() =
         use responseStream = response.GetResponseStream()
         responseStream.CopyTo(stream)
 
         endpoint.TriggerResponseReady(ResponseReadyEventArgs(this, request.Header, request.RequestId, methodMap.ServiceCode, methodMap.ServiceVersion |> MyOption.defaultValue ""))
 
-        let attachments = Dictionary<string, BinaryContent>()
         use content =
             stream.Position <- 0L
             let contentStream, atts = (stream, response) ||> MultipartMessage.read
-            atts |> List.iter (fun content -> attachments.Add(content.ContentID, content))
+            atts |> List.iter (fun content -> this.Attachments.Add(content.ContentID, content))
             contentStream
+
         content |> checkXRoadFault
         content.Position <- 0L
         use reader = XmlReader.Create(content)
@@ -76,7 +78,7 @@ type internal XRoadResponse(endpoint: AbstractEndpointDeclaration, request: XRoa
         if not (reader.MoveToElement(1, "Body", XmlNamespace.SoapEnv)) then
             failwith "Soap body element was not found in response message."
         let context = SerializerContext()
-        attachments |> Seq.iter (fun kvp -> context.AddAttachment(kvp.Key, kvp.Value, false))
+        this.Attachments |> Seq.iter (fun kvp -> context.AddAttachment(kvp.Key, kvp.Value, false))
         if not (reader.MoveToElement(2, null, null)) then
             failwith "Soap message has empty payload in response."
         // TODO : validate response wrapper element
@@ -372,4 +374,6 @@ type public XRoadUtil =
         request.SendMessage()
         use response = new XRoadResponse(endpoint, request, serviceMethodMap)
         let result = response.RetrieveMessage()
-        result
+        if serviceMethod.ReturnType.IsGenericType && serviceMethod.ReturnType.GetGenericTypeDefinition() = typedefof<MultipartResponse<_>> then
+            Activator.CreateInstance(serviceMethod.ReturnType, [| box result; response.Attachments |> Seq.map (fun kvp -> kvp.Value) |> box |])
+        else result
