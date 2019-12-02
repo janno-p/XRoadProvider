@@ -6,20 +6,20 @@ open System
 open System.Collections.Generic
 open System.IO
 open System.Net
+open System.Xml
+open System.Xml.XPath
+open XRoad.Serialization.Attributes
 
 #if !NET40
 open System.Net.Security
 #endif
-
-open System.Security.Cryptography.X509Certificates
-open System.Xml
-open XRoad.Serialization.Attributes
 
 type internal XRoadFault(faultCode: string, faultString) =
     inherit Exception(faultString)
     member val FaultCode = faultCode with get
     member val FaultString = faultString with get
 
+[<AutoOpen>]
 module private Response =
     type XmlReader with
         member this.MoveToElement(depth, name, ns) =
@@ -32,9 +32,6 @@ module private Response =
                     else findElement()
                 else false
             isElement() || findElement()
-
-open Response
-open System.Xml.XPath
 
 type internal XRoadResponse(endpoint: AbstractEndpointDeclaration, request: XRoadRequest, methodMap: MethodMap) =
     let response: WebResponse = request.GetResponse()

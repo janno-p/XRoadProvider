@@ -102,15 +102,6 @@ module internal SecurityServerV6 =
           SubsystemCode: string option
           ServiceCode: string
           ServiceVersion: string option }
-        with
-            member this.WsdlPath =
-                StringBuilder().Append(sprintf "wsdl?xRoadInstance=%s" this.XRoadInstance)
-                               .Append(sprintf "&memberClass=%s" this.MemberClass)
-                               .Append(sprintf "&memberCode=%s" this.MemberCode)
-                               .Append(this.SubsystemCode |> Option.fold (fun _ -> sprintf "&subsystemCode=%s") "")
-                               .Append(sprintf "&serviceCode=%s" this.ServiceCode)
-                               .Append(this.ServiceVersion |> Option.fold (fun _ -> sprintf "&version=%s") "")
-                               .ToString()
 
     /// Remember previously downloaded content in temporary files.
     let cache = ConcurrentDictionary<Uri, FileInfo>()
@@ -178,45 +169,47 @@ module internal SecurityServerV6 =
         |> Seq.sortBy (id)
         |> Seq.toList
 
+    let buildRequest (writer: XmlWriter) (writeBody: unit -> unit) (client: ServiceProvider) (service: Service) =
+        writer.WriteStartDocument()
+        writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv)
+        writer.WriteAttributeString("xmlns", "soapenv", XmlNamespace.Xmlns, XmlNamespace.SoapEnv)
+        writer.WriteAttributeString("xmlns", "xro", XmlNamespace.Xmlns, XmlNamespace.XRoad40)
+        writer.WriteAttributeString("xmlns", "iden", XmlNamespace.Xmlns, XmlNamespace.XRoad40Id)
+        writer.WriteStartElement("Header", XmlNamespace.SoapEnv)
+        writer.WriteElementString("protocolVersion", XmlNamespace.XRoad40, "4.0")
+        writer.WriteElementString("id", XmlNamespace.XRoad40, XRoadHelper.getUUID())
+        writer.WriteStartElement("service", XmlNamespace.XRoad40)
+        writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, service.ObjectId)
+        writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, service.Provider.XRoadInstance)
+        writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, service.Provider.MemberClass)
+        writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, service.Provider.MemberCode)
+        service.Provider.SubsystemCode |> Option.iter (fun code -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code))
+        writer.WriteElementString("serviceCode", XmlNamespace.XRoad40Id, service.ServiceCode)
+        service.ServiceVersion |> Option.iter (fun version -> writer.WriteElementString("serviceVersion", XmlNamespace.XRoad40Id, version))
+        writer.WriteEndElement()
+        writer.WriteStartElement("client", XmlNamespace.XRoad40)
+        writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, client.ObjectId)
+        writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, client.XRoadInstance)
+        writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, client.MemberClass)
+        writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, client.MemberCode)
+        client.SubsystemCode |> Option.iter (fun code -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code))
+        writer.WriteEndElement()
+        writer.WriteEndElement()
+        writer.WriteStartElement("Body", XmlNamespace.SoapEnv)
+        writeBody()
+        writer.WriteEndElement()
+        writer.WriteEndElement()
+        writer.WriteEndDocument()
+        writer.Flush()
+
     /// Downloads and parses method list of selected service provider.
     let downloadMethodsList uri (client: ServiceProvider) (service: Service) =
         let doc =
             use stream = new MemoryStream()
             use streamWriter = new StreamWriter(stream, utf8WithoutBom)
             use writer = XmlWriter.Create(streamWriter)
-            writer.WriteStartDocument()
-            writer.WriteStartElement("soapenv", "Envelope", XmlNamespace.SoapEnv) // <soapenv:Envelope>
-            writer.WriteAttributeString("xmlns", "soapenv", XmlNamespace.Xmlns, XmlNamespace.SoapEnv)
-            writer.WriteAttributeString("xmlns", "xrd", XmlNamespace.Xmlns, XmlNamespace.XRoad40)
-            writer.WriteAttributeString("xmlns", "id", XmlNamespace.Xmlns, XmlNamespace.XRoad40Id)
-            writer.WriteStartElement("Header", XmlNamespace.SoapEnv) // <soapenv:Header>
-            writer.WriteStartElement("client", XmlNamespace.XRoad40)
-            writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, client.ObjectId)
-            writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, client.XRoadInstance)
-            writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, client.MemberClass)
-            writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, client.MemberCode)
-            client.SubsystemCode |> Option.iter (fun code -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code))
-            writer.WriteEndElement()
-            writer.WriteStartElement("service", XmlNamespace.XRoad40)
-            writer.WriteAttributeString("objectType", XmlNamespace.XRoad40Id, service.ObjectId)
-            writer.WriteElementString("xRoadInstance", XmlNamespace.XRoad40Id, service.Provider.XRoadInstance)
-            writer.WriteElementString("memberClass", XmlNamespace.XRoad40Id, service.Provider.MemberClass)
-            writer.WriteElementString("memberCode", XmlNamespace.XRoad40Id, service.Provider.MemberCode)
-            service.Provider.SubsystemCode |> Option.iter (fun code -> writer.WriteElementString("subsystemCode", XmlNamespace.XRoad40Id, code))
-            writer.WriteElementString("serviceCode", XmlNamespace.XRoad40Id, service.ServiceCode)
-            service.ServiceVersion |> Option.iter (fun vers -> writer.WriteElementString("serviceVersion", XmlNamespace.XRoad40Id, vers))
-            writer.WriteEndElement()
-            writer.WriteElementString("id", XmlNamespace.XRoad40, XRoadHelper.getUUID())
-            writer.WriteElementString("protocolVersion", XmlNamespace.XRoad40, "4.0")
-            writer.WriteEndElement() // </soapenv:Header>
-            writer.WriteStartElement("Body", XmlNamespace.SoapEnv) // <soapenv:Body>
-            writer.WriteStartElement("listMethods", XmlNamespace.XRoad40)
-            writer.WriteEndElement()
-            writer.WriteEndElement() // </soapenv:Body>
-            writer.WriteEndElement() // </soapenv:Envelope>
-            writer.WriteEndDocument()
-            writer.Flush()
-            uri |> Http.post stream
+            (client, service) ||> buildRequest writer (fun _ -> writer.WriteElementString("listMethods", XmlNamespace.XRoad40))
+            Http.post stream uri
         let envelope = doc.Element(xnsname "Envelope" XmlNamespace.SoapEnv)
         let body = envelope.Element(xnsname "Body" XmlNamespace.SoapEnv)
         let fault = body.Element(xnsname "Fault" XmlNamespace.SoapEnv)
@@ -233,3 +226,64 @@ module internal SecurityServerV6 =
               ServiceCode = service.Element(xnsname "serviceCode" XmlNamespace.XRoad40Id).Value
               ServiceVersion = service.Element(xnsname "serviceVersion" XmlNamespace.XRoad40Id) |> Option.ofObj |> Option.map (fun x -> x.Value) })
         |> Seq.toList
+
+    let downloadWsdl (uri: string) (client: ServiceProvider) (service: Service) =
+        let service1 = {
+            Provider = service.Provider
+            ServiceCode = "getWsdl"
+            ServiceVersion = None
+        }
+        use stream = new MemoryStream()
+        use streamWriter = new StreamWriter(stream, utf8WithoutBom)
+        use writer = XmlWriter.Create(streamWriter)
+        (client, service1) ||> buildRequest writer (fun _ ->
+            writer.WriteStartElement("getWsdl", XmlNamespace.XRoad40)
+            writer.WriteElementString("serviceCode", XmlNamespace.XRoad40, service.ServiceCode)
+            service.ServiceVersion |> Option.iter (fun vers -> writer.WriteElementString("serviceVersion", XmlNamespace.XRoad40, vers))
+            writer.WriteEndElement()
+        )
+#if !NET40
+        use h = new System.Net.Http.HttpClientHandler()
+        h.SslProtocols <- System.Security.Authentication.SslProtocols.Tls12 ||| System.Security.Authentication.SslProtocols.Tls11 ||| System.Security.Authentication.SslProtocols.Tls
+        let uri = Uri(uri)
+        if uri.Scheme = "https" then h.ServerCertificateCustomValidationCallback <- (fun _ _ _ _ -> true)
+        use client = new System.Net.Http.HttpClient(h)
+        stream.Seek(0L, SeekOrigin.Begin) |> ignore
+        use content = new System.Net.Http.StreamContent(stream)
+        content.Headers.TryAddWithoutValidation("Content-Type", "text/xml; charset=utf-8") |> ignore
+        content.Headers.TryAddWithoutValidation("SOAPAction", "") |> ignore
+        use response = client.PostAsync(uri, content).GetAwaiter().GetResult()
+        match response.Content with
+        | :? System.Net.Http.MultipartContent as mc ->
+            match mc |> List.ofSeq with
+            | [_; attach] ->
+                attach.ReadAsStringAsync().GetAwaiter().GetResult()
+            | _ -> failwith "Invalid getWsdl response"
+        | :? System.Net.Http.StreamContent as sc ->
+            failwithf "%s" (sc.ReadAsStringAsync().GetAwaiter().GetResult())
+        | a ->
+
+            failwithf "Invalid getWsdl response: %A" a
+        // Http.post stream uri
+#else
+        ""
+#endif
+
+module ForTypes =
+    open SecurityServerV6
+
+    let downloadWsdl2 uri (ca, cb, cc, cd) (sa, sb, sc, sd, se, sf) =
+        let client: ServiceProvider =
+            match cd with
+            | "" -> Member(ca, cb, cc)
+            | _ -> Subsystem(ca, cb, cc, cd)
+        let serviceProvider: ServiceProvider =
+            match sd with
+            | "" -> Member(sa, sb, sc)
+            | _ -> Subsystem(sa, sb, sc, sd)
+        let service: Service = {
+            Provider = serviceProvider
+            ServiceCode = se
+            ServiceVersion = match sf with "" -> None | _ -> Some(sf)
+        }
+        downloadWsdl uri client service
