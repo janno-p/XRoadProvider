@@ -8,6 +8,7 @@ open System.IO
 open System.Net
 open System.Xml
 open System.Xml.XPath
+open System.Reflection
 open XRoad.Serialization.Attributes
 
 #if !NET40
@@ -367,7 +368,7 @@ and internal XRoadRequest(endpoint: AbstractEndpointDeclaration, methodMap: Meth
 
 type public XRoadUtil =
     static member MakeServiceCall(endpoint: AbstractEndpointDeclaration, methodName: string, header: AbstractXRoadHeader, args: obj[]) =
-        let serviceMethod = endpoint.GetType().GetMethod(methodName)
+        let serviceMethod = endpoint.GetType().GetMethod(methodName, BindingFlags.Instance ||| BindingFlags.DeclaredOnly ||| BindingFlags.NonPublic ||| BindingFlags.Public)
         let serviceMethodMap = getMethodMap serviceMethod
         use request = new XRoadRequest(endpoint, serviceMethodMap, header)
         request.CreateMessage(args)

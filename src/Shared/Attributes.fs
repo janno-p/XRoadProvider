@@ -141,13 +141,13 @@ type XRoadCollectionAttribute(id: int, itemName: string) =
 [<AttributeUsage(AttributeTargets.Method, AllowMultiple = true)>]
 type XRoadRequiredHeadersAttribute(ns: string, [<ParamArray>] names: string []) =
     inherit Attribute()
-    
+
     /// XML namespace of listed header names.
     member val Namespace = ns with get
-    
+
     /// List of required header names.
     member val Names = names with get
-    
+
 
 /// Metadata of X-Road operation.
 [<AllowNullLiteral>]

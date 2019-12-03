@@ -41,6 +41,9 @@
     <Compile Include="..\Shared\Serialization.fs">
       <Link>Serialization.fs</Link>
     </Compile>
+    <Compile Include="..\Shared\MetaServices.fs">
+      <Link>MetaServices.fs</Link>
+    </Compile>
     <Compile Include="..\Shared\ServiceDescription.fs">
       <Link>ServiceDescription.fs</Link>
     </Compile>
