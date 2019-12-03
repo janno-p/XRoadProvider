@@ -862,6 +862,6 @@ type AbstractEndpointDeclaration (uri: Uri) =
     member internal this.TriggerRequestReady args = requestEvent.Trigger(this, args)
     member internal this.TriggerResponseReady args = responseEvent.Trigger(this, args)
 
-type MultipartResponse<'TBody> (body, parts: BinaryContent seq) =
+type MultipartResponse<'TBody> (body: 'TBody, parts: BinaryContent seq) =
     member val Body = body with get
     member val Parts = parts |> Seq.toArray with get

@@ -70,8 +70,5 @@
       <Link>Wsdl\XRoadV6.wsdl.xml</Link>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="app.config" />
-  </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

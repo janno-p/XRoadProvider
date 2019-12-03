@@ -691,7 +691,7 @@ module Parser =
         | _ -> failwithf "Could not resolve uri `%s`." path
 
     /// Collect type definitions of imported schemas.
-    let rec private collectImportedSchemas schemaUri schemaLookup (documentSchemas: Map<_,_>) (imports: (XNamespace * string option) list) =
+    let rec private collectImportedSchemas schemaUri schemaLookup (documentSchemas: Map<_,XElement>) (imports: (XNamespace * string option) list) =
         imports
         |> List.filter
             (fun (ns, _) -> XmlNamespace.predefined |> List.exists ((=) ns.NamespaceName) |> not)
@@ -723,7 +723,7 @@ module Parser =
                     failwith "Included type schema should define same target namespace as the schema including it.")
 
     /// Parses all definitions in given schema node.
-    and private findSchemaNode (schemaUri: Uri) (schemaLookup: Dictionary<(string * string),SchemaNode>) (documentSchemas: Map<_,_>) node =
+    and private findSchemaNode (schemaUri: Uri) (schemaLookup: Dictionary<(string * string),SchemaNode>) documentSchemas node =
         let schemaNode = SchemaNode.FromNode(node)
         // Use previously parsed schema if present.
         match schemaLookup.TryGetValue((schemaNode.TargetNamespace.NamespaceName, schemaUri.ToString())) with
