@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class Reader.PEReader
    ">
-    <meta name="generator" content="docfx 2.45.0.0">
+    <meta name="generator" content="docfx 2.47.0.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -84,7 +84,7 @@
   <h6><strong>Assembly</strong>: XRoadProvider.dll</h6>
   <h5 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">type Reader.PEReader (infile:string, is:ByteFile)</code></pre>
+    <pre><code class="lang-csharp hljs">type Reader.PEReader (fileName:string, is:ByteFile)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -98,7 +98,7 @@
     <tbody>
       <tr>
         <td><span class="xref">string</span></td>
-        <td><span class="parametername">infile</span></td>
+        <td><span class="parametername">fileName</span></td>
         <td></td>
       </tr>
       <tr>
@@ -119,7 +119,7 @@
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">new: infile:string * is:ByteFile -&gt; PEReader</code></pre>
+    <pre><code class="lang-csharp hljs">new: fileName:string * is:ByteFile -&gt; PEReader</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -133,7 +133,7 @@
     <tbody>
       <tr>
         <td><span class="xref">string</span></td>
-        <td><span class="parametername">infile</span></td>
+        <td><span class="parametername">fileName</span></td>
         <td></td>
       </tr>
       <tr>
@@ -196,6 +196,50 @@
     <pre><code class="lang-csharp hljs">property MetadataSize: int with get</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  
+  
+  <a id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_ResourcePhysLoc_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.ResourcePhysLoc*"></a>
+  <h4 id="ProviderImplementation_ProvidedTypes_AssemblyReader_Reader_PEReader_ResourcePhysLoc_int_" data-uid="ProviderImplementation.ProvidedTypes.AssemblyReader.Reader.PEReader.ResourcePhysLoc(int)">member ResourcePhysLoc: int -&gt; int</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">member ResourcePhysLoc: offset:int -&gt; int</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">int</span></td>
+        <td><span class="parametername">offset</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
       <tr>
