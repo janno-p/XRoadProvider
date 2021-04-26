@@ -1,4 +1,6 @@
-# XRoadProvider
+# XRoadProvider [Archived]
+
+**This GitHub project has been archived. Ongoing development on this project can be found in https://github.com/janno-p/FSharp.Data.XRoad.**
 
 A library containing collection of F# type providers to support easier integration with service providers over
 [X-Road](http://x-road.eu) infrastructure.
